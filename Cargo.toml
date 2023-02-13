@@ -1,0 +1,14 @@
+[package]
+name    = "goblinwerks"
+version = "0.1.0"
+edition = "2021"
+exclude = ["resources/", ".github/", "wasmi/", "crates/"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[workspace]
+members = ["crates/*"]
+
+[dependencies]
+conapp = { path = "crates/conapp" }
+conui  = { path = "crates/conui" }

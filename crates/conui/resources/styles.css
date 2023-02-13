@@ -1,0 +1,116 @@
+* {
+  color: white;
+  background-color: black;
+  accent-color: white;
+  border: 1;
+  border-color: #aaa;
+  border-block-color: #444; /* hack, but very convenient */
+}
+
+/* dialog {
+  color: white;
+  background-color: black;
+  accent-color: white;
+} */
+
+button {
+  color: gray;
+  background-color: steelblue;
+}
+
+button:focus {
+  color: white;
+  background-color: teal;
+}
+
+/* frame {
+  border: 1;
+  border-color: rgb(84, 0, 0);
+  border-block-color: darkgray; // hack, but very convenient 
+}
+
+// legend for frames 
+frame legend {
+  color: black;
+} */
+
+frame.main_menu {
+  border-color: orange;
+  border-block-color: rgb(18, 123, 149);
+  /* background-color: black; */
+  border: 2;
+}
+
+select item:checked {
+  color: green;
+}
+
+select item:hover {
+  background-color: gray;
+}
+
+/* Labels for checkboxes */
+/* checkbox label {
+  color: white;
+} */
+
+/* checkboxes themselves */
+checkbox:checked {
+  accent-color: red;
+}
+
+checkbox:hover {
+  background-color: #363;
+}
+
+checkbox:hover label {
+  background-color: #339;
+}
+
+checkbox {
+  accent-color: green;
+}
+
+radio {
+  accent-color: green;
+}
+
+radio:focus {
+  background-color: #353;
+}
+
+radio:focus label {
+  background-color: #333;
+}
+
+/* radio {
+  accent-color: green;
+}
+
+radio:hover label {
+  background-color: #555;
+}
+
+radio:hover {
+  background-color: #353;
+}
+
+radio:focus label {
+  background-color: #555;
+}
+
+radio:focus {
+  background-color: #353;
+} */
+
+.green {
+  color: green;
+}
+
+.blue {
+  color: blue;
+}
+
+.blue-back {
+  background-color: blue;
+}
