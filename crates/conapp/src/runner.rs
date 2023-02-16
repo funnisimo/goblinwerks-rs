@@ -1,6 +1,7 @@
 use super::context::AppContext;
 use super::input::AppInput;
-use crate::{console, App, AppBuilder, AppConfig, AppEvent, LoadingScreen, Screen, ScreenResult};
+use crate::load_screen::LoadingScreen;
+use crate::{console, App, AppBuilder, AppConfig, AppEvent, Screen, ScreenResult};
 use std::cell::RefCell;
 use std::rc::Rc;
 

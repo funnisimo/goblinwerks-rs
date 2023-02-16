@@ -1,7 +1,7 @@
 use crate::color::init_colors;
+use crate::context::LoadCallback;
 use crate::AppConfig;
 use crate::AppContext;
-use crate::LoadCallback;
 use crate::Runner;
 
 pub type StartupFn = dyn Fn(&mut AppContext) -> ();

@@ -1,5 +1,6 @@
 use super::Buffer;
-use crate::{color::RGBA, Font};
+use crate::color::RGBA;
+use crate::font::Font;
 // use image::{ImageBuffer, Rgba};
 use std::collections::HashMap;
 use std::mem::size_of;

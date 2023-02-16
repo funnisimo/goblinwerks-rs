@@ -1,9 +1,9 @@
-use super::input::AppInput;
-use super::Font;
 use crate::app::File;
-use crate::font::parse_char_size;
+use crate::color::RGBA;
+use crate::font::{parse_char_size, Font};
+use crate::img::Image;
+use crate::input::AppInput;
 use crate::simple::Program;
-use crate::{color::RGBA, Image};
 use crate::{console, MsgData};
 use std::collections::HashMap;
 use std::rc::Rc;

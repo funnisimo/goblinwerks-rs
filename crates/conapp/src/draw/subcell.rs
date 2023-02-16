@@ -1,6 +1,6 @@
 use crate::color::RGBA;
+use crate::img::Image;
 use crate::simple::Buffer;
-use crate::Image;
 
 // sub-pixel resolution kit
 
