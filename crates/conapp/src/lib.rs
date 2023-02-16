@@ -33,7 +33,7 @@ pub fn console<T: AsRef<str>>(msg: T) {
     app::App::print(msg.as_ref());
 }
 
-pub use uni_gl::WebGLRenderingContext;
+// pub use uni_gl::WebGLRenderingContext;
 
 #[cfg(feature = "ecs")]
 pub mod ecs {
