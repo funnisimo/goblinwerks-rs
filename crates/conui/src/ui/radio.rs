@@ -98,6 +98,29 @@ impl Tag for Radio {
     fn as_str(&self) -> &'static str {
         "radio_group"
     }
+
+    fn value(&self, el: &Element) -> Option<MsgData> {
+        // if let Some(val) = &el.borrow().value {
+        //     return Some(val.clone());
+        // }
+
+        let mut items: Vec<MsgData> = Vec::new();
+        let use_index = el.has_prop("index");
+        for (index, ch) in el.children().enumerate() {
+            if ch.has_prop("checked") {
+                if use_index {
+                    items.push(MsgData::Index(index));
+                } else {
+                    items.push(ch.value().unwrap());
+                }
+            }
+        }
+        if items.is_empty() {
+            return None;
+        } else {
+            return items.drain(0..1).next();
+        };
+    }
 }
 
 pub struct RadioBuilder {
@@ -109,12 +132,12 @@ impl RadioBuilder {
         RadioBuilder { node }
     }
 
-    pub fn id(&self, id: &str) -> &Self {
+    pub fn id(&mut self, id: &str) -> &mut Self {
         self.node.set_id(id);
         self
     }
 
-    pub fn item(&self, text: &str) -> &Self {
+    pub fn item(&mut self, text: &str) -> &mut Self {
         let align = self.node.align();
         let on_glyph = self.node.attr("on_glyph").unwrap().to_string();
         let off_glyph = self.node.attr("off_glyph").unwrap().to_string();
@@ -135,7 +158,7 @@ impl RadioBuilder {
         self
     }
 
-    pub fn with_item<F>(&self, text: &str, init: F) -> &Self
+    pub fn with_item<F>(&mut self, text: &str, init: F) -> &mut Self
     where
         F: Fn(&mut RadioItemBuilder) -> (),
     {
@@ -165,36 +188,41 @@ impl RadioBuilder {
         self
     }
 
-    pub fn align(&self, align: Align) -> &Self {
+    pub fn align(&mut self, align: Align) -> &mut Self {
         self.node.set_align(align); // Need to give to items
         self
     }
 
-    pub fn glyphs(&self, off_glyph: &str, on_glyph: &str) -> &Self {
+    pub fn glyphs(&mut self, off_glyph: &str, on_glyph: &str) -> &mut Self {
         self.node.set_attr("off_glyph", off_glyph.into()); // Need to give to items
         self.node.set_attr("on_glyph", on_glyph.into()); // Need to give to items
         self
     }
 
-    pub fn indent(&self, indent: u32) -> &Self {
+    pub fn indent(&mut self, indent: u32) -> &mut Self {
         self.node.set_margin_left(indent);
         self
     }
 
     // SPACING - space between list items
-    pub fn spacing(&self, lines: u32) -> &Self {
+    pub fn spacing(&mut self, lines: u32) -> &mut Self {
         self.node.set_attr("spacing", (lines as i32).into());
         self
     }
 
     // SPACE - space between glyph and label
-    pub fn space(&self, chars: u32) -> &Self {
+    pub fn space(&mut self, chars: u32) -> &mut Self {
         self.node.set_attr("space", (chars as i32).into());
         self
     }
 
     pub fn index(&mut self) -> &mut Self {
         self.node.add_prop("index");
+        self
+    }
+
+    pub fn class(&mut self, name: &str) -> &mut Self {
+        self.node.add_class(name);
         self
     }
 
@@ -248,14 +276,14 @@ impl RadioItem {
         node.add_child(label.clone());
         parent.node.add_child(node.clone());
 
-        let mut checkbox = RadioItemBuilder {
+        let mut builder = RadioItemBuilder {
             node: node.clone(),
             label: label.clone(),
         };
 
         console("NEW RADIO ITEM");
 
-        init(&mut checkbox);
+        init(&mut builder);
 
         let off_text: String = node.attr("off_glyph").unwrap().to_string();
         let on_text: String = node.attr("off_glyph").unwrap().to_string();

@@ -1,6 +1,6 @@
 use conapp::ecs::prelude::*;
 use conapp::*;
-use conui::screens::Choice;
+use conui::screens::{Choice, MultiChoice};
 use conui::ui::*;
 use std::collections::HashMap;
 
@@ -128,6 +128,7 @@ impl Screen for MainScreen {
                         .title("Create which item?")
                         .items(items)
                         .class("blue-back")
+                        // .checkbox()
                         .build(),
                 );
             }
@@ -170,15 +171,22 @@ impl Screen for MainScreen {
 
                 let mut query = world.query::<(Entity, &Item)>();
 
-                let items: Vec<(String, MsgData)> = query
+                let items: Vec<(String, Key, u16)> = query
                     .iter(&world)
-                    .map(|(entity, item)| (format!("1 {}", item.kind), entity.into()))
+                    .map(|(entity, item)| {
+                        (
+                            format!("{} {}", item.count, item.kind),
+                            entity.into(),
+                            item.count,
+                        )
+                    })
                     .collect();
 
                 if items.len() > 0 {
                     return ScreenResult::Push(
-                        Choice::builder("DELETE_ITEM")
+                        MultiChoice::builder("DELETE_ITEM")
                             .title("Delete which item?")
+                            .count("#")
                             .items(items)
                             .class("blue-back")
                             .build(),
@@ -190,30 +198,31 @@ impl Screen for MainScreen {
             }
 
             "DELETE_ITEM" => {
-                if let Some(val) = value {
-                    let entity: Entity = val.try_into().unwrap();
+                if let Some(MsgData::Map(map)) = value {
+                    for (key, val) in map {
+                        let entity: Entity = key.try_into().unwrap();
+                        let count: i32 = val.try_into().unwrap();
 
-                    let world = &mut app.world;
+                        let world = &mut app.world;
 
-                    let unstack = {
-                        let item_kinds = world.get_resource::<ItemKinds>().unwrap();
-                        let item = world.entity(entity).get::<Item>().unwrap();
+                        let unstack = {
+                            let item_kinds = world.get_resource::<ItemKinds>().unwrap();
+                            let item = world.entity(entity).get::<Item>().unwrap();
 
-                        let kind = item_kinds.get(&item.kind).unwrap();
-                        kind.stackable && item.count > 1
-                    };
+                            let kind = item_kinds.get(&item.kind).unwrap();
+                            kind.stackable && item.count > count as u16
+                        };
 
-                    if unstack {
-                        let mut entity_obj = world.entity_mut(entity);
-                        let mut item = entity_obj.get_mut::<Item>().unwrap();
-                        item.count -= 1;
-                        console(format!("Delete 1 of item - {:?}", entity));
-                    } else {
-                        world.despawn(entity);
-                        console(format!("Delete item - {:?}", entity));
+                        if unstack {
+                            let mut entity_obj = world.entity_mut(entity);
+                            let mut item = entity_obj.get_mut::<Item>().unwrap();
+                            item.count = item.count.saturating_sub(count as u16);
+                            console(format!("Delete {} of item - {:?}", count, entity));
+                        } else {
+                            world.despawn(entity);
+                            console(format!("Delete item - {:?}", entity));
+                        }
                     }
-
-                    // Fall through to update display
                 }
             }
 

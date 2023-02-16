@@ -76,5 +76,8 @@ pub use list::*;
 mod radio;
 pub use radio::*;
 
+mod div;
+pub use div::*;
+
 #[cfg(test)]
 pub mod test;

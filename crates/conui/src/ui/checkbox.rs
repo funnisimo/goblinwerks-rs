@@ -73,6 +73,8 @@ impl Checkbox {
                 node.set_text(&on_text);
                 if let Some(count) = node.attr("count") {
                     node.set_value(Some(count));
+                } else {
+                    node.set_value(Some(true.into()));
                 }
             }
         }
@@ -116,31 +118,17 @@ impl Tag for Checkbox {
     }
 
     fn handle_click(&self, root: &Element, el: &Element, point: Point) -> Option<UiAction> {
-        // match self {
-        //     Tag::Button => {
-        // if el.contains(point) {
-        //     let ret = self.handle_activate(root, el);
-        //     return ret;
-        // }
-        //     }
-        //     Tag::Select => {
-        //         return select_handle_click(el, point);
-        //     }
-        //     Tag::Checkbox => {
         if el.contains(point) {
             let ret = self.handle_activate(root, el);
             return ret;
         }
-        //     }
-        //     Tag::Custom(x) => return x.handle_click(root, el, point),
-        //     _ => {
+
         for child in el.node.borrow().children.iter() {
             if let Some(action) = child.handle_click(root, point) {
                 return Some(action);
             }
         }
-        //     }
-        // }
+
         None
     }
 
@@ -149,19 +137,10 @@ impl Tag for Checkbox {
             return action(root, el);
         }
 
-        // match self {
-        //     Tag::Select => match select_handle_key(el, key) {
-        //         None => {}
-        //         Some(action) => return Some(action),
-        //     },
-        // Tag::Checkbox =>
         match checkbox_handle_key(root, el, key) {
             None => {}
             Some(action) => return Some(action),
         }
-        //     Tag::Custom(x) => return x.handle_key(root, el, key),
-        //     _ => {}
-        // }
 
         if let Some(parent) = el.node.borrow().parent_element() {
             return parent.handle_key(root, key);
@@ -181,20 +160,16 @@ impl Tag for Checkbox {
             }
         }
 
-        // match self {
-        // Some(UiAction::Message(
-        //     match el.id().as_ref() {
-        //         None => "UI".to_string(),
-        //         Some(id) => id.clone(),
-        //     },
-        //     None,
-        // ))
-        //     Tag::Checkbox => {
         el.toggle_prop("checked");
 
         if let Some(count) = el.attr("count") {
             match el.has_prop("checked") {
                 true => el.set_value(Some(count)),
+                false => el.set_value(None),
+            }
+        } else {
+            match el.has_prop("checked") {
+                true => el.set_value(Some(true.into())),
                 false => el.set_value(None),
             }
         }
@@ -208,7 +183,7 @@ impl Tag for Checkbox {
 }
 
 pub struct CheckboxBuilder {
-    node: Element,
+    pub(crate) node: Element,
     label: Element,
 }
 
@@ -223,8 +198,8 @@ impl CheckboxBuilder {
         self
     }
 
-    pub fn value(&self, val: Option<MsgData>) -> &Self {
-        self.node.set_value(val);
+    pub fn value(&self, val: MsgData) -> &Self {
+        self.node.set_value(Some(val));
         self
     }
 
@@ -265,16 +240,6 @@ impl CheckboxBuilder {
         self.node.set_attr("count_glyph", glyph.into());
         self
     }
-
-    // pub fn pos(&self, x: i32, y: i32) -> &Self {
-    //     self.node.pos = Some((x, y));
-    //     self
-    // }
-
-    // pub fn size(&self, width: u32, height: u32) -> &Self {
-    //     self.node.set_size(width, height);
-    //     self
-    // }
 
     pub fn class(&self, class: &str) -> &Self {
         self.node.add_class(class);

@@ -9,7 +9,6 @@ static SELECT: Select = Select {};
 /// The options can either be a list (default, single or multiple), checkboxes (multiple), or radios (single).
 /// - single: value of the item selected.  By default this is the text of the item.
 /// - multiple: list of values for selected items.
-/// - multiple with number: list of pairs of item value and count.
 pub struct Select {}
 
 impl Select {
@@ -25,31 +24,28 @@ impl Select {
 
         init(&mut select);
 
-        let size = select
-            .el
-            .borrow()
-            .children
-            .iter()
-            .fold((0, 0), |out, child| {
-                let child_size = child.outer_size();
-                (max(out.0, child_size.0 + 2), out.1 + child_size.1)
-            });
+        let child_size = select.el.children_size();
+        let margin = select.el.margin();
+        let size = (
+            child_size.0 + margin[0] + margin[2],
+            child_size.1 + margin[1] + margin[3],
+        );
         select.el.set_size(size.0, size.1);
 
-        // Should have exactly 1 selected
-        let mut count = 0;
-        for child in select.el.borrow().children.iter() {
-            if count == 0 {
-                if child.has_prop("checked") {
+        if select.el.has_prop("multiple") == false {
+            // Should have at most 1 selected
+            let mut count = 0;
+            for child in select.el.borrow().children.iter() {
+                if count == 0 {
                     count = 1;
+                } else {
+                    child.remove_prop("checked");
                 }
-            } else {
-                child.remove_prop("checked");
             }
         }
-        if count == 0 && select.el.child_count() > 0 {
-            select.el.first_child().unwrap().add_prop("checked");
-        }
+        // if count == 0 && select.el.child_count() > 0 {
+        //     select.el.first_child().unwrap().add_prop("checked");
+        // }
     }
 }
 
@@ -150,11 +146,24 @@ impl SelectBuilder {
         self
     }
 
-    pub fn item<F>(&mut self, init: F) -> &mut Self
+    pub fn item(&mut self, text: &str) -> &mut Self {
+        self.with_item(text, |item| {
+            item.value(text.into());
+        });
+        self
+    }
+
+    pub fn with_item<F>(&mut self, text: &str, init: F) -> &mut Self
     where
         F: FnOnce(&mut SelectItemBuilder) -> (),
     {
-        SelectItem::new(self, init);
+        SelectItem::new(self, |item| {
+            item.text(text);
+            init(item);
+            if item.node.value().is_none() {
+                item.value(text.into());
+            }
+        });
         self
     }
 }
@@ -188,19 +197,16 @@ impl SelectItem {
     where
         F: FnOnce(&mut SelectItemBuilder) -> (),
     {
-        let mut option = SelectItemBuilder {
-            node: Element::new(&SELECT_ITEM),
-        };
-        parent.add_child(option.node.clone());
+        let node = Element::new(&SELECT_ITEM);
+        node.set_text("");
 
+        parent.add_child(node.clone());
+
+        let mut option = SelectItemBuilder { node: node.clone() };
         init(&mut option);
 
-        if !option.node.has_any_text() {
-            option.node.set_text("");
-        }
-        if option.node.size().is_none() {
-            let len = option.node.text().as_ref().unwrap().len() as u32;
-            option.node.set_size(len, 1);
+        if node.size().is_none() {
+            text_set_size(&node, parent.el.inner_size());
         }
 
         if option.node.value().is_none() {
@@ -338,7 +344,13 @@ pub(super) fn select_handle_key(el: &Element, key: &KeyEvent) -> Option<UiAction
             // update checked
             match el.find_child(&mut |ch| ch.has_prop("hover")) {
                 None => {
-                    println!("Nothing hovered!");
+                    println!("Nothing hovered - toggling first");
+                    // select the first
+                    if !el.has_prop("multiple") {
+                        el.each_child(&mut |ch| ch.remove_prop("checked"));
+                    }
+                    el.get_child_by_index(0).unwrap().toggle_prop("checked");
+                    return Some(UiAction::Stop);
                 }
                 Some(hovered) => {
                     if !el.has_prop("multiple") {

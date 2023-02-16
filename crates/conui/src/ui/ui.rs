@@ -92,9 +92,9 @@ impl PartialEq for UiAction {
 
 pub struct UI {
     root: Element,
-    pub(super) focus_order: Vec<Element>,
-    pub(super) last_mouse: RefCell<Point>,
-    pub(super) console: Console,
+    pub(crate) focus_order: Vec<Element>,
+    pub(crate) last_mouse: RefCell<Point>,
+    pub(crate) console: Console,
 }
 
 impl UI {
@@ -167,7 +167,7 @@ impl UI {
     //         .leaf_matching(|n| n.contains(point) && n.borrow().click)
     // }
 
-    // pub(super) fn handle_click(&self, ctx: &mut  AppContext, point: Point) -> ScreenResult {
+    // pub(crate) fn handle_click(&self, ctx: &mut  AppContext, point: Point) -> ScreenResult {
     //     if let Some(el) = self.clickable_at(point) {
     //         return el.fire_click(ctx, self);
     //     }
@@ -317,13 +317,13 @@ impl UI {
         None
     }
 
-    pub(super) fn handle_key(&mut self, key: &KeyEvent) -> Option<UiAction> {
+    pub(crate) fn handle_key(&mut self, key: &KeyEvent) -> Option<UiAction> {
         let el = self.focused().unwrap_or(self.root.clone());
         println!("- handle key={:?}, el={:?}", key, el.id());
         el.handle_key(&self.root, key)
     }
 
-    pub(super) fn handle_click(&mut self, mouse_pt: Point) -> Option<UiAction> {
+    pub(crate) fn handle_click(&mut self, mouse_pt: Point) -> Option<UiAction> {
         println!("mouse click - {:?}", mouse_pt);
         self.root.clone().handle_click(&self.root, mouse_pt)
     }
@@ -340,7 +340,7 @@ impl UI {
     }
 
     pub fn dump(&self) {
-        self.root.dump();
+        dump_element(&self.root);
     }
 }
 

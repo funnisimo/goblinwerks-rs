@@ -1,5 +1,6 @@
 #[cfg(feature = "ecs")]
 use bevy_ecs::prelude::Entity;
+use std::collections::HashMap;
 use std::fmt::Display;
 
 #[derive(Debug)]
@@ -7,6 +8,159 @@ pub enum DataConvertError {
     WrongType,
     Negative,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Key {
+    Index(usize),
+    Number(i32),
+    Text(String),
+    #[cfg(feature = "ecs")]
+    Entity(Entity),
+}
+
+impl TryInto<usize> for Key {
+    type Error = DataConvertError;
+
+    fn try_into(self) -> Result<usize, DataConvertError> {
+        match self {
+            Key::Index(v) => Ok(v),
+            Key::Number(v) => Ok(v as usize),
+            Key::Text(v) => match v.parse::<usize>() {
+                Err(_) => Err(DataConvertError::WrongType),
+                Ok(v) => Ok(v),
+            },
+
+            // Value::Blank => Ok(0.0),
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
+impl TryInto<i32> for Key {
+    type Error = DataConvertError;
+
+    fn try_into(self) -> Result<i32, DataConvertError> {
+        match self {
+            Key::Index(v) => Ok(v as i32),
+            Key::Number(v) => Ok(v),
+            Key::Text(v) => match v.parse::<i32>() {
+                Err(_) => Err(DataConvertError::WrongType),
+                Ok(v) => Ok(v),
+            },
+            // Value::Blank => Ok(0.0),
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
+impl TryInto<u32> for Key {
+    type Error = DataConvertError;
+
+    fn try_into(self) -> Result<u32, DataConvertError> {
+        match self {
+            Key::Index(v) => Ok(v as u32),
+            Key::Number(v) => match v >= 0 {
+                true => Ok(v as u32),
+                false => Err(DataConvertError::Negative),
+            },
+            Key::Text(v) => match v.parse::<u32>() {
+                Err(_) => Err(DataConvertError::WrongType),
+                Ok(v) => Ok(v),
+            },
+            // Value::Blank => Ok(0.0),
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
+impl Display for Key {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Key::Index(v) => write!(f, "{}", v),
+            Key::Number(v) => write!(f, "{}", v),
+            Key::Text(v) => write!(f, "{}", v),
+
+            #[cfg(feature = "ecs")]
+            Key::Entity(entity) => {
+                write!(f, "{:?}", entity)
+            }
+        }
+    }
+}
+
+#[cfg(feature = "ecs")]
+impl TryInto<Entity> for Key {
+    type Error = DataConvertError;
+
+    fn try_into(self) -> Result<Entity, DataConvertError> {
+        match self {
+            Key::Entity(v) => Ok(v),
+            // Value::Blank => Ok(0.0),
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
+impl TryFrom<MsgData> for Key {
+    type Error = DataConvertError;
+
+    fn try_from(value: MsgData) -> Result<Self, Self::Error> {
+        match value {
+            MsgData::Index(v) => Ok(Key::Index(v)),
+            MsgData::Number(v) => Ok(Key::Number(v)),
+            MsgData::Text(v) => Ok(Key::Text(v)),
+            #[cfg(feature = "ecs")]
+            MsgData::Entity(v) => Ok(Key::Entity(v)),
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
+impl From<usize> for Key {
+    fn from(v: usize) -> Self {
+        Key::Index(v)
+    }
+}
+
+impl From<i32> for Key {
+    fn from(v: i32) -> Self {
+        Key::Number(v)
+    }
+}
+
+impl From<&str> for Key {
+    fn from(v: &str) -> Self {
+        Key::Text(v.to_owned())
+    }
+}
+
+impl From<String> for Key {
+    fn from(v: String) -> Self {
+        Key::Text(v)
+    }
+}
+
+impl From<&String> for Key {
+    fn from(v: &String) -> Self {
+        Key::Text(v.clone())
+    }
+}
+
+#[cfg(feature = "ecs")]
+impl From<Entity> for Key {
+    fn from(v: Entity) -> Self {
+        Key::Entity(v)
+    }
+}
+
+#[cfg(feature = "ecs")]
+impl From<&Entity> for Key {
+    fn from(v: &Entity) -> Self {
+        Key::Entity(v.clone())
+    }
+}
+
+///////////////////////////////////////////////////
 
 /// The result of an evaluation.
 #[derive(Debug, Clone, PartialEq)]
@@ -17,6 +171,7 @@ pub enum MsgData {
     Text(String),
     Boolean(bool),
     List(Vec<MsgData>),
+    Map(HashMap<Key, MsgData>),
     Error,
     #[cfg(feature = "ecs")]
     Entity(Entity),
@@ -168,14 +323,25 @@ impl Display for MsgData {
                 }
                 write!(f, "]")
             }
+            MsgData::Map(data) => {
+                write!(f, "{{")?;
+                for (key, val) in data.iter() {
+                    write!(f, "{:?}={}, ", key, val)?;
+                }
+                write!(f, "}}")
+            }
             #[cfg(feature = "ecs")]
             MsgData::Entity(entity) => {
                 write!(f, "{:?}", entity)
             }
-
-            // Value::Blank => Ok("".to_owned()),
             MsgData::Error => write!(f, "!ERROR!"),
         }
+    }
+}
+
+impl From<usize> for MsgData {
+    fn from(v: usize) -> Self {
+        MsgData::Index(v)
     }
 }
 
@@ -218,6 +384,24 @@ impl From<bool> for MsgData {
 impl From<Vec<MsgData>> for MsgData {
     fn from(vec: Vec<MsgData>) -> Self {
         MsgData::List(vec)
+    }
+}
+
+impl From<HashMap<Key, MsgData>> for MsgData {
+    fn from(data: HashMap<Key, MsgData>) -> Self {
+        MsgData::Map(data)
+    }
+}
+
+impl From<Key> for MsgData {
+    fn from(value: Key) -> Self {
+        match value {
+            Key::Index(v) => MsgData::Index(v),
+            Key::Number(v) => MsgData::Number(v),
+            Key::Text(v) => MsgData::Text(v),
+            #[cfg(feature = "ecs")]
+            Key::Entity(v) => MsgData::Entity(v),
+        }
     }
 }
 

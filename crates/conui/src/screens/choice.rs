@@ -2,6 +2,8 @@ use crate::ui::dialog;
 use crate::ui::Align;
 use crate::ui::Button;
 use crate::ui::Frame;
+use crate::ui::ParentNode;
+use crate::ui::Radio;
 use crate::ui::Select;
 use crate::ui::Span;
 use crate::ui::Text;
@@ -19,11 +21,11 @@ pub type ChoiceResultFn = dyn FnOnce(&mut AppContext, Option<MsgData>) -> ();
 #[derive(Debug)]
 pub struct ChoiceItem {
     text: String,
-    value: Option<MsgData>,
+    value: MsgData,
 }
 
 impl ChoiceItem {
-    fn new(text: &str, value: Option<MsgData>) -> Self {
+    fn new(text: &str, value: MsgData) -> Self {
         ChoiceItem {
             text: text.to_string(),
             value,
@@ -34,7 +36,7 @@ impl ChoiceItem {
 impl From<String> for ChoiceItem {
     fn from(text: String) -> Self {
         ChoiceItem {
-            value: Some(text.clone().into()),
+            value: text.clone().into(),
             text,
         }
     }
@@ -42,19 +44,19 @@ impl From<String> for ChoiceItem {
 
 impl From<&str> for ChoiceItem {
     fn from(text: &str) -> Self {
-        ChoiceItem::new(text, Some(text.into()))
+        ChoiceItem::new(text, text.into())
     }
 }
 
 impl From<(&str, MsgData)> for ChoiceItem {
     fn from(info: (&str, MsgData)) -> Self {
-        ChoiceItem::new(info.0, Some(info.1))
+        ChoiceItem::new(info.0, info.1)
     }
 }
 
 impl From<(String, MsgData)> for ChoiceItem {
     fn from(info: (String, MsgData)) -> Self {
-        ChoiceItem::new(&info.0, Some(info.1))
+        ChoiceItem::new(&info.0, info.1)
     }
 }
 
@@ -68,8 +70,7 @@ pub struct ChoiceBuilder {
     class: String,
     page_size: (u32, u32),
     font: String,
-    multiple: bool,
-    index: bool,
+    radio: bool,
 }
 
 impl ChoiceBuilder {
@@ -84,8 +85,7 @@ impl ChoiceBuilder {
             page_size: (80, 50),
             font: "DEFAULT".to_owned(),
             done: None,
-            multiple: false,
-            index: false,
+            radio: false,
         }
     }
 
@@ -107,8 +107,8 @@ impl ChoiceBuilder {
         self
     }
 
-    pub fn item(mut self, item: &str, value: Option<MsgData>) -> Self {
-        self.items.push(ChoiceItem::new(item, value));
+    pub fn item<D: Into<ChoiceItem>>(mut self, item: D) -> Self {
+        self.items.push(item.into());
         self.selected.resize(self.items.len(), false);
         self
     }
@@ -128,16 +128,8 @@ impl ChoiceBuilder {
         self
     }
 
-    pub fn multiple(mut self) -> Self {
-        self.multiple = true;
-        self
-    }
-
-    // TODO - checkbox
-    // TODO - radio
-
-    pub fn index(mut self) -> Self {
-        self.index = true;
+    pub fn radio(mut self) -> Self {
+        self.radio = true;
         self
     }
 
@@ -195,26 +187,11 @@ impl Choice {
                     });
                 }
 
-                Select::new(frame, |sel| {
-                    sel.id("SELECT");
-                    sel.class("choice").class(&config.class);
-                    if config.multiple {
-                        sel.multiple();
-                    }
-                    if config.index {
-                        sel.index();
-                    }
-
-                    for txt in config.items.iter() {
-                        sel.item(|opt| {
-                            opt.text(&txt.text);
-                            if let Some(ref val) = txt.value {
-                                opt.value(val.clone());
-                            }
-                            opt.class("choice").class(&config.class);
-                        });
-                    }
-                });
+                if config.radio {
+                    init_radio(&config, frame);
+                } else {
+                    init_select(&config, frame);
+                }
 
                 Span::new(frame, |span| {
                     span.pad_top(1).anchor(Align::Max).spacing(2);
@@ -302,4 +279,32 @@ impl Screen for Choice {
     }
 
     // fn teardown(&mut self, ctx: &mut  AppContext) {}
+}
+
+fn init_select(config: &ChoiceBuilder, parent: &dyn ParentNode) {
+    Select::new(parent, |sel| {
+        sel.id("SELECT");
+        sel.class("choice").class(&config.class);
+
+        for txt in config.items.iter() {
+            sel.with_item(&txt.text, |opt| {
+                opt.value(txt.value.clone());
+                opt.class("choice").class(&config.class);
+            });
+        }
+    });
+}
+
+fn init_radio(config: &ChoiceBuilder, parent: &dyn ParentNode) {
+    Radio::new(parent, |sel| {
+        sel.id("SELECT");
+        sel.class("choice").class(&config.class);
+
+        for txt in config.items.iter() {
+            sel.with_item(&txt.text, |opt| {
+                opt.value(txt.value.clone());
+                opt.class("choice").class(&config.class);
+            });
+        }
+    });
 }

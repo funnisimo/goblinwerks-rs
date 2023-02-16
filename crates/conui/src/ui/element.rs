@@ -156,6 +156,11 @@ impl fmt::Debug for ElementData {
             // d.field("all_styles", &styles);
         }
 
+        if let Some(ref value) = self.value {
+            d.field("value", &value);
+            // d.field("all_styles", &styles);
+        }
+
         d.finish()
     }
 }
@@ -767,6 +772,19 @@ pub fn element_path(el: &Element) -> String {
         return format!("{}.{}[{}]", element_path(&parent), el.tag(), index);
     } else {
         return el.tag().to_string();
+    }
+}
+
+pub fn dump_element(el: &Element) {
+    _dump_element(el, 0);
+}
+
+fn _dump_element(el: &Element, indent: usize) {
+    let spaces = " ".repeat(indent);
+    println!("{}{:?}", spaces, el);
+
+    for child in el.children() {
+        _dump_element(&child, indent + 2);
     }
 }
 
