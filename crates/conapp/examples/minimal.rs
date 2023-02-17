@@ -1,4 +1,3 @@
-use conapp::color::{BLACK, RGBA, WHITE};
 use conapp::*;
 
 struct MainScreen {
