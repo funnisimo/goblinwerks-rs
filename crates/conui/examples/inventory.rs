@@ -169,7 +169,7 @@ impl Screen for MainScreen {
             "DELETE" => {
                 let world = &mut app.world;
 
-                let mut query = world.query::<(Entity, &Item)>();
+                let mut query = world.query_filtered::<(Entity, &Item), Without<InInventory>>();
 
                 let items: Vec<(String, Key, u16)> = query
                     .iter(&world)
@@ -185,14 +185,14 @@ impl Screen for MainScreen {
                 if items.len() > 0 {
                     return ScreenResult::Push(
                         MultiChoice::builder("DELETE_ITEM")
-                            .title("Delete which item?")
+                            .title("Delete which item(s)?")
                             .count("#")
                             .items(items)
                             .class("blue-back")
                             .build(),
                     );
                 } else {
-                    // TODO - return ScreenResult::Push(MsgBox::builder("MSGBOX").title("Error").prompt("Nothing to delete.").ok().build());
+                    // TODO - return ScreenResult::Push(MsgBox::builder("MSGBOX").title("Error").prompt("Nothing to delete.").build());
                     return ScreenResult::Continue;
                 }
             }
@@ -227,16 +227,74 @@ impl Screen for MainScreen {
             }
 
             "PICKUP" => {
-                // return ScreenResult::Push(
-                //     PickItem::builder("PICK_ITEM")
-                //         .title("Drop which item(s)?")
-                //         // .items()
-                //         .class("blue-back")
-                //         .build(),
-                // );
+                let world = &mut app.world;
+
+                let mut query = world.query_filtered::<(Entity, &Item), Without<InInventory>>();
+
+                let items: Vec<(String, Key, u16)> = query
+                    .iter(&world)
+                    .map(|(entity, item)| {
+                        (
+                            format!("{} {}", item.count, item.kind),
+                            entity.into(),
+                            item.count,
+                        )
+                    })
+                    .collect();
+
+                if items.len() > 0 {
+                    return ScreenResult::Push(
+                        MultiChoice::builder("PICKUP_ITEM")
+                            .title("Pickup which item(s)?")
+                            .count("#")
+                            .items(items)
+                            .class("blue-back")
+                            .build(),
+                    );
+                } else {
+                    // TODO - return ScreenResult::Push(MsgBox::builder("MSGBOX").title("Error").prompt("Nothing to pickup.").build());
+                    return ScreenResult::Continue;
+                }
             }
-            "PICK_ITEM" => {
-                self.ui.find_by_id("TEXT").unwrap().set_text("Nothing");
+            "PICKUP_ITEM" => {
+                if let Some(MsgData::Map(map)) = value {
+                    for (key, val) in map {
+                        let entity: Entity = key.try_into().unwrap();
+                        let count: i32 = val.try_into().unwrap();
+
+                        let world = &mut app.world;
+
+                        let (kind, unstack) = {
+                            let item_kinds = world.get_resource::<ItemKinds>().unwrap();
+                            let item = world.entity(entity).get::<Item>().unwrap();
+
+                            let kind = item_kinds.get(&item.kind).unwrap();
+                            (kind.id.clone(), kind.stackable && item.count > count as u16)
+                        };
+
+                        if unstack {
+                            let left = {
+                                let mut entity_obj = world.entity_mut(entity);
+                                let mut item = entity_obj.get_mut::<Item>().unwrap();
+                                item.count = item.count.saturating_sub(count as u16);
+                                item.count
+                            };
+
+                            let mut new_item = Item::new(&kind);
+                            new_item.count = count as u16;
+
+                            let new_id = world.spawn((new_item, InInventory::new())).id();
+
+                            console(format!(
+                                "Pickup {} of item, leaving {} - {:?}",
+                                count, left, new_id
+                            ));
+                        } else {
+                            world.entity_mut(entity).insert(InInventory::new());
+                            console(format!("Pickup item - {:?}", entity));
+                        }
+                    }
+                }
             }
 
             "SHOW" => {
@@ -267,7 +325,7 @@ impl Screen for MainScreen {
 
         // update floor items
         let world = &mut app.world;
-        let mut query = world.query::<(&Item,)>();
+        let mut query = world.query_filtered::<(&Item,), Without<InInventory>>();
         let ids: Vec<String> = query
             .iter(&world)
             .map(|(item,)| format!("{} {}", item.count, item.kind))
@@ -280,6 +338,17 @@ impl Screen for MainScreen {
         }
 
         // update inventory items
+        let mut query = world.query_filtered::<(&Item,), With<InInventory>>();
+        let ids: Vec<String> = query
+            .iter(&world)
+            .map(|(item,)| format!("{} {}", item.count, item.kind))
+            .collect();
+
+        let floor = self.ui.find_by_id("INVENTORY").unwrap();
+        match ids.is_empty() {
+            true => floor.set_text("Nothing."),
+            false => floor.set_text(&ids.join("\n")),
+        }
 
         console("Update UI");
         ScreenResult::Continue
@@ -294,7 +363,6 @@ fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Inventory Example")
         .file("resources/styles.css", Box::new(load_stylesheet_data))
-        // .file("resources/items.toml", Box::new(load_item_kinds_data))
         .vsync(false)
         .build();
 
@@ -372,5 +440,14 @@ impl Item {
             kind: id.to_string(),
             count: 1,
         }
+    }
+}
+
+#[derive(Component, Clone)]
+struct InInventory {}
+
+impl InInventory {
+    fn new() -> Self {
+        InInventory {}
     }
 }
