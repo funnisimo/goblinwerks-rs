@@ -1,3 +1,4 @@
+use crate::screens::MsgBox;
 use crate::ui::dialog;
 use crate::ui::Align;
 use crate::ui::Button;
@@ -255,7 +256,12 @@ impl Screen for Choice {
             "OK" => {
                 let ret = self.ui.find_by_id("SELECT").unwrap().value();
                 if ret.is_none() {
-                    // TODO - return ScreenResult::Push(MsgBox::builder().msg("You must select something.").class("error").build()),
+                    return ScreenResult::Push(
+                        MsgBox::builder("MSG_BOX")
+                            .msg("You must select something.")
+                            .class("error")
+                            .build(),
+                    );
                 }
                 println!("Choice - {}, {:?}", &self.config.id, ret);
                 if let Some(done) = self.config.done.take() {

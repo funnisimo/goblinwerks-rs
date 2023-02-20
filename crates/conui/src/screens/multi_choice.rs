@@ -1,3 +1,4 @@
+use crate::screens::MsgBox;
 use crate::ui::dialog;
 use crate::ui::Align;
 use crate::ui::Button;
@@ -293,6 +294,14 @@ impl Screen for MultiChoice {
         match id.as_ref() {
             "OK" => {
                 let ret = get_value(self);
+                if ret.is_none() || ret.as_ref().unwrap().is_empty() {
+                    return ScreenResult::Push(
+                        MsgBox::builder("MSG_BOX")
+                            .msg("You must select something.")
+                            .class("error")
+                            .build(),
+                    );
+                }
                 println!("MultiChoice - {}, {:?}", &self.config.id, ret);
                 if let Some(done) = self.config.done.take() {
                     done(app, ret);
