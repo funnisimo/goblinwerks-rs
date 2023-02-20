@@ -134,7 +134,7 @@ impl Screen for MainScreen {
             }
             "CREATE_ITEM" => {
                 let text = self.ui.find_by_id("TEXT").unwrap();
-                let id = match value {
+                let kind_id = match value {
                     None => {
                         text.set_text("Nothing");
                         return ScreenResult::Continue;
@@ -142,27 +142,11 @@ impl Screen for MainScreen {
                     Some(v) => v.to_string(),
                 };
 
-                text.set_text(&id);
+                text.set_text(&kind_id);
+                let world = &mut app.world;
 
-                let mut world = &mut app.world;
-
-                let item_kinds = world.get_resource::<ItemKinds>().unwrap();
-                let kind = item_kinds.get(&id).unwrap();
-                if kind.stackable {
-                    let mut query = world.query::<(&mut Item,)>();
-                    match query.iter_mut(&mut world).find(|(item,)| item.kind == id) {
-                        None => {
-                            let entity = world.spawn((Item::new(&id),)).id();
-                            console(format!("Created entity - {:?}", entity));
-                        }
-                        Some((mut same_kind_item,)) => {
-                            same_kind_item.count += 1;
-                            console("Added 1 to existing item.");
-                        }
-                    }
-                } else {
-                    let entity = world.spawn((Item::new(&id),)).id();
-                    console(format!("Created entity - {:?}", entity));
+                if stack_floor(world, &kind_id, 1).is_none() {
+                    create_floor(world, &kind_id, 1);
                 }
             }
 
@@ -204,21 +188,7 @@ impl Screen for MainScreen {
                         let count: i32 = val.try_into().unwrap();
 
                         let world = &mut app.world;
-
-                        let unstack = {
-                            let item_kinds = world.get_resource::<ItemKinds>().unwrap();
-                            let item = world.entity(entity).get::<Item>().unwrap();
-
-                            let kind = item_kinds.get(&item.kind).unwrap();
-                            kind.stackable && item.count > count as u16
-                        };
-
-                        if unstack {
-                            let mut entity_obj = world.entity_mut(entity);
-                            let mut item = entity_obj.get_mut::<Item>().unwrap();
-                            item.count = item.count.saturating_sub(count as u16);
-                            console(format!("Delete {} of item - {:?}", count, entity));
-                        } else {
+                        if reduce_count(world, entity, count as u16) == 0 {
                             world.despawn(entity);
                             console(format!("Delete item - {:?}", entity));
                         }
@@ -264,34 +234,23 @@ impl Screen for MainScreen {
 
                         let world = &mut app.world;
 
-                        let (kind, unstack) = {
-                            let item_kinds = world.get_resource::<ItemKinds>().unwrap();
-                            let item = world.entity(entity).get::<Item>().unwrap();
+                        let (kind_id, has_count) = get_info(world, entity);
 
-                            let kind = item_kinds.get(&item.kind).unwrap();
-                            (kind.id.clone(), kind.stackable && item.count > count as u16)
-                        };
-
-                        if unstack {
-                            let left = {
-                                let mut entity_obj = world.entity_mut(entity);
-                                let mut item = entity_obj.get_mut::<Item>().unwrap();
-                                item.count = item.count.saturating_sub(count as u16);
-                                item.count
-                            };
-
-                            let mut new_item = Item::new(&kind);
-                            new_item.count = count as u16;
-
-                            let new_id = world.spawn((new_item, InInventory::new())).id();
-
-                            console(format!(
-                                "Pickup {} of item, leaving {} - {:?}",
-                                count, left, new_id
-                            ));
-                        } else {
-                            world.entity_mut(entity).insert(InInventory::new());
-                            console(format!("Pickup item - {:?}", entity));
+                        match has_count == count as u16 {
+                            true => match stack_inventory(world, &kind_id, count as u16) {
+                                None => {
+                                    world.entity_mut(entity).insert(InInventory::new());
+                                }
+                                Some(_) => {
+                                    world.despawn(entity);
+                                }
+                            },
+                            false => {
+                                reduce_count(world, entity, count as u16);
+                                if stack_inventory(world, &kind_id, count as u16).is_none() {
+                                    create_inventory(world, &kind_id, count as u16);
+                                }
+                            }
                         }
                     }
                 }
@@ -308,16 +267,62 @@ impl Screen for MainScreen {
             }
 
             "DROP" => {
-                // return ScreenResult::Push(
-                //     PickItem::builder("PICK")
-                //         .title("Drop which item(s)?")
-                //         // .items()
-                //         .class("blue-back")
-                //         .build(),
-                // );
+                let world = &mut app.world;
+
+                let mut query = world.query_filtered::<(Entity, &Item), With<InInventory>>();
+
+                let items: Vec<(String, Key, u16)> = query
+                    .iter(&world)
+                    .map(|(entity, item)| {
+                        (
+                            format!("{} {}", item.count, item.kind),
+                            entity.into(),
+                            item.count,
+                        )
+                    })
+                    .collect();
+
+                if items.len() > 0 {
+                    return ScreenResult::Push(
+                        MultiChoice::builder("DROP_ITEM")
+                            .title("Drop which item(s)?")
+                            .count("#")
+                            .items(items)
+                            .class("blue-back")
+                            .build(),
+                    );
+                } else {
+                    // TODO - return ScreenResult::Push(MsgBox::builder("MSGBOX").title("Error").prompt("Nothing to drop.").build());
+                    return ScreenResult::Continue;
+                }
             }
             "DROP_ITEM" => {
-                self.ui.find_by_id("TEXT").unwrap().set_text("Nothing");
+                if let Some(MsgData::Map(map)) = value {
+                    for (key, val) in map {
+                        let entity: Entity = key.try_into().unwrap();
+                        let count: i32 = val.try_into().unwrap();
+
+                        let world = &mut app.world;
+                        let (kind_id, has_count) = get_info(world, entity);
+
+                        match has_count == count as u16 {
+                            true => {
+                                console("Removing whole inventory item");
+                                if stack_floor(world, &kind_id, count as u16).is_some() {
+                                    world.despawn(entity);
+                                } else {
+                                    world.entity_mut(entity).remove::<InInventory>();
+                                }
+                            }
+                            false => {
+                                reduce_count(world, entity, count as u16);
+                                if stack_floor(world, &kind_id, count as u16).is_none() {
+                                    create_floor(world, &kind_id, count as u16);
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             _ => return ScreenResult::Continue,
@@ -450,4 +455,84 @@ impl InInventory {
     fn new() -> Self {
         InInventory {}
     }
+}
+
+fn is_stackable(world: &World, kind_id: &str) -> bool {
+    let item_kinds = world.get_resource::<ItemKinds>().unwrap();
+    let kind = item_kinds.get(kind_id).unwrap();
+    kind.stackable
+}
+
+fn stack_floor(world: &mut World, kind_id: &str, count: u16) -> Option<Entity> {
+    if !is_stackable(world, kind_id) {
+        return None;
+    }
+
+    let mut query = world.query_filtered::<(&mut Item, Entity), Without<InInventory>>();
+    match query.iter_mut(world).find(|(item, _)| item.kind == kind_id) {
+        None => None,
+        Some((mut same_kind_item, entity)) => {
+            same_kind_item.count += count;
+            console(format!("Added {} to existing floor item.", count));
+            Some(entity)
+        }
+    }
+}
+
+fn create_floor(world: &mut World, kind_id: &str, count: u16) -> Entity {
+    let mut item = Item::new(kind_id);
+    item.count = count;
+    let entity = world.spawn((item,)).id();
+    console(format!("Created floor entity - {:?}", entity));
+    entity
+}
+
+fn stack_inventory(world: &mut World, kind_id: &str, count: u16) -> Option<Entity> {
+    if !is_stackable(world, kind_id) {
+        return None;
+    }
+
+    let mut query = world.query_filtered::<(&mut Item, Entity), With<InInventory>>();
+    match query.iter_mut(world).find(|(item, _)| item.kind == kind_id) {
+        None => None,
+        Some((mut same_kind_item, entity)) => {
+            same_kind_item.count += count;
+            console(format!("Added {} to existing inventory item.", count));
+            Some(entity)
+        }
+    }
+}
+
+fn create_inventory(world: &mut World, kind_id: &str, count: u16) -> Entity {
+    let mut item = Item::new(kind_id);
+    item.count = count;
+    let entity = world.spawn((item, InInventory::new())).id();
+    console(format!("Created inventory entity - {:?}", entity));
+    entity
+}
+
+fn reduce_count(world: &mut World, entity: Entity, count: u16) -> u16 {
+    let unstack = {
+        let item_kinds = world.get_resource::<ItemKinds>().unwrap();
+        let item = world.entity(entity).get::<Item>().unwrap();
+
+        let kind = item_kinds.get(&item.kind).unwrap();
+        kind.stackable && item.count > count as u16
+    };
+
+    if unstack {
+        let mut entity_obj = world.entity_mut(entity);
+        let mut item = entity_obj.get_mut::<Item>().unwrap();
+        item.count = item.count.saturating_sub(count as u16);
+        console(format!("Delete {} of item - {:?}", count, entity));
+        item.count
+    } else {
+        assert_eq!(count, world.entity(entity).get::<Item>().unwrap().count);
+        0
+    }
+}
+
+fn get_info(world: &World, entity: Entity) -> (String, u16) {
+    let item = world.entity(entity).get::<Item>().unwrap();
+    (item.kind.clone(), item.count)
 }
