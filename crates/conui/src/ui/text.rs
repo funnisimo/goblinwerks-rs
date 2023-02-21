@@ -5,7 +5,7 @@ use conapp::Buffer;
 use conapp::MsgData;
 use std::cmp::min;
 
-pub(super) static TEXT: Text = Text {};
+pub(crate) static TEXT: Text = Text {};
 
 pub struct Text {}
 

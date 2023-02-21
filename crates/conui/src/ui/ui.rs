@@ -1,4 +1,5 @@
 use super::*;
+use crate::css::STYLES;
 use conapp::console;
 use conapp::AppContext;
 use conapp::AppEvent;
@@ -106,11 +107,7 @@ impl UI {
             last_mouse: RefCell::new(Point::new(-1, -1)),
         };
 
-        // now assign all the styles...
-        {
-            let sheet = STYLES.lock().unwrap();
-            ui.root.setup_style(&*sheet);
-        }
+        ui.update_styles();
 
         // now collect focus order
         let mut has_focus = false;
@@ -145,6 +142,12 @@ impl UI {
         }
 
         ui
+    }
+
+    pub fn update_styles(&mut self) {
+        // now assign all the styles...
+        let sheet = STYLES.lock().unwrap();
+        self.root.setup_style(&*sheet);
     }
 
     pub fn root(&self) -> Element {

@@ -1,6 +1,7 @@
 use super::*;
+use crate::ui::Element;
 use conapp::color::get_color_opt;
-use conapp::color::RGBA;
+// use conapp::color::RGBA;
 use conapp::console;
 use conapp::context::LoadError;
 use conapp::AppContext;
@@ -15,12 +16,12 @@ lazy_static! {
     pub static ref STYLES: Mutex<StyleSheet> = Mutex::new(StyleSheet::new());
 }
 
-fn to_color(text: &str) -> Option<RGBA> {
-    match text.parse() {
-        Err(_) => None,
-        Ok(rgba) => Some(rgba),
-    }
-}
+// fn to_color(text: &str) -> Option<RGBA> {
+//     match text.parse() {
+//         Err(_) => None,
+//         Ok(rgba) => Some(rgba),
+//     }
+// }
 
 pub fn setup_stylesheet<F>(func: F)
 where

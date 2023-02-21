@@ -1,11 +1,11 @@
-use std::collections::HashMap;
-
 use conapp::color::init_colors;
 use conapp::*;
+use conui::css::*;
 use conui::{
     screens::{Choice, MultiChoice},
     ui::*,
 };
+use std::collections::HashMap;
 
 fn map_as_text(data: Option<HashMap<Key, MsgData>>) -> String {
     match data {

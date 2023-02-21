@@ -1,5 +1,6 @@
 use super::*;
-use conapp::color::{BLACK, RGBA, WHITE};
+use crate::ui::Element;
+use conapp::color::{get_color_opt, BLACK, RGBA, WHITE};
 use conapp::draw::BorderType;
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -72,33 +73,33 @@ impl Style {
         self.fg = Some(fg);
     }
 
-    // pub fn set_fg_name(&mut self, fg: &str) {
-    //     self.fg = get_color(fg);
-    // }
+    pub fn set_fg_name(&mut self, fg: &str) {
+        self.fg = get_color_opt(fg);
+    }
 
     pub fn set_bg(&mut self, bg: RGBA) {
         self.bg = Some(bg);
     }
 
-    // pub fn set_bg_name(&mut self, bg: &str) {
-    //     self.bg = get_color(bg);
-    // }
+    pub fn set_bg_name(&mut self, bg: &str) {
+        self.bg = get_color_opt(bg);
+    }
 
     pub fn set_border_fg(&mut self, fg: RGBA) {
         self.border_fg = Some(fg);
     }
 
-    // pub fn set_border_fg_name(&mut self, fg: &str) {
-    //     self.border_fg = get_color(fg);
-    // }
+    pub fn set_border_fg_name(&mut self, fg: &str) {
+        self.border_fg = get_color_opt(fg);
+    }
 
     pub fn set_border_bg(&mut self, bg: RGBA) {
         self.border_bg = Some(bg);
     }
 
-    // pub fn set_border_bg_name(&mut self, bg: &str) {
-    //     self.border_bg = get_color(bg);
-    // }
+    pub fn set_border_bg_name(&mut self, bg: &str) {
+        self.border_bg = get_color_opt(bg);
+    }
 
     pub fn set_border(&mut self, border: Option<BorderType>) {
         self.border = border;
@@ -108,33 +109,33 @@ impl Style {
         self.accent_fg = Some(fg);
     }
 
-    // pub fn set_accent_fg_name(&mut self, fg: &str) {
-    //     self.accent_fg = get_color(fg);
-    // }
+    pub fn set_accent_fg_name(&mut self, fg: &str) {
+        self.accent_fg = get_color_opt(fg);
+    }
 
-    // pub fn set(&mut self, key: &str, value: &str) {
-    //     if key == "fg" || key == "color" {
-    //         self.set_fg_name(value);
-    //     } else if key == "bg" || key == "background-color" {
-    //         self.set_bg_name(value);
-    //     } else if key == "border-color" {
-    //         self.set_border_fg_name(value);
-    //     } else if key == "border-block-color" {
-    //         self.set_border_bg_name(value);
-    //     } else if key == "border" {
-    //         match value.parse::<u32>() {
-    //             Err(_) => {}
-    //             Ok(v) => match v {
-    //                 0 => self.border = None,
-    //                 1 => self.border = Some(BorderType::Single),
-    //                 2 => self.border = Some(BorderType::Double),
-    //                 _ => self.border = Some(BorderType::Color),
-    //             },
-    //         }
-    //     } else if key == "accent-color" {
-    //         self.set_accent_fg_name(value);
-    //     }
-    // }
+    pub fn set(&mut self, key: &str, value: &str) {
+        if key == "fg" || key == "color" {
+            self.set_fg_name(value);
+        } else if key == "bg" || key == "background-color" {
+            self.set_bg_name(value);
+        } else if key == "border-color" {
+            self.set_border_fg_name(value);
+        } else if key == "border-block-color" {
+            self.set_border_bg_name(value);
+        } else if key == "border" {
+            match value.parse::<u32>() {
+                Err(_) => {}
+                Ok(v) => match v {
+                    0 => self.border = None,
+                    1 => self.border = Some(BorderType::Single),
+                    2 => self.border = Some(BorderType::Double),
+                    _ => self.border = Some(BorderType::Color),
+                },
+            }
+        } else if key == "accent-color" {
+            self.set_accent_fg_name(value);
+        }
+    }
 }
 
 impl Debug for Style {
@@ -307,6 +308,7 @@ mod test {
     use super::*;
     // use crate::prelude::colors;
     // use crate::prelude::init_colors;
+    use crate::ui::TEXT;
     use conapp::color::{BLACK, RGBA, WHITE};
 
     #[test]

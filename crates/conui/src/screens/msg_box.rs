@@ -72,6 +72,11 @@ impl MsgBoxBuilder {
         self
     }
 
+    pub fn style(mut self, style: MsgBoxStyle) -> Self {
+        self.style = style;
+        self
+    }
+
     pub fn done(mut self, func: Box<MsgBoxResultFn>) -> Self {
         self.done = Some(func);
         self

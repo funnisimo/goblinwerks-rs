@@ -1,4 +1,5 @@
 use super::*;
+use crate::css::{ComputedStyle, Style, StyleSheet};
 use conapp::Point;
 use conapp::{Buffer, KeyEvent, MsgData};
 use std::cell::{Ref, RefCell, RefMut};
@@ -10,27 +11,27 @@ use std::sync::Arc;
 // pub type Callback = dyn FnMut(&mut UI) -> ();
 
 pub struct ElementData {
-    pub(super) id: Option<String>,    // Option?
-    pub(super) tag: &'static dyn Tag, // Option?
-    pub(super) parent: Option<Weak<RefCell<ElementData>>>,
-    pub(super) pos: Option<(i32, i32)>,
-    pub(super) size: Option<(u32, u32)>,
-    pub(super) align: Option<Align>,
-    pub(super) valign: Option<Align>,
-    pub(super) anchor: Option<Align>,
-    pub(super) vanchor: Option<Align>,
-    pub(super) local_style: Option<Arc<Style>>,
-    pub(super) classes: HashSet<String>,
-    pub(super) props: HashSet<String>,
-    pub(super) attrs: HashMap<String, MsgData>,
-    pub(super) pad: [u32; 4],
-    pub(super) margin: [u32; 4],
-    pub(super) text: Option<String>,
-    pub(super) styles: Option<Rc<ComputedStyle>>,
-    pub(super) click: bool,
-    pub(super) value: Option<MsgData>,
-    pub(super) keys: HashMap<KeyEvent, Box<UiActionFn>>,
-    pub(super) activate: Option<Box<UiActionFn>>,
+    pub(crate) id: Option<String>,    // Option?
+    pub(crate) tag: &'static dyn Tag, // Option?
+    pub(crate) parent: Option<Weak<RefCell<ElementData>>>,
+    pub(crate) pos: Option<(i32, i32)>,
+    pub(crate) size: Option<(u32, u32)>,
+    pub(crate) align: Option<Align>,
+    pub(crate) valign: Option<Align>,
+    pub(crate) anchor: Option<Align>,
+    pub(crate) vanchor: Option<Align>,
+    pub(crate) local_style: Option<Arc<Style>>,
+    pub(crate) classes: HashSet<String>,
+    pub(crate) props: HashSet<String>,
+    pub(crate) attrs: HashMap<String, MsgData>,
+    pub(crate) pad: [u32; 4],
+    pub(crate) margin: [u32; 4],
+    pub(crate) text: Option<String>,
+    pub(crate) styles: Option<Rc<ComputedStyle>>,
+    pub(crate) click: bool,
+    pub(crate) value: Option<MsgData>,
+    pub(crate) keys: HashMap<KeyEvent, Box<UiActionFn>>,
+    pub(crate) activate: Option<Box<UiActionFn>>,
 
     pub(crate) children: Vec<Element>,
 }
@@ -167,7 +168,7 @@ impl fmt::Debug for ElementData {
 
 #[derive(Clone)]
 pub struct Element {
-    pub(super) node: Rc<RefCell<ElementData>>,
+    pub(crate) node: Rc<RefCell<ElementData>>,
 }
 
 impl Element {
@@ -215,7 +216,7 @@ impl Element {
             Some(val) => val == id,
         }
     }
-    pub(super) fn set_id(&self, id: &str) {
+    pub(crate) fn set_id(&self, id: &str) {
         self.node.borrow_mut().id = Some(id.to_string());
     }
 
@@ -300,7 +301,7 @@ impl Element {
         }
     }
 
-    pub(super) fn set_outer_pos(&self, x: i32, y: i32) {
+    pub(crate) fn set_outer_pos(&self, x: i32, y: i32) {
         let (x1, y1) = {
             let node = self.node.borrow();
             let pad = &node.pad;
@@ -315,7 +316,7 @@ impl Element {
         self.node.borrow().align
     }
 
-    pub(super) fn set_align(&self, val: Align) {
+    pub(crate) fn set_align(&self, val: Align) {
         self.node.borrow_mut().align = Some(val);
     }
 
@@ -323,7 +324,7 @@ impl Element {
         self.node.borrow().valign
     }
 
-    pub(super) fn set_valign(&self, val: Align) {
+    pub(crate) fn set_valign(&self, val: Align) {
         self.node.borrow_mut().valign = Some(val);
     }
 
@@ -331,7 +332,7 @@ impl Element {
         self.node.borrow().anchor
     }
 
-    pub(super) fn set_anchor(&self, val: Align) {
+    pub(crate) fn set_anchor(&self, val: Align) {
         self.node.borrow_mut().anchor = Some(val);
     }
 
@@ -339,7 +340,7 @@ impl Element {
         self.node.borrow().vanchor
     }
 
-    pub(super) fn set_vanchor(&self, val: Align) {
+    pub(crate) fn set_vanchor(&self, val: Align) {
         self.node.borrow_mut().vanchor = Some(val);
     }
 
@@ -526,7 +527,7 @@ impl Element {
         None
     }
 
-    pub(super) fn update_hover(&self, point: Point) -> Option<Element> {
+    pub(crate) fn update_hover(&self, point: Point) -> Option<Element> {
         let mut res: Option<Element> = None;
         for child in self.borrow().children.iter() {
             if let Some(el) = child.update_hover(point) {
@@ -544,7 +545,7 @@ impl Element {
         res
     }
 
-    pub(super) fn activate(&self) -> Option<Ref<Box<UiActionFn>>> {
+    pub(crate) fn activate(&self) -> Option<Ref<Box<UiActionFn>>> {
         let b = self.node.borrow();
         match b.activate {
             None => None,
@@ -552,30 +553,30 @@ impl Element {
         }
     }
 
-    pub(super) fn set_activate(&self, func: Box<UiActionFn>) {
+    pub(crate) fn set_activate(&self, func: Box<UiActionFn>) {
         self.node.borrow_mut().activate = Some(func);
     }
 
-    pub(super) fn handle_click(&self, root: &Element, point: Point) -> Option<UiAction> {
+    pub(crate) fn handle_click(&self, root: &Element, point: Point) -> Option<UiAction> {
         let tag = self.node.borrow().tag.clone();
         tag.handle_click(root, self, point)
     }
 
-    pub(super) fn handle_activate(&self, root: &Element) -> Option<UiAction> {
+    pub(crate) fn handle_activate(&self, root: &Element) -> Option<UiAction> {
         let tag = self.node.borrow().tag.clone();
         tag.handle_activate(root, self)
     }
 
-    pub(super) fn bind_key<K: Into<KeyEvent>>(&self, key: K, action: Box<UiActionFn>) {
+    pub(crate) fn bind_key<K: Into<KeyEvent>>(&self, key: K, action: Box<UiActionFn>) {
         self.node.borrow_mut().keys.insert(key.into(), action);
     }
 
-    pub(super) fn handle_key(&self, root: &Element, key: &KeyEvent) -> Option<UiAction> {
+    pub(crate) fn handle_key(&self, root: &Element, key: &KeyEvent) -> Option<UiAction> {
         let tag = self.node.borrow().tag.clone();
         tag.handle_key(root, self, key)
     }
 
-    pub(super) fn setup_style(&self, styles: &StyleSheet) {
+    pub(crate) fn setup_style(&self, styles: &StyleSheet) {
         let computed = styles.get_computed_style(self);
         self.borrow_mut().styles = Some(Rc::new(computed));
 
@@ -588,7 +589,7 @@ impl Element {
         self.borrow().styles.as_ref().unwrap().clone()
     }
 
-    pub(super) fn layout_children(&self) {
+    pub(crate) fn layout_children(&self) {
         let tag = self.node.borrow().tag;
         tag.layout_children(self);
     }
@@ -741,7 +742,7 @@ impl fmt::Display for Element {
     }
 }
 
-pub(super) fn layout_children(el: &Element) {
+pub(crate) fn layout_children(el: &Element) {
     let mut parent_pos = el.pos().unwrap();
     // let size = el.size().unwrap();
 
