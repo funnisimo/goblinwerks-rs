@@ -129,11 +129,16 @@ impl MsgBox {
                 Span::new(frame, |span| {
                     span.pad_top(1).anchor(Align::Max).spacing(2);
 
+                    let (cancel_text, ok_text) = match config.style {
+                        MsgBoxStyle::YesNo => ("[  No  ]", "[  Yes ]"),
+                        _ => ("[Cancel]", "[  Ok  ]"),
+                    };
+
                     if config.style != MsgBoxStyle::Ok {
                         Button::new(span, |cancel| {
                             cancel
                                 .id("CANCEL")
-                                .text("[Cancel]")
+                                .text(cancel_text)
                                 .width(8)
                                 .class("msg_box")
                                 .class("cancel")
@@ -143,7 +148,7 @@ impl MsgBox {
 
                     Button::new(span, |ok| {
                         ok.id("OK")
-                            .text("[  Ok  ]")
+                            .text(ok_text)
                             .width(8)
                             .class("msg_box")
                             .class("ok")
