@@ -351,11 +351,11 @@ impl Tag for RadioItem {
         console(format!("layout list item children - {}", element_path(el)));
         for child in el.borrow().children.iter() {
             console(format!("- {:?} @ {:?}", element_path(child), child_pos));
-            child.set_outer_pos(child_pos.0, child_pos.1);
+            child.set_outer_pos(child_pos.0, child_pos.1); // calls layout_children
             let (_, child_height) = child.outer_size();
             child_pos.1 += child_height as i32;
-            let tag = child.node.borrow().tag;
-            tag.layout_children(&child);
+            // let tag = child.node.borrow().tag;
+            // tag.layout_children(&child);
         }
     }
 
@@ -504,7 +504,7 @@ mod test {
         });
 
         let list = ui.root().first_child().unwrap();
-        assert_eq!(list.tag(), "list");
+        assert_eq!(list.tag(), "radio_group");
         assert_eq!(list.child_count(), 2);
     }
 
@@ -525,15 +525,15 @@ mod test {
         ui.dump();
 
         let list = ui.root().first_child().unwrap();
-        assert_eq!(list.tag(), "list");
+        assert_eq!(list.tag(), "radio_group");
         assert_eq!(list.child_count(), 2);
         assert_eq!(list.margin(), [2, 0, 0, 0]);
 
         let mut buffer = Buffer::new(80, 50);
         ui.root().draw(&mut buffer);
 
-        assert_eq!(extract_line(&buffer, 0, 0, 12), "\0\0- Test A\0\0");
-        assert_eq!(extract_line(&buffer, 0, 1, 12), "\0\0- Test B\0\0");
+        assert_eq!(extract_line(&buffer, 0, 0, 12), "\0\0-\0Test A\0\0");
+        assert_eq!(extract_line(&buffer, 0, 1, 12), "\0\0-\0Test B\0\0");
     }
 
     #[test]
@@ -553,7 +553,7 @@ mod test {
         });
 
         let list = ui.root().first_child().unwrap();
-        assert_eq!(list.tag(), "list");
+        assert_eq!(list.tag(), "radio_group");
         assert_eq!(list.child_count(), 3);
         assert_eq!(list.size().unwrap(), (10, 8));
     }

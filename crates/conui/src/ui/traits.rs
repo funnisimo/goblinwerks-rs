@@ -38,7 +38,8 @@ pub fn inner_size_hint(el: &Element) -> Option<(u32, u32)> {
         };
 
         console(format!(
-            "- inner_size_hint :: pos={:?}, root_size={:?} => max_size={:?} => size={:?}, result={:?}",
+            "- inner_size_hint({}) :: pos={:?}, root_size={:?} => max_size={:?} => size={:?}, result={:?}",
+            element_path(el),
             pos,
             base_size,
             max_size,
@@ -65,7 +66,8 @@ pub fn inner_size_hint(el: &Element) -> Option<(u32, u32)> {
     };
 
     console(format!(
-        "- inner_size_hint :: NO_POS, inner_size={:?} => result={:?}",
+        "- inner_size_hint({}) :: NO_POS, inner_size={:?} => result={:?}",
+        element_path(el),
         el.inner_size(),
         res
     ));

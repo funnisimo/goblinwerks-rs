@@ -1,6 +1,6 @@
 use super::*;
 use crate::css::{ComputedStyle, Style, StyleSheet};
-use conapp::Point;
+use conapp::{console, Point};
 use conapp::{Buffer, KeyEvent, MsgData};
 use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashMap;
@@ -308,8 +308,14 @@ impl Element {
             (x + pad[0] as i32, y + pad[1] as i32)
         };
         self.node.borrow_mut().pos = Some((x1, y1));
-        let tag = self.node.borrow().tag;
-        tag.layout_children(self);
+        console(format!(
+            "- set_outer_pos: {} @ {},{}",
+            element_path(self),
+            x1,
+            y1
+        ));
+
+        self.layout_children();
     }
 
     pub fn align(&self) -> Option<Align> {
@@ -743,6 +749,8 @@ impl fmt::Display for Element {
 }
 
 pub(crate) fn layout_children(el: &Element) {
+    console(format!("layout_children: {}", element_path(el)));
+
     let mut parent_pos = el.pos().unwrap();
     // let size = el.size().unwrap();
 
@@ -751,12 +759,13 @@ pub(crate) fn layout_children(el: &Element) {
     parent_pos.1 += margin[1] as i32;
 
     for child in el.borrow().children.iter() {
-        child.set_outer_pos(parent_pos.0, parent_pos.1);
+        child.set_outer_pos(parent_pos.0, parent_pos.1); // calls layout_children
         let (_, child_height) = child.outer_size();
         parent_pos.1 += child_height as i32;
-        let tag = child.node.borrow().tag;
-        tag.layout_children(&child);
+        // child.layout_children();
     }
+
+    console(format!(" - done: {}", element_path(el)));
 }
 
 pub fn element_path(el: &Element) -> String {
@@ -786,6 +795,26 @@ fn _dump_element(el: &Element, indent: usize) {
 
     for child in el.children() {
         _dump_element(&child, indent + 2);
+    }
+}
+
+pub(super) fn adjust_child_spacing(el: &Element) {
+    if let Some(spacing) = el.attr("spacing") {
+        console("adjusting spacing");
+        let space: u32 = spacing.try_into().unwrap_or(0);
+        let b_el = el.borrow();
+        let mut iter = b_el.children.iter();
+        if let Some(prior) = iter.next() {
+            let mut prior_pad_bottom = prior.pad()[3];
+            for ch in iter {
+                let [_, pad_top, _, pad_bottom] = ch.pad();
+                if prior_pad_bottom + pad_top < space {
+                    console("- adding pad_top");
+                    ch.set_pad_top(space - prior_pad_bottom);
+                }
+                prior_pad_bottom = pad_bottom;
+            }
+        }
     }
 }
 

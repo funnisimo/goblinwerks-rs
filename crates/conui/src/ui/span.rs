@@ -10,7 +10,7 @@ impl Span {
         F: FnOnce(&SpanBuilder) -> (),
     {
         let el = Element::new(&SPAN);
-        el.set_attr("spacing", 1.into());
+        el.set_attr("spacing", 0.into());
         let mut span = SpanBuilder { el: el.clone() };
 
         parent.add_child(el.clone());

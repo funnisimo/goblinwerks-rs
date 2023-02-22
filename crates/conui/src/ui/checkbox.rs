@@ -502,7 +502,7 @@ mod test {
         });
 
         let checkbox = ui.find_by_id("HELLO").unwrap();
-        assert_eq!(checkbox.text().as_ref().unwrap(), "- "); // Not checked
+        assert_eq!(checkbox.text().as_ref().unwrap(), "-"); // Not checked
         assert!(checkbox.pos().is_some());
         assert_eq!(checkbox.size().unwrap(), (20, 2));
         assert!(checkbox.contains(Point::new(0, 0)));
@@ -525,7 +525,7 @@ mod test {
         });
 
         let checkbox = ui.find_by_id("HELLO").unwrap();
-        assert_eq!(checkbox.text().as_ref().unwrap(), "- "); // Not checked
+        assert_eq!(checkbox.text().as_ref().unwrap(), "-"); // Not checked
         assert!(checkbox.pos().is_some());
         assert_eq!(checkbox.size().unwrap(), (15, 5));
 
@@ -544,13 +544,13 @@ mod test {
                 checkbox
                     .id("HELLO")
                     .text("Number Check.")
-                    .count("# ", 10)
+                    .count("#", 10)
                     .width(15);
             });
         });
 
         let checkbox = ui.find_by_id("HELLO").unwrap();
-        assert_eq!(checkbox.text().as_ref().unwrap(), "- "); // Not checked
+        assert_eq!(checkbox.text().as_ref().unwrap(), "-"); // Not checked
         assert_eq!(checkbox.value(), None);
 
         // On
@@ -558,35 +558,35 @@ mod test {
             ui.handle_key(&VirtualKeyCode::Space.into()),
             Some(UiAction::Message("HELLO".to_owned(), Some(10.into())))
         );
-        assert_eq!(checkbox.text().as_ref().unwrap(), "X ");
+        assert_eq!(checkbox.text().as_ref().unwrap(), "X");
 
         // Off
         assert_eq!(
             ui.handle_key(&VirtualKeyCode::Space.into()),
             Some(UiAction::Message("HELLO".to_owned(), None))
         );
-        assert_eq!(checkbox.text().as_ref().unwrap(), "- ");
+        assert_eq!(checkbox.text().as_ref().unwrap(), "-");
 
         // 3
         assert_eq!(
             ui.handle_key(&VirtualKeyCode::Key3.into()),
             Some(UiAction::Message("HELLO".to_owned(), Some(3.into())))
         );
-        assert_eq!(checkbox.text().as_ref().unwrap(), "3 ");
+        assert_eq!(checkbox.text().as_ref().unwrap(), "3");
 
         // 4
         assert_eq!(
             ui.handle_key(&VirtualKeyCode::Key4.into()),
             Some(UiAction::Message("HELLO".to_owned(), Some(4.into())))
         );
-        assert_eq!(checkbox.text().as_ref().unwrap(), "4 ");
+        assert_eq!(checkbox.text().as_ref().unwrap(), "4");
 
         // Off
         assert_eq!(
             ui.handle_key(&VirtualKeyCode::Space.into()),
             Some(UiAction::Message("HELLO".to_owned(), None))
         );
-        assert_eq!(checkbox.text().as_ref().unwrap(), "- ");
+        assert_eq!(checkbox.text().as_ref().unwrap(), "-");
     }
 
     #[test]
@@ -596,14 +596,14 @@ mod test {
                 checkbox
                     .id("HELLO")
                     .text("Number Check.")
-                    .glyphs("-- ", "XX ")
-                    .count("## ", 20)
+                    .glyphs("--", "XX")
+                    .count("##", 20)
                     .width(15);
             });
         });
 
         let checkbox = ui.find_by_id("HELLO").unwrap();
-        assert_eq!(checkbox.text().as_ref().unwrap(), "-- "); // Not checked
+        assert_eq!(checkbox.text().as_ref().unwrap(), "--"); // Not checked
         assert_eq!(checkbox.value(), None);
 
         // On
@@ -611,42 +611,42 @@ mod test {
             ui.handle_key(&VirtualKeyCode::Space.into()),
             Some(UiAction::Message("HELLO".to_owned(), Some(20.into())))
         );
-        assert_eq!(checkbox.text().as_ref().unwrap(), "XX ");
+        assert_eq!(checkbox.text().as_ref().unwrap(), "XX");
 
         // Off
         assert_eq!(
             ui.handle_key(&VirtualKeyCode::Space.into()),
             Some(UiAction::Message("HELLO".to_owned(), None))
         );
-        assert_eq!(checkbox.text().as_ref().unwrap(), "-- ");
+        assert_eq!(checkbox.text().as_ref().unwrap(), "--");
 
         // 3
         assert_eq!(
             ui.handle_key(&VirtualKeyCode::Key3.into()),
             Some(UiAction::Message("HELLO".to_owned(), Some(3.into())))
         );
-        assert_eq!(checkbox.text().as_ref().unwrap(), " 3 ");
+        assert_eq!(checkbox.text().as_ref().unwrap(), " 3");
 
         // 1
         assert_eq!(
             ui.handle_key(&VirtualKeyCode::Key1.into()),
             Some(UiAction::Message("HELLO".to_owned(), Some(1.into())))
         );
-        assert_eq!(checkbox.text().as_ref().unwrap(), " 1 ");
+        assert_eq!(checkbox.text().as_ref().unwrap(), " 1");
 
         // 2
         assert_eq!(
             ui.handle_key(&VirtualKeyCode::Key2.into()),
             Some(UiAction::Message("HELLO".to_owned(), Some(12.into())))
         );
-        assert_eq!(checkbox.text().as_ref().unwrap(), "12 ");
+        assert_eq!(checkbox.text().as_ref().unwrap(), "12");
 
         // Off
         assert_eq!(
             ui.handle_key(&VirtualKeyCode::Space.into()),
             Some(UiAction::Message("HELLO".to_owned(), None))
         );
-        assert_eq!(checkbox.text().as_ref().unwrap(), "-- ");
+        assert_eq!(checkbox.text().as_ref().unwrap(), "--");
     }
 
     #[test]
@@ -656,13 +656,13 @@ mod test {
                 checkbox
                     .id("HELLO")
                     .text("Number Check.")
-                    .count("# ", 20)
+                    .count("#", 20)
                     .width(15);
             });
         });
 
         let checkbox = ui.find_by_id("HELLO").unwrap();
-        assert_eq!(checkbox.text().as_ref().unwrap(), "- "); // Not checked
+        assert_eq!(checkbox.text().as_ref().unwrap(), "-"); // Not checked
         assert_eq!(checkbox.value(), None);
 
         // On
@@ -670,42 +670,42 @@ mod test {
             ui.handle_key(&VirtualKeyCode::Space.into()),
             Some(UiAction::Message("HELLO".to_owned(), Some(20.into())))
         );
-        assert_eq!(checkbox.text().as_ref().unwrap(), "X ");
+        assert_eq!(checkbox.text().as_ref().unwrap(), "X");
 
         // Off
         assert_eq!(
             ui.handle_key(&VirtualKeyCode::Space.into()),
             Some(UiAction::Message("HELLO".to_owned(), None))
         );
-        assert_eq!(checkbox.text().as_ref().unwrap(), "- ");
+        assert_eq!(checkbox.text().as_ref().unwrap(), "-");
 
         // 3
         assert_eq!(
             ui.handle_key(&VirtualKeyCode::Key3.into()),
             Some(UiAction::Message("HELLO".to_owned(), Some(3.into())))
         );
-        assert_eq!(checkbox.text().as_ref().unwrap(), "3 ");
+        assert_eq!(checkbox.text().as_ref().unwrap(), "3");
 
         // 1
         assert_eq!(
             ui.handle_key(&VirtualKeyCode::Key1.into()),
             Some(UiAction::Message("HELLO".to_owned(), Some(1.into())))
         );
-        assert_eq!(checkbox.text().as_ref().unwrap(), "1 ");
+        assert_eq!(checkbox.text().as_ref().unwrap(), "1");
 
         // 2
         assert_eq!(
             ui.handle_key(&VirtualKeyCode::Key2.into()),
             Some(UiAction::Message("HELLO".to_owned(), Some(12.into())))
         );
-        assert_eq!(checkbox.text().as_ref().unwrap(), "# ");
+        assert_eq!(checkbox.text().as_ref().unwrap(), "#");
 
         // Off
         assert_eq!(
             ui.handle_key(&VirtualKeyCode::Space.into()),
             Some(UiAction::Message("HELLO".to_owned(), None))
         );
-        assert_eq!(checkbox.text().as_ref().unwrap(), "- ");
+        assert_eq!(checkbox.text().as_ref().unwrap(), "-");
     }
 
     #[test]

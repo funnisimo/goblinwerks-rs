@@ -20,27 +20,30 @@ impl List {
 
         init(&mut builder);
 
-        if let Some(spacing) = el.attr("spacing") {
-            console("adjusting spacing");
-            let space: u32 = spacing.try_into().unwrap();
-            let b_el = el.borrow();
-            let mut iter = b_el.children.iter();
-            if let Some(prior) = iter.next() {
-                let mut prior_pad_bottom = prior.pad()[3];
-                for ch in iter {
-                    let [_, pad_top, _, pad_bottom] = ch.pad();
-                    if prior_pad_bottom + pad_top < space {
-                        console("- adding pad_top");
-                        ch.set_pad_top(space - prior_pad_bottom);
-                    }
-                    prior_pad_bottom = pad_bottom;
-                }
-            }
+        adjust_child_spacing(&el);
+
+        for ch in el.children() {
+            console(format!(
+                " - {} - {:?} ? {:?}",
+                element_path(&ch),
+                ch.size().unwrap(),
+                ch.outer_size()
+            ));
         }
 
         // finish list
         let children_size = el.children_size();
         console(format!("children - size = {:?}", children_size));
+
+        for ch in el.children() {
+            console(format!(
+                " - {} - {:?} ? {:?}",
+                element_path(&ch),
+                ch.size().unwrap(),
+                ch.outer_size()
+            ));
+        }
+
         match el.size().unwrap_or((0, 0)) {
             (0, 0) => {
                 el.set_size(children_size.0, children_size.1);
@@ -249,7 +252,8 @@ impl ListItem {
         );
 
         console(format!(
-            "Finish list Item - using={:?}, inner_size={:?}, inner_size_hint={:?}",
+            "Finish list Item({}) - inner_size={:?}, node.inner_size={:?}, inner_size_hint={:?}",
+            element_path(&node),
             inner_size,
             node.inner_size(),
             inner_size_hint(&parent.node)
@@ -257,6 +261,12 @@ impl ListItem {
         text_set_size(&label, Some(inner_size));
         let child_size = node.children_size();
         node.set_size(child_size.0 + prefix_size, child_size.1);
+
+        console(format!(
+            " - list Item({}) - actual size={:?}",
+            element_path(&node),
+            node.size().unwrap()
+        ));
 
         node.set_text(&off_text);
     }
@@ -295,11 +305,11 @@ impl Tag for ListItem {
         console(format!("layout list item children - {}", element_path(el)));
         for child in el.borrow().children.iter() {
             console(format!("- {:?} @ {:?}", element_path(child), child_pos));
-            child.set_outer_pos(child_pos.0, child_pos.1);
+            child.set_outer_pos(child_pos.0, child_pos.1); // calls layout_children
             let (_, child_height) = child.outer_size();
             child_pos.1 += child_height as i32;
-            let tag = child.node.borrow().tag;
-            tag.layout_children(&child);
+            // let tag = child.node.borrow().tag;
+            // tag.layout_children(&child);
         }
     }
 
@@ -436,8 +446,8 @@ mod test {
         let mut buffer = Buffer::new(80, 50);
         ui.root().draw(&mut buffer);
 
-        assert_eq!(extract_line(&buffer, 0, 0, 12), "\0\0- Test A\0\0");
-        assert_eq!(extract_line(&buffer, 0, 1, 12), "\0\0- Test B\0\0");
+        assert_eq!(extract_line(&buffer, 0, 0, 12), "\0\0-\0Test A\0\0");
+        assert_eq!(extract_line(&buffer, 0, 1, 12), "\0\0-\0Test B\0\0");
     }
 
     #[test]
@@ -490,20 +500,33 @@ mod test {
             });
         });
 
-        let list = ui.root().first_child().unwrap();
-        assert_eq!(list.tag(), "list");
-        assert_eq!(list.child_count(), 3); // 3 items
-        assert_eq!(list.size().unwrap(), (10, 8));
+        let mut buffer = Buffer::new(80, 50);
+        ui.draw(&mut buffer);
+
+        assert_eq!(extract_line(&buffer, 0, 0, 12), "-\0Test A\0\0\0\0");
+        assert_eq!(extract_line(&buffer, 0, 1, 12), "\0\0\0\0\0\0\0\0\0\0\0\0");
+        assert_eq!(extract_line(&buffer, 0, 2, 12), "-\0Test B\0\0\0\0");
+        assert_eq!(extract_line(&buffer, 0, 3, 12), "\0\0-\0Apple\0\0\0");
+        assert_eq!(extract_line(&buffer, 0, 4, 12), "\0\0-\0Banana\0\0");
+        assert_eq!(extract_line(&buffer, 0, 5, 12), "\0\0-\0Carrot\0\0");
+        assert_eq!(extract_line(&buffer, 0, 6, 12), "\0\0\0\0\0\0\0\0\0\0\0\0");
+        assert_eq!(extract_line(&buffer, 0, 7, 12), "-\0Test C\0\0\0\0");
+
+        let list = ui.find_by_id("MAIN").unwrap();
 
         let item_a = list.first_child().unwrap();
         assert_eq!(item_a.pad(), [0, 0, 0, 0]);
         assert_eq!(item_a.pos().unwrap(), (0, 0));
+        assert_eq!(item_a.outer_size(), (8, 1));
+        assert_eq!(item_a.size().unwrap(), (8, 1));
 
         let item_b = list.children().skip(1).next().unwrap();
         let sublist = item_b.last_child().unwrap();
         assert_eq!(sublist.child_count(), 3); // 3 items
+        assert_eq!(sublist.outer_size(), (8, 3)); // 3 items
         assert_eq!(item_b.size().unwrap(), (10, 4));
-        assert_eq!(item_b.outer_size(), (10, 5));
+        assert_eq!(item_b.outer_size(), (10, 5)); // padded on top
+        assert_eq!(item_b.size().unwrap(), (10, 4));
         assert_eq!(item_b.pad(), [0, 1, 0, 0]);
         assert_eq!(item_b.pos().unwrap(), (0, 2));
 
@@ -511,18 +534,12 @@ mod test {
         assert_eq!(item_c.child_count(), 1); // label + list
         assert_eq!(item_c.pad(), [0, 1, 0, 0]);
         assert_eq!(item_c.pos().unwrap(), (0, 7));
+        assert_eq!(item_c.outer_size(), (8, 2)); // padded on top
+        assert_eq!(item_c.size().unwrap(), (8, 1)); // padded on top
 
-        let mut buffer = Buffer::new(80, 50);
-        ui.draw(&mut buffer);
-
-        assert_eq!(extract_line(&buffer, 0, 0, 12), "- Test A\0\0\0\0");
-        assert_eq!(extract_line(&buffer, 0, 1, 12), "\0\0\0\0\0\0\0\0\0\0\0\0");
-        assert_eq!(extract_line(&buffer, 0, 2, 12), "- Test B\0\0\0\0");
-        assert_eq!(extract_line(&buffer, 0, 3, 12), "\0\0- Apple\0\0\0");
-        assert_eq!(extract_line(&buffer, 0, 4, 12), "\0\0- Banana\0\0");
-        assert_eq!(extract_line(&buffer, 0, 5, 12), "\0\0- Carrot\0\0");
-        assert_eq!(extract_line(&buffer, 0, 6, 12), "\0\0\0\0\0\0\0\0\0\0\0\0");
-        assert_eq!(extract_line(&buffer, 0, 7, 12), "- Test C\0\0\0\0");
+        assert_eq!(list.tag(), "list");
+        assert_eq!(list.child_count(), 3); // 3 items
+        assert_eq!(list.size().unwrap(), (10, 8));
     }
 
     #[test]

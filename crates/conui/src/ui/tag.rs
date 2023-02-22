@@ -1,5 +1,5 @@
 use super::*;
-use conapp::Point;
+use conapp::{console, Point};
 use conapp::{Buffer, KeyEvent, MsgData};
 
 pub trait Tag {
@@ -10,16 +10,22 @@ pub trait Tag {
     }
 
     fn children_size(&self, el: &Element) -> (u32, u32) {
-        let space: u32 = match el.attr("spacing") {
-            None => 0,
-            Some(data) => (data.try_into().unwrap_or(0_i32)) as u32,
-        };
+        // let space: u32 = match el.attr("spacing") {
+        //     None => 0,
+        //     Some(data) => data.try_into().unwrap_or(0),
+        // };
 
-        let mut size = el.borrow().children.iter().fold((0, 0), |out, n| {
+        console(format!("children_size: {}", element_path(el)));
+        // let space = 0;
+
+        let size = el.borrow().children.iter().fold((0, 0), |out, n| {
             let size = n.outer_size();
-            (max(out.0, size.0), size.1 + out.1 + space)
+            console(format!("-- {:?}", size));
+            (max(out.0, size.0), size.1 + out.1 /* + space */)
         });
-        size.1 = size.1.saturating_sub(space); // don't put space after last item
+        // size.1 = size.1.saturating_sub(space); // don't put space after last item
+
+        console(format!("- {:?}", size));
         size
     }
 

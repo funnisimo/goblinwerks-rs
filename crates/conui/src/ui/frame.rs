@@ -19,6 +19,9 @@ impl Frame {
 
         init(&mut frame);
 
+        // adjust spacing of child elements
+        adjust_child_spacing(&frame.node);
+
         let mut size = frame.node.size().unwrap_or((0, 0));
         let child_size = frame.node.children_size(); // includes spacing
         let margin = frame.node.margin();
@@ -37,10 +40,11 @@ impl Frame {
 
         frame.node.set_size(size.0, size.1);
         println!(
-            "- frame: size={:?}, full_size={:?}, inner_size={:?}, path={}",
+            "- frame: size={:?}, outer_size={:?}, inner_size={:?}, child_size={:?}, path={}",
             frame.node.size().unwrap(),
             frame.node.outer_size(),
             frame.node.inner_size(),
+            child_size,
             element_path(&frame.node)
         );
     }
@@ -204,7 +208,7 @@ pub(super) fn layout_frame(el: &Element) {
         );
         child.set_outer_pos(pos.0, pos.1);
         y += child_size.1 as i32;
-        y += space;
+        // y += space;
     }
 }
 
@@ -261,5 +265,34 @@ mod test {
         assert_eq!(frame.size().unwrap(), (30, 5)); // 28 is content width + 2 for border, 2 for border + 2 for margin + 1 for children
         assert_eq!(frame.inner_size().unwrap(), (26, 1));
         assert_eq!(text.size().unwrap(), (13, 1)); // 28 is width - 2 for margin, 1 line
+    }
+
+    #[test]
+    fn frame_height() {
+        let ui = page((80, 50), "DEFAULT", |body| {
+            Frame::new(body, |frame| {
+                frame
+                    .margin(1)
+                    .title("Test")
+                    .pos(5, 25)
+                    .id("FRAME")
+                    .spacing(1);
+
+                Text::new(frame, |text| {
+                    text.id("A").text("This is text.");
+                });
+
+                Text::new(frame, |text| {
+                    text.id("B").text("This is text.");
+                });
+            });
+        });
+
+        let body = ui.root();
+        let frame = ui.find_by_id("FRAME").unwrap();
+
+        assert_eq!(body.size().unwrap(), (80, 50));
+        assert_eq!(frame.size().unwrap(), (17, 7)); // 13 is content width + 2 for border + 2 for margin, 2 for border + 2 for margin + 3 for children
+        assert_eq!(frame.inner_size().unwrap(), (13, 3));
     }
 }

@@ -17,11 +17,13 @@ impl Body {
         // body_el.set_outer_pos(0, 0);
         body_el.set_id("body");
 
-        let mut body = BodyBuilder { node: body_el };
+        let mut body = BodyBuilder {
+            node: body_el.clone(),
+        };
         init(&mut body);
 
-        body.node.layout_children();
-        body.node
+        body_el.layout_children();
+        body_el
     }
 }
 
@@ -125,11 +127,10 @@ pub(super) fn body_layout_children(body: &Element) {
                 y,
             );
             println!(" - child :  pos={:?}, full_size={:?}", pos, child_size);
-            child.set_outer_pos(pos.0, pos.1);
+            child.set_outer_pos(pos.0, pos.1); // calls layout_children
             y += child_size.1 as i32;
         } else {
-            let tag = child.borrow().tag;
-            tag.layout_children(child);
+            child.layout_children();
         }
     }
 }
