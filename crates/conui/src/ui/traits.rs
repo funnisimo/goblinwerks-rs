@@ -1,6 +1,6 @@
 use super::*;
 use crate::css::Style;
-use conapp::{color::RGBA, console, KeyEvent};
+use conapp::{console, KeyEvent};
 use std::sync::Arc;
 
 pub trait ParentNode {
@@ -255,36 +255,36 @@ pub trait Keyed {
 pub trait Styled {
     fn el(&self) -> &Element;
 
-    fn fg(&self, fg: RGBA) -> &Self {
+    fn fg(&self, fg: &str) -> &Self {
         let mut el = self.el().borrow_mut();
         match el.local_style {
             None => {
                 let mut style = Style::new("$".into());
-                style.set_fg(fg);
+                style.set_fg_name(fg);
                 el.local_style = Some(Arc::new(style));
             }
             Some(ref mut arc_style) => {
                 let style = Arc::make_mut(arc_style);
-                style.set_fg(fg);
+                style.set_fg_name(fg);
             }
         }
 
         self
     }
 
-    fn bg(&self, bg: RGBA) -> &Self {
+    fn bg(&self, bg: &str) -> &Self {
         let mut el = self.el().borrow_mut();
         match el.local_style {
             None => {
                 let mut style = Style::new("$".into());
-                style.set_bg(bg);
+                style.set_bg_name(bg);
                 el.local_style = Some(Arc::new(style));
 
                 console(format!("- Set Local BG - {:?}", el.local_style));
             }
             Some(ref mut arc_style) => {
                 let style = Arc::make_mut(arc_style);
-                style.set_bg(bg);
+                style.set_bg_name(bg);
             }
         }
 
