@@ -1,4 +1,4 @@
-use conapp::simple::subcell_console;
+use conapp::console::subcell_console;
 use conapp::*;
 use std::rc::Rc;
 

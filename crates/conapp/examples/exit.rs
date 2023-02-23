@@ -36,7 +36,7 @@ impl Screen for MyRoguelike {
     ) -> ScreenResult {
         match value {
             Some(MsgData::Boolean(true)) => {
-                console("You chose to quit.");
+                log("You chose to quit.");
                 ScreenResult::Quit
             }
             _ => ScreenResult::Continue,

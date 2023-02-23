@@ -111,7 +111,7 @@ impl Screen for MainScreen {
         id: String,
         _value: Option<MsgData>,
     ) -> ScreenResult {
-        console(format!("message - {}", id));
+        log(format!("message - {}", id));
         match id.as_str() {
             "LEFT" | "RIGHT" | "CENTER" => {
                 self.ui

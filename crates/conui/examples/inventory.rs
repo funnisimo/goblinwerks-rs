@@ -1,4 +1,5 @@
 use conapp::ecs::prelude::*;
+use conapp::ecs::schedule::Schedule;
 use conapp::*;
 use conui::css::*;
 use conui::screens::{Choice, MultiChoice};
@@ -7,6 +8,7 @@ use std::collections::HashMap;
 
 struct MainScreen {
     ui: UI,
+    schedule: Schedule,
 }
 
 impl MainScreen {
@@ -95,11 +97,16 @@ impl MainScreen {
 
         ui.dump();
 
-        Box::new(MainScreen { ui })
+        Box::new(MainScreen {
+            ui,
+            schedule: Schedule::default(),
+        })
     }
 }
 
 impl Screen for MainScreen {
+    fn setup(&mut self, _app: &mut AppContext) {}
+
     fn input(&mut self, app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
         if let Some(result) = self.ui.input(app, ev) {
             println!("- input={:?}", result);
@@ -191,7 +198,7 @@ impl Screen for MainScreen {
                         let world = &mut app.world;
                         if reduce_count(world, entity, count as u16) == 0 {
                             world.despawn(entity);
-                            console(format!("Delete item - {:?}", entity));
+                            log(format!("Delete item - {:?}", entity));
                         }
                     }
                 }
@@ -308,7 +315,7 @@ impl Screen for MainScreen {
 
                         match has_count == count as u16 {
                             true => {
-                                console("Removing whole inventory item");
+                                log("Removing whole inventory item");
                                 if stack_floor(world, &kind_id, count as u16).is_some() {
                                     world.despawn(entity);
                                 } else {
@@ -356,13 +363,23 @@ impl Screen for MainScreen {
             false => floor.set_text(&ids.join("\n")),
         }
 
-        console("Update UI");
+        log("Update UI");
+        ScreenResult::Continue
+    }
+
+    fn update(&mut self, app: &mut AppContext, _frame_time_ms: f64) -> ScreenResult {
+        let world = &mut app.world;
+        self.schedule.run_once(world);
+        world.clear_trackers();
+
         ScreenResult::Continue
     }
 
     fn render(&mut self, app: &mut AppContext) {
         self.ui.render(app);
     }
+
+    fn teardown(&mut self, _app: &mut AppContext) {}
 }
 
 fn main() {
@@ -373,7 +390,7 @@ fn main() {
         .build();
 
     app.run_with(Box::new(|app: &mut AppContext| {
-        console("STARTUP");
+        log("STARTUP");
         init_item_kinds(app);
 
         MainScreen::new()
@@ -474,7 +491,7 @@ fn stack_floor(world: &mut World, kind_id: &str, count: u16) -> Option<Entity> {
         None => None,
         Some((mut same_kind_item, entity)) => {
             same_kind_item.count += count;
-            console(format!("Added {} to existing floor item.", count));
+            log(format!("Added {} to existing floor item.", count));
             Some(entity)
         }
     }
@@ -484,7 +501,7 @@ fn create_floor(world: &mut World, kind_id: &str, count: u16) -> Entity {
     let mut item = Item::new(kind_id);
     item.count = count;
     let entity = world.spawn((item,)).id();
-    console(format!("Created floor entity - {:?}", entity));
+    log(format!("Created floor entity - {:?}", entity));
     entity
 }
 
@@ -498,7 +515,7 @@ fn stack_inventory(world: &mut World, kind_id: &str, count: u16) -> Option<Entit
         None => None,
         Some((mut same_kind_item, entity)) => {
             same_kind_item.count += count;
-            console(format!("Added {} to existing inventory item.", count));
+            log(format!("Added {} to existing inventory item.", count));
             Some(entity)
         }
     }
@@ -508,7 +525,7 @@ fn create_inventory(world: &mut World, kind_id: &str, count: u16) -> Entity {
     let mut item = Item::new(kind_id);
     item.count = count;
     let entity = world.spawn((item, InInventory::new())).id();
-    console(format!("Created inventory entity - {:?}", entity));
+    log(format!("Created inventory entity - {:?}", entity));
     entity
 }
 
@@ -525,7 +542,7 @@ fn reduce_count(world: &mut World, entity: Entity, count: u16) -> u16 {
         let mut entity_obj = world.entity_mut(entity);
         let mut item = entity_obj.get_mut::<Item>().unwrap();
         item.count = item.count.saturating_sub(count as u16);
-        console(format!("Delete {} of item - {:?}", count, entity));
+        log(format!("Delete {} of item - {:?}", count, entity));
         item.count
     } else {
         assert_eq!(count, world.entity(entity).get::<Item>().unwrap().count);

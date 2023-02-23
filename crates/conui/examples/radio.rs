@@ -98,7 +98,7 @@ impl Screen for MainScreen {
         id: String,
         value: Option<MsgData>,
     ) -> ScreenResult {
-        console(format!("message - {}", id));
+        log(format!("message - {}", id));
         match id.as_str() {
             "PICK" => {
                 self.ui

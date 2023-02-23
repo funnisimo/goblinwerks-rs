@@ -1,7 +1,7 @@
 // use crate::Buffer;
+use crate::console::set_texture_params;
+use crate::log;
 use uni_gl::{WebGLRenderingContext, WebGLTexture};
-
-use crate::{console, simple::set_texture_params};
 
 pub struct Font {
     img_size: (u32, u32),
@@ -44,7 +44,7 @@ impl Font {
     }
 
     fn load_font_img(&mut self, buf: &[u8], gl: &WebGLRenderingContext) {
-        console(format!("load font image - {}", buf.len()));
+        log(format!("load font image - {}", buf.len()));
         let mut img = image::load_from_memory(&buf).unwrap().to_rgba8();
         process_image(&mut img);
 
@@ -107,7 +107,7 @@ fn process_image(img: &mut image::RgbaImage) {
     if alpha == 255 {
         let transparent_color = (pixel[0], pixel[1], pixel[2]);
         let greyscale = transparent_color == (0, 0, 0);
-        crate::console(&format!(
+        log(&format!(
             "{}transparent color: {:?}",
             if greyscale { "greyscale " } else { "" },
             transparent_color

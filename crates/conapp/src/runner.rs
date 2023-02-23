@@ -1,7 +1,7 @@
 use super::context::AppContext;
 use super::input::AppInput;
 use crate::load_screen::LoadingScreen;
-use crate::{console, App, AppBuilder, AppConfig, AppEvent, Screen, ScreenResult};
+use crate::{log, App, AppBuilder, AppConfig, AppEvent, Screen, ScreenResult};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -45,7 +45,7 @@ impl Runner {
 
         let screen_resolution = app.screen_resolution();
 
-        crate::console("Runner created");
+        log("Runner created");
 
         Self {
             app_ctx: None,
@@ -88,7 +88,7 @@ impl Runner {
         hidpi_factor: f32,
         (real_screen_width, real_screen_height): (u32, u32),
     ) {
-        console(format!(
+        log(format!(
             "runner::resize - {}x{}, hidpi={}",
             real_screen_width, real_screen_height, hidpi_factor
         ));
@@ -163,7 +163,7 @@ impl Runner {
                     return Some(RunnerEvent::Next);
                 }
                 ScreenResult::Quit => {
-                    console("Received Quit");
+                    log("Received Quit");
                     return Some(RunnerEvent::Exit);
                 }
             }
@@ -203,7 +203,7 @@ impl Runner {
                         return Some(RunnerEvent::Next);
                     }
                     ScreenResult::Quit => {
-                        console("Received Quit");
+                        log("Received Quit");
                         return Some(RunnerEvent::Exit);
                     }
                     ScreenResult::Continue => {}
@@ -249,14 +249,14 @@ impl Runner {
         let mut next_frame = last_frame_time;
 
         let mut create = Some(func);
-        crate::console(format!("Runner started"));
+        log(format!("Runner started"));
 
         app.run(move |app: &mut crate::app::App| match self.app_ctx.take() {
             None => {
                 for ev in app.events.borrow().iter() {
                     match ev {
                         AppEvent::Ready => {
-                            crate::console("Runner ready");
+                            log("Runner ready");
                             let mut ctx = create_ctx(&app, self.config());
                             if let Some(func) = create.take() {
                                 self.do_startup_files(&mut ctx);
@@ -291,7 +291,7 @@ impl Runner {
         let mut screen = match ctx.has_files_to_load() {
             false => func(ctx),
             true => {
-                console("Using loading screen");
+                log("Using loading screen");
                 LoadingScreen::new(func)
             }
         };
@@ -327,7 +327,7 @@ impl Runner {
                     return;
                 }
                 RunnerEvent::Exit => {
-                    console("App Exit");
+                    log("App Exit");
                     return crate::app::App::exit();
                 }
                 RunnerEvent::Next => {}
@@ -348,7 +348,7 @@ impl Runner {
                     return;
                 }
                 RunnerEvent::Exit => {
-                    console("App Exit");
+                    log("App Exit");
                     return crate::app::App::exit();
                 }
                 RunnerEvent::Next => {}
@@ -461,7 +461,7 @@ fn create_ctx(app: &App, options: &AppConfig) -> AppContext {
     } else {
         (0, 0)
     };
-    crate::console(&format!(
+    log(&format!(
         "Screen size {} x {} offset {} x {} GL viewport : {} x {}  hidpi factor : {}",
         options.size.0,
         options.size.1,
@@ -529,6 +529,6 @@ fn capture_screen(gl: &uni_gl::WebGLRenderingContext, w: u32, h: u32, filepath: 
         )
         .expect("Failed to save buffer to the specified path");
     } else {
-        crate::console("Screen capture not supported on web platform");
+        log("Screen capture not supported on web platform");
     }
 }

@@ -58,7 +58,7 @@ impl Screen for MyRoguelike {
                 _ => {}
             },
             AppEvent::MouseDown(info) => {
-                console(&format!("click - {:?}", info.pos));
+                log(&format!("click - {:?}", info.pos));
             }
             _ => {}
         }

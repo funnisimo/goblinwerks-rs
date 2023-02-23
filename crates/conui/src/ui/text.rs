@@ -1,6 +1,6 @@
 use super::*;
-use conapp::console;
 use conapp::draw;
+use conapp::log;
 use conapp::Buffer;
 use conapp::MsgData;
 use std::cmp::min;
@@ -159,7 +159,7 @@ pub fn text_set_size(node: &Element, max_size: Option<(u32, u32)>) {
         }
     }
 
-    console(format!(
+    log(format!(
         "text set size, text='{}', size={:?}, max_size={:?}",
         node.text().as_ref().unwrap(),
         size,
@@ -187,7 +187,7 @@ pub fn text_set_size(node: &Element, max_size: Option<(u32, u32)>) {
 
         if max_size.0 == 0 || width <= max_size.0 {
             node.set_size(width, height);
-            console(format!(" - result size 1 ={:?}", node.size()));
+            log(format!(" - result size 1 ={:?}", node.size()));
             return;
         } else {
             size.0 = max_size.0;
@@ -217,7 +217,7 @@ pub fn text_set_size(node: &Element, max_size: Option<(u32, u32)>) {
         _ => {}
     }
 
-    console(format!(" - result size={:?}", node.size()));
+    log(format!(" - result size={:?}", node.size()));
 }
 
 #[cfg(test)]

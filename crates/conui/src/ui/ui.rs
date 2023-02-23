@@ -1,6 +1,6 @@
 use super::*;
 use crate::css::STYLES;
-use conapp::console;
+use conapp::log;
 use conapp::AppContext;
 use conapp::AppEvent;
 use conapp::Buffer;
@@ -249,7 +249,7 @@ impl UI {
         app: &mut AppContext,
         action: Option<UiAction>,
     ) -> Option<ScreenResult> {
-        console("do_action");
+        log("do_action");
         match action {
             None => {}
             Some(UiAction::Activate(id)) => {

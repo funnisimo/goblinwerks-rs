@@ -1,4 +1,4 @@
-use crate::{color::RGBA, console, draw};
+use crate::{color::RGBA, draw, log};
 use crate::{AppContext, Console, Screen, ScreenResult};
 
 pub type ScreenCreator = dyn FnOnce(&mut AppContext) -> Box<dyn Screen>;
@@ -24,11 +24,11 @@ impl Screen for LoadingScreen {
         if !app.has_files_to_load() {
             match self.next.take() {
                 None => {
-                    console("Pop Loading Screen");
+                    log("Pop Loading Screen");
                     return ScreenResult::Pop;
                 }
                 Some(next) => {
-                    console("Replace loading screen");
+                    log("Replace loading screen");
                     return ScreenResult::Replace(next(app));
                 }
             }

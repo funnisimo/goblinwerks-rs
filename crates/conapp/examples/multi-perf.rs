@@ -114,7 +114,7 @@ impl Screen for PerfTest {
         let new_width = api.screen_size().0 / 32;
         let new_height = api.screen_size().1 / 16;
 
-        console(format!(
+        log(format!(
             "resize - {:?} => {},{}",
             api.screen_size(),
             new_width,

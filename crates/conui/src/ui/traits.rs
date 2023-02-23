@@ -1,6 +1,6 @@
 use super::*;
 use crate::css::Style;
-use conapp::{console, KeyEvent};
+use conapp::{log, KeyEvent};
 use std::sync::Arc;
 
 pub trait ParentNode {
@@ -37,7 +37,7 @@ pub fn inner_size_hint(el: &Element) -> Option<(u32, u32)> {
             ))),
         };
 
-        console(format!(
+        log(format!(
             "- inner_size_hint({}) :: pos={:?}, root_size={:?} => max_size={:?} => size={:?}, result={:?}",
             element_path(el),
             pos,
@@ -65,7 +65,7 @@ pub fn inner_size_hint(el: &Element) -> Option<(u32, u32)> {
         Some((w, h)) => Some((w, h)),
     };
 
-    console(format!(
+    log(format!(
         "- inner_size_hint({}) :: NO_POS, inner_size={:?} => result={:?}",
         element_path(el),
         el.inner_size(),
@@ -280,7 +280,7 @@ pub trait Styled {
                 style.set_bg_name(bg);
                 el.local_style = Some(Arc::new(style));
 
-                console(format!("- Set Local BG - {:?}", el.local_style));
+                log(format!("- Set Local BG - {:?}", el.local_style));
             }
             Some(ref mut arc_style) => {
                 let style = Arc::make_mut(arc_style);

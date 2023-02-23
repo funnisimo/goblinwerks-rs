@@ -25,12 +25,12 @@ impl HelloWorld {
 
 impl Screen for HelloWorld {
     fn pause(&mut self, _ctx: &mut AppContext) {
-        console("pause");
+        log("pause");
         self.has_popup = true;
     }
 
     fn resume(&mut self, _ctx: &mut AppContext) {
-        console("resume");
+        log("resume");
         self.has_popup = false;
     }
 

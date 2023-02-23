@@ -1,5 +1,5 @@
 use crate::color::RGBA;
-use crate::simple::{Buffer, Glyph};
+use crate::console::{Buffer, Glyph};
 
 pub fn rect<'a>(buffer: &'a mut Buffer) -> RectPrinter {
     RectPrinter::new(buffer)

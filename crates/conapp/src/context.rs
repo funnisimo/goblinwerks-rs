@@ -1,10 +1,10 @@
 use crate::app::File;
 use crate::color::RGBA;
+use crate::console::Program;
 use crate::font::{parse_char_size, Font};
 use crate::img::Image;
 use crate::input::AppInput;
-use crate::simple::Program;
-use crate::{console, MsgData};
+use crate::{log, MsgData};
 use std::collections::HashMap;
 use std::rc::Rc;
 use uni_gl::{BufferBit, WebGLRenderingContext};
@@ -97,7 +97,7 @@ impl AppContext {
         ctx.insert_font("SUBCELL", sub_cell_font);
         ctx.insert_font("DEFAULT", default_font);
 
-        console(format!(
+        log(format!(
             "AppContext::new - screen_size={:?}",
             ctx.screen_size()
         ));
@@ -106,7 +106,7 @@ impl AppContext {
     }
 
     pub(crate) fn resize(&mut self, screen_width: u32, screen_height: u32) {
-        console(format!(
+        log(format!(
             "appcontext::resize - {}x{}",
             screen_width, screen_height
         ));
@@ -150,7 +150,7 @@ impl AppContext {
         }
 
         self.ready = true;
-        console("All files loaded - ready");
+        log("All files loaded - ready");
         true
     }
 
@@ -195,10 +195,10 @@ impl AppContext {
     // }
 
     pub fn load_file(&mut self, path: &str, cb: Box<LoadCallback>) -> Result<(), LoadError> {
-        crate::console(format!("loading file - {}", path));
+        log(format!("loading file - {}", path));
         match crate::app::FileSystem::open(path) {
             Ok(mut f) => {
-                console(format!("file open - {}", path));
+                log(format!("file open - {}", path));
                 if f.is_ready() {
                     match f.read_binary() {
                         Ok(buf) => {
@@ -207,7 +207,7 @@ impl AppContext {
                         Err(e) => Err(LoadError::ReadError(e)),
                     }
                 } else {
-                    crate::console(format!("loading async file {}", path));
+                    log(format!("loading async file {}", path));
                     self.files_to_load.push(LoadInfo::new(path, cb, f));
                     self.ready = false;
                     Ok(())
@@ -226,7 +226,7 @@ impl AppContext {
             Box::new(move |data, app: &mut AppContext| {
                 let font = Rc::new(Font::new(app.gl(), &data, char_size));
                 app.insert_font(&path, font);
-                console(format!("font load complete - {}", path));
+                log(format!("font load complete - {}", path));
                 Ok(())
             }),
         )

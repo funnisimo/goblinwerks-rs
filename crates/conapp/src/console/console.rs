@@ -1,6 +1,6 @@
 use super::Buffer;
 use crate::font::Font;
-use crate::{console, AppContext};
+use crate::{log, AppContext};
 use std::rc::Rc;
 
 /// This contains the data for a console (including the one displayed on the screen) and methods to draw on it.
@@ -111,7 +111,7 @@ impl Console {
             None => {
                 self.font = app.get_font(self.font_name.as_ref());
                 if self.font.is_some() {
-                    console(format!("Got font - {}", self.font_name));
+                    log(format!("Got font - {}", self.font_name));
                 }
             }
             Some(ref font) => {

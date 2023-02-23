@@ -1,7 +1,7 @@
 use super::TextAlign;
 use crate::color::{get_color_opt, RGBA};
-use crate::simple::Buffer;
-use crate::simple::Glyph;
+use crate::console::Buffer;
+use crate::console::Glyph;
 use crate::text::parse_colored_lines;
 use crate::text::wrap_colored;
 use crate::text::ColoredLine;

@@ -1,5 +1,5 @@
 use super::*;
-use conapp::{console, Point};
+use conapp::{log, Point};
 use conapp::{Buffer, KeyEvent, MsgData};
 
 pub trait Tag {
@@ -15,17 +15,17 @@ pub trait Tag {
         //     Some(data) => data.try_into().unwrap_or(0),
         // };
 
-        console(format!("children_size: {}", element_path(el)));
+        log(format!("children_size: {}", element_path(el)));
         // let space = 0;
 
         let size = el.borrow().children.iter().fold((0, 0), |out, n| {
             let size = n.outer_size();
-            console(format!("-- {:?}", size));
+            log(format!("-- {:?}", size));
             (max(out.0, size.0), size.1 + out.1 /* + space */)
         });
         // size.1 = size.1.saturating_sub(space); // don't put space after last item
 
-        console(format!("- {:?}", size));
+        log(format!("- {:?}", size));
         size
     }
 

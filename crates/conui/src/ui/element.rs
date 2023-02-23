@@ -1,6 +1,6 @@
 use super::*;
 use crate::css::{ComputedStyle, Style, StyleSheet};
-use conapp::{console, Point};
+use conapp::{log, Point};
 use conapp::{Buffer, KeyEvent, MsgData};
 use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashMap;
@@ -308,7 +308,7 @@ impl Element {
             (x + pad[0] as i32, y + pad[1] as i32)
         };
         self.node.borrow_mut().pos = Some((x1, y1));
-        console(format!(
+        log(format!(
             "- set_outer_pos: {} @ {},{}",
             element_path(self),
             x1,
@@ -749,7 +749,7 @@ impl fmt::Display for Element {
 }
 
 pub(crate) fn layout_children(el: &Element) {
-    console(format!("layout_children: {}", element_path(el)));
+    log(format!("layout_children: {}", element_path(el)));
 
     let mut parent_pos = el.pos().unwrap();
     // let size = el.size().unwrap();
@@ -765,7 +765,7 @@ pub(crate) fn layout_children(el: &Element) {
         // child.layout_children();
     }
 
-    console(format!(" - done: {}", element_path(el)));
+    log(format!(" - done: {}", element_path(el)));
 }
 
 pub fn element_path(el: &Element) -> String {
@@ -800,7 +800,7 @@ fn _dump_element(el: &Element, indent: usize) {
 
 pub(super) fn adjust_child_spacing(el: &Element) {
     if let Some(spacing) = el.attr("spacing") {
-        console("adjusting spacing");
+        log("adjusting spacing");
         let space: u32 = spacing.try_into().unwrap_or(0);
         let b_el = el.borrow();
         let mut iter = b_el.children.iter();
@@ -809,7 +809,7 @@ pub(super) fn adjust_child_spacing(el: &Element) {
             for ch in iter {
                 let [_, pad_top, _, pad_bottom] = ch.pad();
                 if prior_pad_bottom + pad_top < space {
-                    console("- adding pad_top");
+                    log("- adding pad_top");
                     ch.set_pad_top(space - prior_pad_bottom);
                 }
                 prior_pad_bottom = pad_bottom;

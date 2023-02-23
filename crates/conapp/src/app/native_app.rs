@@ -1,13 +1,12 @@
 mod native_keycode;
 
-use crate::console;
-
 use self::native_keycode::translate_scan_code;
 use super::events;
 use super::translate_virtual_key;
 use super::AppConfig;
 use super::AppEvent;
 use super::{File, FileSystem};
+use crate::log;
 use glutin;
 use glutin::Context;
 use glutin::PossiblyCurrent;
@@ -386,10 +385,10 @@ impl App {
         self.events.borrow_mut().push(AppEvent::Ready);
 
         let frame_ms = if self.fps > 0 {
-            console(format!("Running at {} fps", self.fps));
+            log(format!("Running at {} fps", self.fps));
             Duration::from_millis(1000 / self.fps as u64)
         } else {
-            console(format!("Fps limit not set, using 1000"));
+            log(format!("Fps limit not set, using 1000"));
             Duration::from_millis(1)
         };
         let mut next_frame_time = Instant::now() + frame_ms;

@@ -1,6 +1,6 @@
 use crate::color::RGBA;
+use crate::console::Buffer;
 use crate::img::Image;
-use crate::simple::Buffer;
 
 /// Constructs a new [`Blitter`] for this buffer
 pub fn image(buffer: &mut Buffer) -> Blitter {

@@ -1,6 +1,6 @@
 use super::*;
 use conapp::Point;
-use conapp::{console, text::colored_line_len, Buffer, KeyEvent, MsgData, VirtualKeyCode};
+use conapp::{log, text::colored_line_len, Buffer, KeyEvent, MsgData, VirtualKeyCode};
 use std::cmp::max;
 
 static RADIO: Radio = Radio {};
@@ -19,12 +19,12 @@ impl Radio {
         let mut builder = RadioBuilder::new(el.clone());
         parent.add_child(el.clone());
 
-        console("NEW RADIO");
+        log("NEW RADIO");
 
         init(&mut builder);
 
         if let Some(spacing) = el.attr("spacing") {
-            console("adjusting spacing");
+            log("adjusting spacing");
             let space: u32 = spacing.try_into().unwrap();
             let b_el = el.borrow();
             let mut iter = b_el.children.iter();
@@ -33,7 +33,7 @@ impl Radio {
                 for ch in iter {
                     let [_, pad_top, _, pad_bottom] = ch.pad();
                     if prior_pad_bottom + pad_top < space {
-                        console("- adding pad_top");
+                        log("- adding pad_top");
                         ch.set_pad_top(space - prior_pad_bottom);
                     }
                     prior_pad_bottom = pad_bottom;
@@ -43,7 +43,7 @@ impl Radio {
 
         // finish list
         let children_size = el.children_size();
-        console(format!("children - size = {:?}", children_size));
+        log(format!("children - size = {:?}", children_size));
         match el.size().unwrap_or((0, 0)) {
             (0, 0) => {
                 el.set_size(children_size.0, children_size.1);
@@ -281,7 +281,7 @@ impl RadioItem {
             label: label.clone(),
         };
 
-        console("NEW RADIO ITEM");
+        log("NEW RADIO ITEM");
 
         init(&mut builder);
 
@@ -300,7 +300,7 @@ impl RadioItem {
             true => node.set_text(&on_text),
         }
 
-        console(format!(
+        log(format!(
             "Finish radio Item - using={:?}, inner_size={:?}, inner_size_hint={:?}",
             inner_size,
             node.inner_size(),
@@ -348,9 +348,9 @@ impl Tag for RadioItem {
         let prefix_width = text.as_ref().unwrap().len() as i32 + space;
         child_pos.0 += prefix_width;
 
-        console(format!("layout list item children - {}", element_path(el)));
+        log(format!("layout list item children - {}", element_path(el)));
         for child in el.borrow().children.iter() {
-            console(format!("- {:?} @ {:?}", element_path(child), child_pos));
+            log(format!("- {:?} @ {:?}", element_path(child), child_pos));
             child.set_outer_pos(child_pos.0, child_pos.1); // calls layout_children
             let (_, child_height) = child.outer_size();
             child_pos.1 += child_height as i32;
@@ -406,7 +406,7 @@ pub(super) fn radio_handle_click(root: &Element, el: &Element, point: Point) -> 
         return None;
     }
 
-    console(format!("click radio"));
+    log(format!("click radio"));
 
     el.handle_activate(root)
 }

@@ -1,5 +1,5 @@
 use super::*;
-use conapp::{console, text::colored_line_len, Buffer, MsgData};
+use conapp::{log, text::colored_line_len, Buffer, MsgData};
 
 static LIST: List = List {};
 
@@ -16,14 +16,14 @@ impl List {
         let mut builder = ListBuilder::new(el.clone());
         parent.add_child(el.clone());
 
-        console("NEW LIST");
+        log("NEW LIST");
 
         init(&mut builder);
 
         adjust_child_spacing(&el);
 
         for ch in el.children() {
-            console(format!(
+            log(format!(
                 " - {} - {:?} ? {:?}",
                 element_path(&ch),
                 ch.size().unwrap(),
@@ -33,10 +33,10 @@ impl List {
 
         // finish list
         let children_size = el.children_size();
-        console(format!("children - size = {:?}", children_size));
+        log(format!("children - size = {:?}", children_size));
 
         for ch in el.children() {
-            console(format!(
+            log(format!(
                 " - {} - {:?} ? {:?}",
                 element_path(&ch),
                 ch.size().unwrap(),
@@ -239,7 +239,7 @@ impl ListItem {
             label: label.clone(),
         };
 
-        console("NEW ITEM");
+        log("NEW ITEM");
 
         init(&mut checkbox);
 
@@ -251,7 +251,7 @@ impl ListItem {
             node.to_inner_size(inner_size_hint(&parent.node)),
         );
 
-        console(format!(
+        log(format!(
             "Finish list Item({}) - inner_size={:?}, node.inner_size={:?}, inner_size_hint={:?}",
             element_path(&node),
             inner_size,
@@ -262,7 +262,7 @@ impl ListItem {
         let child_size = node.children_size();
         node.set_size(child_size.0 + prefix_size, child_size.1);
 
-        console(format!(
+        log(format!(
             " - list Item({}) - actual size={:?}",
             element_path(&node),
             node.size().unwrap()
@@ -302,9 +302,9 @@ impl Tag for ListItem {
         let prefix_width = text.as_ref().unwrap().len() as i32 + space;
         child_pos.0 += prefix_width;
 
-        console(format!("layout list item children - {}", element_path(el)));
+        log(format!("layout list item children - {}", element_path(el)));
         for child in el.borrow().children.iter() {
-            console(format!("- {:?} @ {:?}", element_path(child), child_pos));
+            log(format!("- {:?} @ {:?}", element_path(child), child_pos));
             child.set_outer_pos(child_pos.0, child_pos.1); // calls layout_children
             let (_, child_height) = child.outer_size();
             child_pos.1 += child_height as i32;

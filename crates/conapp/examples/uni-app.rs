@@ -22,7 +22,7 @@ fn main() {
 
                     let pct_x = pos.0 as f32 / res.0 as f32;
                     let pct_y = pos.1 as f32 / res.1 as f32;
-                    console(format!("{:?} / {:?} = {:.3},{:.3}", pos, res, pct_x, pct_y));
+                    log(format!("{:?} / {:?} = {:.3},{:.3}", pos, res, pct_x, pct_y));
                 }
                 &AppEvent::MouseUp(_) => {
                     App::exit();

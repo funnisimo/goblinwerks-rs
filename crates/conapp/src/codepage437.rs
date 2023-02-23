@@ -1,4 +1,4 @@
-use crate::simple::Glyph;
+use crate::console::Glyph;
 
 /// Converts a unicode character to a CP437 equivalent, returning 0 if it didn't have a match
 pub fn to_glyph(c: char) -> Glyph {
@@ -565,7 +565,7 @@ pub fn string_to_glyph<S: AsRef<str>>(input: S) -> Vec<Glyph> {
 #[cfg(test)]
 mod tests {
     use super::string_to_glyph;
-    use crate::simple::Glyph;
+    use crate::console::Glyph;
 
     #[test]
     // Tests that we make an RGB triplet at defaults and it is black.

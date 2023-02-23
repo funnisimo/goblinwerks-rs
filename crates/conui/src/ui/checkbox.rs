@@ -1,6 +1,7 @@
 use super::*;
+use conapp::log;
 use conapp::Point;
-use conapp::{console, text::colored_line_len, Buffer, KeyEvent, MsgData, VirtualKeyCode};
+use conapp::{text::colored_line_len, Buffer, KeyEvent, MsgData, VirtualKeyCode};
 
 static CHECKBOX: Checkbox = Checkbox {};
 
@@ -22,7 +23,7 @@ impl Checkbox {
         node.add_child(label.clone());
         parent.add_child(node.clone());
 
-        console(format!("Begin Checkbox, path={}", element_path(&node)));
+        log(format!("Begin Checkbox, path={}", element_path(&node)));
 
         let mut checkbox = CheckboxBuilder {
             node: node.clone(),
@@ -30,7 +31,7 @@ impl Checkbox {
         };
         init(&mut checkbox);
 
-        console(format!("Finish Checkbox, path={}", element_path(&node)));
+        log(format!("Finish Checkbox, path={}", element_path(&node)));
 
         let on_text: String = node.attr("on_glyph").unwrap().to_string();
         let off_text: String = node.attr("off_glyph").unwrap().to_string();
@@ -43,7 +44,7 @@ impl Checkbox {
         let inner_start = node.inner_size();
         let parent_hint = node.to_inner_size(inner_size_hint(parent.el()));
         let inner_size = calc_common_size(inner_start, parent_hint);
-        console(format!(
+        log(format!(
             "checkbox - set label size using={:?} :: inner_size={:?}, parent={:?}",
             inner_size, inner_start, parent_hint
         ));
@@ -58,8 +59,8 @@ impl Checkbox {
         };
         node.set_size(node_size.0, node_size.1);
 
-        console(format!("        - label size => {:?}", label_size));
-        console(format!(
+        log(format!("        - label size => {:?}", label_size));
+        log(format!(
             "        - node size  => {:?}",
             node.size().unwrap()
         ));
@@ -79,7 +80,7 @@ impl Checkbox {
             }
         }
 
-        console(format!("CHECKBOX - size={:?}", node.size().unwrap()));
+        log(format!("CHECKBOX - size={:?}", node.size().unwrap()));
     }
 }
 

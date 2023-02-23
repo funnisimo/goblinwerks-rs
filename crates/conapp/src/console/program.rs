@@ -2,6 +2,7 @@ use super::Buffer;
 use crate::color::RGBA;
 use crate::font::Font;
 // use image::{ImageBuffer, Rgba};
+use crate::log;
 use std::collections::HashMap;
 use std::mem::size_of;
 use std::slice;
@@ -112,11 +113,11 @@ fn create_program(
     vertex_source: &str,
     fragment_source: &str,
 ) -> WebGLProgram {
-    crate::console("compiling VS");
+    log("compiling VS");
     let vert_shader = compile_shader_wasm_native(gl, ShaderKind::Vertex, vertex_source);
-    crate::console("compiling FS");
+    log("compiling FS");
     let frag_shader = compile_shader_wasm_native(gl, ShaderKind::Fragment, fragment_source);
-    crate::console("linking Program");
+    log("linking Program");
     let shader_program = gl.create_program();
     gl.attach_shader(&shader_program, &vert_shader);
     gl.attach_shader(&shader_program, &frag_shader);

@@ -2,8 +2,8 @@ use super::*;
 use crate::ui::Element;
 use conapp::color::get_color_opt;
 // use conapp::color::RGBA;
-use conapp::console;
 use conapp::context::LoadError;
+use conapp::log;
 use conapp::AppContext;
 use conapp::BorderType;
 use lazy_static::lazy_static;
@@ -69,30 +69,22 @@ impl StyleSheet {
                             for (key, value) in item.1.iter() {
                                 if *key == "fg" || *key == "color" {
                                     match get_color_opt(*value) {
-                                        None => {
-                                            console(format!("Failed to convert color: {}", value))
-                                        }
+                                        None => log(format!("Failed to convert color: {}", value)),
                                         Some(rgb) => style.set_fg(rgb),
                                     }
                                 } else if *key == "bg" || *key == "background-color" {
                                     match get_color_opt(*value) {
-                                        None => {
-                                            console(format!("Failed to convert color: {}", value))
-                                        }
+                                        None => log(format!("Failed to convert color: {}", value)),
                                         Some(rgb) => style.set_bg(rgb),
                                     }
                                 } else if *key == "border-color" {
                                     match get_color_opt(*value) {
-                                        None => {
-                                            console(format!("Failed to convert color: {}", value))
-                                        }
+                                        None => log(format!("Failed to convert color: {}", value)),
                                         Some(rgb) => style.set_border_fg(rgb),
                                     }
                                 } else if *key == "border-block-color" {
                                     match get_color_opt(*value) {
-                                        None => {
-                                            console(format!("Failed to convert color: {}", value))
-                                        }
+                                        None => log(format!("Failed to convert color: {}", value)),
                                         Some(rgb) => style.set_border_bg(rgb),
                                     }
                                 } else if *key == "border" {
@@ -107,9 +99,7 @@ impl StyleSheet {
                                     }
                                 } else if *key == "accent-color" {
                                     match get_color_opt(*value) {
-                                        None => {
-                                            console(format!("Failed to convert color: {}", value))
-                                        }
+                                        None => log(format!("Failed to convert color: {}", value)),
                                         Some(rgb) => style.set_accent_fg(rgb),
                                     }
                                 }
@@ -146,9 +136,9 @@ impl StyleSheet {
     }
 
     pub fn dump(&self) {
-        console("STYLESHEET");
+        log("STYLESHEET");
         for style in self.styles.iter() {
-            console(format!("{:?}", &style));
+            log(format!("{:?}", &style));
         }
     }
 }
