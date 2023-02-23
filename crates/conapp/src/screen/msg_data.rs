@@ -14,6 +14,7 @@ pub enum Key {
     Index(usize),
     Number(i32),
     Text(String),
+    U64(u64),
     #[cfg(feature = "ecs")]
     Entity(Entity),
 }
@@ -29,8 +30,12 @@ impl TryInto<usize> for Key {
                 Err(_) => Err(DataConvertError::WrongType),
                 Ok(v) => Ok(v),
             },
+            Key::U64(v) => match v.try_into() {
+                Ok(v) => Ok(v),
+                Err(_) => Err(DataConvertError::WrongType),
+            },
 
-            // Value::Blank => Ok(0.0),
+            #[cfg(feature = "ecs")]
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -47,7 +52,12 @@ impl TryInto<i32> for Key {
                 Err(_) => Err(DataConvertError::WrongType),
                 Ok(v) => Ok(v),
             },
-            // Value::Blank => Ok(0.0),
+            Key::U64(v) => match v.try_into() {
+                Ok(v) => Ok(v),
+                Err(_) => Err(DataConvertError::WrongType),
+            },
+
+            #[cfg(feature = "ecs")]
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -67,7 +77,34 @@ impl TryInto<u32> for Key {
                 Err(_) => Err(DataConvertError::WrongType),
                 Ok(v) => Ok(v),
             },
-            // Value::Blank => Ok(0.0),
+            Key::U64(v) => match v.try_into() {
+                Ok(v) => Ok(v),
+                Err(_) => Err(DataConvertError::WrongType),
+            },
+
+            #[cfg(feature = "ecs")]
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
+impl TryInto<u64> for Key {
+    type Error = DataConvertError;
+
+    fn try_into(self) -> Result<u64, DataConvertError> {
+        match self {
+            Key::Index(v) => Ok(v as u64),
+            Key::Number(v) => match v >= 0 {
+                true => Ok(v as u64),
+                false => Err(DataConvertError::Negative),
+            },
+            Key::Text(v) => match v.parse::<u64>() {
+                Err(_) => Err(DataConvertError::WrongType),
+                Ok(v) => Ok(v),
+            },
+            Key::U64(v) => Ok(v),
+
+            #[cfg(feature = "ecs")]
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -79,6 +116,7 @@ impl Display for Key {
             Key::Index(v) => write!(f, "{}", v),
             Key::Number(v) => write!(f, "{}", v),
             Key::Text(v) => write!(f, "{}", v),
+            Key::U64(v) => write!(f, "{}", v),
 
             #[cfg(feature = "ecs")]
             Key::Entity(entity) => {
@@ -128,6 +166,12 @@ impl From<i32> for Key {
     }
 }
 
+impl From<u64> for Key {
+    fn from(v: u64) -> Self {
+        Key::U64(v)
+    }
+}
+
 impl From<&str> for Key {
     fn from(v: &str) -> Self {
         Key::Text(v.to_owned())
@@ -173,6 +217,7 @@ pub enum MsgData {
     List(Vec<MsgData>),
     Map(HashMap<Key, MsgData>),
     Error,
+    U64(u64),
     #[cfg(feature = "ecs")]
     Entity(Entity),
 }
@@ -193,6 +238,11 @@ impl TryInto<usize> for MsgData {
                 true => Ok(1),
                 false => Ok(0),
             },
+            MsgData::U64(v) => match v.try_into() {
+                Ok(v) => Ok(v),
+                Err(_) => Err(DataConvertError::WrongType),
+            },
+
             // Value::Blank => Ok(0.0),
             _ => Err(DataConvertError::WrongType),
         }
@@ -215,6 +265,11 @@ impl TryInto<i32> for MsgData {
                 true => Ok(1),
                 false => Ok(0),
             },
+            MsgData::U64(v) => match v.try_into() {
+                Ok(v) => Ok(v),
+                Err(_) => Err(DataConvertError::WrongType),
+            },
+
             // Value::Blank => Ok(0.0),
             _ => Err(DataConvertError::WrongType),
         }
@@ -243,6 +298,41 @@ impl TryInto<u32> for MsgData {
                 true => Ok(1),
                 false => Ok(0),
             },
+            MsgData::U64(v) => match v.try_into() {
+                Ok(v) => Ok(v),
+                Err(_) => Err(DataConvertError::WrongType),
+            },
+
+            // Value::Blank => Ok(0.0),
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
+impl TryInto<u64> for MsgData {
+    type Error = DataConvertError;
+
+    fn try_into(self) -> Result<u64, DataConvertError> {
+        match self {
+            MsgData::Index(v) => Ok(v as u64),
+            MsgData::Number(v) => match v >= 0 {
+                true => Ok(v as u64),
+                false => Err(DataConvertError::Negative),
+            },
+            MsgData::Float(v) => match v >= 0.0 {
+                true => Ok(v.floor() as u64),
+                false => Err(DataConvertError::Negative),
+            },
+            MsgData::Text(v) => match v.parse::<u64>() {
+                Err(_) => Err(DataConvertError::WrongType),
+                Ok(v) => Ok(v),
+            },
+            MsgData::Boolean(v) => match v {
+                true => Ok(1),
+                false => Ok(0),
+            },
+            MsgData::U64(v) => Ok(v),
+
             // Value::Blank => Ok(0.0),
             _ => Err(DataConvertError::WrongType),
         }
@@ -265,6 +355,8 @@ impl TryInto<f32> for MsgData {
                 true => Ok(1.0),
                 false => Ok(0.0),
             },
+            MsgData::U64(v) => Ok(v as f32),
+
             // Value::Blank => Ok(0.0),
             _ => Err(DataConvertError::WrongType),
         }
@@ -284,6 +376,7 @@ impl TryInto<bool> for MsgData {
                 true => Ok(true),
                 false => Ok(false),
             },
+            MsgData::U64(v) => Ok(v != 0),
             // Value::Blank => Ok(false),
             _ => Err(DataConvertError::WrongType),
         }
@@ -330,6 +423,7 @@ impl Display for MsgData {
                 }
                 write!(f, "}}")
             }
+            MsgData::U64(v) => write!(f, "{}", v),
             #[cfg(feature = "ecs")]
             MsgData::Entity(entity) => {
                 write!(f, "{:?}", entity)
@@ -348,6 +442,12 @@ impl From<usize> for MsgData {
 impl From<i32> for MsgData {
     fn from(v: i32) -> Self {
         MsgData::Number(v)
+    }
+}
+
+impl From<u64> for MsgData {
+    fn from(v: u64) -> Self {
+        MsgData::U64(v)
     }
 }
 
@@ -399,6 +499,7 @@ impl From<Key> for MsgData {
             Key::Index(v) => MsgData::Index(v),
             Key::Number(v) => MsgData::Number(v),
             Key::Text(v) => MsgData::Text(v),
+            Key::U64(v) => MsgData::Number(v as i32),
             #[cfg(feature = "ecs")]
             Key::Entity(v) => MsgData::Entity(v),
         }

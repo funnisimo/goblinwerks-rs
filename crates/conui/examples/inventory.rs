@@ -1,5 +1,6 @@
-use conapp::ecs::prelude::*;
-use conapp::ecs::schedule::Schedule;
+use bevy_ecs::prelude::*;
+use bevy_ecs::schedule::Schedule;
+use conapp::screen::DataConvertError;
 use conapp::*;
 use conui::css::*;
 use conui::screens::{Choice, MultiChoice};
@@ -7,9 +8,18 @@ use conui::ui::*;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+fn entity_from<V: TryInto<u64>>(v: V) -> Result<Entity, DataConvertError> {
+    let bits = match v.try_into() {
+        Err(_) => return Err(DataConvertError::WrongType),
+        Ok(v) => v,
+    };
+    Ok(Entity::from_bits(bits))
+}
+
 struct MainScreen {
     ui: UI,
     schedule: Schedule,
+    world: World,
 }
 
 impl MainScreen {
@@ -101,12 +111,16 @@ impl MainScreen {
         Box::new(MainScreen {
             ui,
             schedule: Schedule::default(),
+            world: World::new(),
         })
     }
 }
 
 impl Screen for MainScreen {
-    fn setup(&mut self, _app: &mut AppContext) {}
+    fn setup(&mut self, _app: &mut AppContext) {
+        init_item_kinds(&mut self.world);
+        self.ui.update_styles();
+    }
 
     fn input(&mut self, app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
         if let Some(result) = self.ui.input(app, ev) {
@@ -118,13 +132,13 @@ impl Screen for MainScreen {
 
     fn message(
         &mut self,
-        app: &mut AppContext,
+        _app: &mut AppContext,
         id: String,
         value: Option<MsgData>,
     ) -> ScreenResult {
         match id.as_str() {
             "CREATE" => {
-                let world = &app.world;
+                let world = &self.world;
                 let item_kinds = world.get_resource::<ItemKinds>().unwrap();
 
                 let items: Vec<(String, MsgData)> = item_kinds
@@ -152,7 +166,7 @@ impl Screen for MainScreen {
                 };
 
                 text.set_text(&kind_id);
-                let world = &mut app.world;
+                let world = &mut self.world;
 
                 let item_kinds = world.get_resource::<ItemKinds>().unwrap();
                 let kind = item_kinds.get(&kind_id).unwrap();
@@ -163,7 +177,7 @@ impl Screen for MainScreen {
             }
 
             "DELETE" => {
-                let world = &mut app.world;
+                let world = &mut self.world;
 
                 let mut query = world.query_filtered::<(Entity, &Item), Without<InInventory>>();
 
@@ -172,7 +186,7 @@ impl Screen for MainScreen {
                     .map(|(entity, item)| {
                         (
                             format!("{} {}", item.count, item.kind.name),
-                            entity.into(),
+                            entity.to_bits().into(),
                             item.count,
                         )
                     })
@@ -196,10 +210,10 @@ impl Screen for MainScreen {
             "DELETE_ITEM" => {
                 if let Some(MsgData::Map(map)) = value {
                     for (key, val) in map {
-                        let entity: Entity = key.try_into().unwrap();
+                        let entity: Entity = entity_from(key).unwrap();
                         let count: i32 = val.try_into().unwrap();
 
-                        let world = &mut app.world;
+                        let world = &mut self.world;
                         if reduce_count(world, entity, count as u16) == 0 {
                             world.despawn(entity);
                             log(format!("Delete item - {:?}", entity));
@@ -209,7 +223,7 @@ impl Screen for MainScreen {
             }
 
             "PICKUP" => {
-                let world = &mut app.world;
+                let world = &mut self.world;
 
                 let mut query = world.query_filtered::<(Entity, &Item), Without<InInventory>>();
 
@@ -218,7 +232,7 @@ impl Screen for MainScreen {
                     .map(|(entity, item)| {
                         (
                             format!("{} {}", item.count, item.kind.name),
-                            entity.into(),
+                            entity.to_bits().into(),
                             item.count,
                         )
                     })
@@ -241,10 +255,10 @@ impl Screen for MainScreen {
             "PICKUP_ITEM" => {
                 if let Some(MsgData::Map(map)) = value {
                     for (key, val) in map {
-                        let entity: Entity = key.try_into().unwrap();
+                        let entity: Entity = entity_from(key).unwrap();
                         let count: i32 = val.try_into().unwrap();
 
-                        let world = &mut app.world;
+                        let world = &mut self.world;
 
                         let (kind_id, has_count) = get_info(world, entity);
 
@@ -279,7 +293,7 @@ impl Screen for MainScreen {
             }
 
             "DROP" => {
-                let world = &mut app.world;
+                let world = &mut self.world;
 
                 let mut query = world.query_filtered::<(Entity, &Item), With<InInventory>>();
 
@@ -288,7 +302,7 @@ impl Screen for MainScreen {
                     .map(|(entity, item)| {
                         (
                             format!("{} {}", item.count, item.kind.id),
-                            entity.into(),
+                            entity.to_bits().into(),
                             item.count,
                         )
                     })
@@ -311,10 +325,10 @@ impl Screen for MainScreen {
             "DROP_ITEM" => {
                 if let Some(MsgData::Map(map)) = value {
                     for (key, val) in map {
-                        let entity: Entity = key.try_into().unwrap();
+                        let entity: Entity = entity_from(key).unwrap();
                         let count: i32 = val.try_into().unwrap();
 
-                        let world = &mut app.world;
+                        let world = &mut self.world;
                         let (kind, has_count) = get_info(world, entity);
 
                         match has_count == count as u16 {
@@ -341,7 +355,7 @@ impl Screen for MainScreen {
         }
 
         // update floor items
-        let world = &mut app.world;
+        let world = &mut self.world;
         let mut query = world.query_filtered::<(&Item,), Without<InInventory>>();
         let ids: Vec<String> = query
             .iter(&world)
@@ -371,8 +385,8 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn update(&mut self, app: &mut AppContext, _frame_time_ms: f64) -> ScreenResult {
-        let world = &mut app.world;
+    fn update(&mut self, _app: &mut AppContext, _frame_time_ms: f64) -> ScreenResult {
+        let world = &mut self.world;
         self.schedule.run_once(world);
         world.clear_trackers();
 
@@ -389,16 +403,18 @@ impl Screen for MainScreen {
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Inventory Example")
-        .file("resources/styles.css", Box::new(load_stylesheet_data))
+        .file(
+            "resources/styles.css",
+            Box::new(|data, app| {
+                load_stylesheet_data(data, app)?;
+                log("STYLES LOADED!");
+                Ok(())
+            }),
+        )
         .vsync(false)
         .build();
 
-    app.run_with(Box::new(|app: &mut AppContext| {
-        log("STARTUP");
-        init_item_kinds(app);
-
-        MainScreen::new()
-    }));
+    app.run_screen(MainScreen::new());
 }
 
 #[derive(Clone)]
@@ -446,9 +462,7 @@ impl ItemKinds {
     }
 }
 
-fn init_item_kinds(app: &mut AppContext) {
-    let world = &mut app.world;
-
+fn init_item_kinds(world: &mut World) {
     let mut item_kinds = ItemKinds::new();
     item_kinds.insert(ItemKind::new("TACO", "taco", true));
     item_kinds.insert(ItemKind::new("BURRITO", "burrito", true));

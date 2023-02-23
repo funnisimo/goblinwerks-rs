@@ -19,17 +19,17 @@ keywords = [
 homepage = "https://github.com/funnisimo/conapp"
 readme = "README.md"
 
-[features]
-default = ["ecs"]
+# [features]
+# default = ["ecs"]
 # ecs     = ["dep:legion"]
-ecs = ["dep:bevy_ecs"]
+# ecs = ["dep:bevy_ecs"]
 
 [dependencies]
 uni-gl      = "0.2"
 lazy_static = "1.4"
 winit       = "0.27.5"
-bevy_ecs    = { version = "0.9.1", optional = true }
-regex       = "1.6"
+# bevy_ecs    = { version = "0.9.1", optional = true }
+regex = "1.6"
 
 [dependencies.image]
 version          = "0.24"
