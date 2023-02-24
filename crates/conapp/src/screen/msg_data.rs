@@ -41,6 +41,28 @@ impl TryInto<usize> for Key {
     }
 }
 
+impl TryInto<usize> for &Key {
+    type Error = DataConvertError;
+
+    fn try_into(self) -> Result<usize, DataConvertError> {
+        match self {
+            Key::Index(v) => Ok(*v),
+            Key::Number(v) => Ok(*v as usize),
+            Key::Text(v) => match v.parse::<usize>() {
+                Err(_) => Err(DataConvertError::WrongType),
+                Ok(v) => Ok(v),
+            },
+            Key::U64(v) => match (*v).try_into() {
+                Ok(v) => Ok(v),
+                Err(_) => Err(DataConvertError::WrongType),
+            },
+
+            #[cfg(feature = "ecs")]
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
 impl TryInto<i32> for Key {
     type Error = DataConvertError;
 
@@ -53,6 +75,28 @@ impl TryInto<i32> for Key {
                 Ok(v) => Ok(v),
             },
             Key::U64(v) => match v.try_into() {
+                Ok(v) => Ok(v),
+                Err(_) => Err(DataConvertError::WrongType),
+            },
+
+            #[cfg(feature = "ecs")]
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
+impl TryInto<i32> for &Key {
+    type Error = DataConvertError;
+
+    fn try_into(self) -> Result<i32, DataConvertError> {
+        match self {
+            Key::Index(v) => Ok(*v as i32),
+            Key::Number(v) => Ok(*v),
+            Key::Text(v) => match v.parse::<i32>() {
+                Err(_) => Err(DataConvertError::WrongType),
+                Ok(v) => Ok(v),
+            },
+            Key::U64(v) => match (*v).try_into() {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
@@ -88,6 +132,31 @@ impl TryInto<u32> for Key {
     }
 }
 
+impl TryInto<u32> for &Key {
+    type Error = DataConvertError;
+
+    fn try_into(self) -> Result<u32, DataConvertError> {
+        match self {
+            Key::Index(v) => Ok(*v as u32),
+            Key::Number(v) => match *v >= 0 {
+                true => Ok(*v as u32),
+                false => Err(DataConvertError::Negative),
+            },
+            Key::Text(v) => match v.parse::<u32>() {
+                Err(_) => Err(DataConvertError::WrongType),
+                Ok(v) => Ok(v),
+            },
+            Key::U64(v) => match (*v).try_into() {
+                Ok(v) => Ok(v),
+                Err(_) => Err(DataConvertError::WrongType),
+            },
+
+            #[cfg(feature = "ecs")]
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
 impl TryInto<u64> for Key {
     type Error = DataConvertError;
 
@@ -103,6 +172,28 @@ impl TryInto<u64> for Key {
                 Ok(v) => Ok(v),
             },
             Key::U64(v) => Ok(v),
+
+            #[cfg(feature = "ecs")]
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
+impl TryInto<u64> for &Key {
+    type Error = DataConvertError;
+
+    fn try_into(self) -> Result<u64, DataConvertError> {
+        match self {
+            Key::Index(v) => Ok(*v as u64),
+            Key::Number(v) => match *v >= 0 {
+                true => Ok(*v as u64),
+                false => Err(DataConvertError::Negative),
+            },
+            Key::Text(v) => match v.parse::<u64>() {
+                Err(_) => Err(DataConvertError::WrongType),
+                Ok(v) => Ok(v),
+            },
+            Key::U64(v) => Ok(*v),
 
             #[cfg(feature = "ecs")]
             _ => Err(DataConvertError::WrongType),
@@ -163,6 +254,12 @@ impl From<usize> for Key {
 impl From<i32> for Key {
     fn from(v: i32) -> Self {
         Key::Number(v)
+    }
+}
+
+impl From<u32> for Key {
+    fn from(v: u32) -> Self {
+        Key::U64(v as u64)
     }
 }
 
@@ -249,6 +346,33 @@ impl TryInto<usize> for MsgData {
     }
 }
 
+impl TryInto<usize> for &MsgData {
+    type Error = DataConvertError;
+
+    fn try_into(self) -> Result<usize, DataConvertError> {
+        match self {
+            MsgData::Index(v) => Ok(*v),
+            MsgData::Number(v) => Ok(*v as usize),
+            MsgData::Float(v) => Ok((*v).floor() as usize),
+            MsgData::Text(v) => match v.parse::<usize>() {
+                Err(_) => Err(DataConvertError::WrongType),
+                Ok(v) => Ok(v),
+            },
+            MsgData::Boolean(v) => match v {
+                true => Ok(1),
+                false => Ok(0),
+            },
+            MsgData::U64(v) => match (*v).try_into() {
+                Ok(v) => Ok(v),
+                Err(_) => Err(DataConvertError::WrongType),
+            },
+
+            // Value::Blank => Ok(0.0),
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
 impl TryInto<i32> for MsgData {
     type Error = DataConvertError;
 
@@ -266,6 +390,33 @@ impl TryInto<i32> for MsgData {
                 false => Ok(0),
             },
             MsgData::U64(v) => match v.try_into() {
+                Ok(v) => Ok(v),
+                Err(_) => Err(DataConvertError::WrongType),
+            },
+
+            // Value::Blank => Ok(0.0),
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
+impl TryInto<i32> for &MsgData {
+    type Error = DataConvertError;
+
+    fn try_into(self) -> Result<i32, DataConvertError> {
+        match self {
+            MsgData::Index(v) => Ok(*v as i32),
+            MsgData::Number(v) => Ok(*v),
+            MsgData::Float(v) => Ok((*v).floor() as i32),
+            MsgData::Text(v) => match v.parse::<i32>() {
+                Err(_) => Err(DataConvertError::WrongType),
+                Ok(v) => Ok(v),
+            },
+            MsgData::Boolean(v) => match v {
+                true => Ok(1),
+                false => Ok(0),
+            },
+            MsgData::U64(v) => match (*v).try_into() {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
@@ -309,6 +460,39 @@ impl TryInto<u32> for MsgData {
     }
 }
 
+impl TryInto<u32> for &MsgData {
+    type Error = DataConvertError;
+
+    fn try_into(self) -> Result<u32, DataConvertError> {
+        match self {
+            MsgData::Index(v) => Ok(*v as u32),
+            MsgData::Number(v) => match *v >= 0 {
+                true => Ok(*v as u32),
+                false => Err(DataConvertError::Negative),
+            },
+            MsgData::Float(v) => match *v >= 0.0 {
+                true => Ok(v.floor() as u32),
+                false => Err(DataConvertError::Negative),
+            },
+            MsgData::Text(v) => match v.parse::<u32>() {
+                Err(_) => Err(DataConvertError::WrongType),
+                Ok(v) => Ok(v),
+            },
+            MsgData::Boolean(v) => match *v {
+                true => Ok(1),
+                false => Ok(0),
+            },
+            MsgData::U64(v) => match (*v).try_into() {
+                Ok(v) => Ok(v),
+                Err(_) => Err(DataConvertError::WrongType),
+            },
+
+            // Value::Blank => Ok(0.0),
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
 impl TryInto<u64> for MsgData {
     type Error = DataConvertError;
 
@@ -332,6 +516,36 @@ impl TryInto<u64> for MsgData {
                 false => Ok(0),
             },
             MsgData::U64(v) => Ok(v),
+
+            // Value::Blank => Ok(0.0),
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
+impl TryInto<u64> for &MsgData {
+    type Error = DataConvertError;
+
+    fn try_into(self) -> Result<u64, DataConvertError> {
+        match self {
+            MsgData::Index(v) => Ok(*v as u64),
+            MsgData::Number(v) => match *v >= 0 {
+                true => Ok(*v as u64),
+                false => Err(DataConvertError::Negative),
+            },
+            MsgData::Float(v) => match *v >= 0.0 {
+                true => Ok(v.floor() as u64),
+                false => Err(DataConvertError::Negative),
+            },
+            MsgData::Text(v) => match v.parse::<u64>() {
+                Err(_) => Err(DataConvertError::WrongType),
+                Ok(v) => Ok(v),
+            },
+            MsgData::Boolean(v) => match v {
+                true => Ok(1),
+                false => Ok(0),
+            },
+            MsgData::U64(v) => Ok(*v),
 
             // Value::Blank => Ok(0.0),
             _ => Err(DataConvertError::WrongType),
@@ -363,6 +577,30 @@ impl TryInto<f32> for MsgData {
     }
 }
 
+impl TryInto<f32> for &MsgData {
+    type Error = DataConvertError;
+
+    fn try_into(self) -> Result<f32, DataConvertError> {
+        match self {
+            MsgData::Index(v) => Ok(*v as f32),
+            MsgData::Number(v) => Ok(*v as f32),
+            MsgData::Float(v) => Ok(*v),
+            MsgData::Text(v) => match v.parse::<f32>() {
+                Err(_) => Err(DataConvertError::WrongType),
+                Ok(v) => Ok(v),
+            },
+            MsgData::Boolean(v) => match v {
+                true => Ok(1.0),
+                false => Ok(0.0),
+            },
+            MsgData::U64(v) => Ok(*v as f32),
+
+            // Value::Blank => Ok(0.0),
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
 impl TryInto<bool> for MsgData {
     type Error = DataConvertError;
 
@@ -377,6 +615,26 @@ impl TryInto<bool> for MsgData {
                 false => Ok(false),
             },
             MsgData::U64(v) => Ok(v != 0),
+            // Value::Blank => Ok(false),
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
+impl TryInto<bool> for &MsgData {
+    type Error = DataConvertError;
+
+    fn try_into(self) -> Result<bool, DataConvertError> {
+        match self {
+            MsgData::Index(v) => Ok(*v != 0),
+            MsgData::Number(v) => Ok(*v != 0),
+            MsgData::Float(v) => Ok(*v != 0.0),
+            MsgData::Text(v) => Ok(v.len() > 0),
+            MsgData::Boolean(v) => match v {
+                true => Ok(true),
+                false => Ok(false),
+            },
+            MsgData::U64(v) => Ok(*v != 0),
             // Value::Blank => Ok(false),
             _ => Err(DataConvertError::WrongType),
         }
@@ -442,6 +700,12 @@ impl From<usize> for MsgData {
 impl From<i32> for MsgData {
     fn from(v: i32) -> Self {
         MsgData::Number(v)
+    }
+}
+
+impl From<u32> for MsgData {
+    fn from(v: u32) -> Self {
+        MsgData::U64(v as u64)
     }
 }
 
