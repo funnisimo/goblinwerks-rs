@@ -9,6 +9,8 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use uni_gl::{BufferBit, WebGLRenderingContext};
 
+use atomic_refcell::{AtomicRef, AtomicRefMut};
+
 #[cfg(feature = "ecs")]
 use legion::*;
 
@@ -46,7 +48,7 @@ pub enum LoadError {
 pub struct AppContext {
     // pub(super) cons: Vec<Console>,
     pub(crate) input: AppInput,
-    pub(crate) fps: Fps,
+    // pub(crate) fps: Fps,
     pub(crate) screen_size: (u32, u32),
     pub(crate) frame_time_ms: f64,
     pub(crate) gl: WebGLRenderingContext,
@@ -73,9 +75,12 @@ impl AppContext {
         input: AppInput,
         fps_goal: u32,
     ) -> Self {
+        let mut resources = Resources::default();
+        resources.insert(Fps::new(fps_goal));
+
         let mut ctx = AppContext {
             input,
-            fps: Fps::new(fps_goal),
+            // fps: Fps::new(fps_goal),
             screen_size: screen_size,
             frame_time_ms: 0.0,
             simple_program: Program::new(&gl),
@@ -88,7 +93,7 @@ impl AppContext {
             messages: Some(Vec::new()),
 
             #[cfg(feature = "ecs")]
-            resources: Resources::default(),
+            resources,
             #[cfg(feature = "ecs")]
             world: World::default(),
         };
@@ -175,12 +180,24 @@ impl AppContext {
         &self.input
     }
 
-    pub fn fps(&self) -> u32 {
-        self.fps.current()
+    pub fn fps(&self) -> AtomicRef<Fps> {
+        self.resources.get::<Fps>().unwrap()
+        // self.fps.current()
+    }
+
+    pub fn fps_mut(&self) -> AtomicRefMut<Fps> {
+        self.resources.get_mut::<Fps>().unwrap()
+        // self.fps.current()
+    }
+
+    pub fn current_fps(&self) -> u32 {
+        self.resources.get::<Fps>().unwrap().current()
+        // self.fps.current()
     }
 
     pub fn average_fps(&self) -> u32 {
-        self.fps.average()
+        self.resources.get::<Fps>().unwrap().average()
+        // self.fps.average()
     }
 
     pub fn frame_time_ms(&self) -> f64 {

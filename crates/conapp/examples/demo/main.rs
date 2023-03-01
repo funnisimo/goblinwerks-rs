@@ -95,7 +95,7 @@ impl Screen for DoryenDemo {
             self.clear_con();
             self.level.render(self.con.buffer_mut(), self.player.pos());
             self.render_entities();
-            let fps = app.fps();
+            let fps = app.current_fps();
 
             draw::colored(self.con.buffer_mut()).align(TextAlign::Center).print(
             

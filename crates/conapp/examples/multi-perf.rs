@@ -89,7 +89,7 @@ impl PerfTest {
                 5,
             );
 
-        let fps = app.fps();
+        let fps = app.current_fps();
 
         draw::colored(buffer)
             .align(TextAlign::Center)

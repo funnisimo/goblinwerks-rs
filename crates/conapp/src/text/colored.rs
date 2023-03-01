@@ -1,4 +1,4 @@
-use std::cmp::min;
+use std::{cmp::min, fmt::Display};
 
 /// A span of the input text that is in a single color
 #[derive(Debug, Clone)]
@@ -243,7 +243,7 @@ impl<'a> ColoredLine<'a> {
                     let (a, b) = span.split_omitting(to_omit as usize);
                     left.push(a);
                     right.push(b);
-                } else {
+                } else if char_len > 0 {
                     left.spans.push(span.clone());
                 }
                 to_omit -= char_len;
@@ -267,13 +267,13 @@ impl<'a> ColoredLine<'a> {
 //     }
 // }
 
-impl<'a> ToString for ColoredLine<'a> {
-    fn to_string(&self) -> String {
+impl<'a> Display for ColoredLine<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut out = "".to_string();
         for span in self.spans.iter() {
             out.push_str(&span.to_string());
         }
-        out
+        write!(f, "{}", out)
     }
 }
 
@@ -283,7 +283,14 @@ pub fn parse_colored_lines<'a>(txt: &'a str) -> Vec<ColoredLine<'a>> {
     let mut out: Vec<ColoredLine<'a>> = Vec::new();
 
     for line in txt.split('\n') {
-        let colored_line = parse_colored_line(line, &mut colors);
+        let mut colored_line = parse_colored_line(line, &mut colors);
+        if let Some(mut first) = colored_line.spans.get_mut(0) {
+            if first.color.is_none() {
+                if let Some(last_color) = colors.last() {
+                    first.color = last_color.clone();
+                }
+            }
+        }
         out.push(colored_line);
     }
 
@@ -390,7 +397,7 @@ pub fn wrap_colored<'a>(limit: usize, text: &'a str) -> Vec<ColoredLine<'a>> {
 /// Parses the text and wraps it into lines with a max of the given width
 pub fn wrap_colored_no_hyphen<'a>(limit: usize, text: &'a str) -> Vec<ColoredLine<'a>> {
     // println!("--------------------------------------");
-    // println!("WRAP - {}: '{}'", limit, text);
+    // println!("WRAP NO HYPHEN - {}: '{}'", limit, text);
 
     let mut output: Vec<ColoredLine<'a>> = Vec::new();
 
@@ -413,7 +420,9 @@ pub fn wrap_colored_no_hyphen<'a>(limit: usize, text: &'a str) -> Vec<ColoredLin
 
                     // println!("too long - {} => {} + {}", first_word, left, right);
                     // println!(": {}", left);
-                    output.push(left);
+                    if left.char_len() > 0 {
+                        output.push(left);
+                    }
                     current = right;
                 }
                 Some(break_index) => {
@@ -422,20 +431,10 @@ pub fn wrap_colored_no_hyphen<'a>(limit: usize, text: &'a str) -> Vec<ColoredLin
                     // let line_left = limit.saturating_sub(left_len).saturating_sub(1);
 
                     // println!(" - left={}, line_left={}, right={}", left, line_left, right);
-                    // if line_left >= 4 {
-                    //     let next_word = right.first_word();
-                    //     let next_word_len = next_word.char_len();
-
-                    //     // println!(" - : next_word={}, len={}", next_word, next_word_len);
-
-                    //     if next_word_len >= 6 {
-                    //         let keep_len = min(line_left, next_word_len - 2);
-                    //         // println!(" - : hyphen! keep={}", keep_len);
-                    //         (left, right) = current.hyphenate_at_char(break_index + keep_len);
-                    //     }
-                    // }
                     // println!(": {}", left);
-                    output.push(left);
+                    if left.char_len() > 0 {
+                        output.push(left);
+                    }
                     current = right;
                 }
             }
@@ -624,5 +623,81 @@ mod test {
         let (left, right) = line.hyphenate_at_char(line.char_len() - 1);
         assert_eq!(line_string(&left), "This is a span of tex-");
         assert_eq!(line_string(&right), "t");
+    }
+
+    #[test]
+    fn one_line() {
+        let result = wrap_colored(20, "Testing");
+
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].to_string(), "#[]Testing");
+    }
+
+    #[test]
+    fn flying_period() {
+        let result = wrap_colored(12, "This is a line of text.");
+
+        assert_eq!(result.len(), 3);
+        assert_eq!(result[0].to_string(), "#[]This is a");
+        assert_eq!(result[1].to_string(), "#[]line of");
+        assert_eq!(result[2].to_string(), "#[]text.");
+    }
+
+    #[test]
+    fn two_lines() {
+        let result = wrap_colored(20, "Testing a longer bit of text.");
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].to_string(), "#[]Testing a longer bit");
+        assert_eq!(result[1].to_string(), "#[]of text.");
+    }
+
+    #[test]
+    fn four_lines() {
+        let result = wrap_colored_no_hyphen(
+            12,
+            "#[red]This is some #[blue]text#[] in multiple#[] lines.",
+        );
+
+        assert_eq!(result.len(), 4);
+        assert_eq!(result[0].to_string(), "#[red]This is some");
+        assert_eq!(result[1].to_string(), "#[blue]text#[red] in");
+        assert_eq!(result[2].to_string(), "#[red]multiple#[]");
+        assert_eq!(result[3].to_string(), "#[]lines.");
+    }
+
+    #[test]
+    fn three_lines() {
+        let result = wrap_colored(
+            20,
+            "Testing a longer bit of text that spans multiple lines.",
+        );
+
+        assert_eq!(result.len(), 3);
+        assert_eq!(result[0].to_string(), "#[]Testing a longer bit");
+        assert_eq!(result[1].to_string(), "#[]of text that spans");
+        assert_eq!(result[2].to_string(), "#[]multiple lines.");
+    }
+
+    #[test]
+    fn with_color() {
+        let result = wrap_colored(
+            20,
+            "Testing a #[blue]longer#[] bit of text that #[red]spans multiple lines#[].",
+        );
+
+        assert_eq!(result.len(), 3);
+        assert_eq!(result[0].to_string(), "#[]Testing a #[blue]longer#[] bit");
+        assert_eq!(result[1].to_string(), "#[]of text that #[red]spans");
+        assert_eq!(result[2].to_string(), "#[red]multiple lines#[].");
+    }
+
+    #[test]
+    fn start_color() {
+        let result = wrap_colored(20, "#[color]This   is \na \ttest.");
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].to_string(), "#[color]This   is ");
+        assert_eq!(result[1].to_string(), "#[color]a \ttest.");
     }
 }

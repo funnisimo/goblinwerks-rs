@@ -355,9 +355,11 @@ impl Runner {
             }
         }
 
+        let fps_goal = ctx.fps().goal();
+
         let mut skipped_frames: i32 = -1;
         let time = crate::app::perf_now();
-        let skip_ticks = match ctx.fps.goal() {
+        let skip_ticks = match fps_goal {
             0 => time - *last_frame_time,
             x => 1.0 / x as f64,
         };
@@ -388,12 +390,12 @@ impl Runner {
             // next_tick = time + SKIP_TICKS;
             *last_frame_time = time + skip_ticks;
         }
-        if ctx.fps.goal() == 0 || time >= *next_frame {
+        if fps_goal == 0 || time >= *next_frame {
             self.render(ctx);
-            ctx.fps.step();
+            ctx.fps_mut().step();
 
-            if ctx.fps.goal() > 0 {
-                *next_frame += 1.0 / ctx.fps.goal() as f64;
+            if fps_goal > 0 {
+                *next_frame += 1.0 / fps_goal as f64;
             }
         }
     }
