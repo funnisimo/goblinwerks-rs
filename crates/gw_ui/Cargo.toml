@@ -1,0 +1,17 @@
+[package]
+name          = "gw_ui"
+version       = "0.1.0"
+authors       = ["Funnisimo <funnisimo@users.noreply.github.com>"]
+description   = "UI widgets for GoblinWerks-rs"
+license       = "MIT"
+edition       = "2021"
+documentation = "https://docs.rs/goblinwerks-rs"
+repository    = "https://github.com/funnisimo/goblinwerks-rs"
+keywords      = ["roguelike", "console", "gui"]
+homepage      = "https://github.com/funnisimo/goblinwerks-rs"
+readme        = "README.md"
+
+[dependencies]
+gw_app      = { path = "../gw_app" }
+lazy_static = "1.4"
+regex       = "1.6"

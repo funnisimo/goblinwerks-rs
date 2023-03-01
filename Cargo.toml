@@ -10,5 +10,5 @@ exclude = ["resources/", ".github/", "wasmi/", "crates/"]
 members = ["crates/*"]
 
 [dependencies]
-conapp = { path = "crates/conapp" }
-conui  = { path = "crates/conui" }
+gw_app = { path = "crates/gw_app" }
+gw_ui  = { path = "crates/gw_ui" }

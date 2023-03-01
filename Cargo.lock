@@ -167,35 +167,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
 
 [[package]]
-name = "conapp"
-version = "0.1.0"
-dependencies = [
- "atomic_refcell",
- "doryen-fov",
- "glutin",
- "image",
- "js-sys",
- "lazy_static",
- "legion",
- "regex",
- "uni-gl",
- "unicode-segmentation",
- "wasm-bindgen",
- "web-sys",
- "winapi",
- "winit",
-]
-
-[[package]]
-name = "conui"
-version = "0.1.0"
-dependencies = [
- "conapp",
- "lazy_static",
- "regex",
-]
-
-[[package]]
 name = "core-foundation"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -560,8 +531,37 @@ dependencies = [
 name = "goblinwerks"
 version = "0.1.0"
 dependencies = [
- "conapp",
- "conui",
+ "gw_app",
+ "gw_ui",
+]
+
+[[package]]
+name = "gw_app"
+version = "0.1.0"
+dependencies = [
+ "atomic_refcell",
+ "doryen-fov",
+ "glutin",
+ "image",
+ "js-sys",
+ "lazy_static",
+ "legion",
+ "regex",
+ "uni-gl",
+ "unicode-segmentation",
+ "wasm-bindgen",
+ "web-sys",
+ "winapi",
+ "winit",
+]
+
+[[package]]
+name = "gw_ui"
+version = "0.1.0"
+dependencies = [
+ "gw_app",
+ "lazy_static",
+ "regex",
 ]
 
 [[package]]
