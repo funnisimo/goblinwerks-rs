@@ -15,6 +15,3 @@ readme        = "README.md"
 conapp      = { path = "../conapp" }
 lazy_static = "1.4"
 regex       = "1.6"
-
-[dev-dependencies]
-bevy_ecs = "0.9"

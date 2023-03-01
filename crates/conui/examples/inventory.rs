@@ -1,6 +1,5 @@
-use bevy_ecs::prelude::*;
-use bevy_ecs::schedule::Schedule;
-use conapp::screen::DataConvertError;
+use conapp::ecs::systems::ResourceSet;
+use conapp::ecs::*;
 use conapp::*;
 use conui::css::*;
 use conui::screens::{Choice, MultiChoice};
@@ -8,18 +7,9 @@ use conui::ui::*;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-fn entity_from<V: TryInto<u64>>(v: V) -> Result<Entity, DataConvertError> {
-    let bits = match v.try_into() {
-        Err(_) => return Err(DataConvertError::WrongType),
-        Ok(v) => v,
-    };
-    Ok(Entity::from_bits(bits))
-}
-
 struct MainScreen {
     ui: UI,
     schedule: Schedule,
-    world: World,
 }
 
 impl MainScreen {
@@ -110,15 +100,14 @@ impl MainScreen {
 
         Box::new(MainScreen {
             ui,
-            schedule: Schedule::default(),
-            world: World::new(),
+            schedule: Schedule::builder().build(),
         })
     }
 }
 
 impl Screen for MainScreen {
-    fn setup(&mut self, _app: &mut AppContext) {
-        init_item_kinds(&mut self.world);
+    fn setup(&mut self, app: &mut AppContext) {
+        init_item_kinds(&mut app.resources);
         self.ui.update_styles();
     }
 
@@ -132,14 +121,13 @@ impl Screen for MainScreen {
 
     fn message(
         &mut self,
-        _app: &mut AppContext,
+        app: &mut AppContext,
         id: String,
         value: Option<MsgData>,
     ) -> ScreenResult {
         match id.as_str() {
             "CREATE" => {
-                let world = &self.world;
-                let item_kinds = world.get_resource::<ItemKinds>().unwrap();
+                let (item_kinds,) = <(Read<ItemKinds>,)>::fetch(&app.resources);
 
                 let items: Vec<(String, MsgData)> = item_kinds
                     .iter()
@@ -166,9 +154,9 @@ impl Screen for MainScreen {
                 };
 
                 text.set_text(&kind_id);
-                let world = &mut self.world;
+                let world = &mut app.world;
 
-                let item_kinds = world.get_resource::<ItemKinds>().unwrap();
+                let (item_kinds,) = <(Read<ItemKinds>,)>::fetch(&app.resources);
                 let kind = item_kinds.get(&kind_id).unwrap();
 
                 if stack_floor(world, &kind, 1).is_none() {
@@ -177,16 +165,16 @@ impl Screen for MainScreen {
             }
 
             "DELETE" => {
-                let world = &mut self.world;
+                let world = &mut app.world;
 
-                let mut query = world.query_filtered::<(Entity, &Item), Without<InInventory>>();
+                let mut query = <(Entity, Read<Item>)>::query().filter(!component::<InInventory>());
 
                 let items: Vec<(String, Key, u16)> = query
-                    .iter(&world)
+                    .iter(world)
                     .map(|(entity, item)| {
                         (
                             format!("{} {}", item.count, item.kind.name),
-                            entity.to_bits().into(),
+                            entity.into(),
                             item.count,
                         )
                     })
@@ -210,12 +198,12 @@ impl Screen for MainScreen {
             "DELETE_ITEM" => {
                 if let Some(MsgData::Map(map)) = value {
                     for (key, val) in map {
-                        let entity: Entity = entity_from(key).unwrap();
+                        let entity: Entity = key.try_into().unwrap();
                         let count: i32 = val.try_into().unwrap();
 
-                        let world = &mut self.world;
-                        if reduce_count(world, entity, count as u16) == 0 {
-                            world.despawn(entity);
+                        let world = &mut app.world;
+                        if reduce_count(world, &app.resources, entity, count as u16) == 0 {
+                            world.remove(entity);
                             log(format!("Delete item - {:?}", entity));
                         }
                     }
@@ -223,16 +211,16 @@ impl Screen for MainScreen {
             }
 
             "PICKUP" => {
-                let world = &mut self.world;
+                let world = &mut app.world;
 
-                let mut query = world.query_filtered::<(Entity, &Item), Without<InInventory>>();
+                let mut query = <(Entity, Read<Item>)>::query().filter(!component::<InInventory>());
 
                 let items: Vec<(String, Key, u16)> = query
-                    .iter(&world)
+                    .iter(world)
                     .map(|(entity, item)| {
                         (
                             format!("{} {}", item.count, item.kind.name),
-                            entity.to_bits().into(),
+                            entity.into(),
                             item.count,
                         )
                     })
@@ -255,24 +243,27 @@ impl Screen for MainScreen {
             "PICKUP_ITEM" => {
                 if let Some(MsgData::Map(map)) = value {
                     for (key, val) in map {
-                        let entity: Entity = entity_from(key).unwrap();
+                        let entity: Entity = key.try_into().unwrap();
                         let count: i32 = val.try_into().unwrap();
 
-                        let world = &mut self.world;
+                        let world = &mut app.world;
 
                         let (kind_id, has_count) = get_info(world, entity);
 
                         match has_count == count as u16 {
                             true => match stack_inventory(world, &kind_id, count as u16) {
                                 None => {
-                                    world.entity_mut(entity).insert(InInventory::new());
+                                    world
+                                        .entry(entity)
+                                        .unwrap()
+                                        .add_component(InInventory::new());
                                 }
                                 Some(_) => {
-                                    world.despawn(entity);
+                                    world.remove(entity);
                                 }
                             },
                             false => {
-                                reduce_count(world, entity, count as u16);
+                                reduce_count(world, &app.resources, entity, count as u16);
                                 if stack_inventory(world, &kind_id, count as u16).is_none() {
                                     create_inventory(world, &kind_id, count as u16);
                                 }
@@ -293,16 +284,16 @@ impl Screen for MainScreen {
             }
 
             "DROP" => {
-                let world = &mut self.world;
+                let world = &mut app.world;
 
-                let mut query = world.query_filtered::<(Entity, &Item), With<InInventory>>();
+                let mut query = <(Entity, Read<Item>)>::query().filter(component::<InInventory>());
 
                 let items: Vec<(String, Key, u16)> = query
-                    .iter(&world)
+                    .iter(world)
                     .map(|(entity, item)| {
                         (
                             format!("{} {}", item.count, item.kind.id),
-                            entity.to_bits().into(),
+                            entity.try_into().unwrap(),
                             item.count,
                         )
                     })
@@ -325,23 +316,26 @@ impl Screen for MainScreen {
             "DROP_ITEM" => {
                 if let Some(MsgData::Map(map)) = value {
                     for (key, val) in map {
-                        let entity: Entity = entity_from(key).unwrap();
+                        let entity: Entity = key.try_into().unwrap();
                         let count: i32 = val.try_into().unwrap();
 
-                        let world = &mut self.world;
+                        let world = &mut app.world;
                         let (kind, has_count) = get_info(world, entity);
 
                         match has_count == count as u16 {
                             true => {
                                 log("Removing whole inventory item");
                                 if stack_floor(world, &kind, count as u16).is_some() {
-                                    world.despawn(entity);
+                                    world.remove(entity);
                                 } else {
-                                    world.entity_mut(entity).remove::<InInventory>();
+                                    world
+                                        .entry(entity)
+                                        .unwrap()
+                                        .remove_component::<InInventory>();
                                 }
                             }
                             false => {
-                                reduce_count(world, entity, count as u16);
+                                reduce_count(world, &app.resources, entity, count as u16);
                                 if stack_floor(world, &kind, count as u16).is_none() {
                                     create_floor(world, &kind, count as u16);
                                 }
@@ -355,10 +349,10 @@ impl Screen for MainScreen {
         }
 
         // update floor items
-        let world = &mut self.world;
-        let mut query = world.query_filtered::<(&Item,), Without<InInventory>>();
+        let world = &mut app.world;
+        let mut query = <(Read<Item>,)>::query().filter(!component::<InInventory>());
         let ids: Vec<String> = query
-            .iter(&world)
+            .iter(world)
             .map(|(item,)| format!("{} {}", item.count, item.kind.name))
             .collect();
 
@@ -369,9 +363,9 @@ impl Screen for MainScreen {
         }
 
         // update inventory items
-        let mut query = world.query_filtered::<(&Item,), With<InInventory>>();
+        let mut query = <(Read<Item>,)>::query().filter(component::<InInventory>());
         let ids: Vec<String> = query
-            .iter(&world)
+            .iter(world)
             .map(|(item,)| format!("{} {}", item.count, item.kind.name))
             .collect();
 
@@ -385,10 +379,8 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn update(&mut self, _app: &mut AppContext, _frame_time_ms: f64) -> ScreenResult {
-        let world = &mut self.world;
-        self.schedule.run_once(world);
-        world.clear_trackers();
+    fn update(&mut self, app: &mut AppContext, _frame_time_ms: f64) -> ScreenResult {
+        self.schedule.execute(&mut app.world, &mut app.resources);
 
         ScreenResult::Continue
     }
@@ -434,7 +426,7 @@ impl ItemKind {
     }
 }
 
-#[derive(Resource, Clone)]
+#[derive(Clone)]
 struct ItemKinds {
     kinds: HashMap<String, Arc<ItemKind>>,
 }
@@ -462,17 +454,17 @@ impl ItemKinds {
     }
 }
 
-fn init_item_kinds(world: &mut World) {
+fn init_item_kinds(resources: &mut Resources) {
     let mut item_kinds = ItemKinds::new();
     item_kinds.insert(ItemKind::new("TACO", "taco", true));
     item_kinds.insert(ItemKind::new("BURRITO", "burrito", true));
     item_kinds.insert(ItemKind::new("SOMBRERO", "sombrero", false));
     item_kinds.insert(ItemKind::new("CACTUS", "cactus", false));
 
-    world.insert_resource(item_kinds);
+    resources.insert(item_kinds);
 }
 
-#[derive(Component, Clone)]
+#[derive(Clone)]
 struct Item {
     kind: Arc<ItemKind>,
     count: u16,
@@ -484,7 +476,7 @@ impl Item {
     }
 }
 
-#[derive(Component, Clone)]
+#[derive(Clone)]
 struct InInventory {}
 
 impl InInventory {
@@ -498,16 +490,17 @@ fn stack_floor(world: &mut World, kind: &Arc<ItemKind>, count: u16) -> Option<En
         return None;
     }
 
-    let mut query = world.query_filtered::<(&mut Item, Entity), Without<InInventory>>();
+    let mut query = <(Entity, Write<Item>)>::query().filter(!component::<InInventory>());
+
     match query
         .iter_mut(world)
-        .find(|(item, _)| item.kind.id == kind.id)
+        .find(|(_, item)| item.kind.id == kind.id)
     {
         None => None,
-        Some((mut same_kind_item, entity)) => {
+        Some((entity, mut same_kind_item)) => {
             same_kind_item.count += count;
             log(format!("Added {} to existing floor item.", count));
-            Some(entity)
+            Some(*entity)
         }
     }
 }
@@ -515,7 +508,7 @@ fn stack_floor(world: &mut World, kind: &Arc<ItemKind>, count: u16) -> Option<En
 fn create_floor(world: &mut World, kind: &Arc<ItemKind>, count: u16) -> Entity {
     let mut item = Item::new(kind.clone());
     item.count = count;
-    let entity = world.spawn((item,)).id();
+    let entity = world.push((item,));
     log(format!("Created floor entity - {:?}", entity));
     entity
 }
@@ -525,16 +518,16 @@ fn stack_inventory(world: &mut World, kind: &Arc<ItemKind>, count: u16) -> Optio
         return None;
     }
 
-    let mut query = world.query_filtered::<(&mut Item, Entity), With<InInventory>>();
+    let mut query = <(Entity, Write<Item>)>::query().filter(!component::<InInventory>());
     match query
         .iter_mut(world)
-        .find(|(item, _)| item.kind.id == kind.id)
+        .find(|(_, item)| item.kind.id == kind.id)
     {
         None => None,
-        Some((mut same_kind_item, entity)) => {
+        Some((entity, mut same_kind_item)) => {
             same_kind_item.count += count;
             log(format!("Added {} to existing inventory item.", count));
-            Some(entity)
+            Some(*entity)
         }
     }
 }
@@ -542,33 +535,43 @@ fn stack_inventory(world: &mut World, kind: &Arc<ItemKind>, count: u16) -> Optio
 fn create_inventory(world: &mut World, kind: &Arc<ItemKind>, count: u16) -> Entity {
     let mut item = Item::new(kind.clone());
     item.count = count;
-    let entity = world.spawn((item, InInventory::new())).id();
+    let entity = world.push((item, InInventory::new()));
     log(format!("Created inventory entity - {:?}", entity));
     entity
 }
 
-fn reduce_count(world: &mut World, entity: Entity, count: u16) -> u16 {
+fn reduce_count(world: &mut World, resources: &Resources, entity: Entity, count: u16) -> u16 {
     let unstack = {
-        let item_kinds = world.get_resource::<ItemKinds>().unwrap();
-        let item = world.entity(entity).get::<Item>().unwrap();
+        let item_kinds = resources.get::<ItemKinds>().unwrap();
+        let entity = world.entry_ref(entity).unwrap();
+        let item = entity.get_component::<Item>().unwrap();
 
         let kind = item_kinds.get(&item.kind.id).unwrap();
         kind.stackable && item.count > count as u16
     };
 
     if unstack {
-        let mut entity_obj = world.entity_mut(entity);
-        let mut item = entity_obj.get_mut::<Item>().unwrap();
+        let mut entity_obj = world.entry_mut(entity).unwrap();
+        let mut item = entity_obj.get_component_mut::<Item>().unwrap();
         item.count = item.count.saturating_sub(count as u16);
         log(format!("Delete {} of item - {:?}", count, entity));
         item.count
     } else {
-        assert_eq!(count, world.entity(entity).get::<Item>().unwrap().count);
+        assert_eq!(
+            count,
+            world
+                .entry_ref(entity)
+                .unwrap()
+                .get_component::<Item>()
+                .unwrap()
+                .count
+        );
         0
     }
 }
 
 fn get_info(world: &World, entity: Entity) -> (Arc<ItemKind>, u16) {
-    let item = world.entity(entity).get::<Item>().unwrap();
+    let entity = world.entry_ref(entity).unwrap();
+    let item = entity.get_component::<Item>().unwrap();
     (item.kind.clone(), item.count)
 }

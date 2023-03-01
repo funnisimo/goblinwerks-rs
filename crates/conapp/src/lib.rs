@@ -37,5 +37,5 @@ pub fn log<T: AsRef<str>>(msg: T) {
 
 #[cfg(feature = "ecs")]
 pub mod ecs {
-    pub use bevy_ecs::*;
+    pub use legion::*;
 }

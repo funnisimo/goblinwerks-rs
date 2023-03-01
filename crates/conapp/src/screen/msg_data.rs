@@ -1,5 +1,5 @@
 #[cfg(feature = "ecs")]
-use bevy_ecs::prelude::Entity;
+use legion::Entity;
 use std::collections::HashMap;
 use std::fmt::Display;
 
