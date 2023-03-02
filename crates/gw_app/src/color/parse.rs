@@ -40,11 +40,11 @@ pub fn get_color(name: &str) -> Result<RGBA, ColorParseErr> {
         let level = parts.next();
         let name = parts.next();
 
-        println!(
-            "get_color: {} {}",
-            level.as_ref().unwrap(),
-            name.as_ref().unwrap()
-        );
+        // println!(
+        //     "get_color: {} {}",
+        //     level.as_ref().unwrap(),
+        //     name.as_ref().unwrap()
+        // );
         match name {
             None => Err(ColorParseErr::InvalidName),
             Some(name) => match static_color(name) {

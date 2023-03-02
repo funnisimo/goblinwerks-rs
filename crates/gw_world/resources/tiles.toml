@@ -1,0 +1,50 @@
+# tiles
+
+# This file holds the configuration for all of the tiles in the game.
+# It is a "TOML" file and the data must be formatted accordingly.
+
+# Each tile starts a table entry
+# e.g.
+# [ID]
+# sprite = " :red:black"
+# ...
+
+# the fields that you can set on a tile include:
+# sprite = "<char>:<fg>:<bg>" or "<char>:<fg>" or "<bg>"
+
+# colors can be either...
+# - hex colors (#rgb, #rgba, #rrggbb, #rrggbbaa): e.g. #39f or #F407A935 
+# . - hex is not case sensitive
+# - named colors: colors that are pre-loaded (either in the colors file or from defaults): e.g. white
+# . - names are case sensitive
+
+[ERROR]
+sprite = "!:RED:BLACK"
+
+[WALL]
+kind   = "WALL"
+sprite = "#;GRAY;BLACK"
+move   = "BLOCKS_ALL"
+flavor = "a solid granite wall"
+
+[FLOOR]
+kind   = "FLOOR"
+sprite = ".;DARK_GRAY;BLACK"
+flavor = "the stone floor"
+
+[HALL]
+kind   = "HALL"
+sprite = ".;GRAY;BLACK"
+flavor = "the stone hallway"
+
+[UP_STAIRS]
+kind   = "STAIRS"
+sprite = "<;CYAN;BLACK"
+flags  = "CLIMB_PORTAL"
+flavor = "some stairs leading up"
+
+[DOWN_STAIRS]
+kind   = "STAIRS"
+sprite = ">;CYAN;BLACK"
+flags  = "DESCEND_PORTAL"
+flavor = "some stairs leading down"

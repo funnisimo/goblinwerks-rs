@@ -1,0 +1,24 @@
+[package]
+name          = "gw_util"
+version       = "0.1.0"
+authors       = ["Funnisimo <funnisimo@users.noreply.github.com>"]
+description   = "Pure rust OpenGL accelerated roguelike console API with native/wasm support"
+license       = "MIT"
+edition       = "2021"
+documentation = "https://docs.rs/gw_util"
+repository    = "https://github.com/funnisimo/goblinwerks-rs"
+keywords      = ["roguelike", "utilities", "cp437"]
+homepage      = "https://github.com/funnisimo/goblinwerks-rs"
+readme        = "README.md"
+
+[dependencies]
+lazy_static      = "1.4"
+regex            = "1.6"
+toml_edit        = "0.19.4"
+pest             = "2.5.3"
+pest_derive      = "2.5.3"
+assert_approx_eq = "1.1.0"
+chrono           = "0.4.23"
+rand             = "0.8.5"
+rand_pcg         = "0.3.1"
+gw_app           = { path = "../gw_app" }
