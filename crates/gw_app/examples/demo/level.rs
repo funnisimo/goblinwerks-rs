@@ -1,8 +1,11 @@
 use crate::entity::Entity;
 use crate::light::{Light, LIGHT_COEF};
+use crate::player::Player;
+use crate::{Entities, PLAYER_FOV_RADIUS};
 use doryen_fov::{FovAlgorithm, FovRestrictive, MapData};
-use gw_app::{color::RGBA, draw, AppContext, Buffer, Image};
-use std::rc::Rc;
+use gw_app::img::Images;
+use gw_app::{color::RGBA, draw, Buffer, Ecs, Image};
+use std::sync::Arc;
 
 const START_COLOR: RGBA = RGBA::rgba(255, 0, 0, 255);
 const LIGHT_COLOR: RGBA = RGBA::rgba(255, 255, 0, 255);
@@ -38,11 +41,11 @@ fn my_to_glyph(flag: u8) -> i32 {
 
 pub struct Level {
     /// a picture containing color coded walls, player start pos and entities. subcell resolution (2x2 pixel for each console cell)
-    level_img: Option<Rc<Image>>,
+    level_img: Arc<Image>,
     /// the level's ground texture. subcell resolution
-    ground: Option<Rc<Image>>,
+    ground: Arc<Image>,
     /// whether the level_img has been loaded
-    loaded: bool,
+    // loaded: bool,
     /// computed light in the level. subcell resolution
     lightmap: Image,
     /// the level size in console cells
@@ -67,11 +70,11 @@ pub struct Level {
 }
 
 impl Level {
-    pub fn new(app: &mut AppContext, img_path: &str) -> Self {
+    pub fn new(level_img: Arc<Image>, ground: Arc<Image>) -> Self {
         Self {
-            level_img: app.get_image(&(img_path.to_owned() + ".png")),
-            ground: app.get_image(&(img_path.to_owned() + "_color.png")),
-            loaded: false,
+            level_img,
+            ground,
+            // loaded: false,
             lightmap: Image::empty(1, 1),
             render_output: Image::empty(1, 1),
             size: (0, 0),
@@ -83,19 +86,6 @@ impl Level {
             lights: Vec::new(),
             player_light: Light::new((0, 0), PLAYER_LIGHT_RADIUS, PLAYER_LIGHT_COLOR),
         }
-    }
-    pub fn try_load(&mut self) -> Option<Vec<Entity>> {
-        if !self.loaded {
-            let entities = self.compute_walls_2x_and_start_pos();
-            self.compute_walls();
-            self.lightmap = Image::empty(self.size.0 as u32 * 2, self.size.1 as u32 * 2);
-            self.render_output = Image::empty(self.size.0 as u32 * 2, self.size.1 as u32 * 2);
-            self.loaded = true;
-            // free memory
-            // self.level_img = Image::new(1, 1);
-            return Some(entities);
-        }
-        None
     }
 
     pub fn start_pos(&self) -> (i32, i32) {
@@ -118,40 +108,38 @@ impl Level {
     pub fn render(&mut self, buffer: &mut Buffer, player_pos: (i32, i32)) {
         self.compute_lightmap(player_pos);
 
-        if let Some(ref ground) = self.ground {
-            for y in 0..self.size.1 as usize * 2 {
-                for x in 0..self.size.0 as usize * 2 {
-                    let off = self.offset_2x((x as i32, y as i32));
-                    if self.map.is_in_fov(x, y)
-                        && (self.map.is_transparent(x, y) || !self.visited_2x[off])
-                    {
-                        self.visited_2x[off] = true;
-                        let ground_col = ground.pixel(x as u32, y as u32).unwrap();
-                        let light_col = self.lightmap.pixel(x as u32, y as u32).unwrap();
-                        let mut r =
-                            f32::from(ground_col.0) * f32::from(light_col.0) * LIGHT_COEF / 255.0;
-                        let mut g =
-                            f32::from(ground_col.1) * f32::from(light_col.1) * LIGHT_COEF / 255.0;
-                        let mut b =
-                            f32::from(ground_col.2) * f32::from(light_col.2) * LIGHT_COEF / 255.0;
-                        r = r.min(255.0);
-                        g = g.min(255.0);
-                        b = b.min(255.0);
-                        self.render_output.put_pixel(
-                            x as u32,
-                            y as u32,
-                            (r as u8, g as u8, b as u8, 255).into(),
-                        );
-                    } else if self.visited_2x[off] {
-                        let col = ground.pixel(x as u32, y as u32).unwrap();
-                        let dark_col = RGBA::blend(col, VISITED_BLEND_COLOR, VISITED_BLEND_COEF);
-                        self.render_output
-                            // .borrow_mut()
-                            .put_pixel(x as u32, y as u32, dark_col);
-                    } else {
-                        self.render_output
-                            .put_pixel(x as u32, y as u32, (0, 0, 0, 255).into());
-                    }
+        for y in 0..self.size.1 as usize * 2 {
+            for x in 0..self.size.0 as usize * 2 {
+                let off = self.offset_2x((x as i32, y as i32));
+                if self.map.is_in_fov(x, y)
+                    && (self.map.is_transparent(x, y) || !self.visited_2x[off])
+                {
+                    self.visited_2x[off] = true;
+                    let ground_col = self.ground.pixel(x as u32, y as u32).unwrap();
+                    let light_col = self.lightmap.pixel(x as u32, y as u32).unwrap();
+                    let mut r =
+                        f32::from(ground_col.0) * f32::from(light_col.0) * LIGHT_COEF / 255.0;
+                    let mut g =
+                        f32::from(ground_col.1) * f32::from(light_col.1) * LIGHT_COEF / 255.0;
+                    let mut b =
+                        f32::from(ground_col.2) * f32::from(light_col.2) * LIGHT_COEF / 255.0;
+                    r = r.min(255.0);
+                    g = g.min(255.0);
+                    b = b.min(255.0);
+                    self.render_output.put_pixel(
+                        x as u32,
+                        y as u32,
+                        (r as u8, g as u8, b as u8, 255).into(),
+                    );
+                } else if self.visited_2x[off] {
+                    let col = self.ground.pixel(x as u32, y as u32).unwrap();
+                    let dark_col = RGBA::blend(&col, &VISITED_BLEND_COLOR, VISITED_BLEND_COEF);
+                    self.render_output
+                        // .borrow_mut()
+                        .put_pixel(x as u32, y as u32, dark_col);
+                } else {
+                    self.render_output
+                        .put_pixel(x as u32, y as u32, (0, 0, 0, 255).into());
                 }
             }
         }
@@ -190,7 +178,7 @@ impl Level {
     }
     fn compute_walls_2x_and_start_pos(&mut self) -> Vec<Entity> {
         let mut entities = Vec::new();
-        let level_img = self.level_img.as_ref().unwrap();
+        let level_img = &self.level_img;
         let image_size = level_img.size();
         self.size = (image_size.0 as i32 / 2, image_size.1 as i32 / 2);
         self.walls = vec![false; (self.size.0 * self.size.1) as usize];
@@ -251,9 +239,40 @@ impl Level {
         }
     }
     fn offset(&self, (x, y): (i32, i32)) -> usize {
-        (x + y * self.size.0 as i32) as usize
+        (x + y * self.size.0 as i32).max(0) as usize
     }
     fn offset_2x(&self, (x, y): (i32, i32)) -> usize {
-        (x + y * self.size.0 as i32 * 2) as usize
+        (x + y * self.size.0 as i32 * 2).max(0) as usize
     }
+}
+
+pub fn load_level(ecs: &mut Ecs, img_path: &str) -> bool {
+    let level_path = img_path.to_owned() + ".png";
+    let ground_path = img_path.to_owned() + "_color.png";
+
+    let (level_img, ground) = {
+        let images = ecs.resources.get::<Images>().unwrap();
+        (images.get(&level_path), images.get(&ground_path))
+    };
+
+    if level_img.is_none() || ground.is_none() {
+        return false;
+    }
+
+    let mut level = Level::new(level_img.unwrap(), ground.unwrap());
+
+    let entities = level.compute_walls_2x_and_start_pos();
+    level.compute_walls();
+    level.lightmap = Image::empty(level.size.0 as u32 * 2, level.size.1 as u32 * 2);
+    level.render_output = Image::empty(level.size.0 as u32 * 2, level.size.1 as u32 * 2);
+
+    let mut player = Player::new(super::PLAYER_SPEED);
+    player.move_to(level.start_pos());
+    level.compute_fov(player.pos(), PLAYER_FOV_RADIUS);
+
+    ecs.resources.insert(level);
+    ecs.resources.insert(Entities(entities));
+    ecs.resources.insert(player);
+
+    true
 }

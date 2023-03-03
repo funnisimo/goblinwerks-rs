@@ -81,7 +81,7 @@ impl Light {
             radius as usize,
             true,
         );
-        let light_color = RGBA::scale(self.color, intensity);
+        let light_color = RGBA::scale(&self.color, intensity);
         let radius2 = radius * radius;
         let radius_coef = 1.0 / (1.0 + radius2 / 20.0);
         for y in miny..=maxy {
@@ -95,11 +95,11 @@ impl Light {
                     let intensity_coef = intensity_coef - radius_coef;
                     let intensity_coef = intensity_coef / (1.0 - radius_coef);
                     if intensity_coef > 0.0 {
-                        let light = RGBA::darken(light_color, 1.0 - intensity_coef);
+                        let light = RGBA::darken(&light_color, 1.0 - intensity_coef);
                         let cur_light = lightmap.pixel(x, y).unwrap();
                         lightmap
                             // .borrow_mut()
-                            .put_pixel(x, y, RGBA::mix(light, cur_light));
+                            .put_pixel(x, y, RGBA::mix(&light, &cur_light));
                     }
                 }
             }

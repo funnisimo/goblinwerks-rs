@@ -67,7 +67,7 @@ impl MyRoguelike {
 }
 
 impl Screen for MyRoguelike {
-    fn update(&mut self, _app: &mut AppContext, _ms: f64) -> ScreenResult {
+    fn update(&mut self, _ecs: &mut Ecs) -> ScreenResult {
         if self.step == 0 {
             let size = (self.con.width() as i32, self.con.height() as i32);
             move_con(&mut self.c1_pos, &mut self.c1_spd, size);
@@ -78,7 +78,7 @@ impl Screen for MyRoguelike {
         ScreenResult::Continue
     }
 
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         let buffer = self.con.buffer_mut();
         let buf_size = buffer.size();
 
@@ -129,7 +129,8 @@ impl Screen for MyRoguelike {
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Blitting Example")
-        .font(FONT)
+        .font_with_transform(FONT, &codepage437::to_glyph, &codepage437::from_glyph)
+        .vsync(false)
         .build();
-    app.run_screen(MyRoguelike::new());
+    app.run(MyRoguelike::new());
 }

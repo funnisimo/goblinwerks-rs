@@ -62,7 +62,7 @@ impl RGBA {
     }
 
     /// Mixes RGB of c2 into c1 using pct
-    pub fn blend(c1: RGBA, c2: RGBA, pct: f32) -> RGBA {
+    pub fn blend(c1: &RGBA, c2: &RGBA, pct: f32) -> RGBA {
         let alpha = pct * c2.3 as f32 / 255.0;
         RGBA::rgba(
             ((1.0 - alpha) * f32::from(c1.0) + alpha * f32::from(c2.0)) as u8,
@@ -73,7 +73,7 @@ impl RGBA {
     }
 
     /// Slides between c1 and c2 using pct
-    pub fn lerp(c1: RGBA, c2: RGBA, pct: f32) -> RGBA {
+    pub fn lerp(c1: &RGBA, c2: &RGBA, pct: f32) -> RGBA {
         RGBA::rgba(
             ((1.0 - pct) * f32::from(c1.0) + pct * f32::from(c2.0)) as u8,
             ((1.0 - pct) * f32::from(c1.1) + pct * f32::from(c2.1)) as u8,
@@ -83,7 +83,7 @@ impl RGBA {
     }
 
     /// Multiplies R,G,B components by coef
-    pub fn scale(c: RGBA, coef: f32) -> RGBA {
+    pub fn scale(c: &RGBA, coef: f32) -> RGBA {
         // RGBA::rgba(
         //     (f32::from(c.0) * coef).min(255.0) as u8,
         //     (f32::from(c.1) * coef).min(255.0) as u8,
@@ -94,7 +94,7 @@ impl RGBA {
     }
 
     /// multiplies c1 * c2 using c2 as percent
-    pub fn multiply(c1: RGBA, c2: RGBA) -> RGBA {
+    pub fn multiply(c1: &RGBA, c2: &RGBA) -> RGBA {
         RGBA::rgba(
             (f32::from(c1.0) * f32::from(c2.0) / 255.0) as u8,
             (f32::from(c1.1) * f32::from(c2.1) / 255.0) as u8,
@@ -104,7 +104,7 @@ impl RGBA {
     }
 
     /// Returns 50% c1 + 50% c2
-    pub fn mix(c1: RGBA, c2: RGBA) -> RGBA {
+    pub fn mix(c1: &RGBA, c2: &RGBA) -> RGBA {
         RGBA::rgba(
             (0.5 * f32::from(c1.0) + 0.5 * f32::from(c2.0)) as u8,
             (0.5 * f32::from(c1.1) + 0.5 * f32::from(c2.1)) as u8,
@@ -113,12 +113,12 @@ impl RGBA {
         )
     }
 
-    pub fn alpha_mix(base: RGBA, with: RGBA) -> RGBA {
+    pub fn alpha_mix(base: &RGBA, with: &RGBA) -> RGBA {
         if with.a() <= 0 {
-            return base;
+            return base.clone();
         }
         if with.a() >= 255 {
-            return with;
+            return with.clone();
         }
         let with_pct = with.a() as f32 / 255.0;
         let base_pct = 1.0 - with_pct;
@@ -129,7 +129,7 @@ impl RGBA {
     }
 
     /// Computes squared distance between colors
-    pub fn distance(c1: RGBA, c2: RGBA) -> i32 {
+    pub fn distance(c1: &RGBA, c2: &RGBA) -> i32 {
         let dr = i32::from(c1.0) - i32::from(c2.0);
         let dg = i32::from(c1.1) - i32::from(c2.1);
         let db = i32::from(c1.2) - i32::from(c2.2);
@@ -137,24 +137,24 @@ impl RGBA {
     }
 
     /// Removes pct of color (RGB) from c1
-    pub fn darken(c1: RGBA, pct: f32) -> RGBA {
+    pub fn darken(c1: &RGBA, pct: f32) -> RGBA {
         let mut to_sub = c1 * pct;
         to_sub.3 = 0;
-        c1 - to_sub
+        *c1 - to_sub
     }
 
     /// Moves c1 color pct closer to white
-    pub fn lighten(c1: RGBA, pct: f32) -> RGBA {
-        let mut to_add = (WHITE - c1) * pct;
+    pub fn lighten(c1: &RGBA, pct: f32) -> RGBA {
+        let mut to_add = (WHITE - *c1) * pct;
         to_add.3 = 0;
         c1 + to_add
     }
 
-    pub fn invert(base: RGBA) -> RGBA {
+    pub fn invert(base: &RGBA) -> RGBA {
         RGBA::rgba(255 - base.r(), 255 - base.g(), 255 - base.b(), base.a())
     }
 
-    pub fn binary_inverse(base: RGBA) -> RGBA {
+    pub fn binary_inverse(base: &RGBA) -> RGBA {
         let r = if base.r() < 128 { 255 } else { 0 };
         let g = if base.g() < 128 { 255 } else { 0 };
         let b = if base.b() < 128 { 255 } else { 0 };
@@ -166,6 +166,12 @@ impl RGBA {
 impl From<RGB> for RGBA {
     fn from(d: RGB) -> Self {
         RGBA::rgb(d.0, d.1, d.2)
+    }
+}
+
+impl From<&RGBA> for RGBA {
+    fn from(d: &RGBA) -> Self {
+        RGBA::rgba(d.0, d.1, d.2, d.3)
     }
 }
 

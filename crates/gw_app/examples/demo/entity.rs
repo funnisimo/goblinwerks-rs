@@ -38,9 +38,9 @@ impl Entity {
         } else {
             let light = level.light_at(self.pos);
             let penumbra = Light::is_penumbra(light, 100);
-            let mut color = RGBA::multiply(self.color, light);
+            let mut color = RGBA::multiply(&self.color, &light);
             if penumbra {
-                color = RGBA::scale(color, LIGHT_COEF);
+                color = RGBA::scale(&color, LIGHT_COEF);
             }
             (color, penumbra)
         };

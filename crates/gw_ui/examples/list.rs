@@ -98,19 +98,18 @@ impl MainScreen {
 }
 
 impl Screen for MainScreen {
-    fn input(&mut self, app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
+    fn setup(&mut self, _ecs: &mut Ecs) {
+        self.ui.update_styles();
+    }
+
+    fn input(&mut self, app: &mut Ecs, ev: &AppEvent) -> ScreenResult {
         if let Some(result) = self.ui.input(app, ev) {
             return result;
         }
         ScreenResult::Continue
     }
 
-    fn message(
-        &mut self,
-        _app: &mut AppContext,
-        id: String,
-        _value: Option<MsgData>,
-    ) -> ScreenResult {
+    fn message(&mut self, _app: &mut Ecs, id: String, _value: Option<MsgData>) -> ScreenResult {
         log(format!("message - {}", id));
         match id.as_str() {
             "LEFT" | "RIGHT" | "CENTER" => {
@@ -124,7 +123,7 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         self.ui.render(app);
     }
 }
@@ -136,5 +135,5 @@ fn main() {
         .vsync(false)
         .build();
 
-    app.run_with(Box::new(|_: &mut AppContext| MainScreen::new()));
+    app.run(MainScreen::new());
 }

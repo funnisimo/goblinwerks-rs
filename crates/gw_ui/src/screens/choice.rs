@@ -11,13 +11,14 @@ use crate::ui::Text;
 use crate::ui::UiAction;
 use crate::ui::UI;
 use crate::ui::{Keyed, Margined, Padded, Positioned};
+use gw_app::messages::Messages;
 use gw_app::MsgData;
 use gw_app::VirtualKeyCode;
-use gw_app::{AppContext, AppEvent, Screen, ScreenResult};
+use gw_app::{AppEvent, Ecs, Screen, ScreenResult};
 
 /// Called when the choice dialog is closed - data is the value of the option(s) that is/are checked.
 /// None for cancelled.
-pub type ChoiceResultFn = dyn FnOnce(&mut AppContext, Option<MsgData>) -> ();
+pub type ChoiceResultFn = dyn FnOnce(&mut Ecs, Option<MsgData>) -> ();
 
 #[derive(Debug)]
 pub struct ChoiceItem {
@@ -142,11 +143,10 @@ impl ChoiceBuilder {
     pub fn build(mut self) -> Box<Choice> {
         if self.done.is_none() {
             let id = self.id.clone();
-            self.done = Some(Box::new(
-                move |app: &mut AppContext, data: Option<MsgData>| {
-                    app.send_message(id.as_ref(), data)
-                },
-            ));
+            self.done = Some(Box::new(move |app: &mut Ecs, data: Option<MsgData>| {
+                let mut msgs = app.resources.get_mut::<Messages>().unwrap();
+                msgs.push(id.as_ref(), data)
+            }));
         }
 
         Box::new(Choice::new(self))
@@ -168,11 +168,8 @@ impl Choice {
         let ui = dialog(config.page_size, config.font.as_str(), |dlg| {
             dlg.class("choice")
                 .class(&config.class)
-                .bind_key(VirtualKeyCode::Return, UiAction::activate("OK".to_owned()))
-                .bind_key(
-                    VirtualKeyCode::Escape,
-                    UiAction::activate("CANCEL".to_owned()),
-                );
+                .bind_key(VirtualKeyCode::Return, UiAction::activate("OK"))
+                .bind_key(VirtualKeyCode::Escape, UiAction::activate("CANCEL"));
 
             Frame::new(dlg, |frame| {
                 frame.class("choice").class(&config.class).margin(1).pad(1);
@@ -241,17 +238,12 @@ impl Screen for Choice {
         self.ui.is_full_screen()
     }
 
-    fn input(&mut self, app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, app: &mut Ecs, ev: &AppEvent) -> ScreenResult {
         self.ui.input(app, ev);
         ScreenResult::Continue
     }
 
-    fn message(
-        &mut self,
-        app: &mut AppContext,
-        id: String,
-        value: Option<MsgData>,
-    ) -> ScreenResult {
+    fn message(&mut self, app: &mut Ecs, id: String, value: Option<MsgData>) -> ScreenResult {
         match id.as_ref() {
             "OK" => {
                 let ret = self.ui.find_by_id("SELECT").unwrap().value();
@@ -280,7 +272,7 @@ impl Screen for Choice {
         }
     }
 
-    fn render(&mut self, ctx: &mut AppContext) {
+    fn render(&mut self, ctx: &mut Ecs) {
         self.ui.render(ctx);
     }
 

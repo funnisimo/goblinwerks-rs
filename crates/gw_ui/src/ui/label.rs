@@ -1,5 +1,5 @@
 use super::*;
-use gw_app::Buffer;
+use gw_app::{Buffer, Ecs};
 
 pub(super) static LABEL: Label = Label {};
 
@@ -10,7 +10,7 @@ impl Tag for Label {
         "label"
     }
 
-    fn draw(&self, el: &Element, buf: &mut Buffer) {
+    fn draw(&self, el: &Element, buf: &mut Buffer, _app: &mut Ecs) {
         draw_text(el, buf);
     }
 }

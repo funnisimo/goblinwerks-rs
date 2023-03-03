@@ -106,12 +106,12 @@ impl MainScreen {
 }
 
 impl Screen for MainScreen {
-    fn setup(&mut self, app: &mut AppContext) {
+    fn setup(&mut self, app: &mut Ecs) {
         init_item_kinds(&mut app.resources);
         self.ui.update_styles();
     }
 
-    fn input(&mut self, app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, app: &mut Ecs, ev: &AppEvent) -> ScreenResult {
         if let Some(result) = self.ui.input(app, ev) {
             println!("- input={:?}", result);
             return result;
@@ -119,12 +119,7 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn message(
-        &mut self,
-        app: &mut AppContext,
-        id: String,
-        value: Option<MsgData>,
-    ) -> ScreenResult {
+    fn message(&mut self, app: &mut Ecs, id: String, value: Option<MsgData>) -> ScreenResult {
         match id.as_str() {
             "CREATE" => {
                 let (item_kinds,) = <(Read<ItemKinds>,)>::fetch(&app.resources);
@@ -379,17 +374,17 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn update(&mut self, app: &mut AppContext, _frame_time_ms: f64) -> ScreenResult {
+    fn update(&mut self, app: &mut Ecs) -> ScreenResult {
         self.schedule.execute(&mut app.world, &mut app.resources);
 
         ScreenResult::Continue
     }
 
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         self.ui.render(app);
     }
 
-    fn teardown(&mut self, _app: &mut AppContext) {}
+    fn teardown(&mut self, _app: &mut Ecs) {}
 }
 
 fn main() {
@@ -397,16 +392,18 @@ fn main() {
         .title("Inventory Example")
         .file(
             "resources/styles.css",
-            Box::new(|data, app| {
-                load_stylesheet_data(data, app)?;
-                log("STYLES LOADED!");
-                Ok(())
+            Box::new(|path: &str, data: Vec<u8>, app: &mut Ecs| {
+                let r = load_stylesheet_data(path, data, app);
+                if r.is_ok() {
+                    STYLES.lock().unwrap().dump();
+                }
+                r
             }),
         )
         .vsync(false)
         .build();
 
-    app.run_screen(MainScreen::new());
+    app.run(MainScreen::new());
 }
 
 #[derive(Clone)]

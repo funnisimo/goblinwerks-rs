@@ -1,4 +1,5 @@
 use gw_app::color::RGBA;
+use gw_app::messages::Messages;
 use gw_app::*;
 
 const _WHITE: RGBA = RGBA::rgb(255, 255, 255);
@@ -16,24 +17,19 @@ const FONT: &str = "resources/terminal_8x8.png";
 * This only works on native target right now.
 */
 
-struct MyRoguelike {
+struct MainScreen {
     con: Console,
 }
 
-impl MyRoguelike {
+impl MainScreen {
     fn new() -> Box<Self> {
         let con = Console::new(50, 30, FONT);
-        Box::new(MyRoguelike { con })
+        Box::new(MainScreen { con })
     }
 }
 
-impl Screen for MyRoguelike {
-    fn message(
-        &mut self,
-        _app: &mut AppContext,
-        _id: String,
-        value: Option<MsgData>,
-    ) -> ScreenResult {
+impl Screen for MainScreen {
+    fn message(&mut self, _app: &mut Ecs, _id: String, value: Option<MsgData>) -> ScreenResult {
         match value {
             Some(MsgData::Boolean(true)) => {
                 log("You chose to quit.");
@@ -43,15 +39,17 @@ impl Screen for MyRoguelike {
         }
     }
 
-    fn update(&mut self, app: &mut AppContext, _ms: f64) -> ScreenResult {
-        if app.input().key(VirtualKeyCode::Escape) || app.input().close_requested() {
+    fn update(&mut self, ecs: &mut Ecs) -> ScreenResult {
+        let input = ecs.resources.get::<AppInput>().unwrap();
+
+        if input.key(VirtualKeyCode::Escape) || input.close_requested() {
             ScreenResult::Push(Popup::new())
         } else {
             ScreenResult::Continue
         }
     }
 
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         let buffer = self.con.buffer_mut();
         buffer.fill(Some('.' as u32), Some(GRAY), Some(BLACK));
 
@@ -88,15 +86,21 @@ impl Screen for Popup {
         false
     }
 
-    fn input(&mut self, app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, app: &mut Ecs, ev: &AppEvent) -> ScreenResult {
         match ev {
             AppEvent::KeyDown(key_down) => match key_down.key_code {
                 VirtualKeyCode::Y => {
-                    app.send_message("QUIT", Some(true.into()));
+                    app.resources
+                        .get_mut::<Messages>()
+                        .unwrap()
+                        .push("QUIT", Some(true.into()));
                     ScreenResult::Pop
                 }
                 VirtualKeyCode::N => {
-                    app.send_message("QUIT", Some(false.into()));
+                    app.resources
+                        .get_mut::<Messages>()
+                        .unwrap()
+                        .push("QUIT", Some(false.into()));
                     ScreenResult::Pop
                 }
                 _ => ScreenResult::Continue,
@@ -106,7 +110,7 @@ impl Screen for Popup {
         }
     }
 
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         let buf = self.con.buffer_mut();
 
         draw::frame(buf)
@@ -131,9 +135,9 @@ impl Screen for Popup {
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Close App Example")
-        .font(FONT)
+        .font_with_transform(FONT, &codepage437::to_glyph, &codepage437::from_glyph)
         .intercept_close_request(true)
         .build();
 
-    app.run_screen(MyRoguelike::new());
+    app.run(MainScreen::new());
 }

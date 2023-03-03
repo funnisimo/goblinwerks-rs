@@ -1,4 +1,5 @@
 use gw_app::color::RGBA;
+use gw_app::ecs::WindowInfo;
 use gw_app::*;
 
 // doryen-rs/examples/resize
@@ -17,7 +18,7 @@ impl MyRoguelike {
 }
 
 impl Screen for MyRoguelike {
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         let buffer = self.con.buffer_mut();
         let con_size = buffer.size();
 
@@ -43,7 +44,7 @@ impl Screen for MyRoguelike {
             &format!("console: {} x {}", con_size.0, con_size.1),
         );
 
-        let screen_size = app.screen_size();
+        let screen_size = app.resources.get::<WindowInfo>().unwrap().size;
 
         draw::plain(buffer).align(TextAlign::Center).print(
             (con_size.0 / 2) as i32,
@@ -60,18 +61,22 @@ impl Screen for MyRoguelike {
         self.con.render(app)
     }
 
-    fn resize(&mut self, api: &mut AppContext) {
-        let font_char = self.con.font_char_size();
-        let width = api.screen_size().0 / font_char.0;
-        let height = api.screen_size().1 / font_char.1;
-        self.con.resize(width, height);
+    fn resize(&mut self, api: &mut Ecs) {
+        let info = api.resources.get::<WindowInfo>().unwrap();
+
+        if self.con.ready() {
+            let font_char = self.con.font_char_size();
+            let width = info.size.0 / font_char.0;
+            let height = info.size.1 / font_char.1;
+            self.con.resize(width, height);
+        }
     }
 }
 
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Resize Window Example")
-        .font(FONT)
+        .font_with_transform(FONT, &codepage437::to_glyph, &codepage437::from_glyph)
         .build();
-    app.run_screen(MyRoguelike::new());
+    app.run(MyRoguelike::new());
 }

@@ -1,4 +1,6 @@
 use gw_app::color::RGBA;
+use gw_app::ecs::WindowInfo;
+use gw_app::fps::Fps;
 use gw_app::*;
 
 const FONT: &str = "resources/terminal_8x8.png";
@@ -38,7 +40,7 @@ impl PerfTest {
 }
 
 impl Screen for PerfTest {
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         // let con = &mut self.con;
 
         let con_width = self.con.width();
@@ -83,7 +85,7 @@ impl Screen for PerfTest {
                 5,
             );
 
-        let fps = app.current_fps();
+        let fps = app.resources.get::<Fps>().unwrap().current();
 
         draw::colored(buffer)
             .align(TextAlign::Center)
@@ -97,9 +99,10 @@ impl Screen for PerfTest {
         self.con.render(app);
     }
 
-    fn resize(&mut self, api: &mut AppContext) {
-        let new_width = api.screen_size().0 / 8;
-        let new_height = api.screen_size().1 / 8;
+    fn resize(&mut self, api: &mut Ecs) {
+        let info = api.resources.get::<WindowInfo>().unwrap();
+        let new_width = info.size.0 / 8;
+        let new_height = info.size.1 / 8;
         self.con.resize(new_width, new_height);
     }
 }
@@ -107,10 +110,10 @@ impl Screen for PerfTest {
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("doryen-rs performance test")
-        .font(FONT)
+        .font_with_transform(FONT, &codepage437::to_glyph, &codepage437::from_glyph)
         .vsync(false)
         .fps(0)
         .build();
 
-    app.run_screen(PerfTest::new());
+    app.run(PerfTest::new());
 }

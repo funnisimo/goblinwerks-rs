@@ -3,8 +3,8 @@ use super::{CellFlags, MapFlags};
 use crate::tile::Tile;
 use crate::tile::NO_TILE;
 use gw_app::ecs::Entity;
-use gw_app::point::distance;
-use gw_app::Point;
+use gw_util::point::distance;
+use gw_util::point::Point;
 use gw_util::rng::RandomNumberGenerator;
 use std::collections::HashMap;
 use std::sync::Arc; // For FOV Calc
@@ -93,7 +93,7 @@ impl Map {
         self.id
     }
 
-    fn to_idx(&self, x: i32, y: i32) -> Option<usize> {
+    pub fn to_idx(&self, x: i32, y: i32) -> Option<usize> {
         if x < 0 || y < 0 || x >= self.width as i32 || y >= self.height as i32 {
             return None;
         }
@@ -229,8 +229,7 @@ impl Map {
         Some(self.floor[idx].clone())
     }
 
-    #[allow(dead_code)]
-    fn get_tile_at_idx(&self, idx: usize) -> Option<Arc<Tile>> {
+    pub(crate) fn get_tile_at_idx(&self, idx: usize) -> Option<Arc<Tile>> {
         match self.floor.get(idx) {
             Some(tile) => Some(tile.clone()),
             None => None,
@@ -695,4 +694,67 @@ where
         }
     }
     points
+}
+
+pub fn dump_map(map: &Map) {
+    let mut header = "   |".to_string();
+    for x in 0..map.width {
+        let text = format!("{}", x % 10);
+        let ch = text.chars().next().unwrap();
+        header.push(ch);
+    }
+    header.push('|');
+    println!("{}", header);
+
+    for y in 0..map.height as i32 {
+        let mut line = format!("{:2} |", y);
+        for x in 0..map.width as i32 {
+            let tile = map.get_tile(x, y).unwrap();
+            line.push(char::from_u32(tile.glyph).unwrap());
+        }
+        line.push_str(&format!("| {:2}", y));
+        println!("{}", line);
+    }
+
+    let mut header = "   |".to_string();
+    for x in 0..map.width {
+        let text = format!("{}", x % 10);
+        let ch = text.chars().next().unwrap();
+        header.push(ch);
+    }
+    header.push('|');
+    println!("{}", header);
+}
+
+pub fn dump_map_with<F>(map: &Map, func: F)
+where
+    F: Fn(&Map, i32, i32) -> char,
+{
+    let mut header = "   |".to_string();
+    for x in 0..map.width {
+        let text = format!("{}", x % 10);
+        let ch = text.chars().next().unwrap();
+        header.push(ch);
+    }
+    header.push('|');
+    println!("{}", header);
+
+    for y in 0..map.height as i32 {
+        let mut line = format!("{:2} |", y);
+        for x in 0..map.width as i32 {
+            let tile = func(map, x, y);
+            line.push(tile);
+        }
+        line.push_str(&format!("| {:2}", y));
+        println!("{}", line);
+    }
+
+    let mut header = "   |".to_string();
+    for x in 0..map.width {
+        let text = format!("{}", x % 10);
+        let ch = text.chars().next().unwrap();
+        header.push(ch);
+    }
+    header.push('|');
+    println!("{}", header);
 }

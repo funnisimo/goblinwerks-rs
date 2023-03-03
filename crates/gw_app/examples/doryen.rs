@@ -40,7 +40,7 @@ impl MyRoguelike {
 }
 
 impl Screen for MyRoguelike {
-    fn input(&mut self, api: &mut AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, ecs: &mut Ecs, ev: &AppEvent) -> ScreenResult {
         match ev {
             AppEvent::KeyDown(ev) => match ev.key_code {
                 VirtualKeyCode::Left => {
@@ -63,10 +63,11 @@ impl Screen for MyRoguelike {
             _ => {}
         }
 
-        self.mouse_pos = api.input().mouse_pct();
+        let input = ecs.resources.get::<AppInput>().unwrap();
+        self.mouse_pos = input.mouse_pct();
 
         // capture the screen
-        if api.input().key(VirtualKeyCode::LControl) && api.input().key_pressed(VirtualKeyCode::S) {
+        if input.key(VirtualKeyCode::LControl) && input.key_pressed(VirtualKeyCode::S) {
             self.screenshot_idx += 1;
             return ScreenResult::Capture(format!("screenshot_{:03}.png", self.screenshot_idx));
         }
@@ -74,7 +75,7 @@ impl Screen for MyRoguelike {
         ScreenResult::Continue
     }
 
-    fn render(&mut self, api: &mut AppContext) {
+    fn render(&mut self, api: &mut Ecs) {
         let con = &mut self.con;
         let mouse_pos = con.mouse_pos(self.mouse_pos);
 
@@ -123,11 +124,11 @@ impl Screen for MyRoguelike {
 }
 
 fn main() {
-    let app = AppBuilder::new(CONSOLE_WIDTH * 8, CONSOLE_HEIGHT * 8)
+    let app = AppBuilder::new(1024, 768)
         .title("My Roguelike")
-        .font(FONT)
+        .font_with_transform(FONT, &codepage437::to_glyph, &codepage437::from_glyph)
         .vsync(false)
         .build();
 
-    app.run_screen(MyRoguelike::new());
+    app.run(MyRoguelike::new());
 }

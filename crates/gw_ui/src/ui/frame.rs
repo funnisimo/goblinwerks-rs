@@ -1,6 +1,7 @@
 use super::*;
 use gw_app::draw;
 use gw_app::Buffer;
+use gw_app::Ecs;
 use gw_app::TextAlign;
 
 static FRAME: Frame = Frame {};
@@ -70,8 +71,8 @@ impl Tag for Frame {
         layout_frame(el);
     }
 
-    fn draw(&self, el: &Element, buf: &mut Buffer) {
-        draw_frame(el, buf);
+    fn draw(&self, el: &Element, buf: &mut Buffer, app: &mut Ecs) {
+        draw_frame(el, buf, app);
     }
 }
 
@@ -212,7 +213,7 @@ pub(super) fn layout_frame(el: &Element) {
     }
 }
 
-pub(super) fn draw_frame(el: &Element, buf: &mut Buffer) {
+pub(super) fn draw_frame(el: &Element, buf: &mut Buffer, ecs: &mut Ecs) {
     let style = el.style();
     if let Some(pos) = el.pos() {
         let size = el.size().unwrap();
@@ -231,7 +232,7 @@ pub(super) fn draw_frame(el: &Element, buf: &mut Buffer) {
         frame.draw(pos.0, pos.1, size.0, size.1);
 
         for child in el.borrow().children.iter() {
-            child.draw(buf);
+            child.draw(buf, ecs);
         }
     }
 }

@@ -1,4 +1,5 @@
 use gw_app::color::RGBA;
+use gw_app::ecs::Time;
 use gw_app::*;
 
 const FONT: &str = "resources/terminal_8x8.png";
@@ -24,17 +25,17 @@ impl HelloWorld {
 }
 
 impl Screen for HelloWorld {
-    fn pause(&mut self, _ctx: &mut AppContext) {
+    fn pause(&mut self, _ctx: &mut Ecs) {
         log("pause");
         self.has_popup = true;
     }
 
-    fn resume(&mut self, _ctx: &mut AppContext) {
+    fn resume(&mut self, _ctx: &mut Ecs) {
         log("resume");
         self.has_popup = false;
     }
 
-    fn input(&mut self, app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, app: &mut Ecs, ev: &AppEvent) -> ScreenResult {
         match ev {
             AppEvent::KeyDown(key_down) => {
                 let is_full = match key_down.key_code {
@@ -54,7 +55,7 @@ impl Screen for HelloWorld {
         ScreenResult::Continue
     }
 
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         let buf = self.con.buffer_mut();
         buf.clear(true, true, true);
 
@@ -79,7 +80,7 @@ struct Popup {
 }
 
 impl Popup {
-    pub fn new(_app: &mut AppContext, is_full: bool, time_left: f64) -> Popup {
+    pub fn new(_app: &mut Ecs, is_full: bool, time_left: f64) -> Popup {
         let con = match is_full {
             true => Console::new(80, 50, FONT),
             false => Console::new(20, 20, FONT).with_extents(0.25, 0.25, 0.5, 0.75),
@@ -98,14 +99,16 @@ impl Screen for Popup {
         self.is_full
     }
 
-    fn input(&mut self, _ctx: &mut AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, _ctx: &mut Ecs, ev: &AppEvent) -> ScreenResult {
         match ev {
             AppEvent::MouseDown(_) => ScreenResult::Pop,
             _ => ScreenResult::Continue,
         }
     }
 
-    fn update(&mut self, _ctx: &mut AppContext, dt: f64) -> ScreenResult {
+    fn update(&mut self, ecs: &mut Ecs) -> ScreenResult {
+        let dt = ecs.resources.get::<Time>().unwrap().delta;
+
         self.time_left -= dt;
         if self.time_left <= 0.0 {
             ScreenResult::Pop
@@ -114,8 +117,8 @@ impl Screen for Popup {
         }
     }
 
-    fn render(&mut self, app: &mut AppContext) {
-        let screen_pct = app.input().mouse_pct();
+    fn render(&mut self, app: &mut Ecs) {
+        let screen_pct = app.resources.get::<AppInput>().unwrap().mouse_pct();
         let cell_pct = self.con.mouse_pos(screen_pct);
 
         let buf = self.con.buffer_mut();
@@ -160,8 +163,8 @@ impl Screen for Popup {
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Popup Example")
-        .font(FONT)
+        .font_with_transform(FONT, &codepage437::to_glyph, &codepage437::from_glyph)
         .vsync(false)
         .build();
-    app.run_screen(HelloWorld::new());
+    app.run(HelloWorld::new());
 }

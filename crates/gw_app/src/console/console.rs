@@ -1,14 +1,16 @@
 use super::Buffer;
-use crate::font::Font;
-use crate::{log, AppContext};
-use std::rc::Rc;
+use super::Program;
+use crate::ecs::{systems::ResourceSet, Read, Write};
+use crate::font::{Font, Fonts};
+use crate::{log, Ecs};
+use std::sync::Arc;
 
 /// This contains the data for a console (including the one displayed on the screen) and methods to draw on it.
 pub struct Console {
     buffer: Buffer,
     extents: (f32, f32, f32, f32),
     font_name: String,
-    font: Option<Rc<Font>>,
+    font: Option<Arc<Font>>,
     zpos: i8,
 }
 
@@ -66,8 +68,9 @@ impl Console {
         &self.font_name
     }
 
-    pub fn set_font(&mut self, font: Rc<Font>) {
-        self.font = Some(font);
+    pub fn set_font(&mut self, font: Arc<Font>) {
+        self.buffer.set_to_glyph(font.to_glyph_fn);
+        self.font = Some(font.clone());
     }
 
     pub fn buffer(&self) -> &Buffer {
@@ -106,20 +109,30 @@ impl Console {
         self.buffer.resize(width, height);
     }
 
-    pub fn render(&mut self, app: &mut AppContext) {
-        match self.font {
-            None => {
-                self.font = app.get_font(self.font_name.as_ref());
-                if self.font.is_some() {
-                    log(format!("Got font - {}", self.font_name));
-                }
+    pub fn render(&mut self, ecs: &mut Ecs) {
+        let (fonts, gl, mut program) = <(
+            Read<Fonts>,
+            Read<uni_gl::WebGLRenderingContext>,
+            Write<Program>,
+        )>::fetch_mut(&mut ecs.resources);
+
+        if self.font.is_none() {
+            let font = fonts.get(self.font_name.as_ref());
+            if font.is_some() {
+                log(format!("Got font - {}", self.font_name));
+                self.buffer.set_to_glyph(font.as_ref().unwrap().to_glyph_fn);
+                self.font = font;
+            } else {
+                log("Still missing font");
             }
+        }
+
+        match self.font {
+            None => {}
             Some(ref font) => {
-                let gl = &app.gl;
-                let program = &mut app.simple_program;
-                program.use_font(gl, &font);
-                program.set_extents(gl, &self.extents, self.zpos);
-                program.render_buffer(gl, &self.buffer);
+                program.use_font(&gl, &font);
+                program.set_extents(&gl, &self.extents, self.zpos);
+                program.render_buffer(&gl, &self.buffer);
             }
         }
     }

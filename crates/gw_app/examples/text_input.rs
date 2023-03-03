@@ -24,10 +24,10 @@ impl MyRoguelike {
 }
 
 impl Screen for MyRoguelike {
-    fn input(&mut self, _app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, _app: &mut Ecs, ev: &AppEvent) -> ScreenResult {
         match ev {
             AppEvent::CharEvent(ch) => {
-                let glyph = codepage437::to_glyph(*ch);
+                let glyph = *ch as Glyph;
                 if glyph > 0 {
                     self.txt.push_str(&ch.to_string());
                 } else {
@@ -62,12 +62,12 @@ impl Screen for MyRoguelike {
         ScreenResult::Continue
     }
 
-    fn update(&mut self, _app: &mut AppContext, _frame_time_ms: f64) -> ScreenResult {
+    fn update(&mut self, _app: &mut Ecs) -> ScreenResult {
         self.cursor += 1;
         ScreenResult::Continue
     }
 
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         let buffer = self.con.buffer_mut();
         buffer.fill(Some(' ' as u32), None, None);
 
@@ -89,7 +89,7 @@ impl Screen for MyRoguelike {
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Input Example")
-        .font(FONT)
+        .font_with_transform(FONT, &codepage437::to_glyph, &codepage437::from_glyph)
         .build();
-    app.run_screen(MyRoguelike::new());
+    app.run(MyRoguelike::new());
 }

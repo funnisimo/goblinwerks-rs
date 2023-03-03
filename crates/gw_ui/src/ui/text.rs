@@ -2,6 +2,7 @@ use super::*;
 use gw_app::draw;
 use gw_app::log;
 use gw_app::Buffer;
+use gw_app::Ecs;
 use gw_app::MsgData;
 use std::cmp::min;
 
@@ -37,7 +38,7 @@ impl Tag for Text {
         }
     }
 
-    fn draw(&self, el: &Element, buf: &mut Buffer) {
+    fn draw(&self, el: &Element, buf: &mut Buffer, _app: &mut Ecs) {
         draw_text(el, buf);
     }
 }
@@ -255,7 +256,8 @@ mod test {
         assert_eq!(text.style().bg(), RGBA::rgb(255, 0, 0));
 
         let mut buf = Buffer::new(20, 10);
-        ui.draw(&mut buf);
+        let mut ecs = Ecs::new();
+        ui.draw(&mut buf, &mut ecs);
 
         assert_eq!(extract_line(&buf, 0, 0, 10), "Hello\0\0\0\0\0");
         assert_eq!(buf.get_back(0, 0).unwrap(), &RGBA::rgba(255, 0, 0, 255)); // first cell has bg color
@@ -297,7 +299,8 @@ mod test {
         assert_eq!(text.size().unwrap(), (15, 1));
 
         let mut buf = Buffer::new(80, 50);
-        ui.root().draw(&mut buf);
+        let mut ecs = Ecs::new();
+        ui.root().draw(&mut buf, &mut ecs);
         assert_eq!(extract_line(&buf, 0, 0, 16), "This is a lon-\0\0"); // hyphen tries to go in middle of word (even if only 1 line tall)
     }
 
@@ -332,7 +335,8 @@ mod test {
         assert_eq!(text.size().unwrap(), (13, 5));
 
         let mut buf = Buffer::new(80, 50);
-        ui.root().draw(&mut buf);
+        let mut ecs = Ecs::new();
+        ui.root().draw(&mut buf, &mut ecs);
 
         assert_eq!(extract_line(&buf, 0, 0, 15), "This is a\0\0\0\0\0\0");
         assert_eq!(extract_line(&buf, 0, 1, 15), "longer text\0\0\0\0");
@@ -359,7 +363,8 @@ mod test {
         assert_eq!(text.size().unwrap(), (13, 3));
 
         let mut buf = Buffer::new(80, 50);
-        ui.root().draw(&mut buf);
+        let mut ecs = Ecs::new();
+        ui.root().draw(&mut buf, &mut ecs);
 
         assert_eq!(extract_line(&buf, 0, 0, 15), "This is a\0\0\0\0\0\0");
         assert_eq!(extract_line(&buf, 0, 1, 15), "longer text\0\0\0\0");
@@ -386,7 +391,8 @@ mod test {
         assert_eq!(text.size().unwrap(), (13, 1));
 
         let mut buf = Buffer::new(80, 50);
-        ui.root().draw(&mut buf);
+        let mut ecs = Ecs::new();
+        ui.root().draw(&mut buf, &mut ecs);
 
         assert_eq!(extract_line(&buf, 0, 0, 15), "This is a lon\0\0");
         assert_eq!(extract_line(&buf, 0, 1, 5), "\0\0\0\0\0");

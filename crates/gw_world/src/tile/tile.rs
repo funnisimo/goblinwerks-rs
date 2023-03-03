@@ -202,13 +202,13 @@ impl TileBuilder {
 pub fn load_default_tiles(cache: &mut Tiles) {
     cache.insert(
         TileBuilder::new("ERROR")
-            .sprite('!' as u32, named::RED.into(), named::BLACK.into())
+            .sprite('!' as Glyph, named::RED.into(), named::BLACK.into())
             .build(),
     );
     cache.insert(
         TileBuilder::new("WALL")
             .kind(TileKind::WALL)
-            .sprite('#' as Glyph, named::GRAY.into(), named::BLACK.into())
+            .sprite('#' as Glyph, RGBA::rgb(32, 32, 32), named::BLACK.into())
             .move_flags("BLOCKS_ALL")
             .flavor("a solid granite wall")
             .build(),
@@ -216,14 +216,18 @@ pub fn load_default_tiles(cache: &mut Tiles) {
     cache.insert(
         TileBuilder::new("FLOOR")
             .kind(TileKind::FLOOR)
-            .sprite('.' as Glyph, named::DARK_GREEN.into(), named::BLACK.into())
+            .sprite(
+                '.' as Glyph,
+                named::DARK_GREEN.into(),
+                RGBA::rgb(20, 32, 20),
+            )
             .flavor("the stone floor")
             .build(),
     );
     cache.insert(
         TileBuilder::new("HALL")
             .kind(TileKind::HALL)
-            .sprite('.' as Glyph, named::GRAY.into(), named::BLACK.into())
+            .sprite('.' as Glyph, named::LIGHTBLUE.into(), RGBA::rgb(20, 20, 32))
             .flavor("the stone hallway")
             .build(),
     );

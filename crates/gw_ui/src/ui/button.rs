@@ -1,6 +1,7 @@
 use super::*;
-use gw_app::Point;
+use gw_app::Ecs;
 use gw_app::{Buffer, MsgData};
+use gw_util::point::Point;
 
 static BUTTON: Button = Button {};
 
@@ -118,7 +119,7 @@ impl Tag for Button {
         // None
     }
 
-    fn draw(&self, el: &Element, buf: &mut Buffer) {
+    fn draw(&self, el: &Element, buf: &mut Buffer, _ecs: &mut Ecs) {
         draw_text(el, buf);
     }
 }
@@ -207,7 +208,6 @@ mod test {
 
     use super::*;
     use crate::ui;
-    use gw_app::Point;
 
     #[test]
     fn simple_button() {

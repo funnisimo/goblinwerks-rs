@@ -1,6 +1,7 @@
 use gw_app::color::RGBA;
+use gw_app::img::Images;
 use gw_app::*;
-use std::rc::Rc;
+use std::sync::Arc;
 
 const FONT: &str = "resources/terminal_8x8.png";
 const SKULL: &str = "resources/skull.png";
@@ -9,7 +10,7 @@ const _WHITE: RGBA = RGBA::rgba(255, 255, 255, 255);
 
 struct MyRoguelike {
     con: Console,
-    skull: Option<Rc<Image>>,
+    skull: Option<Arc<Image>>,
     angle: f32,
     scale_time: f32,
 }
@@ -28,13 +29,13 @@ impl MyRoguelike {
 }
 
 impl Screen for MyRoguelike {
-    fn update(&mut self, _api: &mut AppContext, _ms: f64) -> ScreenResult {
+    fn update(&mut self, _api: &mut Ecs) -> ScreenResult {
         self.angle += 0.01;
         self.scale_time += 0.01;
         ScreenResult::Continue
     }
 
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         let buffer = self.con.buffer_mut();
         let buf_size = buffer.size();
         let scale = self.scale_time.cos();
@@ -50,7 +51,7 @@ impl Screen for MyRoguelike {
                 img,
             );
         } else {
-            self.skull = app.get_image(SKULL);
+            self.skull = app.resources.get::<Images>().unwrap().get(SKULL);
         }
 
         self.con.render(app)
@@ -60,9 +61,9 @@ impl Screen for MyRoguelike {
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Image Example")
-        .font(FONT)
+        .font_with_transform(FONT, &codepage437::to_glyph, &codepage437::from_glyph)
         .image(SKULL)
         .vsync(false)
         .build();
-    app.run_screen(MyRoguelike::new());
+    app.run(MyRoguelike::new());
 }

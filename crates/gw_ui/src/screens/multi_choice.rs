@@ -12,14 +12,15 @@ use crate::ui::Text;
 use crate::ui::UiAction;
 use crate::ui::UI;
 use crate::ui::{Keyed, Margined, Padded, Positioned};
+use gw_app::messages::Messages;
 use gw_app::VirtualKeyCode;
-use gw_app::{AppContext, AppEvent, Screen, ScreenResult};
+use gw_app::{AppEvent, Ecs, Screen, ScreenResult};
 use gw_app::{Key, MsgData};
 use std::collections::HashMap;
 
 /// Called when the multi choice dialog is closed - data is a map of the key to value for the checked items.
 /// None for cancelled, empty for None checked.
-pub type MultiChoiceResultFn = dyn FnOnce(&mut AppContext, Option<HashMap<Key, MsgData>>) -> ();
+pub type MultiChoiceResultFn = dyn FnOnce(&mut Ecs, Option<HashMap<Key, MsgData>>) -> ();
 
 #[derive(Debug)]
 pub struct MultiChoiceItem {
@@ -172,12 +173,13 @@ impl MultiChoiceBuilder {
         if self.done.is_none() {
             let id = self.id.clone();
             self.done = Some(Box::new(
-                move |app: &mut AppContext, data: Option<HashMap<Key, MsgData>>| {
+                move |app: &mut Ecs, data: Option<HashMap<Key, MsgData>>| {
                     let res = match data {
                         None => None,
                         Some(x) => Some(MsgData::Map(x)),
                     };
-                    app.send_message(id.as_ref(), res)
+                    let mut msgs = app.resources.get_mut::<Messages>().unwrap();
+                    msgs.push(id.as_ref(), res)
                 },
             ));
         }
@@ -201,11 +203,8 @@ impl MultiChoice {
         let ui = dialog(config.page_size, config.font.as_str(), |dlg| {
             dlg.class("choice")
                 .class(&config.class)
-                .bind_key(VirtualKeyCode::Return, UiAction::activate("OK".to_owned()))
-                .bind_key(
-                    VirtualKeyCode::Escape,
-                    UiAction::activate("CANCEL".to_owned()),
-                );
+                .bind_key(VirtualKeyCode::Return, UiAction::activate("OK"))
+                .bind_key(VirtualKeyCode::Escape, UiAction::activate("CANCEL"));
 
             Frame::new(dlg, |frame| {
                 frame
@@ -280,17 +279,12 @@ impl Screen for MultiChoice {
         self.ui.is_full_screen()
     }
 
-    fn input(&mut self, app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, app: &mut Ecs, ev: &AppEvent) -> ScreenResult {
         self.ui.input(app, ev);
         ScreenResult::Continue
     }
 
-    fn message(
-        &mut self,
-        app: &mut AppContext,
-        id: String,
-        value: Option<MsgData>,
-    ) -> ScreenResult {
+    fn message(&mut self, app: &mut Ecs, id: String, value: Option<MsgData>) -> ScreenResult {
         match id.as_ref() {
             "OK" => {
                 let ret = get_value(self);
@@ -319,7 +313,7 @@ impl Screen for MultiChoice {
         }
     }
 
-    fn render(&mut self, ctx: &mut AppContext) {
+    fn render(&mut self, ctx: &mut Ecs) {
         self.ui.render(ctx);
     }
 

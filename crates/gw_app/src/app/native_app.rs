@@ -105,7 +105,6 @@ pub struct App {
     events_loop: Option<EventLoop<()>>,
     intercept_close_request: bool,
     input_state: InputState,
-    // pub events: Rc<RefCell<Vec<AppEvent>>>,
     pub events: Rc<RefCell<Vec<AppEvent>>>,
     dropped_files: Vec<File>,
     fullscreen_resolution: VideoMode,
@@ -414,6 +413,7 @@ impl App {
                 }
 
                 callback(&mut self);
+
                 self.events.borrow_mut().clear();
                 self.window.swap_buffers().unwrap();
             }

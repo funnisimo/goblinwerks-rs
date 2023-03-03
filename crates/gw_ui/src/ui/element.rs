@@ -1,7 +1,8 @@
 use super::*;
 use crate::css::{ComputedStyle, Style, StyleSheet};
-use gw_app::{log, Point};
+use gw_app::{log, Ecs};
 use gw_app::{Buffer, KeyEvent, MsgData};
+use gw_util::point::Point;
 use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashMap;
 use std::fmt;
@@ -216,7 +217,7 @@ impl Element {
             Some(val) => val == id,
         }
     }
-    pub(crate) fn set_id(&self, id: &str) {
+    pub fn set_id(&self, id: &str) {
         self.node.borrow_mut().id = Some(id.to_string());
     }
 
@@ -472,6 +473,10 @@ impl Element {
         }
     }
 
+    pub fn set_click(&self, val: bool) {
+        self.node.borrow_mut().click = val;
+    }
+
     pub fn parent(&self) -> Option<Element> {
         self.node.borrow().parent_element()
     }
@@ -551,7 +556,7 @@ impl Element {
         res
     }
 
-    pub(crate) fn activate(&self) -> Option<Ref<Box<UiActionFn>>> {
+    pub fn activate(&self) -> Option<Ref<Box<UiActionFn>>> {
         let b = self.node.borrow();
         match b.activate {
             None => None,
@@ -559,25 +564,25 @@ impl Element {
         }
     }
 
-    pub(crate) fn set_activate(&self, func: Box<UiActionFn>) {
+    pub fn set_activate(&self, func: Box<UiActionFn>) {
         self.node.borrow_mut().activate = Some(func);
     }
 
-    pub(crate) fn handle_click(&self, root: &Element, point: Point) -> Option<UiAction> {
+    pub fn handle_click(&self, root: &Element, point: Point) -> Option<UiAction> {
         let tag = self.node.borrow().tag.clone();
         tag.handle_click(root, self, point)
     }
 
-    pub(crate) fn handle_activate(&self, root: &Element) -> Option<UiAction> {
+    pub fn handle_activate(&self, root: &Element) -> Option<UiAction> {
         let tag = self.node.borrow().tag.clone();
         tag.handle_activate(root, self)
     }
 
-    pub(crate) fn bind_key<K: Into<KeyEvent>>(&self, key: K, action: Box<UiActionFn>) {
+    pub fn bind_key<K: Into<KeyEvent>>(&self, key: K, action: Box<UiActionFn>) {
         self.node.borrow_mut().keys.insert(key.into(), action);
     }
 
-    pub(crate) fn handle_key(&self, root: &Element, key: &KeyEvent) -> Option<UiAction> {
+    pub fn handle_key(&self, root: &Element, key: &KeyEvent) -> Option<UiAction> {
         let tag = self.node.borrow().tag.clone();
         tag.handle_key(root, self, key)
     }
@@ -699,9 +704,9 @@ impl Element {
         None
     }
 
-    pub fn draw(&self, buf: &mut Buffer) {
+    pub fn draw(&self, buf: &mut Buffer, ecs: &mut Ecs) {
         let tag = self.node.borrow().tag;
-        tag.draw(self, buf);
+        tag.draw(self, buf, ecs);
     }
 
     pub fn dump(&self) {
@@ -821,7 +826,6 @@ pub(super) fn adjust_child_spacing(el: &Element) {
 #[cfg(test)]
 mod test {
     use super::*;
-    use gw_app::Point;
 
     #[test]
     fn contains() {

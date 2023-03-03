@@ -34,7 +34,7 @@ impl AlphaTest {
 }
 
 impl Screen for AlphaTest {
-    fn update(&mut self, _app: &mut AppContext, _ms: f64) -> ScreenResult {
+    fn update(&mut self, _app: &mut Ecs) -> ScreenResult {
         // update the circle radius and center position
         self.angle += 0.6;
         self.radius = 10.0 + 3.0 * (self.angle / 10.0).sin();
@@ -45,7 +45,7 @@ impl Screen for AlphaTest {
         ScreenResult::Continue
     }
 
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         let buffer = self.con.buffer_mut();
 
         // reduce the alpha of each cell until they are transparent.
@@ -69,7 +69,7 @@ impl Screen for AlphaTest {
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Alpha Test")
-        .font(FONT)
+        .font_with_transform(FONT, &codepage437::to_glyph, &codepage437::from_glyph)
         .build();
-    app.run_screen(AlphaTest::new());
+    app.run(AlphaTest::new());
 }

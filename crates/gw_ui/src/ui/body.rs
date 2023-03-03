@@ -1,5 +1,5 @@
 use super::*;
-use gw_app::{Buffer, VirtualKeyCode};
+use gw_app::{Buffer, Ecs, VirtualKeyCode};
 
 static BODY: Body = Body {};
 
@@ -36,8 +36,8 @@ impl Tag for Body {
         body_layout_children(el);
     }
 
-    fn draw(&self, el: &Element, buf: &mut Buffer) {
-        draw_body(el, buf);
+    fn draw(&self, el: &Element, buf: &mut Buffer, ecs: &mut Ecs) {
+        draw_body(el, buf, ecs);
     }
 }
 
@@ -135,11 +135,11 @@ pub(super) fn body_layout_children(body: &Element) {
     }
 }
 
-pub fn draw_body(el: &Element, buf: &mut Buffer) {
+pub fn draw_body(el: &Element, buf: &mut Buffer, ecs: &mut Ecs) {
     let bg = el.style().bg();
     buf.fill(None, None, Some(bg));
 
     for child in el.borrow().children.iter() {
-        child.draw(buf);
+        child.draw(buf, ecs);
     }
 }

@@ -19,7 +19,7 @@ impl MainScreen {
 }
 
 impl Screen for MainScreen {
-    fn input(&mut self, _app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, _app: &mut Ecs, ev: &AppEvent) -> ScreenResult {
         match ev {
             AppEvent::KeyDown(key_down) => match key_down.key_code {
                 VirtualKeyCode::Left => self.pos.0 = (self.pos.0 - 1).max(0),
@@ -35,7 +35,7 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         let buffer = self.con.buffer_mut();
 
         buffer.fill(Some('.' as u32), Some(GRAY), Some(BLACK));
@@ -71,7 +71,7 @@ impl Screen for MainScreen {
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Basic Example")
-        .font(FONT)
+        .font_with_transform(FONT, &codepage437::to_glyph, &codepage437::from_glyph)
         .build();
-    app.run_screen(MainScreen::new());
+    app.run(MainScreen::new());
 }

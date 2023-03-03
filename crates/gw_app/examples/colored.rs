@@ -15,7 +15,7 @@ impl ColoredScreen {
 }
 
 impl Screen for ColoredScreen {
-    fn setup(&mut self, _app: &mut AppContext) {
+    fn setup(&mut self, _app: &mut Ecs) {
         let mut buffer = self.con.buffer_mut();
         buffer.clear(true, false, false);
 
@@ -92,7 +92,7 @@ impl Screen for ColoredScreen {
         draw.wrap(78, y,  "Inside a #[396]call to wrap#[], you can place a #[ee3]long text#[] and it will automatically be #[66f]wrapped#[] at the width you specify.  Or at the #[dd3]end of the buffer#[].");
     }
 
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         self.con.render(app);
     }
 }
@@ -100,7 +100,8 @@ impl Screen for ColoredScreen {
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Basic Example")
-        .font(FONT)
+        .font_with_transform(FONT, &codepage437::to_glyph, &codepage437::from_glyph)
+        .vsync(false)
         .build();
-    app.run_screen(ColoredScreen::new());
+    app.run(ColoredScreen::new());
 }

@@ -1,6 +1,7 @@
 use gw_app::console::subcell_console;
+use gw_app::img::Images;
 use gw_app::*;
-use std::rc::Rc;
+use std::sync::Arc;
 
 // doryen-rs/examples/subcell
 
@@ -14,7 +15,7 @@ const SKULL: &str = "resources/skull.png";
 struct MyRoguelike {
     con: Console,
     subcell: Console,
-    skull: Option<Rc<Image>>,
+    skull: Option<Arc<Image>>,
 }
 
 impl MyRoguelike {
@@ -30,7 +31,7 @@ impl MyRoguelike {
 }
 
 impl Screen for MyRoguelike {
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         // text
         let buffer = self.con.buffer_mut();
         buffer.fill(
@@ -53,7 +54,7 @@ impl Screen for MyRoguelike {
                 .blit(skull, 0, 0, 0, 0, None, None);
             self.subcell.render(app);
         } else {
-            self.skull = app.get_image(SKULL);
+            self.skull = app.resources.get::<Images>().unwrap().get(SKULL);
         }
     }
 }
@@ -61,8 +62,8 @@ impl Screen for MyRoguelike {
 fn main() {
     let app = AppBuilder::new(768, 1024)
         .title("SubCell Resolution Example")
-        .font(FONT)
+        .font_with_transform(FONT, &codepage437::to_glyph, &codepage437::from_glyph)
         .image(SKULL)
         .build();
-    app.run_screen(MyRoguelike::new());
+    app.run(MyRoguelike::new());
 }

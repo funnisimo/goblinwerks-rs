@@ -1,5 +1,9 @@
 pub mod flags;
+pub mod fov;
 pub mod map;
+pub mod memory;
+pub mod position;
 pub mod sprite;
 pub mod tile;
 pub mod treasure;
+pub mod ui;

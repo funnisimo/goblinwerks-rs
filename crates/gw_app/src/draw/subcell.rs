@@ -257,29 +257,29 @@ fn compute_pattern(
         } else {
             // Bah, too many colours,
             // merge the two nearest
-            let dist0i = RGBA::distance(desired[i], *back);
-            let dist1i = RGBA::distance(desired[i], tmp_front);
-            let dist01 = RGBA::distance(*back, tmp_front);
+            let dist0i = RGBA::distance(&desired[i], back);
+            let dist1i = RGBA::distance(&desired[i], &tmp_front);
+            let dist01 = RGBA::distance(back, &tmp_front);
             if dist0i < dist1i {
                 if dist0i <= dist01 {
                     // merge 0 and i
-                    *back = RGBA::blend(desired[i], *back, weight[0] / (1.0 + weight[0]));
+                    *back = RGBA::blend(&desired[i], back, weight[0] / (1.0 + weight[0]));
                     weight[0] += 1.0;
                 } else {
                     // merge 0 and 1
-                    *back = RGBA::blend(*back, tmp_front, weight[1] / (weight[0] + weight[1]));
+                    *back = RGBA::blend(back, &tmp_front, weight[1] / (weight[0] + weight[1]));
                     weight[0] += 1.0;
                     tmp_front = desired[i];
                     flag = 1 << (i - 1);
                 }
             } else if dist1i <= dist01 {
                 // merge 1 and i
-                tmp_front = RGBA::blend(desired[i], tmp_front, weight[1] / (1.0 + weight[1]));
+                tmp_front = RGBA::blend(&desired[i], &tmp_front, weight[1] / (1.0 + weight[1]));
                 weight[1] += 1.0;
                 flag |= 1 << (i - 1);
             } else {
                 // merge 0 and 1
-                *back = RGBA::blend(*back, tmp_front, weight[1] / (weight[0] + weight[1]));
+                *back = RGBA::blend(back, &tmp_front, weight[1] / (weight[0] + weight[1]));
                 weight[0] += 1.0;
                 tmp_front = desired[i];
                 flag = 1 << (i - 1);

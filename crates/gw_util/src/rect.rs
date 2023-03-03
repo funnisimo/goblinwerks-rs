@@ -1,4 +1,4 @@
-use gw_app::point::Point;
+use crate::point::Point;
 use std::ops;
 
 /// Defines a two-dimensional rectangle.
@@ -114,7 +114,6 @@ impl ops::Add<Rect> for Rect {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gw_app::point::Point;
 
     #[test]
     fn test_dimensions() {

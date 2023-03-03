@@ -1,4 +1,7 @@
-use crate::color::RGBA;
+use crate::{
+    color::RGBA,
+    font::{default_to_glyph, ToGlyphFn},
+};
 
 pub type Glyph = u32;
 
@@ -29,6 +32,7 @@ pub struct Buffer {
     fore: Vec<RGBA>,
     // colors: HashMap<String, RGBA>,
     // color_stack: Vec<RGBA>,
+    pub(crate) to_glyph_fn: &'static ToGlyphFn,
 }
 
 impl Buffer {
@@ -62,6 +66,7 @@ impl Buffer {
             pot_height,
             // colors: HashMap::new(),
             // color_stack: Vec::new(),
+            to_glyph_fn: &default_to_glyph,
         }
     }
 
@@ -79,6 +84,10 @@ impl Buffer {
 
     pub fn pot_size(&self) -> (u32, u32) {
         (self.pot_width, self.pot_height)
+    }
+
+    pub fn set_to_glyph(&mut self, to_glyph: &'static ToGlyphFn) {
+        self.to_glyph_fn = to_glyph;
     }
 
     /// resizes the console
@@ -429,12 +438,33 @@ impl Buffer {
     }
 
     /// can change all properties of a console cell at once
+    pub fn print(&mut self, x: i32, y: i32, ch: char, fore: RGBA, back: RGBA) {
+        self.draw(x, y, (self.to_glyph_fn)(ch), fore, back);
+    }
+
+    /// can change all properties of a console cell at once
     pub fn draw(&mut self, x: i32, y: i32, glyph: Glyph, fore: RGBA, back: RGBA) {
         if let Some(idx) = self.to_idx(x, y) {
             self.glyph[idx] = glyph;
             self.fore[idx] = fore;
             self.back[idx] = back;
         }
+    }
+
+    /// can change all properties of a console cell at once
+    pub fn print_opt(
+        &mut self,
+        x: i32,
+        y: i32,
+        ch: Option<char>,
+        fore: Option<RGBA>,
+        back: Option<RGBA>,
+    ) {
+        let glyph = match ch {
+            None => None,
+            Some(ch) => Some((self.to_glyph_fn)(ch)),
+        };
+        self.draw_opt(x, y, glyph, fore, back);
     }
 
     /// can change all properties of a console cell at once
@@ -458,6 +488,7 @@ impl Buffer {
             }
         }
     }
+
     /// blit (draw) a console onto another one
     /// You can use fore_alpha and back_alpha to blend this console with existing background on the destination.
     /// If you define a key color, the cells using this color as background will be ignored. This makes it possible to blit
@@ -518,7 +549,7 @@ impl Buffer {
                             }
                         }
                         destination.backgrounds_mut()[dest_idx] =
-                            RGBA::blend(dst_back, src_back, back_alpha);
+                            RGBA::blend(&dst_back, &src_back, back_alpha);
                     }
                     if fore_alpha > 0.0 {
                         let src_fore = self.foregrounds()[src_idx];
@@ -529,21 +560,21 @@ impl Buffer {
                         if fore_alpha < 1.0 {
                             if src_char == ' ' as u32 || src_char == 0 {
                                 destination.foregrounds_mut()[dest_idx] =
-                                    RGBA::blend(dst_fore, src_back, back_alpha);
+                                    RGBA::blend(&dst_fore, &src_back, back_alpha);
                             } else if dst_char == ' ' as u32 || dst_char == 0 {
                                 destination.glyphs_mut()[dest_idx] = src_char;
                                 destination.foregrounds_mut()[dest_idx] =
-                                    RGBA::blend(dst_back, src_fore, fore_alpha);
+                                    RGBA::blend(&dst_back, &src_fore, fore_alpha);
                             } else if dst_char == src_char {
                                 destination.foregrounds_mut()[dest_idx] =
-                                    RGBA::blend(dst_fore, src_fore, fore_alpha);
+                                    RGBA::blend(&dst_fore, &src_fore, fore_alpha);
                             } else if fore_alpha < 0.5 {
                                 destination.foregrounds_mut()[dest_idx] =
-                                    RGBA::blend(dst_fore, dst_back, fore_alpha * 2.0);
+                                    RGBA::blend(&dst_fore, &dst_back, fore_alpha * 2.0);
                             } else {
                                 destination.glyphs_mut()[dest_idx] = src_char;
                                 destination.foregrounds_mut()[dest_idx] =
-                                    RGBA::blend(dst_back, src_fore, (fore_alpha - 0.5) * 2.0);
+                                    RGBA::blend(&dst_back, &src_fore, (fore_alpha - 0.5) * 2.0);
                             }
                         } else {
                             destination.foregrounds_mut()[dest_idx] = src_fore;
@@ -556,31 +587,63 @@ impl Buffer {
     }
 }
 
-/// compute the length of a string containing color codes.
-/// Example :
-/// ```
-/// use doryen_rs::Console;
-/// let len = Console::text_color_len("#[red]red text with a #[blue]blue#[] word");
-/// assert_eq!(len, 25); // actual string : "red text with a blue word"
-/// let len = Console::text_color_len("#[red]a\nb");
-/// assert_eq!(len, 3); // actual string : "a\nb"
-/// let len = Console::text_color_len("normal string");
-/// assert_eq!(len, 13);
-/// ```
-#[allow(dead_code)]
-fn text_color_len(text: &str) -> usize {
-    let mut text_len = 0;
-    for color_span in text.to_owned().split("#[") {
-        if color_span.is_empty() {
-            continue;
-        }
-        let mut col_text = color_span.split(']');
-        let col_name = col_text.next().unwrap();
-        if let Some(text_span) = col_text.next() {
-            text_len += text_span.chars().count();
-        } else {
-            text_len += col_name.chars().count();
-        }
+// / compute the length of a string containing color codes.
+// / Example :
+// / ```
+// / use doryen_rs::Console;
+// / let len = Console::text_color_len("#[red]red text with a #[blue]blue#[] word");
+// / assert_eq!(len, 25); // actual string : "red text with a blue word"
+// / let len = Console::text_color_len("#[red]a\nb");
+// / assert_eq!(len, 3); // actual string : "a\nb"
+// / let len = Console::text_color_len("normal string");
+// / assert_eq!(len, 13);
+// / ```
+// fn text_color_len(text: &str) -> usize {
+//     let mut text_len = 0;
+//     for color_span in text.to_owned().split("#[") {
+//         if color_span.is_empty() {
+//             continue;
+//         }
+//         let mut col_text = color_span.split(']');
+//         let col_name = col_text.next().unwrap();
+//         if let Some(text_span) = col_text.next() {
+//             text_len += text_span.chars().count();
+//         } else {
+//             text_len += col_name.chars().count();
+//         }
+//     }
+//     text_len
+// }
+
+pub fn dump_buffer(buf: &Buffer) {
+    let mut header = "   |".to_string();
+    for x in 0..buf.width {
+        let text = format!("{}", x % 10);
+        let ch = text.chars().next().unwrap();
+        header.push(ch);
     }
-    text_len
+    header.push('|');
+    println!("{}", header);
+
+    for y in 0..buf.height as i32 {
+        let mut line = format!("{:2} |", y);
+        for x in 0..buf.width as i32 {
+            let tile = match buf.get_glyph(x, y) {
+                None => 32_u32,
+                Some(g) => *g,
+            };
+            line.push(char::from_u32(tile).unwrap());
+        }
+        line.push_str(&format!("| {:2}", y));
+        println!("{}", line);
+    }
+
+    let mut header = "   |".to_string();
+    for x in 0..buf.width {
+        let text = format!("{}", x % 10);
+        let ch = text.chars().next().unwrap();
+        header.push(ch);
+    }
+    header.push('|');
+    println!("{}", header);
 }

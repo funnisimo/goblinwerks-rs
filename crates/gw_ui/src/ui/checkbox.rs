@@ -1,7 +1,8 @@
 use super::*;
 use gw_app::log;
-use gw_app::Point;
+use gw_app::Ecs;
 use gw_app::{text::colored_line_len, Buffer, KeyEvent, MsgData, VirtualKeyCode};
+use gw_util::point::Point;
 
 static CHECKBOX: Checkbox = Checkbox {};
 
@@ -178,8 +179,8 @@ impl Tag for Checkbox {
         checkbox_update(el)
     }
 
-    fn draw(&self, el: &Element, buf: &mut Buffer) {
-        draw_checkbox(el, buf);
+    fn draw(&self, el: &Element, buf: &mut Buffer, ecs: &mut Ecs) {
+        draw_checkbox(el, buf, ecs);
     }
 }
 
@@ -443,7 +444,7 @@ pub(super) fn layout_checkbox(el: &Element) {
     }
 }
 
-pub(super) fn draw_checkbox(el: &Element, buf: &mut Buffer) {
+pub(super) fn draw_checkbox(el: &Element, buf: &mut Buffer, ecs: &mut Ecs) {
     let pos = el.pos().unwrap();
     let size = el.size().unwrap();
     let style = el.style();
@@ -463,7 +464,7 @@ pub(super) fn draw_checkbox(el: &Element, buf: &mut Buffer) {
 
     // draw the label
     for child in el.children() {
-        child.draw(buf);
+        child.draw(buf, ecs);
     }
 }
 
@@ -472,7 +473,6 @@ mod test {
 
     use super::*;
     use crate::ui;
-    use gw_app::Point;
 
     #[test]
     fn simple_check() {

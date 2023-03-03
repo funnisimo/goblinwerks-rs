@@ -1,6 +1,7 @@
 use super::*;
-use gw_app::Point;
+use gw_app::Ecs;
 use gw_app::{log, text::colored_line_len, Buffer, KeyEvent, MsgData, VirtualKeyCode};
+use gw_util::point::Point;
 use std::cmp::max;
 
 static RADIO: Radio = Radio {};
@@ -396,8 +397,8 @@ impl Tag for RadioItem {
         Some(UiAction::Message(id, el.value()))
     }
 
-    fn draw(&self, el: &Element, buf: &mut Buffer) {
-        draw_checkbox(el, buf);
+    fn draw(&self, el: &Element, buf: &mut Buffer, ecs: &mut Ecs) {
+        draw_checkbox(el, buf, ecs);
     }
 }
 
@@ -530,7 +531,8 @@ mod test {
         assert_eq!(list.margin(), [2, 0, 0, 0]);
 
         let mut buffer = Buffer::new(80, 50);
-        ui.root().draw(&mut buffer);
+        let mut ecs = Ecs::new();
+        ui.root().draw(&mut buffer, &mut ecs);
 
         assert_eq!(extract_line(&buffer, 0, 0, 12), "\0\0-\0Test A\0\0");
         assert_eq!(extract_line(&buffer, 0, 1, 12), "\0\0-\0Test B\0\0");

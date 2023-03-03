@@ -15,7 +15,7 @@ impl TextScreen {
 }
 
 impl Screen for TextScreen {
-    fn setup(&mut self, _app: &mut AppContext) {
+    fn setup(&mut self, _app: &mut Ecs) {
         let buffer = self.con.buffer_mut();
         buffer.clear(true, false, false);
 
@@ -90,7 +90,7 @@ impl Screen for TextScreen {
         draw.wrap(78, y,  "Inside a call to wrap, you can place a long text and it will automatically be wrapped at the width you specify.  Or at the end of the buffer.");
     }
 
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         self.con.render(app);
     }
 }
@@ -98,7 +98,7 @@ impl Screen for TextScreen {
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Basic Example")
-        .font(FONT)
+        .font_with_transform(FONT, &codepage437::to_glyph, &codepage437::from_glyph)
         .build();
-    app.run_screen(TextScreen::new());
+    app.run(TextScreen::new());
 }

@@ -247,7 +247,7 @@ pub trait Keyed {
         };
         el.borrow_mut()
             .keys
-            .insert(key.into(), UiAction::activate(id));
+            .insert(key.into(), UiAction::activate(&id));
         self
     }
 }

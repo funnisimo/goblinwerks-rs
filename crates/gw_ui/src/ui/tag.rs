@@ -1,6 +1,7 @@
 use super::*;
-use gw_app::{log, Point};
+use gw_app::{log, Ecs};
 use gw_app::{Buffer, KeyEvent, MsgData};
+use gw_util::point::Point;
 
 pub trait Tag {
     fn as_str(&self) -> &'static str;
@@ -85,9 +86,9 @@ pub trait Tag {
         None
     }
 
-    fn draw(&self, el: &Element, buf: &mut Buffer) {
+    fn draw(&self, el: &Element, buf: &mut Buffer, ecs: &mut Ecs) {
         for child in el.borrow().children.iter() {
-            child.draw(buf);
+            child.draw(buf, ecs);
         }
     }
 }

@@ -16,7 +16,7 @@ impl MyRoguelike {
     }
 }
 impl Screen for MyRoguelike {
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         let buffer = self.con.buffer_mut();
         buffer.fill(
             None,
@@ -48,7 +48,7 @@ impl Screen for MyRoguelike {
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Unicode Example")
-        .font(FONT)
+        .font_with_transform(FONT, &codepage437::to_glyph, &codepage437::from_glyph)
         .build();
-    app.run_screen(MyRoguelike::new());
+    app.run(MyRoguelike::new());
 }

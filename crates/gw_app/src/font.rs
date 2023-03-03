@@ -1,13 +1,30 @@
-// use crate::Buffer;
-use crate::console::set_texture_params;
-use crate::log;
+use crate::codepage437;
+use crate::{console::set_texture_params, loader::LoadHandler};
+use crate::{log, Glyph};
+use std::{collections::HashMap, sync::Arc};
 use uni_gl::{WebGLRenderingContext, WebGLTexture};
+
+pub static SUBCELL_BYTES: &[u8] = include_bytes!("../resources/subcell.png");
+pub static TERMINAL_8X8_BYTES: &[u8] = include_bytes!("../resources/terminal_8x8.png");
+
+pub type ToGlyphFn = dyn Fn(char) -> Glyph;
+pub type FromGlyphFn = dyn Fn(Glyph) -> char;
+
+pub(crate) fn default_to_glyph(ch: char) -> Glyph {
+    ch as Glyph
+}
+
+pub(crate) fn default_from_glyph(glyph: Glyph) -> char {
+    char::from_u32(glyph).unwrap()
+}
 
 pub struct Font {
     img_size: (u32, u32),
     char_size: (u32, u32),
     count: u32,
     pub(crate) texture: WebGLTexture,
+    pub(crate) to_glyph_fn: &'static ToGlyphFn,
+    pub(crate) from_glyph_fn: &'static FromGlyphFn,
 }
 
 impl Font {
@@ -17,10 +34,22 @@ impl Font {
             char_size,
             count: 0,
             texture: create_font_texture(gl),
+            to_glyph_fn: &default_to_glyph,
+            from_glyph_fn: &default_from_glyph,
         };
 
         font.load_font_img(bytes, gl);
         font
+    }
+
+    pub fn with_transforms(
+        mut self,
+        to_glyph: &'static ToGlyphFn,
+        from_glyph: &'static FromGlyphFn,
+    ) -> Self {
+        self.to_glyph_fn = to_glyph;
+        self.from_glyph_fn = from_glyph;
+        self
     }
 
     pub fn img_width(&self) -> u32 {
@@ -41,6 +70,23 @@ impl Font {
 
     pub fn count(&self) -> u32 {
         self.count
+    }
+
+    pub fn set_transform(
+        &mut self,
+        to_glyph: &'static ToGlyphFn,
+        from_glyph: &'static FromGlyphFn,
+    ) {
+        self.to_glyph_fn = to_glyph;
+        self.from_glyph_fn = from_glyph;
+    }
+
+    pub fn to_glyph(&self, ch: char) -> Glyph {
+        (self.to_glyph_fn)(ch)
+    }
+
+    pub fn from_glyph(&self, glyph: Glyph) -> char {
+        (self.from_glyph_fn)(glyph)
     }
 
     fn load_font_img(&mut self, buf: &[u8], gl: &WebGLRenderingContext) {
@@ -138,4 +184,91 @@ fn create_font_texture(gl: &WebGLRenderingContext) -> WebGLTexture {
     gl.bind_texture(&tex);
     set_texture_params(gl, true);
     tex
+}
+
+pub struct Fonts {
+    cache: HashMap<String, Arc<Font>>,
+}
+
+impl Fonts {
+    pub fn new(gl: &uni_gl::WebGLRenderingContext) -> Self {
+        let mut cache = HashMap::new();
+        let sub_cell_font = Arc::new(Font::new(&gl, SUBCELL_BYTES, (4, 4)));
+        let default_font = Arc::new(
+            Font::new(&gl, TERMINAL_8X8_BYTES, (8, 8))
+                .with_transforms(&codepage437::to_glyph, &codepage437::from_glyph),
+        );
+        cache.insert("SUBCELL".to_string(), sub_cell_font);
+        cache.insert("DEFAULT".to_string(), default_font);
+
+        Fonts { cache }
+    }
+
+    pub fn insert(&mut self, id: &str, font: Arc<Font>) {
+        self.cache.insert(id.to_string(), font);
+    }
+
+    pub fn get(&self, id: &str) -> Option<Arc<Font>> {
+        match self.cache.get(id) {
+            None => None,
+            Some(f) => Some(f.clone()),
+        }
+    }
+}
+
+impl Default for Fonts {
+    fn default() -> Self {
+        Fonts {
+            cache: HashMap::new(),
+        }
+    }
+}
+
+pub struct FontFileLoader {
+    transforms: Option<(&'static ToGlyphFn, &'static FromGlyphFn)>,
+}
+
+impl FontFileLoader {
+    pub fn new() -> FontFileLoader {
+        FontFileLoader { transforms: None }
+    }
+
+    pub fn with_transforms(
+        mut self,
+        to_glyph: &'static ToGlyphFn,
+        from_glyph: &'static FromGlyphFn,
+    ) -> Self {
+        self.transforms = Some((to_glyph, from_glyph));
+        self
+    }
+}
+
+impl LoadHandler for FontFileLoader {
+    fn file_loaded(
+        &mut self,
+        path: &str,
+        data: Vec<u8>,
+        world: &mut crate::ecs::Ecs,
+    ) -> Result<(), crate::loader::LoadError> {
+        let char_size = parse_char_size(path);
+
+        let font = {
+            let gl = world
+                .resources
+                .get::<uni_gl::WebGLRenderingContext>()
+                .unwrap();
+
+            let mut font = Font::new(&*gl, &data, char_size);
+            if let Some((to_glyph, from_glyph)) = self.transforms {
+                font.set_transform(to_glyph, from_glyph);
+            }
+            Arc::new(font)
+        };
+
+        let mut fonts = world.resources.get_mut::<Fonts>().unwrap();
+        fonts.insert(path, font);
+
+        log(format!("font load complete - {}", path));
+        Ok(())
+    }
 }

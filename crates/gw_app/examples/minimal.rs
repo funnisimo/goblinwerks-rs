@@ -12,7 +12,7 @@ impl MainScreen {
 }
 
 impl Screen for MainScreen {
-    fn input(&mut self, _app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, _app: &mut Ecs, ev: &AppEvent) -> ScreenResult {
         match ev {
             AppEvent::KeyDown(_) => ScreenResult::Quit,
             AppEvent::MouseDown(_) => ScreenResult::Quit,
@@ -20,7 +20,7 @@ impl Screen for MainScreen {
         }
     }
 
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         let buffer = self.con.buffer_mut();
 
         buffer.fill(Some('.' as u32), Some(WHITE), Some(BLACK));
@@ -35,5 +35,5 @@ impl Screen for MainScreen {
 
 fn main() {
     let app = AppBuilder::new(1024, 768).title("Minimal Example").build();
-    app.run_screen(MainScreen::new());
+    app.run(MainScreen::new());
 }

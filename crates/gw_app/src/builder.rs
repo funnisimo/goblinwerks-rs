@@ -1,21 +1,24 @@
 use crate::color::init_colors;
-use crate::context::LoadCallback;
+use crate::ecs::Ecs;
+use crate::font::FromGlyphFn;
+use crate::font::ToGlyphFn;
+use crate::loader::BoxedLoadHandler;
 use crate::AppConfig;
-use crate::AppContext;
+// use crate::AppContext;
 use crate::Runner;
 
-pub type StartupFn = dyn Fn(&mut AppContext) -> ();
+pub type StartupFn = dyn Fn(&mut Ecs) -> ();
 
 /// Builds an application runner
 pub struct AppBuilder {
     /// window configuration info
     pub(crate) config: AppConfig,
     /// fonts to load
-    pub(crate) fonts: Vec<String>,
+    pub(crate) fonts: Vec<(String, Option<(&'static ToGlyphFn, &'static FromGlyphFn)>)>,
     /// images to load
     pub(crate) images: Vec<String>,
     /// files to load
-    pub(crate) files: Vec<(String, Box<LoadCallback>)>,
+    pub(crate) files: Vec<(String, BoxedLoadHandler)>,
 
     pub(crate) startup: Vec<Box<StartupFn>>,
 }
@@ -86,28 +89,40 @@ impl AppBuilder {
     }
 
     /// Loads a file on startup
-    pub fn file(mut self, file_path: &str, func: Box<LoadCallback>) -> Self {
+    pub fn file(mut self, file_path: &str, func: BoxedLoadHandler) -> Self {
         self.files.push((file_path.to_owned(), func));
         self
     }
 
     /// Loads a font on startup
     pub fn font(mut self, font_path: &str) -> Self {
-        self.fonts.push(font_path.to_owned());
+        self.fonts.push((font_path.to_string(), None));
+        self
+    }
+
+    /// Loads a font on startup
+    pub fn font_with_transform(
+        mut self,
+        font_path: &str,
+        to_glyph: &'static ToGlyphFn,
+        from_glyph: &'static FromGlyphFn,
+    ) -> Self {
+        self.fonts
+            .push((font_path.to_string(), Some((to_glyph, from_glyph))));
         self
     }
 
     /// Loads a list of fonts on startup
     pub fn fonts(mut self, font_paths: &[&str]) -> Self {
         for font_path in font_paths {
-            self.fonts.push((*font_path).to_owned());
+            self.fonts.push((font_path.to_string(), None));
         }
         self
     }
 
     /// Loads an image on startup
     pub fn image(mut self, image_path: &str) -> Self {
-        self.images.push(image_path.to_owned());
+        self.images.push(image_path.to_string());
         self
     }
 

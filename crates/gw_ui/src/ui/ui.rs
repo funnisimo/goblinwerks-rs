@@ -1,15 +1,17 @@
 use super::*;
 use crate::css::STYLES;
 use gw_app::log;
-use gw_app::AppContext;
+use gw_app::messages::Messages;
 use gw_app::AppEvent;
+use gw_app::AppInput;
 use gw_app::Buffer;
 use gw_app::Console;
+use gw_app::Ecs;
 use gw_app::KeyEvent;
 use gw_app::MsgData;
-use gw_app::Point;
 use gw_app::Screen;
 use gw_app::ScreenResult;
+use gw_util::point::Point;
 use std::cell::RefCell;
 use std::fmt::Debug;
 use std::rc::Rc;
@@ -24,21 +26,22 @@ pub enum UiAction {
     PrevFocus,
     Stop,
     Screen(Box<dyn Screen>),
+    CloseApp,
 }
 
 impl UiAction {
-    pub fn message(id: String, data: Option<MsgData>) -> Box<UiActionFn> {
-        let info = Rc::new((id, data));
+    pub fn message(id: &str, data: Option<MsgData>) -> Box<UiActionFn> {
+        let info = Rc::new((id.to_string(), data));
         Box::new(move |_, _| Some(UiAction::Message(info.0.clone(), info.1.clone())))
     }
 
-    pub fn activate(id: String) -> Box<UiActionFn> {
-        let info = Rc::new((id,));
+    pub fn activate(id: &str) -> Box<UiActionFn> {
+        let info = Rc::new((id.to_string(),));
         Box::new(move |_, _| Some(UiAction::Activate(info.0.clone())))
     }
 
-    pub fn focus(id: String) -> Box<UiActionFn> {
-        let info = Rc::new((id,));
+    pub fn focus(id: &str) -> Box<UiActionFn> {
+        let info = Rc::new((id.to_string(),));
         Box::new(move |_, _| Some(UiAction::Focus(info.0.clone())))
     }
 
@@ -52,6 +55,10 @@ impl UiAction {
 
     pub fn stop() -> Box<UiActionFn> {
         Box::new(|_, _| Some(UiAction::Stop))
+    }
+
+    pub fn close_app() -> Box<UiActionFn> {
+        Box::new(|_, _| Some(UiAction::CloseApp))
     }
 }
 
@@ -69,6 +76,7 @@ impl Debug for UiAction {
                 UiAction::PrevFocus => "PrevFocus".to_owned(),
                 UiAction::Stop => "Stop".to_owned(),
                 UiAction::Screen(_) => "Screen(..)".to_owned(),
+                UiAction::CloseApp => "CloseApp".to_owned(),
             }
         )
     }
@@ -86,6 +94,7 @@ impl PartialEq for UiAction {
             (UiAction::PrevFocus, UiAction::PrevFocus) => true,
             (UiAction::Stop, UiAction::Stop) => true,
             (UiAction::Screen(_), UiAction::Screen(_)) => true,
+            (UiAction::CloseApp, UiAction::CloseApp) => true,
             _ => false,
         }
     }
@@ -244,11 +253,7 @@ impl UI {
         self.root.find_by_id(id)
     }
 
-    fn do_action(
-        &mut self,
-        app: &mut AppContext,
-        action: Option<UiAction>,
-    ) -> Option<ScreenResult> {
+    fn do_action(&mut self, app: &mut Ecs, action: Option<UiAction>) -> Option<ScreenResult> {
         log("do_action");
         match action {
             None => {}
@@ -270,7 +275,8 @@ impl UI {
                 self.prev_focus();
             }
             Some(UiAction::Message(id, data)) => {
-                app.send_message(&id, data);
+                let mut msgs = app.resources.get_mut::<Messages>().unwrap();
+                msgs.push(&id, data);
             }
             Some(UiAction::Stop) => {
                 return Some(ScreenResult::Continue);
@@ -279,12 +285,16 @@ impl UI {
                 println!("PUSH SCREEN FROM UI");
                 return Some(ScreenResult::Push(screen));
             }
+            Some(UiAction::CloseApp) => {
+                println!("Close App!");
+                return Some(ScreenResult::Quit);
+            }
         }
         None
     }
 
-    pub fn input(&mut self, app: &mut AppContext, ev: &AppEvent) -> Option<ScreenResult> {
-        let screen_pos = app.input().mouse_pct();
+    pub fn input(&mut self, app: &mut Ecs, ev: &AppEvent) -> Option<ScreenResult> {
+        let screen_pos = app.resources.get::<AppInput>().unwrap().mouse_pct();
         if let Some(mouse_pos) = self.console.mouse_pos(screen_pos) {
             let mouse_pt: Point = mouse_pos.into();
             match ev {
@@ -331,14 +341,14 @@ impl UI {
         self.root.clone().handle_click(&self.root, mouse_pt)
     }
 
-    pub fn draw(&self, buf: &mut Buffer) {
+    pub fn draw(&self, buf: &mut Buffer, ecs: &mut Ecs) {
         buf.clear(true, true, true);
-        self.root.draw(buf);
+        self.root.draw(buf, ecs);
     }
 
-    pub fn render(&mut self, app: &mut AppContext) {
+    pub fn render(&mut self, app: &mut Ecs) {
         self.console.buffer_mut().clear(true, true, true);
-        self.root.draw(self.console.buffer_mut());
+        self.root.draw(self.console.buffer_mut(), app);
         self.console.render(app);
     }
 

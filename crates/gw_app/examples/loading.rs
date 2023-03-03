@@ -1,4 +1,5 @@
 use gw_app::color::RGBA;
+use gw_app::font::Fonts;
 use gw_app::*;
 
 const FONT: &str = "resources/terminal_8x8.png";
@@ -24,37 +25,6 @@ impl RNG {
     }
 }
 
-// struct LoadingScreen {
-//     con: Console,
-// }
-// impl LoadingScreen {
-//     fn new() -> Box<Self> {
-//         let con = Console::new(80, 50, "DEFAULT");
-//         Box::new(LoadingScreen { con })
-//     }
-// }
-
-// impl Screen for LoadingScreen {
-//     fn update(&mut self, app: &mut AppContext, _frame_time_ms: f64) -> ScreenResult {
-//         if app.get_font(BIG_FONT).is_some() {
-//             return ScreenResult::Replace(MainScreen::new());
-//         }
-//         ScreenResult::Continue
-//     }
-
-//     fn render(&mut self, app: &mut AppContext) {
-//         let buf = self.con.buffer_mut();
-//         buf.clear(true, true, true);
-
-//         buf.fill(Some('.' as u32), Some(YELLOW), Some(BLACK));
-
-//         draw::plain(buf).print(1, 1, "Hello Rust World");
-//         draw::plain(buf).print(1, 2, "Loading a bigger font...");
-
-//         self.con.render(app);
-//     }
-// }
-
 struct MainScreen {
     con: Console,
     len: u32,
@@ -74,9 +44,10 @@ impl MainScreen {
 }
 
 impl Screen for MainScreen {
-    fn update(&mut self, app: &mut AppContext, _ms: f64) -> ScreenResult {
+    fn update(&mut self, app: &mut Ecs) -> ScreenResult {
         if self.len == 0 {
-            match app.get_font(BIG_FONT) {
+            let fonts = app.resources.get::<Fonts>().unwrap();
+            match fonts.get(BIG_FONT) {
                 None => {}
                 Some(font) => self.len = font.count(),
             }
@@ -84,14 +55,14 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn input(&mut self, _ctx: &mut AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, _ctx: &mut Ecs, ev: &AppEvent) -> ScreenResult {
         match ev {
             AppEvent::MouseDown(_) => ScreenResult::Pop,
             _ => ScreenResult::Continue,
         }
     }
 
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         // let screen_pct = app.input().mouse_pct();
         // let cell_pct = self.con.cell_pos(screen_pct);
 
@@ -119,9 +90,9 @@ impl Screen for MainScreen {
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Loading Screen Example")
-        .font(FONT)
+        .font_with_transform(FONT, &codepage437::to_glyph, &codepage437::from_glyph)
         .font(BIG_FONT)
         .vsync(false)
         .build();
-    app.run_screen(MainScreen::new());
+    app.run(MainScreen::new());
 }

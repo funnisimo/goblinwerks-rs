@@ -2,10 +2,10 @@ use super::*;
 use crate::ui::Element;
 use gw_app::color::get_color_opt;
 // use gw_app::color::RGBA;
-use gw_app::context::LoadError;
+use gw_app::loader::LoadError;
 use gw_app::log;
-use gw_app::AppContext;
 use gw_app::BorderType;
+use gw_app::Ecs;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::fs::read_to_string;
@@ -222,7 +222,7 @@ fn make_style_sets<'a>(text: &'a str) -> Result<HashMap<&'a str, Vec<(&'a str, &
 }
 
 /// Utility function to help with processing css files loaded by the runner/app context.
-pub fn load_stylesheet_data(data: Vec<u8>, _: &mut AppContext) -> Result<(), LoadError> {
+pub fn load_stylesheet_data(_path: &str, data: Vec<u8>, _: &mut Ecs) -> Result<(), LoadError> {
     match String::from_utf8(data) {
         Err(_) => {
             panic!("Failed to load css file.");

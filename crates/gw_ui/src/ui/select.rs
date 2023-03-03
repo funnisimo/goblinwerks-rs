@@ -1,6 +1,7 @@
 use super::*;
-use gw_app::Point;
+use gw_app::Ecs;
 use gw_app::{Buffer, KeyEvent, MsgData, VirtualKeyCode};
+use gw_util::point::Point;
 
 static SELECT: Select = Select {};
 
@@ -225,7 +226,7 @@ impl Tag for SelectItem {
         "item"
     }
 
-    fn draw(&self, el: &Element, buf: &mut Buffer) {
+    fn draw(&self, el: &Element, buf: &mut Buffer, app: &mut Ecs) {
         draw_text(el, buf);
     }
 }

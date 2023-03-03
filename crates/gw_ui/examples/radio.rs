@@ -85,19 +85,18 @@ impl MainScreen {
 }
 
 impl Screen for MainScreen {
-    fn input(&mut self, app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
+    fn setup(&mut self, _ecs: &mut Ecs) {
+        self.ui.update_styles();
+    }
+
+    fn input(&mut self, app: &mut Ecs, ev: &AppEvent) -> ScreenResult {
         if let Some(result) = self.ui.input(app, ev) {
             return result;
         }
         ScreenResult::Continue
     }
 
-    fn message(
-        &mut self,
-        _app: &mut AppContext,
-        id: String,
-        value: Option<MsgData>,
-    ) -> ScreenResult {
+    fn message(&mut self, _app: &mut Ecs, id: String, value: Option<MsgData>) -> ScreenResult {
         log(format!("message - {}", id));
         match id.as_str() {
             "PICK" => {
@@ -111,7 +110,7 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         self.ui.render(app);
     }
 }
@@ -121,8 +120,8 @@ fn main() {
         .title("Checkboxes Example")
         .file(
             "resources/styles.css",
-            Box::new(|data: Vec<u8>, app: &mut AppContext| {
-                let r = load_stylesheet_data(data, app);
+            Box::new(|path: &str, data: Vec<u8>, app: &mut Ecs| {
+                let r = load_stylesheet_data(path, data, app);
                 if r.is_ok() {
                     STYLES.lock().unwrap().dump();
                 }
@@ -132,5 +131,5 @@ fn main() {
         .vsync(false)
         .build();
 
-    app.run_with(Box::new(|_: &mut AppContext| MainScreen::new()));
+    app.run(MainScreen::new());
 }

@@ -74,8 +74,10 @@ impl MainScreen {
 }
 
 impl Screen for MainScreen {
-    fn input(&mut self, app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
-        let screen_pct = app.input().mouse_pct();
+    fn input(&mut self, app: &mut Ecs, ev: &AppEvent) -> ScreenResult {
+        let input = app.resources.get::<AppInput>().unwrap();
+
+        let screen_pct = input.mouse_pct();
         match self.con.mouse_pos(screen_pct) {
             None => self.mpos = (0, 0),
             Some(con_pos) => {
@@ -100,7 +102,7 @@ impl Screen for MainScreen {
                 ScreenResult::Continue
             }
             AppEvent::MousePos(_) => {
-                if app.input().mouse_button(0) {
+                if input.mouse_button(0) {
                     self.set(self.mpos.0, self.mpos.1);
                 }
                 ScreenResult::Continue
@@ -109,7 +111,7 @@ impl Screen for MainScreen {
         }
     }
 
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         let buf = self.con.buffer_mut();
 
         buf.fill(Some(0), None, Some(BLACK));
@@ -155,5 +157,5 @@ fn main() {
         .fps(60)
         .vsync(false)
         .build();
-    app.run_screen(MainScreen::new());
+    app.run(MainScreen::new());
 }

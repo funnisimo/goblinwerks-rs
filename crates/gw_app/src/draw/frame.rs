@@ -1,6 +1,6 @@
 use super::plain;
 use crate::console::{Buffer, Glyph};
-use crate::{codepage437, color::RGBA, TextAlign};
+use crate::{color::RGBA, TextAlign};
 
 /// The border type - single, double, or colored
 #[derive(Debug, Clone, PartialEq, Copy)]
@@ -44,8 +44,7 @@ pub struct Frame<'a> {
     title: String,
     title_fg: Option<RGBA>,
     title_align: TextAlign,
-
-    to_glyph: &'a dyn Fn(char) -> Glyph,
+    // to_glyph: &'a ToGlyphFn,
 }
 
 impl<'a> Frame<'a> {
@@ -65,8 +64,7 @@ impl<'a> Frame<'a> {
             title: "".to_owned(),
             title_fg: None,
             title_align: TextAlign::Center,
-
-            to_glyph: &codepage437::to_glyph,
+            // to_glyph: &default_to_glyph,
         }
     }
 
@@ -114,6 +112,11 @@ impl<'a> Frame<'a> {
         self
     }
 
+    // pub fn to_glyph(mut self, to_glyph: &'a dyn Fn(char) -> Glyph) -> Self {
+    //     self.to_glyph = to_glyph;
+    //     self
+    // }
+
     /// Draws the frame, title, and any fill
     pub fn draw(&mut self, x: i32, y: i32, width: u32, height: u32) {
         if self.fill_bg.is_some() || self.fill_fg.is_some() || self.fill_glyph.is_some() {
@@ -128,7 +131,7 @@ impl<'a> Frame<'a> {
             );
         }
 
-        let glyphs = self.border.glyphs(self.to_glyph);
+        let glyphs = self.border.glyphs(self.buffer.to_glyph_fn);
         let left = x;
         let top = y;
         let right = x + width as i32 - 1;

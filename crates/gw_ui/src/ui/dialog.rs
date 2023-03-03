@@ -1,5 +1,5 @@
 use super::*;
-use gw_app::{Buffer, VirtualKeyCode};
+use gw_app::{Buffer, Ecs, VirtualKeyCode};
 
 static DIALOG: Dialog = Dialog {};
 
@@ -44,8 +44,8 @@ impl Tag for Dialog {
         body_layout_children(el);
     }
 
-    fn draw(&self, el: &Element, buf: &mut Buffer) {
-        draw_body(el, buf);
+    fn draw(&self, el: &Element, buf: &mut Buffer, ecs: &mut Ecs) {
+        draw_body(el, buf, ecs);
     }
 }
 

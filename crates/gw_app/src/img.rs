@@ -1,5 +1,7 @@
 #![warn(clippy::float_cmp)]
-use crate::color::RGBA;
+use std::{collections::HashMap, sync::Arc};
+
+use crate::{color::RGBA, loader::LoadHandler, log};
 // use std::cell::RefCell;
 // use std::rc::Rc;
 
@@ -50,5 +52,52 @@ impl Image {
     /// If the image has already been loaded, return its size, else return None
     pub fn size(&self) -> (u32, u32) {
         (self.img.width(), self.img.height())
+    }
+}
+
+pub struct Images {
+    cache: HashMap<String, Arc<Image>>,
+}
+
+impl Images {
+    pub fn new() -> Self {
+        Images {
+            cache: HashMap::new(),
+        }
+    }
+
+    pub fn insert(&mut self, id: &str, font: Arc<Image>) {
+        self.cache.insert(id.to_string(), font);
+    }
+
+    pub fn get(&self, id: &str) -> Option<Arc<Image>> {
+        match self.cache.get(id) {
+            None => None,
+            Some(f) => Some(f.clone()),
+        }
+    }
+}
+
+pub struct ImageFileLoader;
+
+impl ImageFileLoader {
+    pub fn new() -> ImageFileLoader {
+        ImageFileLoader
+    }
+}
+
+impl LoadHandler for ImageFileLoader {
+    fn file_loaded(
+        &mut self,
+        path: &str,
+        data: Vec<u8>,
+        world: &mut crate::ecs::Ecs,
+    ) -> Result<(), crate::loader::LoadError> {
+        let image = Arc::new(Image::new(&data));
+
+        let mut fonts = world.resources.get_mut::<Images>().unwrap();
+        fonts.insert(path, image);
+        log(format!("image load complete - {}", path));
+        Ok(())
     }
 }

@@ -51,12 +51,12 @@ pub fn get_color(name: &str) -> Result<RGBA, ColorParseErr> {
                 None => Err(ColorParseErr::UnknownColor),
                 Some(color) => {
                     let result = match level {
-                        Some("light") => RGBA::lerp(color, (255, 255, 255, 255).into(), 0.25),
-                        Some("lighter") => RGBA::lerp(color, (255, 255, 255, 255).into(), 0.50),
-                        Some("lightest") => RGBA::lerp(color, (255, 255, 255, 255).into(), 0.75),
-                        Some("dark") => RGBA::lerp(color, (0, 0, 0, 255).into(), 0.25),
-                        Some("darker") => RGBA::lerp(color, (0, 0, 0, 255).into(), 0.50),
-                        Some("darkest") => RGBA::lerp(color, (0, 0, 0, 255).into(), 0.75),
+                        Some("light") => RGBA::lerp(&color, &(255, 255, 255, 255).into(), 0.25),
+                        Some("lighter") => RGBA::lerp(&color, &(255, 255, 255, 255).into(), 0.50),
+                        Some("lightest") => RGBA::lerp(&color, &(255, 255, 255, 255).into(), 0.75),
+                        Some("dark") => RGBA::lerp(&color, &(0, 0, 0, 255).into(), 0.25),
+                        Some("darker") => RGBA::lerp(&color, &(0, 0, 0, 255).into(), 0.50),
+                        Some("darkest") => RGBA::lerp(&color, &(0, 0, 0, 255).into(), 0.75),
                         _ => return Err(ColorParseErr::InvalidModifier),
                     };
 

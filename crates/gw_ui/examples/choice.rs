@@ -1,4 +1,5 @@
 use gw_app::color::init_colors;
+use gw_app::messages::Messages;
 use gw_app::*;
 use gw_ui::css::*;
 use gw_ui::{
@@ -62,8 +63,9 @@ impl MainScreen {
                             Some(UiAction::Screen(Choice::builder("ANYTHING") // Id can be anything because we send the message directly
                                 .items(vec!["Football", "Soccer", "Rugby", "Cricket"])
                                 .class("blue-back")
-                                .done(Box::new(move |app: &mut AppContext, data: Option<MsgData>| {
-                                    app.send_message("SINGLE", data) // This is what the default implementation does
+                                .done(Box::new(move |app: &mut Ecs, data: Option<MsgData>| {
+                                    let mut msgs = app.resources.get_mut::<Messages>().unwrap();
+                                    msgs.push("SINGLE", data) // This is what the default implementation does
                                 }))
                                 .build()))
                         }));
@@ -98,7 +100,7 @@ impl MainScreen {
                             Some(UiAction::Screen(MultiChoice::builder("ANYTHING") // Id can be anything because we send the message directly
                                 .items(vec!["Darts", "Field Hockey", "Biathalon", "Luge"])
                                 .class("blue-back")
-                                .done(Box::new(move |_: &mut AppContext, data: Option<HashMap<Key,MsgData>>| {
+                                .done(Box::new(move |_: &mut Ecs, data: Option<HashMap<Key,MsgData>>| {
                                     ui_root.find_by_id("TEXT_MULTI").unwrap().set_text(&map_as_text(data));
                                 }))
                                 .build()))
@@ -122,7 +124,11 @@ impl MainScreen {
 }
 
 impl Screen for MainScreen {
-    fn input(&mut self, app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
+    fn setup(&mut self, _ecs: &mut Ecs) {
+        self.ui.update_styles();
+    }
+
+    fn input(&mut self, app: &mut Ecs, ev: &AppEvent) -> ScreenResult {
         if let Some(result) = self.ui.input(app, ev) {
             println!("- input={:?}", result);
             return result;
@@ -130,12 +136,7 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn message(
-        &mut self,
-        _app: &mut AppContext,
-        id: String,
-        value: Option<MsgData>,
-    ) -> ScreenResult {
+    fn message(&mut self, _app: &mut Ecs, id: String, value: Option<MsgData>) -> ScreenResult {
         match id.as_str() {
             "MESSAGE" => {
                 return ScreenResult::Push(
@@ -170,7 +171,7 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         self.ui.render(app);
     }
 }
@@ -184,5 +185,5 @@ fn main() {
         .vsync(false)
         .build();
 
-    app.run_with(Box::new(|_: &mut AppContext| MainScreen::new()));
+    app.run(MainScreen::new());
 }

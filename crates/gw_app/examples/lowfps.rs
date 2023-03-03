@@ -1,4 +1,4 @@
-use gw_app::*;
+use gw_app::{fps::Fps, *};
 
 /*
 This example shows how you can lower the number of frames per second to limit CPU consumption
@@ -21,8 +21,8 @@ impl MyRoguelike {
 }
 
 impl Screen for MyRoguelike {
-    fn render(&mut self, app: &mut AppContext) {
-        let fps = app.current_fps();
+    fn render(&mut self, app: &mut Ecs) {
+        let fps = app.resources.get::<Fps>().unwrap().current();
 
         let buffer = self.con.buffer_mut();
         let buf_size = buffer.size();
@@ -40,8 +40,9 @@ impl Screen for MyRoguelike {
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Low FPS Example")
-        .font(FONT)
+        .font_with_transform(FONT, &codepage437::to_glyph, &codepage437::from_glyph)
         .fps(10)
+        .vsync(false)
         .build();
-    app.run_screen(MyRoguelike::new());
+    app.run(MyRoguelike::new());
 }

@@ -1,3 +1,4 @@
+use gw_app::font::Fonts;
 use gw_app::*;
 
 const CONSOLE_WIDTH: u32 = 40;
@@ -44,7 +45,7 @@ impl MyRoguelike {
 }
 
 impl Screen for MyRoguelike {
-    fn input(&mut self, app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, app: &mut Ecs, ev: &AppEvent) -> ScreenResult {
         let mut font_path = None;
         match ev {
             AppEvent::KeyDown(key_down) => match key_down.key_code {
@@ -64,7 +65,9 @@ impl Screen for MyRoguelike {
         if let Some(font_path) = font_path {
             self.cur_font_name = font_path.to_owned();
 
-            match app.get_font(font_path) {
+            let fonts = app.resources.get::<Fonts>().unwrap();
+
+            match fonts.get(font_path) {
                 None => {}
                 Some(font) => self.con.set_font(font),
             }
@@ -73,7 +76,7 @@ impl Screen for MyRoguelike {
         ScreenResult::Continue
     }
 
-    fn render(&mut self, app: &mut AppContext) {
+    fn render(&mut self, app: &mut Ecs) {
         let buffer = self.con.buffer_mut();
         draw::rect(buffer)
             .glyph('.' as u32)
@@ -137,7 +140,8 @@ fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Input Example")
         .fonts(&FONTS)
+        .vsync(false)
         .build();
 
-    app.run_screen(MyRoguelike::new());
+    app.run(MyRoguelike::new());
 }
