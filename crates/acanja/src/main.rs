@@ -2,7 +2,7 @@ use gw_app::*;
 use gw_util::point::Point;
 use gw_world::map::{dig_room_level, dump_map};
 use gw_world::memory::MapMemory;
-use gw_world::tile::Tiles;
+use gw_world::tile::{TileFileLoader, Tiles};
 use gw_world::widget::Viewport;
 
 struct MainScreen {
@@ -81,6 +81,7 @@ impl Screen for MainScreen {
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Acanja")
+        .file("assets/tiles.toml", Box::new(TileFileLoader::new()))
         .vsync(false)
         .build();
 

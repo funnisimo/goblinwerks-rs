@@ -2,10 +2,8 @@ use super::*;
 use crate::sprite::Sprite;
 use crate::treasure::Treasure;
 use gw_app::color::named;
-use gw_app::log;
 use gw_app::Glyph;
 use gw_app::RGBA;
-use gw_util::toml::StringTable;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -260,15 +258,15 @@ impl Tiles {
         self.tiles.insert(tile.id.clone(), tile);
     }
 
-    pub fn load(&mut self, toml: &StringTable) -> Result<(), String> {
-        match load_tile_data(self, toml) {
-            Err(e) => Err(e),
-            Ok(count) => {
-                log(format!("Loaded tiles :: count={}", count));
-                Ok(())
-            }
-        }
-    }
+    // pub fn load(&mut self, toml: &StringTable) -> Result<(), String> {
+    //     match load_tile_data(self, toml) {
+    //         Err(e) => Err(e),
+    //         Ok(count) => {
+    //             log(format!("Loaded tiles :: count={}", count));
+    //             Ok(())
+    //         }
+    //     }
+    // }
 }
 
 impl Default for Tiles {
@@ -280,20 +278,4 @@ impl Default for Tiles {
         load_default_tiles(&mut cache);
         cache
     }
-}
-
-pub fn load_tile_data(dest: &mut Tiles, toml: &StringTable) -> Result<u32, String> {
-    let mut count: u32 = 0;
-    for (name, data) in toml.iter() {
-        let mut builder = TileBuilder::new(name);
-        for (key, value) in data.iter() {
-            if let Err(e) = builder.set(&key.to_lowercase(), value) {
-                return Err(format!("Error processing tile[{}] - {}", &name, e));
-            }
-        }
-        dest.insert(builder.build());
-        count += 1;
-    }
-
-    Ok(count)
 }

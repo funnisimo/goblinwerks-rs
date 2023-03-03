@@ -15,3 +15,6 @@ pub use tile_move::*;
 
 mod tile;
 pub use tile::*;
+
+mod load;
+pub use load::*;
