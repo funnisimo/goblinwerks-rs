@@ -56,7 +56,7 @@ impl AlwaysVisible {
 impl VisSource for AlwaysVisible {}
 
 pub struct Viewport {
-    con: Panel,
+    pub con: Panel,
     id: String,
     last_mouse: Point,
 }

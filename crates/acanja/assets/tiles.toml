@@ -109,13 +109,19 @@ kind   = "FLOOR"
 sprite = ".|DARK_GREEN|DARKEST_GREEN"
 flavor = "forest"
 
-[HILLS]
+[HILL]
 kind   = "FLOOR"
 sprite = "^|LIGHT_BROWN|BROWN"
 flavor = "hills"
 
-[MOUNTAINS]
+[MOUNTAIN]
 kind   = "FLOOR"
 sprite = "^|BLACK|DARK_BROWN"
 flavor = "mountains"
+move   = "BLOCKS_MOVE"
+
+[SNOW]
+kind   = "FLOOR"
+sprite = "^|WHITE|DARK_BROWN"
+flavor = "snowy mountains"
 move   = "BLOCKS_MOVE"

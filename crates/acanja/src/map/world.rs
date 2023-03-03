@@ -14,6 +14,7 @@ pub fn build_world_map<'t>(tiles: &'t Tiles, prefabs: &Prefabs, width: u32, heig
         builder.fill("LAKE");
 
         let seed = builder.rng_mut().next_u64();
+
         let mut noise = FastNoise::seeded(seed);
         noise.set_noise_type(NoiseType::PerlinFractal);
         noise.set_fractal_type(FractalType::FBM);
@@ -77,9 +78,9 @@ pub fn build_world_map<'t>(tiles: &'t Tiles, prefabs: &Prefabs, width: u32, heig
                 } else if v < 80.0 {
                     builder.set_tile(x, y, "FOREST");
                 } else if v < 90.0 {
-                    builder.set_tile(x, y, "HILLS");
+                    builder.set_tile(x, y, "HILL");
                 } else {
-                    builder.set_tile(x, y, "MOUNTAINS");
+                    builder.set_tile(x, y, "MOUNTAIN");
                 }
             }
         }
@@ -101,3 +102,14 @@ fn cylindernoise(noise: &mut FastNoise, nx: f32, ny: f32) -> f32 {
     which means the circle's radius is 1/2π, or 1/tau */
     noise.get_noise3d(angle_x.cos() / TAU, (angle_x.sin()) / TAU, ny)
 }
+
+// fn torusnoise(noise: &mut FastNoise, nx: f32, ny: f32) -> f32 {
+//     let angle_x = TAU * nx;
+//     let angle_y = TAU * ny;
+//     noise.get_noise4D(
+//         angle_x.cos() / TAU,
+//         angle_x.sin() / TAU,
+//         angle_y.cos() / TAU,
+//         angle_y.sin() / TAU,
+//     )
+// }
