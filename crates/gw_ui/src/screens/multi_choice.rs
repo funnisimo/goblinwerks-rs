@@ -15,7 +15,7 @@ use crate::ui::{Keyed, Margined, Padded, Positioned};
 use gw_app::messages::Messages;
 use gw_app::VirtualKeyCode;
 use gw_app::{AppEvent, Ecs, Screen, ScreenResult};
-use gw_app::{Key, Value};
+use gw_util::value::{Key, Value};
 use std::collections::HashMap;
 
 /// Called when the multi choice dialog is closed - data is a map of the key to value for the checked items.

@@ -1,6 +1,6 @@
 use crate::color::RGBA;
 use crate::panel::{Buffer, Glyph};
-use crate::text::{wrap_plain, RefLine};
+use gw_util::text::{wrap_plain, RefLine};
 use std::cmp::{max, min};
 
 #[derive(Copy, Clone, Debug)]

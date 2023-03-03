@@ -6,6 +6,7 @@ use gw_ui::{
     screens::{Choice, MultiChoice},
     ui::*,
 };
+use gw_util::value::{Key, Value};
 use std::collections::HashMap;
 
 fn map_as_text(data: Option<HashMap<Key, Value>>) -> String {

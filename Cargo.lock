@@ -790,6 +790,7 @@ dependencies = [
  "atomic_refcell",
  "doryen-fov",
  "glutin",
+ "gw_util",
  "image",
  "js-sys",
  "lazy_static",
@@ -819,8 +820,9 @@ version = "0.1.0"
 dependencies = [
  "assert_approx_eq",
  "chrono",
- "gw_app",
+ "getrandom",
  "lazy_static",
+ "legion",
  "pest",
  "pest_derive",
  "rand",

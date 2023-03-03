@@ -2,9 +2,11 @@ use crate::map::{CellFlags, Map};
 use crate::memory::MapMemory;
 use gw_app::color::{named, RGBA};
 use gw_app::ecs::{systems::ResourceSet, Read, Write};
+use gw_app::messages::Messages;
 use gw_app::{log, AppEvent, Buffer, ScreenResult};
 use gw_app::{Ecs, Panel};
 use gw_util::point::Point;
+use gw_util::value::Value;
 
 enum VisType {
     NONE,
@@ -53,29 +55,51 @@ impl AlwaysVisible {
 }
 impl VisSource for AlwaysVisible {}
 
-pub struct ViewPort {
+pub struct Viewport {
     con: Panel,
     id: String,
+    last_mouse: Point,
 }
 
-impl ViewPort {
+impl Viewport {
     pub fn builder(id: &str) -> ViewPortBuilder {
         ViewPortBuilder::new(id)
     }
 
     fn new(builder: ViewPortBuilder) -> Self {
         let con = Panel::new(builder.size.0, builder.size.1, &builder.font);
-        ViewPort {
+        Viewport {
             con,
             id: builder.id,
+            last_mouse: Point::new(-1, -1),
         }
     }
 
-    pub fn input(&mut self, _ecs: &mut Ecs, event: &AppEvent) -> Option<ScreenResult> {
+    pub fn input(&mut self, ecs: &mut Ecs, event: &AppEvent) -> Option<ScreenResult> {
         match event {
-            AppEvent::MousePos(_mouse) => {
-                log("Mouse move");
-            }
+            AppEvent::MousePos(screen_pct) => match self.con.mouse_point(*screen_pct) {
+                None => {}
+                Some(cell) => {
+                    if cell != self.last_mouse {
+                        let mut msgs = ecs.resources.get_mut::<Messages>().unwrap();
+                        msgs.push(
+                            &format!("{}_MOVE", self.id),
+                            Some(Value::Point(cell.x, cell.y)),
+                        );
+                        self.last_mouse = cell;
+                    }
+                }
+            },
+            AppEvent::MouseDown(mouse) => match self.con.mouse_point(mouse.pos) {
+                None => {}
+                Some(cell) => {
+                    let mut msgs = ecs.resources.get_mut::<Messages>().unwrap();
+                    msgs.push(
+                        &format!("{}_CLICK", self.id),
+                        Some(Value::Point(cell.x, cell.y)),
+                    );
+                }
+            },
             _ => {}
         }
         None
@@ -126,12 +150,12 @@ impl ViewPortBuilder {
         self
     }
 
-    pub fn build(self) -> ViewPort {
-        ViewPort::new(self)
+    pub fn build(self) -> Viewport {
+        Viewport::new(self)
     }
 }
 
-fn draw_map(viewport: &mut ViewPort, ecs: &mut Ecs) {
+fn draw_map(viewport: &mut Viewport, ecs: &mut Ecs) {
     let (mut map, mut memory) = <(Write<Map>, Write<MapMemory>)>::fetch_mut(&mut ecs.resources);
 
     let vis = AlwaysVisible::new();

@@ -1,7 +1,8 @@
 use super::*;
 use gw_app::Ecs;
-use gw_app::{log, text::colored_line_len, Buffer, KeyEvent, Value, VirtualKeyCode};
+use gw_app::{log, Buffer, KeyEvent, Value, VirtualKeyCode};
 use gw_util::point::Point;
+use gw_util::text::colored_line_len;
 use std::cmp::max;
 
 static RADIO: Radio = Radio {};

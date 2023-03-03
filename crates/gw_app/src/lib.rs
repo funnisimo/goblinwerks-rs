@@ -15,8 +15,6 @@ pub mod messages;
 pub mod panel;
 pub mod runner;
 pub mod screen;
-pub mod text;
-pub mod value;
 
 pub use app::{
     now, perf_now, App, AppConfig, AppEvent, KeyEvent, MouseButtonEvent, VirtualKeyCode,
@@ -28,10 +26,10 @@ pub use img::Image;
 pub use input::AppInput;
 // pub use load_screen::LoadingScreen;
 pub use ecs::Ecs;
+pub use gw_util::value::Value;
 pub use panel::{Buffer, Glyph, Panel};
 pub use runner::Runner;
 pub use screen::{Screen, ScreenResult};
-pub use value::{Key, Value};
 
 pub fn log<T: AsRef<str>>(msg: T) {
     app::App::print(msg.as_ref());

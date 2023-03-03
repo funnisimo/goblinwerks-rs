@@ -2,10 +2,10 @@ use super::TextAlign;
 use crate::color::{get_color_opt, RGBA};
 use crate::panel::Buffer;
 use crate::panel::Glyph;
-use crate::text::parse_colored_lines;
-use crate::text::wrap_colored;
-use crate::text::ColoredLine;
-use crate::text::ColoredSpan;
+use gw_util::text::parse_colored_lines;
+use gw_util::text::wrap_colored;
+use gw_util::text::ColoredLine;
+use gw_util::text::ColoredSpan;
 use std::cmp::{max, min};
 use std::fmt::Debug;
 

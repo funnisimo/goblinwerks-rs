@@ -1,5 +1,5 @@
-use crate::Value;
 use crate::{AppEvent, Ecs};
+use gw_util::value::Value;
 use std::fmt::Debug;
 
 /// The result from a call to one of the [`Screen`] event functions

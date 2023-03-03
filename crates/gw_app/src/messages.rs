@@ -1,4 +1,4 @@
-use crate::Value;
+use gw_util::value::Value;
 
 pub struct Messages {
     data: Option<Vec<(String, Option<Value>)>>,

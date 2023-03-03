@@ -4,6 +4,7 @@ use gw_app::log;
 use gw_app::Buffer;
 use gw_app::Ecs;
 use gw_app::Value;
+use gw_util::text::{parse_colored_lines, wrap_colored};
 use std::cmp::min;
 
 pub(crate) static TEXT: Text = Text {};
@@ -172,7 +173,7 @@ pub fn text_set_size(node: &Element, max_size: Option<(u32, u32)>) {
         let (width, mut height) = {
             let node_text = node.text();
             let txt = node_text.as_ref().unwrap();
-            let lines = gw_app::text::parse_colored_lines(txt);
+            let lines = parse_colored_lines(txt);
             (
                 lines.iter().fold(0, |out, line| max(out, line.char_len())) as u32,
                 lines.len().max(1) as u32,
@@ -198,7 +199,7 @@ pub fn text_set_size(node: &Element, max_size: Option<(u32, u32)>) {
     let (width, mut height) = {
         let node_text = node.text();
         let txt = node_text.as_ref().unwrap();
-        let lines = gw_app::text::wrap_colored(size.0 as usize, txt);
+        let lines = wrap_colored(size.0 as usize, txt);
         (
             lines.iter().fold(0, |out, line| max(out, line.char_len())) as u32,
             lines.len().max(1) as u32,

@@ -4,5 +4,5 @@ pub use program::*;
 mod buffer;
 pub use buffer::*;
 
-mod console;
-pub use console::*;
+mod panel;
+pub use panel::*;

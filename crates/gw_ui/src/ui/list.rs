@@ -1,5 +1,6 @@
 use super::*;
-use gw_app::{log, text::colored_line_len, Buffer, Ecs, Value};
+use gw_app::{log, Buffer, Ecs, Value};
+use gw_util::text::colored_line_len;
 
 static LIST: List = List {};
 

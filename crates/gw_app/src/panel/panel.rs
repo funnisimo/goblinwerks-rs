@@ -3,12 +3,14 @@ use super::PanelProgram;
 use crate::ecs::{systems::ResourceSet, Read, Write};
 use crate::font::{Font, Fonts};
 use crate::{log, Ecs};
+use gw_util::extents::Extents;
+use gw_util::point::Point;
 use std::sync::Arc;
 
 /// This contains the data for a console (including the one displayed on the screen) and methods to draw on it.
 pub struct Panel {
     buffer: Buffer,
-    extents: (f32, f32, f32, f32),
+    extents: Extents,
     font_name: String,
     font: Option<Arc<Font>>,
     zpos: i8,
@@ -20,7 +22,7 @@ impl Panel {
     pub fn new(width: u32, height: u32, font_name: &str) -> Self {
         Self {
             buffer: Buffer::new(width, height),
-            extents: (0.0, 0.0, 1.0, 1.0),
+            extents: (0.0, 0.0, 1.0, 1.0).into(),
             font_name: font_name.to_owned(),
             font: None,
             zpos: 0,
@@ -35,11 +37,11 @@ impl Panel {
     pub fn set_extents(&mut self, left: f32, top: f32, right: f32, bottom: f32) -> &mut Self {
         println!("console extents = {},{} - {},{}", left, top, right, bottom);
 
-        self.extents = (left, top, right, bottom);
+        self.extents = (left, top, right, bottom).into();
         self
     }
 
-    pub fn extents(&self) -> &(f32, f32, f32, f32) {
+    pub fn extents(&self) -> &Extents {
         &self.extents
     }
 
@@ -138,34 +140,12 @@ impl Panel {
     }
 
     pub fn contains_screen_pct(&self, screen_pct: (f32, f32)) -> bool {
-        if screen_pct.0 < self.extents.0 {
-            return false;
-        }
-        if screen_pct.1 < self.extents.1 {
-            return false;
-        }
-        if screen_pct.0 > self.extents.2 {
-            return false;
-        }
-        if screen_pct.1 > self.extents.3 {
-            return false;
-        }
-
-        true
+        self.extents.contains(screen_pct)
     }
 
     /// returns the cell that the screen pos converts to for this console [0.0-1.0]
     pub fn mouse_pos(&self, screen_pct: (f32, f32)) -> Option<(f32, f32)> {
-        if screen_pct.0 < self.extents.0 {
-            return None;
-        }
-        if screen_pct.1 < self.extents.1 {
-            return None;
-        }
-        if screen_pct.0 > self.extents.2 {
-            return None;
-        }
-        if screen_pct.1 > self.extents.3 {
+        if !self.extents.contains(screen_pct) {
             return None;
         }
 
@@ -178,6 +158,13 @@ impl Panel {
             (cell_pct.0) * self.buffer.width() as f32,
             (cell_pct.1) * self.buffer.height() as f32,
         ))
+    }
+
+    pub fn mouse_point(&self, screen_pct: (f32, f32)) -> Option<Point> {
+        match self.mouse_pos(screen_pct) {
+            None => None,
+            Some((x, y)) => Some(Point::new(x.floor() as i32, y.floor() as i32)),
+        }
     }
 }
 

@@ -3,6 +3,7 @@ use crate::color::RGBA;
 use crate::font::Font;
 // use image::{ImageBuffer, Rgba};
 use crate::log;
+use gw_util::extents::Extents;
 use std::collections::HashMap;
 use std::mem::size_of;
 use std::slice;
@@ -171,12 +172,7 @@ impl PanelProgram {
         }
     }
 
-    pub fn set_extents(
-        &mut self,
-        gl: &WebGLRenderingContext,
-        extents: &(f32, f32, f32, f32),
-        zpos: i8,
-    ) {
+    pub fn set_extents(&mut self, gl: &WebGLRenderingContext, extents: &Extents, zpos: i8) {
         let left = (extents.0 * 2.0) - 1.0;
         let top = 1.0 - (extents.1 * 2.0);
         let right = (extents.2 * 2.0) - 1.0;

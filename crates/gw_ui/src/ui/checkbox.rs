@@ -1,8 +1,9 @@
 use super::*;
 use gw_app::log;
 use gw_app::Ecs;
-use gw_app::{text::colored_line_len, Buffer, KeyEvent, Value, VirtualKeyCode};
+use gw_app::{Buffer, KeyEvent, Value, VirtualKeyCode};
 use gw_util::point::Point;
+use gw_util::text::colored_line_len;
 
 static CHECKBOX: Checkbox = Checkbox {};
 

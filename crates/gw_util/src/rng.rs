@@ -9,9 +9,8 @@ pub struct RandomNumberGenerator {
 
 impl RandomNumberGenerator {
     pub fn new() -> Self {
-        let seed = gw_app::now() as u64;
         RandomNumberGenerator {
-            source: RNG::seed_from_u64(seed),
+            source: RNG::from_entropy(),
         }
     }
 

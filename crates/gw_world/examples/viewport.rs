@@ -1,16 +1,17 @@
 use gw_app::*;
+use gw_util::point::Point;
 use gw_world::map::{dig_room_level, dump_map};
 use gw_world::memory::MapMemory;
 use gw_world::tile::Tiles;
-use gw_world::widget::ViewPort;
+use gw_world::widget::Viewport;
 
 struct MainScreen {
-    viewport: ViewPort,
+    viewport: Viewport,
 }
 
 impl MainScreen {
     pub fn new() -> Box<Self> {
-        let viewport = ViewPort::builder("VIEWPORT").size(80, 50).build();
+        let viewport = Viewport::builder("VIEWPORT").size(80, 50).build();
 
         Box::new(MainScreen { viewport })
     }
@@ -57,9 +58,16 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn message(&mut self, _app: &mut Ecs, id: String, _value: Option<Value>) -> ScreenResult {
-        log(format!("message - {}", id));
+    fn message(&mut self, _app: &mut Ecs, id: String, value: Option<Value>) -> ScreenResult {
         match id.as_str() {
+            "VIEWPORT_MOVE" => {
+                let pt: Point = value.unwrap().try_into().unwrap();
+                log(format!("Mouse Pos = {}", pt));
+            }
+            "VIEWPORT_CLICK" => {
+                let pt: Point = value.unwrap().try_into().unwrap();
+                log(format!("CLICK = {}", pt));
+            }
             _ => {}
         }
         ScreenResult::Continue
