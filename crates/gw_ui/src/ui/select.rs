@@ -1,6 +1,6 @@
 use super::*;
 use gw_app::Ecs;
-use gw_app::{Buffer, KeyEvent, MsgData, VirtualKeyCode};
+use gw_app::{Buffer, KeyEvent, Value, VirtualKeyCode};
 use gw_util::point::Point;
 
 static SELECT: Select = Select {};
@@ -59,17 +59,17 @@ impl Tag for Select {
         true
     }
 
-    fn value(&self, el: &Element) -> Option<MsgData> {
+    fn value(&self, el: &Element) -> Option<Value> {
         // if let Some(val) = &el.borrow().value {
         //     return Some(val.clone());
         // }
 
-        let mut items: Vec<MsgData> = Vec::new();
+        let mut items: Vec<Value> = Vec::new();
         let use_index = el.has_prop("index");
         for (index, ch) in el.children().enumerate() {
             if ch.has_prop("checked") {
                 if use_index {
-                    items.push(MsgData::Index(index));
+                    items.push(Value::Index(index));
                 } else {
                     items.push(ch.value().unwrap());
                 }
@@ -78,7 +78,7 @@ impl Tag for Select {
         if items.is_empty() {
             return None;
         } else if el.has_prop("multiple") {
-            return Some(MsgData::List(items));
+            return Some(Value::List(items));
         } else {
             return items.drain(0..1).next();
         };
@@ -241,7 +241,7 @@ impl SelectItemBuilder {
         self
     }
 
-    pub fn value(&self, value: MsgData) -> &Self {
+    pub fn value(&self, value: Value) -> &Self {
         self.node.set_value(Some(value));
         self
     }

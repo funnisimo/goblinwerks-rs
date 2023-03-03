@@ -15,12 +15,12 @@ use crate::ui::{Keyed, Margined, Padded, Positioned};
 use gw_app::messages::Messages;
 use gw_app::VirtualKeyCode;
 use gw_app::{AppEvent, Ecs, Screen, ScreenResult};
-use gw_app::{Key, MsgData};
+use gw_app::{Key, Value};
 use std::collections::HashMap;
 
 /// Called when the multi choice dialog is closed - data is a map of the key to value for the checked items.
 /// None for cancelled, empty for None checked.
-pub type MultiChoiceResultFn = dyn FnOnce(&mut Ecs, Option<HashMap<Key, MsgData>>) -> ();
+pub type MultiChoiceResultFn = dyn FnOnce(&mut Ecs, Option<HashMap<Key, Value>>) -> ();
 
 #[derive(Debug)]
 pub struct MultiChoiceItem {
@@ -173,10 +173,10 @@ impl MultiChoiceBuilder {
         if self.done.is_none() {
             let id = self.id.clone();
             self.done = Some(Box::new(
-                move |app: &mut Ecs, data: Option<HashMap<Key, MsgData>>| {
+                move |app: &mut Ecs, data: Option<HashMap<Key, Value>>| {
                     let res = match data {
                         None => None,
-                        Some(x) => Some(MsgData::Map(x)),
+                        Some(x) => Some(Value::Map(x)),
                     };
                     let mut msgs = app.resources.get_mut::<Messages>().unwrap();
                     msgs.push(id.as_ref(), res)
@@ -284,7 +284,7 @@ impl Screen for MultiChoice {
         ScreenResult::Continue
     }
 
-    fn message(&mut self, app: &mut Ecs, id: String, value: Option<MsgData>) -> ScreenResult {
+    fn message(&mut self, app: &mut Ecs, id: String, value: Option<Value>) -> ScreenResult {
         match id.as_ref() {
             "OK" => {
                 let ret = get_value(self);
@@ -354,9 +354,9 @@ fn init_checkbox(config: &MultiChoiceBuilder, parent: &dyn ParentNode) {
     });
 }
 
-fn get_value(dlg: &MultiChoice) -> Option<HashMap<Key, MsgData>> {
+fn get_value(dlg: &MultiChoice) -> Option<HashMap<Key, Value>> {
     if dlg.config.checkbox {
-        let mut ret: HashMap<Key, MsgData> = HashMap::new();
+        let mut ret: HashMap<Key, Value> = HashMap::new();
 
         let div = dlg.ui.find_by_id("CHECKS").unwrap();
 
@@ -382,16 +382,16 @@ fn get_value(dlg: &MultiChoice) -> Option<HashMap<Key, MsgData>> {
     } else {
         let ret = match dlg.ui.find_by_id("SELECT").unwrap().value() {
             None => None, // TODO - return ScreenResult::Push(MsgBox::builder().msg("You must select something.").class("error").build()),
-            Some(MsgData::List(list)) => {
-                let mut map: HashMap<Key, MsgData> = HashMap::new();
+            Some(Value::List(list)) => {
+                let mut map: HashMap<Key, Value> = HashMap::new();
                 for data in list {
                     let idx: usize = data.try_into().unwrap();
                     let key = dlg.config.items[idx].key.clone();
-                    map.insert(key, MsgData::Boolean(true));
+                    map.insert(key, Value::Boolean(true));
                 }
                 Some(map)
             }
-            Some(MsgData::Map(map)) => Some(map),
+            Some(Value::Map(map)) => Some(map),
             _ => panic!("Unexpected value from select"),
         };
         ret
@@ -416,12 +416,12 @@ mod test {
         assert_eq!(focused.value(), None);
 
         dlg.ui.handle_key(&VirtualKeyCode::Space.into());
-        let mut list: Vec<MsgData> = Vec::new();
+        let mut list: Vec<Value> = Vec::new();
         list.push(0_usize.into());
-        assert_eq!(focused.value(), Some(MsgData::List(list)));
+        assert_eq!(focused.value(), Some(Value::List(list)));
 
         let val = get_value(&dlg).unwrap();
-        let mut map: HashMap<Key, MsgData> = HashMap::new();
+        let mut map: HashMap<Key, Value> = HashMap::new();
         map.insert("ONE".into(), true.into());
         assert_eq!(val, map);
     }
@@ -440,12 +440,12 @@ mod test {
         assert_eq!(focused.value(), None);
 
         dlg.ui.handle_key(&VirtualKeyCode::Space.into());
-        let mut list: Vec<MsgData> = Vec::new();
+        let mut list: Vec<Value> = Vec::new();
         list.push(0_usize.into());
-        assert_eq!(focused.value(), Some(MsgData::List(list)));
+        assert_eq!(focused.value(), Some(Value::List(list)));
 
         let val = get_value(&dlg).unwrap();
-        let mut map: HashMap<Key, MsgData> = HashMap::new();
+        let mut map: HashMap<Key, Value> = HashMap::new();
         map.insert("K1".into(), true.into());
         assert_eq!(val, map);
     }
@@ -470,7 +470,7 @@ mod test {
         assert_eq!(focused.value(), Some(true.into()));
 
         let val = get_value(&dlg).unwrap();
-        let mut map: HashMap<Key, MsgData> = HashMap::new();
+        let mut map: HashMap<Key, Value> = HashMap::new();
         map.insert("ONE".into(), true.into());
         assert_eq!(val, map);
     }
@@ -495,7 +495,7 @@ mod test {
         assert_eq!(focused.value(), Some(true.into()));
 
         let val = get_value(&dlg).unwrap();
-        let mut map: HashMap<Key, MsgData> = HashMap::new();
+        let mut map: HashMap<Key, Value> = HashMap::new();
         map.insert("K1".into(), true.into());
         assert_eq!(val, map);
     }
@@ -521,7 +521,7 @@ mod test {
         assert_eq!(focused.value(), Some(2_i32.into()));
 
         let val = get_value(&dlg).unwrap();
-        let mut map: HashMap<Key, MsgData> = HashMap::new();
+        let mut map: HashMap<Key, Value> = HashMap::new();
         map.insert("K1".into(), 2_i32.into());
         assert_eq!(val, map);
     }

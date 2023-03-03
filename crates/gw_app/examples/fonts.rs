@@ -27,14 +27,14 @@ const FONTS: [&str; 19] = [
 ];
 
 struct MyRoguelike {
-    con: Console,
+    con: Panel,
     cur_font: usize,
     cur_font_name: String,
 }
 
 impl MyRoguelike {
     fn new() -> Box<Self> {
-        let con = Console::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, FONTS[0]);
+        let con = Panel::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, FONTS[0]);
 
         Box::new(MyRoguelike {
             con,

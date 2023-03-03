@@ -1,12 +1,12 @@
 use super::Buffer;
-use super::Program;
+use super::PanelProgram;
 use crate::ecs::{systems::ResourceSet, Read, Write};
 use crate::font::{Font, Fonts};
 use crate::{log, Ecs};
 use std::sync::Arc;
 
 /// This contains the data for a console (including the one displayed on the screen) and methods to draw on it.
-pub struct Console {
+pub struct Panel {
     buffer: Buffer,
     extents: (f32, f32, f32, f32),
     font_name: String,
@@ -14,7 +14,7 @@ pub struct Console {
     zpos: i8,
 }
 
-impl Console {
+impl Panel {
     /// create a new offscreen console that you can draw to the screen with a font
     /// width and height are in cells (characters), not pixels.
     pub fn new(width: u32, height: u32, font_name: &str) -> Self {
@@ -113,7 +113,7 @@ impl Console {
         let (fonts, gl, mut program) = <(
             Read<Fonts>,
             Read<uni_gl::WebGLRenderingContext>,
-            Write<Program>,
+            Write<PanelProgram>,
         )>::fetch_mut(&mut ecs.resources);
 
         if self.font.is_none() {
@@ -181,24 +181,24 @@ impl Console {
     }
 }
 
-impl From<(u32, u32)> for Console {
+impl From<(u32, u32)> for Panel {
     fn from(size: (u32, u32)) -> Self {
-        Console::new(size.0, size.1, "DEFAULT")
+        Panel::new(size.0, size.1, "DEFAULT")
     }
 }
 
-impl From<(u32, u32, &str)> for Console {
+impl From<(u32, u32, &str)> for Panel {
     fn from(config: (u32, u32, &str)) -> Self {
-        Console::new(config.0, config.1, config.2)
+        Panel::new(config.0, config.1, config.2)
     }
 }
 
-pub fn subcell_console(width: u32, height: u32) -> Console {
-    Console::new(width, height, "SUBCELL")
+pub fn subcell_console(width: u32, height: u32) -> Panel {
+    Panel::new(width, height, "SUBCELL")
 }
 
-pub fn default_console(width: u32, height: u32) -> Console {
-    Console::new(width, height, "DEFAULT")
+pub fn default_console(width: u32, height: u32) -> Panel {
+    Panel::new(width, height, "DEFAULT")
 }
 
 pub fn calc_window_pct(

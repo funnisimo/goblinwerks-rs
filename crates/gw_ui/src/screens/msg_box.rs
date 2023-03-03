@@ -8,13 +8,13 @@ use crate::ui::UiAction;
 use crate::ui::UI;
 use crate::ui::{Keyed, Margined, Padded, Positioned};
 use gw_app::messages::Messages;
-use gw_app::MsgData;
+use gw_app::Value;
 use gw_app::VirtualKeyCode;
 use gw_app::{AppEvent, Ecs, Screen, ScreenResult};
 
 /// Called when the msgbox is closed - data is Some(true) if ok is clicked.
 /// None for cancelled.
-pub type MsgBoxResultFn = dyn FnOnce(&mut Ecs, Option<MsgData>) -> ();
+pub type MsgBoxResultFn = dyn FnOnce(&mut Ecs, Option<Value>) -> ();
 
 #[derive(PartialEq)]
 pub enum MsgBoxStyle {
@@ -86,7 +86,7 @@ impl MsgBoxBuilder {
     pub fn build(mut self) -> Box<MsgBox> {
         if self.done.is_none() {
             let id = self.id.clone();
-            self.done = Some(Box::new(move |app: &mut Ecs, data: Option<MsgData>| {
+            self.done = Some(Box::new(move |app: &mut Ecs, data: Option<Value>| {
                 let mut msgs = app.resources.get_mut::<Messages>().unwrap();
                 msgs.push(id.as_ref(), data)
             }));
@@ -174,7 +174,7 @@ impl Screen for MsgBox {
         ScreenResult::Continue
     }
 
-    fn message(&mut self, app: &mut Ecs, id: String, value: Option<MsgData>) -> ScreenResult {
+    fn message(&mut self, app: &mut Ecs, id: String, value: Option<Value>) -> ScreenResult {
         match id.as_ref() {
             "OK" => {
                 println!("MsgBox - {}, ok", &self.config.id);

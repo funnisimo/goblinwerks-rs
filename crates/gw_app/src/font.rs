@@ -1,5 +1,5 @@
 use crate::codepage437;
-use crate::{console::set_texture_params, loader::LoadHandler};
+use crate::{loader::LoadHandler, panel::set_texture_params};
 use crate::{log, Glyph};
 use std::{collections::HashMap, sync::Arc};
 use uni_gl::{WebGLRenderingContext, WebGLTexture};

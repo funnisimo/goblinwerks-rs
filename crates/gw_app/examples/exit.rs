@@ -18,20 +18,20 @@ const FONT: &str = "resources/terminal_8x8.png";
 */
 
 struct MainScreen {
-    con: Console,
+    con: Panel,
 }
 
 impl MainScreen {
     fn new() -> Box<Self> {
-        let con = Console::new(50, 30, FONT);
+        let con = Panel::new(50, 30, FONT);
         Box::new(MainScreen { con })
     }
 }
 
 impl Screen for MainScreen {
-    fn message(&mut self, _app: &mut Ecs, _id: String, value: Option<MsgData>) -> ScreenResult {
+    fn message(&mut self, _app: &mut Ecs, _id: String, value: Option<Value>) -> ScreenResult {
         match value {
-            Some(MsgData::Boolean(true)) => {
+            Some(Value::Boolean(true)) => {
                 log("You chose to quit.");
                 ScreenResult::Quit
             }
@@ -71,12 +71,12 @@ impl Screen for MainScreen {
 }
 
 struct Popup {
-    con: Console,
+    con: Panel,
 }
 
 impl Popup {
     fn new() -> Box<Self> {
-        let con = Console::new(24, 20, FONT).with_extents(0.25, 0.25, 0.5, 0.75);
+        let con = Panel::new(24, 20, FONT).with_extents(0.25, 0.25, 0.5, 0.75);
         Box::new(Popup { con })
     }
 }

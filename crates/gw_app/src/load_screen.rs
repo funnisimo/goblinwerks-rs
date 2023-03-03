@@ -3,16 +3,16 @@ use crate::ecs::{systems::ResourceSet, Read};
 use crate::loader::Loader;
 use crate::screen::BoxedScreen;
 use crate::{color::RGBA, draw, log};
-use crate::{Console, Ecs, Screen, ScreenResult};
+use crate::{Ecs, Panel, Screen, ScreenResult};
 
 pub struct LoadingScreen {
-    con: Console,
+    con: Panel,
     alpha: u8,
     next: Option<BoxedScreen>,
 }
 impl LoadingScreen {
     pub fn new(next: BoxedScreen) -> Box<Self> {
-        let con = Console::new(20, 10, "DEFAULT");
+        let con = Panel::new(20, 10, "DEFAULT");
         Box::new(LoadingScreen {
             con,
             alpha: 255,

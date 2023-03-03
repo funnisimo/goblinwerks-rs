@@ -8,7 +8,7 @@ use gw_ui::{
 };
 use std::collections::HashMap;
 
-fn map_as_text(data: Option<HashMap<Key, MsgData>>) -> String {
+fn map_as_text(data: Option<HashMap<Key, Value>>) -> String {
     match data {
         None => "Cancelled".to_owned(),
         Some(map) => map
@@ -19,16 +19,16 @@ fn map_as_text(data: Option<HashMap<Key, MsgData>>) -> String {
     }
 }
 
-fn data_as_text(data: Option<MsgData>) -> String {
+fn data_as_text(data: Option<Value>) -> String {
     match data {
         None => "Cancelled.".to_owned(),
-        Some(MsgData::Text(val)) => val,
-        Some(MsgData::List(val)) => val
+        Some(Value::Text(val)) => val,
+        Some(Value::List(val)) => val
             .iter()
             .map(|v| v.to_string())
             .collect::<Vec<String>>()
             .join(", "),
-        Some(MsgData::Map(data)) => data
+        Some(Value::Map(data)) => data
             .into_iter()
             .map(|(k, _)| k.to_string())
             .collect::<Vec<String>>()
@@ -63,7 +63,7 @@ impl MainScreen {
                             Some(UiAction::Screen(Choice::builder("ANYTHING") // Id can be anything because we send the message directly
                                 .items(vec!["Football", "Soccer", "Rugby", "Cricket"])
                                 .class("blue-back")
-                                .done(Box::new(move |app: &mut Ecs, data: Option<MsgData>| {
+                                .done(Box::new(move |app: &mut Ecs, data: Option<Value>| {
                                     let mut msgs = app.resources.get_mut::<Messages>().unwrap();
                                     msgs.push("SINGLE", data) // This is what the default implementation does
                                 }))
@@ -100,7 +100,7 @@ impl MainScreen {
                             Some(UiAction::Screen(MultiChoice::builder("ANYTHING") // Id can be anything because we send the message directly
                                 .items(vec!["Darts", "Field Hockey", "Biathalon", "Luge"])
                                 .class("blue-back")
-                                .done(Box::new(move |_: &mut Ecs, data: Option<HashMap<Key,MsgData>>| {
+                                .done(Box::new(move |_: &mut Ecs, data: Option<HashMap<Key,Value>>| {
                                     ui_root.find_by_id("TEXT_MULTI").unwrap().set_text(&map_as_text(data));
                                 }))
                                 .build()))
@@ -136,7 +136,7 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn message(&mut self, _app: &mut Ecs, id: String, value: Option<MsgData>) -> ScreenResult {
+    fn message(&mut self, _app: &mut Ecs, id: String, value: Option<Value>) -> ScreenResult {
         match id.as_str() {
             "MESSAGE" => {
                 return ScreenResult::Push(

@@ -1,6 +1,6 @@
 use super::*;
 use gw_app::Ecs;
-use gw_app::{Buffer, MsgData};
+use gw_app::{Buffer, Value};
 use gw_util::point::Point;
 
 static BUTTON: Button = Button {};
@@ -141,7 +141,7 @@ impl ButtonBuilder {
         self
     }
 
-    pub fn value(&self, val: Option<MsgData>) -> &Self {
+    pub fn value(&self, val: Option<Value>) -> &Self {
         self.node.set_value(val);
         self
     }

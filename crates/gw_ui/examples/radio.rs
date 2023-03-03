@@ -96,7 +96,7 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn message(&mut self, _app: &mut Ecs, id: String, value: Option<MsgData>) -> ScreenResult {
+    fn message(&mut self, _app: &mut Ecs, id: String, value: Option<Value>) -> ScreenResult {
         log(format!("message - {}", id));
         match id.as_str() {
             "PICK" => {

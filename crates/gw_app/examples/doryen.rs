@@ -20,7 +20,7 @@ const BLACK: RGBA = RGBA::rgb(0, 0, 0);
 const GRAY: RGBA = RGBA::rgb(128, 128, 128);
 
 struct MyRoguelike {
-    con: Console,
+    con: Panel,
     player_pos: (i32, i32),
     mouse_pos: (f32, f32),
     screenshot_idx: usize,
@@ -28,7 +28,7 @@ struct MyRoguelike {
 
 impl MyRoguelike {
     fn new() -> Box<Self> {
-        let con = Console::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, FONT);
+        let con = Panel::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, FONT);
 
         Box::new(MyRoguelike {
             con,

@@ -10,12 +10,12 @@ You can lower the tickrate by calling your world updating code only once every n
 const FONT: &str = "resources/terminal_8x8.png";
 
 struct MyRoguelike {
-    con: Console,
+    con: Panel,
 }
 
 impl MyRoguelike {
     fn new() -> Box<Self> {
-        let con = Console::new(80, 50, FONT);
+        let con = Panel::new(80, 50, FONT);
         Box::new(MyRoguelike { con })
     }
 }

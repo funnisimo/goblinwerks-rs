@@ -1,6 +1,6 @@
 use super::*;
 use gw_app::{log, Ecs};
-use gw_app::{Buffer, KeyEvent, MsgData};
+use gw_app::{Buffer, KeyEvent, Value};
 use gw_util::point::Point;
 
 pub trait Tag {
@@ -38,7 +38,7 @@ pub trait Tag {
         )
     }
 
-    fn value(&self, el: &Element) -> Option<MsgData> {
+    fn value(&self, el: &Element) -> Option<Value> {
         if let Some(val) = &el.borrow().value {
             return Some(val.clone());
         }

@@ -1,8 +1,8 @@
-use crate::console::Program;
 use crate::fps::Fps;
 use crate::img::Images;
 use crate::loader::Loader;
 use crate::messages::Messages;
+use crate::panel::PanelProgram;
 use crate::{font::Fonts, log, App, AppConfig, AppInput};
 use legion::systems::Resource;
 pub use legion::*;
@@ -89,7 +89,7 @@ pub fn init_ecs(ecs: &mut Ecs, app: &App, options: &AppConfig) {
 
     resources.insert(window_info);
 
-    // GL + Console Program
+    // GL + Panel Program
     let gl = uni_gl::WebGLRenderingContext::new(app.canvas());
     gl.viewport(x_offset, y_offset, real_window_width, real_window_height);
     gl.enable(uni_gl::Flag::Blend as i32);
@@ -103,7 +103,7 @@ pub fn init_ecs(ecs: &mut Ecs, app: &App, options: &AppConfig) {
         uni_gl::BlendMode::OneMinusSrcAlpha,
     );
 
-    resources.insert(Program::new(&gl));
+    resources.insert(PanelProgram::new(&gl));
 
     resources.insert(Fonts::new(&gl));
     resources.insert(Images::new());

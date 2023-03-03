@@ -233,14 +233,14 @@ impl Buffer {
     }
 
     // /// write a multi-color string. Foreground color is defined by #[color_name] patterns inside the string.
-    // /// color_name must have been registered with [`Console::register_color`] before.
+    // /// color_name must have been registered with [`Panel::register_color`] before.
     // /// Default foreground color is white, at the start of the string.
     // /// When an unknown color name is used, the color goes back to its previous value.
     // /// You can then use an empty name to end a color span.
     // /// Example
     // /// ```
-    // /// use doryen_rs::{Console, TextAlign};
-    // /// let mut con=Console::new(80,25);
+    // /// use doryen_rs::{Panel, TextAlign};
+    // /// let mut con=Panel::new(80,25);
     // /// con.register_color("pink", (255, 0, 255, 255));
     // /// con.register_color("blue", (0, 0, 255, 255));
     // /// con.print_color(5, 5, "#[blue]This blue text contains a #[pink]pink#[] word", TextAlign::Left, None);
@@ -590,12 +590,12 @@ impl Buffer {
 // / compute the length of a string containing color codes.
 // / Example :
 // / ```
-// / use doryen_rs::Console;
-// / let len = Console::text_color_len("#[red]red text with a #[blue]blue#[] word");
+// / use doryen_rs::Panel;
+// / let len = Panel::text_color_len("#[red]red text with a #[blue]blue#[] word");
 // / assert_eq!(len, 25); // actual string : "red text with a blue word"
-// / let len = Console::text_color_len("#[red]a\nb");
+// / let len = Panel::text_color_len("#[red]a\nb");
 // / assert_eq!(len, 3); // actual string : "a\nb"
-// / let len = Console::text_color_len("normal string");
+// / let len = Panel::text_color_len("normal string");
 // / assert_eq!(len, 13);
 // / ```
 // fn text_color_len(text: &str) -> usize {

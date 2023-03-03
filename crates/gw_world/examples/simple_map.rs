@@ -2,7 +2,7 @@ use gw_app::*;
 use gw_world::map::{dig_room_level, dump_map};
 use gw_world::memory::MapMemory;
 use gw_world::tile::Tiles;
-use gw_world::ui::ViewPort;
+use gw_world::widget::ViewPort;
 
 struct MainScreen {
     viewport: ViewPort,
@@ -10,7 +10,7 @@ struct MainScreen {
 
 impl MainScreen {
     pub fn new() -> Box<Self> {
-        let viewport = ViewPort::builder().size(80, 50).build();
+        let viewport = ViewPort::builder("VIEWPORT").size(80, 50).build();
 
         Box::new(MainScreen { viewport })
     }
@@ -57,7 +57,7 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn message(&mut self, _app: &mut Ecs, id: String, _value: Option<MsgData>) -> ScreenResult {
+    fn message(&mut self, _app: &mut Ecs, id: String, _value: Option<Value>) -> ScreenResult {
         log(format!("message - {}", id));
         match id.as_str() {
             _ => {}

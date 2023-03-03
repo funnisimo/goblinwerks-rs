@@ -2,7 +2,6 @@ pub mod app;
 pub mod builder;
 pub mod codepage437;
 pub mod color;
-pub mod console;
 pub mod context;
 pub mod draw;
 pub mod ecs;
@@ -13,9 +12,11 @@ pub mod input;
 pub mod load_screen;
 pub mod loader;
 pub mod messages;
+pub mod panel;
 pub mod runner;
 pub mod screen;
 pub mod text;
+pub mod value;
 
 pub use app::{
     now, perf_now, App, AppConfig, AppEvent, KeyEvent, MouseButtonEvent, VirtualKeyCode,
@@ -26,10 +27,11 @@ pub use draw::{BorderType, TextAlign};
 pub use img::Image;
 pub use input::AppInput;
 // pub use load_screen::LoadingScreen;
-pub use console::{Buffer, Console, Glyph};
 pub use ecs::Ecs;
+pub use panel::{Buffer, Glyph, Panel};
 pub use runner::Runner;
-pub use screen::{Key, MsgData, Screen, ScreenResult};
+pub use screen::{Screen, ScreenResult};
+pub use value::{Key, Value};
 
 pub fn log<T: AsRef<str>>(msg: T) {
     app::App::print(msg.as_ref());

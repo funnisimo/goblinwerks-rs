@@ -1,6 +1,6 @@
 use super::*;
 use gw_app::Ecs;
-use gw_app::{log, text::colored_line_len, Buffer, KeyEvent, MsgData, VirtualKeyCode};
+use gw_app::{log, text::colored_line_len, Buffer, KeyEvent, Value, VirtualKeyCode};
 use gw_util::point::Point;
 use std::cmp::max;
 
@@ -100,17 +100,17 @@ impl Tag for Radio {
         "radio_group"
     }
 
-    fn value(&self, el: &Element) -> Option<MsgData> {
+    fn value(&self, el: &Element) -> Option<Value> {
         // if let Some(val) = &el.borrow().value {
         //     return Some(val.clone());
         // }
 
-        let mut items: Vec<MsgData> = Vec::new();
+        let mut items: Vec<Value> = Vec::new();
         let use_index = el.has_prop("index");
         for (index, ch) in el.children().enumerate() {
             if ch.has_prop("checked") {
                 if use_index {
-                    items.push(MsgData::Index(index));
+                    items.push(Value::Index(index));
                 } else {
                     items.push(ch.value().unwrap());
                 }
@@ -435,7 +435,7 @@ impl RadioItemBuilder {
         self
     }
 
-    pub fn value(&self, value: MsgData) -> &Self {
+    pub fn value(&self, value: Value) -> &Self {
         self.node.set_value(Some(value));
         self
     }

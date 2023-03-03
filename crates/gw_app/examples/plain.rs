@@ -4,12 +4,12 @@ use gw_app::*;
 const FONT: &str = "resources/terminal_8x8.png";
 
 struct TextScreen {
-    con: Console,
+    con: Panel,
 }
 
 impl TextScreen {
     fn new() -> Box<Self> {
-        let con = Console::new(80, 50, FONT);
+        let con = Panel::new(80, 50, FONT);
         Box::new(TextScreen { con })
     }
 }

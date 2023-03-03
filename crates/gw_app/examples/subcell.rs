@@ -1,5 +1,5 @@
-use gw_app::console::subcell_console;
 use gw_app::img::Images;
+use gw_app::panel::subcell_console;
 use gw_app::*;
 use std::sync::Arc;
 
@@ -13,14 +13,14 @@ const FONT: &str = "resources/terminal_8x8.png";
 const SKULL: &str = "resources/skull.png";
 
 struct MyRoguelike {
-    con: Console,
-    subcell: Console,
+    con: Panel,
+    subcell: Panel,
     skull: Option<Arc<Image>>,
 }
 
 impl MyRoguelike {
     fn new() -> Box<dyn Screen> {
-        let con = Console::new(60, 80, FONT);
+        let con = Panel::new(60, 80, FONT);
 
         Box::new(MyRoguelike {
             con,

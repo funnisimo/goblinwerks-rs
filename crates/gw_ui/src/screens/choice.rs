@@ -12,22 +12,22 @@ use crate::ui::UiAction;
 use crate::ui::UI;
 use crate::ui::{Keyed, Margined, Padded, Positioned};
 use gw_app::messages::Messages;
-use gw_app::MsgData;
+use gw_app::Value;
 use gw_app::VirtualKeyCode;
 use gw_app::{AppEvent, Ecs, Screen, ScreenResult};
 
 /// Called when the choice dialog is closed - data is the value of the option(s) that is/are checked.
 /// None for cancelled.
-pub type ChoiceResultFn = dyn FnOnce(&mut Ecs, Option<MsgData>) -> ();
+pub type ChoiceResultFn = dyn FnOnce(&mut Ecs, Option<Value>) -> ();
 
 #[derive(Debug)]
 pub struct ChoiceItem {
     text: String,
-    value: MsgData,
+    value: Value,
 }
 
 impl ChoiceItem {
-    fn new(text: &str, value: MsgData) -> Self {
+    fn new(text: &str, value: Value) -> Self {
         ChoiceItem {
             text: text.to_string(),
             value,
@@ -50,14 +50,14 @@ impl From<&str> for ChoiceItem {
     }
 }
 
-impl From<(&str, MsgData)> for ChoiceItem {
-    fn from(info: (&str, MsgData)) -> Self {
+impl From<(&str, Value)> for ChoiceItem {
+    fn from(info: (&str, Value)) -> Self {
         ChoiceItem::new(info.0, info.1)
     }
 }
 
-impl From<(String, MsgData)> for ChoiceItem {
-    fn from(info: (String, MsgData)) -> Self {
+impl From<(String, Value)> for ChoiceItem {
+    fn from(info: (String, Value)) -> Self {
         ChoiceItem::new(&info.0, info.1)
     }
 }
@@ -143,7 +143,7 @@ impl ChoiceBuilder {
     pub fn build(mut self) -> Box<Choice> {
         if self.done.is_none() {
             let id = self.id.clone();
-            self.done = Some(Box::new(move |app: &mut Ecs, data: Option<MsgData>| {
+            self.done = Some(Box::new(move |app: &mut Ecs, data: Option<Value>| {
                 let mut msgs = app.resources.get_mut::<Messages>().unwrap();
                 msgs.push(id.as_ref(), data)
             }));
@@ -243,7 +243,7 @@ impl Screen for Choice {
         ScreenResult::Continue
     }
 
-    fn message(&mut self, app: &mut Ecs, id: String, value: Option<MsgData>) -> ScreenResult {
+    fn message(&mut self, app: &mut Ecs, id: String, value: Option<Value>) -> ScreenResult {
         match id.as_ref() {
             "OK" => {
                 let ret = self.ui.find_by_id("SELECT").unwrap().value();

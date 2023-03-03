@@ -10,12 +10,12 @@ const RED: RGBA = RGBA::rgb(192, 32, 32);
 const YELLOW: RGBA = RGBA::rgb(192, 192, 32);
 
 struct HelloWorld {
-    con: Console,
+    con: Panel,
     has_popup: bool,
 }
 impl HelloWorld {
     fn new() -> Box<Self> {
-        let con = Console::new(80, 50, FONT);
+        let con = Panel::new(80, 50, FONT);
 
         Box::new(HelloWorld {
             con,
@@ -74,7 +74,7 @@ impl Screen for HelloWorld {
 }
 
 struct Popup {
-    con: Console,
+    con: Panel,
     is_full: bool,
     time_left: f64,
 }
@@ -82,8 +82,8 @@ struct Popup {
 impl Popup {
     pub fn new(_app: &mut Ecs, is_full: bool, time_left: f64) -> Popup {
         let con = match is_full {
-            true => Console::new(80, 50, FONT),
-            false => Console::new(20, 20, FONT).with_extents(0.25, 0.25, 0.5, 0.75),
+            true => Panel::new(80, 50, FONT),
+            false => Panel::new(20, 20, FONT).with_extents(0.25, 0.25, 0.5, 0.75),
         };
 
         Popup {

@@ -1,5 +1,5 @@
 use crate::color::RGBA;
-use crate::console::{Buffer, Glyph};
+use crate::panel::{Buffer, Glyph};
 use crate::text::{wrap_plain, RefLine};
 use std::cmp::{max, min};
 

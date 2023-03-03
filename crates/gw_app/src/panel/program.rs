@@ -56,7 +56,7 @@ pub enum DoryenUniforms {
     ZPos,
 }
 
-pub struct Program {
+pub struct PanelProgram {
     pub(crate) program: WebGLProgram,
     pub(crate) vao: WebGLVertexArray,
     pub(crate) vertex_pos_location: Option<u32>,
@@ -125,8 +125,8 @@ fn create_program(
     shader_program
 }
 
-impl Program {
-    pub fn new(gl: &WebGLRenderingContext) -> Program {
+impl PanelProgram {
+    pub fn new(gl: &WebGLRenderingContext) -> PanelProgram {
         println!("Create program");
         let data = create_primitive();
         let shader_program = create_program(gl, DORYEN_VS, DORYEN_FS);
@@ -155,7 +155,7 @@ impl Program {
             );
         }
 
-        Program {
+        PanelProgram {
             program: shader_program,
             vao,
             vertex_pos_location,

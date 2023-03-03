@@ -109,7 +109,7 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn message(&mut self, _app: &mut Ecs, id: String, _value: Option<MsgData>) -> ScreenResult {
+    fn message(&mut self, _app: &mut Ecs, id: String, _value: Option<Value>) -> ScreenResult {
         log(format!("message - {}", id));
         match id.as_str() {
             "LEFT" | "RIGHT" | "CENTER" => {

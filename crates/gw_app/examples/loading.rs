@@ -26,14 +26,14 @@ impl RNG {
 }
 
 struct MainScreen {
-    con: Console,
+    con: Panel,
     len: u32,
     rng: RNG,
 }
 
 impl MainScreen {
     pub fn new() -> Box<MainScreen> {
-        let con = Console::new(80, 40, BIG_FONT);
+        let con = Panel::new(80, 40, BIG_FONT);
 
         Box::new(MainScreen {
             con,

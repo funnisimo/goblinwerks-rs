@@ -6,12 +6,12 @@ const CONSOLE_WIDTH: u32 = 40;
 const CONSOLE_HEIGHT: u32 = 25;
 
 struct MyRoguelike {
-    con: Console,
+    con: Panel,
 }
 
 impl MyRoguelike {
     fn new() -> Box<Self> {
-        let con = Console::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, FONT);
+        let con = Panel::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, FONT);
         Box::new(MyRoguelike { con })
     }
 }

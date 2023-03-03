@@ -9,7 +9,7 @@ const SKULL: &str = "resources/skull.png";
 const _WHITE: RGBA = RGBA::rgba(255, 255, 255, 255);
 
 struct MyRoguelike {
-    con: Console,
+    con: Panel,
     skull: Option<Arc<Image>>,
     angle: f32,
     scale_time: f32,
@@ -17,7 +17,7 @@ struct MyRoguelike {
 
 impl MyRoguelike {
     fn new() -> Box<Self> {
-        let con = Console::new(80, 50, FONT);
+        let con = Panel::new(80, 50, FONT);
 
         Box::new(MyRoguelike {
             con,

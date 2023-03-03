@@ -119,12 +119,12 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn message(&mut self, app: &mut Ecs, id: String, value: Option<MsgData>) -> ScreenResult {
+    fn message(&mut self, app: &mut Ecs, id: String, value: Option<Value>) -> ScreenResult {
         match id.as_str() {
             "CREATE" => {
                 let (item_kinds,) = <(Read<ItemKinds>,)>::fetch(&app.resources);
 
-                let items: Vec<(String, MsgData)> = item_kinds
+                let items: Vec<(String, Value)> = item_kinds
                     .iter()
                     .map(|kind| (kind.name.clone(), kind.id.clone().into()))
                     .collect();
@@ -191,7 +191,7 @@ impl Screen for MainScreen {
             }
 
             "DELETE_ITEM" => {
-                if let Some(MsgData::Map(map)) = value {
+                if let Some(Value::Map(map)) = value {
                     for (key, val) in map {
                         let entity: Entity = key.try_into().unwrap();
                         let count: i32 = val.try_into().unwrap();
@@ -236,7 +236,7 @@ impl Screen for MainScreen {
                 }
             }
             "PICKUP_ITEM" => {
-                if let Some(MsgData::Map(map)) = value {
+                if let Some(Value::Map(map)) = value {
                     for (key, val) in map {
                         let entity: Entity = key.try_into().unwrap();
                         let count: i32 = val.try_into().unwrap();
@@ -309,7 +309,7 @@ impl Screen for MainScreen {
                 }
             }
             "DROP_ITEM" => {
-                if let Some(MsgData::Map(map)) = value {
+                if let Some(Value::Map(map)) = value {
                     for (key, val) in map {
                         let entity: Entity = key.try_into().unwrap();
                         let count: i32 = val.try_into().unwrap();

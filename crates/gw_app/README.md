@@ -10,7 +10,7 @@ Here is the code from the `minimal` example:
 use conapp::*;
 
 struct MainScreen {
-    con: Console,
+    con: Panel,
 }
 
 impl ScreenCreator for MainScreen {

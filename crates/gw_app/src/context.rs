@@ -52,7 +52,7 @@
 // }
 
 // pub struct AppContext {
-//     // pub(super) cons: Vec<Console>,
+//     // pub(super) cons: Vec<Panel>,
 //     pub(crate) input: AppInput,
 //     // pub(crate) fps: Fps,
 //     pub(crate) screen_size: (u32, u32),
@@ -214,8 +214,8 @@
 //         self.screen_size
 //     }
 
-//     // pub fn simple_console(&mut self, width: u32, height: u32, fontpath: &str) -> Console {
-//     //     Console::new(width, height, fontpath)
+//     // pub fn simple_console(&mut self, width: u32, height: u32, fontpath: &str) -> Panel {
+//     //     Panel::new(width, height, fontpath)
 //     // }
 
 //     pub fn load_file(&mut self, path: &str, cb: Box<LoadCallback>) -> Result<(), LoadError> {

@@ -25,15 +25,15 @@ impl RNG {
 }
 
 struct PerfTest {
-    left: Console,
-    right: Console,
+    left: Panel,
+    right: Panel,
     rng: RNG,
 }
 
 impl PerfTest {
     fn new() -> Box<Self> {
-        let left = Console::new(20, 25, FONTA).with_extents(0.0, 0.0, 0.5, 1.0);
-        let right = Console::new(40, 50, FONTB).with_extents(0.5, 0.0, 1.0, 1.0);
+        let left = Panel::new(20, 25, FONTA).with_extents(0.0, 0.0, 0.5, 1.0);
+        let right = Panel::new(40, 50, FONTB).with_extents(0.5, 0.0, 1.0, 1.0);
 
         Box::new(PerfTest {
             left,

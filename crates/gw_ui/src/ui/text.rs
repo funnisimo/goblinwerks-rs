@@ -3,7 +3,7 @@ use gw_app::draw;
 use gw_app::log;
 use gw_app::Buffer;
 use gw_app::Ecs;
-use gw_app::MsgData;
+use gw_app::Value;
 use std::cmp::min;
 
 pub(crate) static TEXT: Text = Text {};
@@ -31,10 +31,10 @@ impl Tag for Text {
         "text"
     }
 
-    fn value(&self, el: &Element) -> Option<MsgData> {
+    fn value(&self, el: &Element) -> Option<Value> {
         match el.text().as_ref() {
-            None => return Some(MsgData::Text("".to_string())),
-            Some(txt) => return Some(MsgData::Text(txt.to_owned())),
+            None => return Some(Value::Text("".to_string())),
+            Some(txt) => return Some(Value::Text(txt.to_owned())),
         }
     }
 

@@ -3,7 +3,7 @@ use crate::memory::MapMemory;
 use gw_app::color::{named, RGBA};
 use gw_app::ecs::{systems::ResourceSet, Read, Write};
 use gw_app::{log, AppEvent, Buffer, ScreenResult};
-use gw_app::{Console, Ecs};
+use gw_app::{Ecs, Panel};
 use gw_util::point::Point;
 
 enum VisType {
@@ -54,20 +54,30 @@ impl AlwaysVisible {
 impl VisSource for AlwaysVisible {}
 
 pub struct ViewPort {
-    con: Console,
+    con: Panel,
+    id: String,
 }
 
 impl ViewPort {
-    pub fn builder() -> ViewPortBuilder {
-        ViewPortBuilder::new()
+    pub fn builder(id: &str) -> ViewPortBuilder {
+        ViewPortBuilder::new(id)
     }
 
     fn new(builder: ViewPortBuilder) -> Self {
-        let con = Console::new(builder.size.0, builder.size.1, &builder.font);
-        ViewPort { con }
+        let con = Panel::new(builder.size.0, builder.size.1, &builder.font);
+        ViewPort {
+            con,
+            id: builder.id,
+        }
     }
 
-    pub fn input(&mut self, _ecs: &mut Ecs, _event: &AppEvent) -> Option<ScreenResult> {
+    pub fn input(&mut self, _ecs: &mut Ecs, event: &AppEvent) -> Option<ScreenResult> {
+        match event {
+            AppEvent::MousePos(_mouse) => {
+                log("Mouse move");
+            }
+            _ => {}
+        }
         None
     }
 
@@ -92,18 +102,13 @@ pub struct ViewPortBuilder {
 }
 
 impl ViewPortBuilder {
-    fn new() -> Self {
+    fn new(id: &str) -> Self {
         ViewPortBuilder {
             size: (0, 0),
             extents: (0.0, 0.0, 1.0, 1.0),
-            id: "MAP".to_string(),
+            id: id.to_string(),
             font: "DEFAULT".to_string(),
         }
-    }
-
-    pub fn id(mut self, id: &str) -> Self {
-        self.id = id.to_string();
-        self
     }
 
     pub fn size(mut self, width: u32, height: u32) -> Self {

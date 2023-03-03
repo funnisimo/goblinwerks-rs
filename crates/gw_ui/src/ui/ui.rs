@@ -5,12 +5,12 @@ use gw_app::messages::Messages;
 use gw_app::AppEvent;
 use gw_app::AppInput;
 use gw_app::Buffer;
-use gw_app::Console;
 use gw_app::Ecs;
 use gw_app::KeyEvent;
-use gw_app::MsgData;
+use gw_app::Panel;
 use gw_app::Screen;
 use gw_app::ScreenResult;
+use gw_app::Value;
 use gw_util::point::Point;
 use std::cell::RefCell;
 use std::fmt::Debug;
@@ -19,9 +19,9 @@ use std::rc::Rc;
 pub type UiActionFn = dyn Fn(&Element, &Element) -> Option<UiAction>;
 
 pub enum UiAction {
-    Message(String, Option<MsgData>), // message to send to appcontext
-    Activate(String),                 // Id of element to activate
-    Focus(String),                    // Focus on this ID
+    Message(String, Option<Value>), // message to send to appcontext
+    Activate(String),               // Id of element to activate
+    Focus(String),                  // Focus on this ID
     NextFocus,
     PrevFocus,
     Stop,
@@ -30,7 +30,7 @@ pub enum UiAction {
 }
 
 impl UiAction {
-    pub fn message(id: &str, data: Option<MsgData>) -> Box<UiActionFn> {
+    pub fn message(id: &str, data: Option<Value>) -> Box<UiActionFn> {
         let info = Rc::new((id.to_string(), data));
         Box::new(move |_, _| Some(UiAction::Message(info.0.clone(), info.1.clone())))
     }
@@ -104,11 +104,11 @@ pub struct UI {
     root: Element,
     pub(crate) focus_order: Vec<Element>,
     pub(crate) last_mouse: RefCell<Point>,
-    pub(crate) console: Console,
+    pub(crate) console: Panel,
 }
 
 impl UI {
-    fn new(console: Console, root: Element) -> Self {
+    fn new(console: Panel, root: Element) -> Self {
         let mut ui = UI {
             root,
             console,
@@ -394,7 +394,7 @@ where
     let body = Body::new(page_size, setup);
 
     let size = body.size().unwrap();
-    let console = Console::new(size.0, size.1, font);
+    let console = Panel::new(size.0, size.1, font);
     UI::new(console, body)
 }
 
@@ -433,7 +433,7 @@ where
 
     dialog.set_pos(0, 0);
 
-    let mut console = Console::new(size.0, size.1, font);
+    let mut console = Panel::new(size.0, size.1, font);
 
     // set extents
     let left = page_pos.0 as f32 / page_size.0 as f32;

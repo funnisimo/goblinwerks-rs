@@ -24,13 +24,13 @@ impl RNG {
 }
 
 struct PerfTest {
-    con: Console,
+    con: Panel,
     rng: RNG,
 }
 
 impl PerfTest {
     fn new() -> Box<Self> {
-        let con = Console::new(80, 50, FONT);
+        let con = Panel::new(80, 50, FONT);
         println!("Created perf test dialog");
         Box::new(PerfTest {
             con,

@@ -8,12 +8,12 @@ const _WHITE: RGBA = RGBA::rgba(255, 255, 255, 255);
 struct MyRoguelike {
     txt: String,
     cursor: usize,
-    con: Console,
+    con: Panel,
 }
 
 impl MyRoguelike {
     fn new() -> Box<dyn Screen> {
-        let con = Console::new(80, 50, FONT);
+        let con = Panel::new(80, 50, FONT);
 
         Box::new(MyRoguelike {
             con,

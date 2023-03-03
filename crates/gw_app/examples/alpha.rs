@@ -12,7 +12,7 @@ use gw_app::*;
 const FONT: &str = "resources/terminal_8x8.png";
 
 struct AlphaTest {
-    con: Console,
+    con: Panel,
     cx: f32,
     cy: f32,
     radius: f32,
@@ -21,7 +21,7 @@ struct AlphaTest {
 
 impl AlphaTest {
     fn new() -> Box<Self> {
-        let con = Console::new(80, 50, FONT);
+        let con = Panel::new(80, 50, FONT);
 
         Box::new(AlphaTest {
             con,

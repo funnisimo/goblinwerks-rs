@@ -1,5 +1,5 @@
 use super::plain;
-use crate::console::{Buffer, Glyph};
+use crate::panel::{Buffer, Glyph};
 use crate::{color::RGBA, TextAlign};
 
 /// The border type - single, double, or colored

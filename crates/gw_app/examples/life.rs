@@ -5,14 +5,14 @@ const WIDTH: usize = 80;
 const HEIGHT: usize = 50;
 
 struct MainScreen {
-    con: Console,
+    con: Panel,
     cells: Vec<bool>,
     mpos: (i32, i32),
 }
 
 impl MainScreen {
     fn new() -> Box<Self> {
-        let con = Console::new(WIDTH as u32, HEIGHT as u32, "DEFAULT");
+        let con = Panel::new(WIDTH as u32, HEIGHT as u32, "DEFAULT");
         Box::new(MainScreen {
             con,
             cells: vec![false; (WIDTH * HEIGHT) as usize],

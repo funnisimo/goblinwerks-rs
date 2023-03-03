@@ -6,13 +6,13 @@ const FONT: &str = "resources/terminal_8x8.png";
 const GRAY: RGBA = RGBA::rgba(128, 128, 182, 255);
 
 struct MainScreen {
-    con: Console,
+    con: Panel,
     pos: (i32, i32),
 }
 
 impl MainScreen {
     pub fn new() -> Box<Self> {
-        let con = Console::new(80, 50, FONT);
+        let con = Panel::new(80, 50, FONT);
         let pos = (40, 25);
         Box::new(MainScreen { con, pos })
     }

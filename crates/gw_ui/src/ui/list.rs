@@ -1,5 +1,5 @@
 use super::*;
-use gw_app::{log, text::colored_line_len, Buffer, Ecs, MsgData};
+use gw_app::{log, text::colored_line_len, Buffer, Ecs, Value};
 
 static LIST: List = List {};
 
@@ -313,7 +313,7 @@ impl Tag for ListItem {
         }
     }
 
-    fn value(&self, el: &Element) -> Option<MsgData> {
+    fn value(&self, el: &Element) -> Option<Value> {
         None
     }
 

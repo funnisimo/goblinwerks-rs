@@ -1,12 +1,12 @@
 use gw_app::*;
 
 struct MainScreen {
-    con: Console,
+    con: Panel,
 }
 
 impl MainScreen {
     pub fn new() -> Box<Self> {
-        let con = Console::new(80, 50, "DEFAULT");
+        let con = Panel::new(80, 50, "DEFAULT");
         Box::new(MainScreen { con })
     }
 }

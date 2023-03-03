@@ -3,7 +3,7 @@ use gw_app::*;
 const FONT: &str = "resources/terminal_8x8.png";
 
 struct MyRoguelike {
-    con: Console,
+    con: Panel,
     c1_pos: (i32, i32),
     c1_spd: (i32, i32),
     c2_pos: (i32, i32),
@@ -27,7 +27,7 @@ fn move_con(pos: &mut (i32, i32), spd: &mut (i32, i32), size: (i32, i32)) {
 
 impl MyRoguelike {
     fn new() -> Box<Self> {
-        let con = Console::new(80, 50, FONT);
+        let con = Panel::new(80, 50, FONT);
 
         let mut c1 = Buffer::new(20, 20);
         let mut c2 = Buffer::new(20, 20);

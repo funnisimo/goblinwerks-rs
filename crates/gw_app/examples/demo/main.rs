@@ -23,8 +23,8 @@ pub const PLAYER_FOV_RADIUS: usize = 40;
 pub struct Entities(pub Vec<Entity>);
 
 struct DoryenDemo {
-    con: Console,
-    map_con: Console,
+    con: Panel,
+    map_con: Panel,
     // player: Player,
     // entities: Vec<Entity>,
     // mouse_pos: (f32, f32),
@@ -34,8 +34,8 @@ struct DoryenDemo {
 
 impl  DoryenDemo {
     fn new() -> Box<Self> {
-        let con = Console::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, FONT);
-        let map_con = Console::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, "SUBCELL");
+        let con = Panel::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, FONT);
+        let map_con = Panel::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, "SUBCELL");
 
         Box::new(Self {
             con,

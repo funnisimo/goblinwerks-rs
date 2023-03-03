@@ -6,4 +6,4 @@ pub mod position;
 pub mod sprite;
 pub mod tile;
 pub mod treasure;
-pub mod ui;
+pub mod widget;

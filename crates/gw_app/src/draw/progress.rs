@@ -1,5 +1,5 @@
 use crate::color::RGBA;
-use crate::console::Buffer;
+use crate::panel::Buffer;
 
 pub fn progress<'a>(buffer: &'a mut Buffer) -> Progress {
     Progress::new(buffer)

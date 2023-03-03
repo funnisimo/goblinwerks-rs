@@ -1,7 +1,7 @@
 use super::*;
 use crate::css::{ComputedStyle, Style, StyleSheet};
 use gw_app::{log, Ecs};
-use gw_app::{Buffer, KeyEvent, MsgData};
+use gw_app::{Buffer, KeyEvent, Value};
 use gw_util::point::Point;
 use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashMap;
@@ -24,13 +24,13 @@ pub struct ElementData {
     pub(crate) local_style: Option<Arc<Style>>,
     pub(crate) classes: HashSet<String>,
     pub(crate) props: HashSet<String>,
-    pub(crate) attrs: HashMap<String, MsgData>,
+    pub(crate) attrs: HashMap<String, Value>,
     pub(crate) pad: [u32; 4],
     pub(crate) margin: [u32; 4],
     pub(crate) text: Option<String>,
     pub(crate) styles: Option<Rc<ComputedStyle>>,
     pub(crate) click: bool,
-    pub(crate) value: Option<MsgData>,
+    pub(crate) value: Option<Value>,
     pub(crate) keys: HashMap<KeyEvent, Box<UiActionFn>>,
     pub(crate) activate: Option<Box<UiActionFn>>,
 
@@ -232,11 +232,11 @@ impl Element {
         self.node.borrow_mut().text = Some(text.to_string());
     }
 
-    pub fn value(&self) -> Option<MsgData> {
+    pub fn value(&self) -> Option<Value> {
         let tag = self.node.borrow().tag;
         tag.value(self)
     }
-    pub fn set_value(&self, val: Option<MsgData>) {
+    pub fn set_value(&self, val: Option<Value>) {
         self.node.borrow_mut().value = val;
     }
 
@@ -389,14 +389,14 @@ impl Element {
         }
     }
 
-    pub fn attr(&self, attr: &str) -> Option<MsgData> {
+    pub fn attr(&self, attr: &str) -> Option<Value> {
         match self.node.borrow().attrs.get(attr) {
             None => None,
             Some(d) => Some(d.clone()),
         }
     }
 
-    pub fn set_attr(&self, attr: &str, val: MsgData) {
+    pub fn set_attr(&self, attr: &str, val: Value) {
         if attr.len() > 0 {
             self.node.borrow_mut().attrs.insert(attr.to_owned(), val);
         }

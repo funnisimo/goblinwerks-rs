@@ -4,15 +4,15 @@ use gw_app::*;
 const FONT: &str = "resources/terminal_8x8.png";
 
 struct MainScreen {
-    left: Console,
-    right: Console,
+    left: Panel,
+    right: Panel,
     pos: (i32, i32),
 }
 
 impl MainScreen {
     fn new() -> Box<Self> {
-        let left = Console::new(60, 50, FONT).with_extents(0.0, 0.0, 0.75, 1.0);
-        let right = Console::new(20, 30, FONT).with_extents(0.75, 0.0, 1.0, 1.0);
+        let left = Panel::new(60, 50, FONT).with_extents(0.0, 0.0, 0.75, 1.0);
+        let right = Panel::new(20, 30, FONT).with_extents(0.75, 0.0, 1.0, 1.0);
         let pos = (30, 25);
         Box::new(MainScreen { left, right, pos })
     }

@@ -1,7 +1,7 @@
 use super::*;
 use gw_app::log;
 use gw_app::Ecs;
-use gw_app::{text::colored_line_len, Buffer, KeyEvent, MsgData, VirtualKeyCode};
+use gw_app::{text::colored_line_len, Buffer, KeyEvent, Value, VirtualKeyCode};
 use gw_util::point::Point;
 
 static CHECKBOX: Checkbox = Checkbox {};
@@ -112,7 +112,7 @@ impl Tag for Checkbox {
         layout_checkbox(el);
     }
 
-    fn value(&self, el: &Element) -> Option<MsgData> {
+    fn value(&self, el: &Element) -> Option<Value> {
         if el.has_prop("checked") {
             return el.node.borrow().value.clone();
         }
@@ -200,7 +200,7 @@ impl CheckboxBuilder {
         self
     }
 
-    pub fn value(&self, val: MsgData) -> &Self {
+    pub fn value(&self, val: Value) -> &Self {
         self.node.set_value(Some(val));
         self
     }
