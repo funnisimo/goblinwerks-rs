@@ -1,8 +1,9 @@
-use crate::tile::Tiles;
+use crate::tile::{Tile, Tiles};
 use crate::{map::Map, tile::TileKind};
 use gw_util::rect::Rect;
 use gw_util::rng::RandomNumberGenerator;
 use std::cmp::{max, min};
+use std::sync::Arc;
 
 pub struct Builder<'t> {
     map: Map,
@@ -29,6 +30,10 @@ impl<'t> Builder<'t> {
         self.map
     }
 
+    pub fn size(&self) -> (u32, u32) {
+        self.map.get_size()
+    }
+
     pub fn fill(&mut self, name: &str) -> &mut Self {
         match self.tiles.get(name) {
             None => panic!("Tile does not exist - {}", name),
@@ -37,12 +42,19 @@ impl<'t> Builder<'t> {
         self
     }
 
-    #[allow(dead_code)]
-    fn set_tile_name(&mut self, x: i32, y: i32, name: &str) {
+    pub fn set_tile(&mut self, x: i32, y: i32, name: &str) {
         match self.tiles.get(name) {
             None => panic!("Tile does not exist - {}", name),
             Some(tile) => self.map.set_tile(x, y, tile),
         };
+    }
+
+    pub fn get_tile(&self, x: i32, y: i32) -> Arc<Tile> {
+        self.map.get_tile(x, y).expect("x,y out of bounds.")
+    }
+
+    pub fn rng_mut(&mut self) -> &mut RandomNumberGenerator {
+        &mut self.rng
     }
 
     pub fn add_border(&mut self, name: &str) -> &mut Self {

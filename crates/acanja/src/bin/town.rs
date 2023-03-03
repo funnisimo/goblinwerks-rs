@@ -1,3 +1,5 @@
+use acanja::map::prefab::{PrefabFileLoader, Prefabs};
+use acanja::map::town::build_town_map;
 use gw_app::ecs::{systems::ResourceSet, Read};
 use gw_app::*;
 use gw_util::point::Point;
@@ -5,10 +7,6 @@ use gw_world::map::dump_map;
 use gw_world::memory::MapMemory;
 use gw_world::tile::{TileFileLoader, Tiles};
 use gw_world::widget::Viewport;
-use map::prefab::{PrefabFileLoader, Prefabs};
-use map::town::build_town_map;
-
-mod map;
 
 struct MainScreen {
     viewport: Viewport,
@@ -90,7 +88,7 @@ impl Screen for MainScreen {
 
 fn main() {
     let app = AppBuilder::new(1024, 768)
-        .title("Acanja")
+        .title("Acanja - Town Viewer")
         .file(
             "assets/tiles.toml",
             Box::new(TileFileLoader::new().with_dump()),

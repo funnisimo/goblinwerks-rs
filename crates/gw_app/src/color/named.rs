@@ -461,6 +461,7 @@ pub const FIREBRICK1: RGB = (255, 48, 48);
 pub const FIREBRICK2: RGB = (238, 44, 44);
 pub const FIREBRICK3: RGB = (205, 38, 38);
 pub const FIREBRICK4: RGB = (139, 26, 26);
+pub const BROWN: RGB = (165, 42, 42);
 pub const BROWN1: RGB = (255, 64, 64);
 pub const BROWN2: RGB = (238, 59, 59);
 pub const BROWN3: RGB = (205, 51, 51);
@@ -1715,6 +1716,8 @@ pub fn add_named_colors_to_palette() {
         FIREBRICK3,
         "firebrick4",
         FIREBRICK4,
+        "brown",
+        BROWN,
         "brown1",
         BROWN1,
         "brown2",

@@ -48,3 +48,74 @@ kind   = "STAIRS"
 sprite = ">;CYAN;BLACK"
 flags  = "DESCEND_PORTAL"
 flavor = "some stairs leading down"
+
+[LAKE]
+kind   = "LAKE"
+sprite = "~:blue:dark_blue"
+flavor = "some water"
+move   = "BLOCKS_MOVE"
+
+[BRIDGE]
+kind   = "BRIDGE"
+sprite = "=:brown:darkest_brown"
+flavor = "a bridge"
+
+[ISLAND]
+kind   = "FLOOR"
+sprite = " |DARK_GREEN|DARKEST_GREEN"
+flavor = "some grass"
+
+[LANDING]
+kind   = "FLOOR"
+sprite = " |DARK_GREEN|DARKEST_GREEN"
+flavor = "some grass"
+
+[COUNTER]
+kind   = "FLOOR"
+sprite = "=|BLACK|DARK_GRAY"
+flavor = "a counter"
+move   = "BLOCKS_MOVE"
+
+[DEEP_OCEAN]
+kind   = "LAKE"
+sprite = "~|DARKEST_BLUE|BLACK"
+flavor = "deep ocean"
+move   = "BLOCKS_MOVE"
+
+[OCEAN]
+kind   = "LAKE"
+sprite = "~|DARKER_BLUE|DARKEST_BLUE"
+flavor = "ocean"
+move   = "BLOCKS_MOVE"
+
+[SHALLOW_OCEAN]
+kind   = "LAKE"
+sprite = "~|DARK_BLUE|DARKER_BLUE"
+flavor = "shallow ocean"
+move   = "BLOCKS_MOVE"
+
+[BEACH]
+kind   = "FLOOR"
+sprite = ";|BROWN|LIGHT_BROWN"
+flavor = "beach"
+
+[GRASSLAND]
+kind   = "FLOOR"
+sprite = ".|GREEN|DARK_GREEN"
+flavor = "grassland"
+
+[FOREST]
+kind   = "FLOOR"
+sprite = ".|DARK_GREEN|DARKEST_GREEN"
+flavor = "forest"
+
+[HILLS]
+kind   = "FLOOR"
+sprite = "^|LIGHT_BROWN|BROWN"
+flavor = "hills"
+
+[MOUNTAINS]
+kind   = "FLOOR"
+sprite = "^|BLACK|DARK_BROWN"
+flavor = "mountains"
+move   = "BLOCKS_MOVE"

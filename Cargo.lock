@@ -6,10 +6,12 @@ version = 3
 name = "acanja"
 version = "0.1.0"
 dependencies = [
+ "bracket-noise",
  "gw_app",
  "gw_ui",
  "gw_util",
  "gw_world",
+ "toml_edit 0.19.4",
 ]
 
 [[package]]
@@ -124,6 +126,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "69cce20737498f97b993470a6e536b8523f0af7892a4f928cceb1ac5e52ebe7e"
 dependencies = [
  "generic-array",
+]
+
+[[package]]
+name = "bracket-noise"
+version = "0.8.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0b7443d0990c69db7a83f376f0101d684c20a911698e5f932bffbda2c8b08dd"
+dependencies = [
+ "bracket-random",
+]
+
+[[package]]
+name = "bracket-random"
+version = "0.8.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "437be61484077b1ddb57002ce3c96b7d03cbf500b5d15157ee7e67e22332c39b"
+dependencies = [
+ "getrandom",
+ "js-sys",
+ "lazy_static",
+ "rand",
+ "rand_xorshift",
+ "regex",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -1518,6 +1544,15 @@ name = "rand_pcg"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59cad018caf63deb318e5a4586d99a24424a364f40f1e5778c29aca23f4fc73e"
+dependencies = [
+ "rand_core",
+]
+
+[[package]]
+name = "rand_xorshift"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d25bf25ec5ae4a3f1b92f929810509a2f53d7dca2f50b794ff57e3face536c8f"
 dependencies = [
  "rand_core",
 ]

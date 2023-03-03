@@ -2,6 +2,7 @@ use super::*;
 use crate::sprite::Sprite;
 use crate::treasure::Treasure;
 use gw_app::color::named;
+use gw_app::log;
 use gw_app::Glyph;
 use gw_app::RGBA;
 use lazy_static::lazy_static;
@@ -267,6 +268,13 @@ impl Tiles {
     //         }
     //     }
     // }
+
+    pub fn dump(&self) {
+        log("TILES");
+        for (id, tile) in self.tiles.iter() {
+            log(format!("{} : {:?}", id, tile));
+        }
+    }
 }
 
 impl Default for Tiles {

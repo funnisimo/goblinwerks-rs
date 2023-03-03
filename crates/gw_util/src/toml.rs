@@ -1,4 +1,4 @@
-use crate::formula::types;
+use crate::value;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -122,11 +122,11 @@ pub fn parse_reader(reader: &mut dyn BufRead) -> Result<StringTable, String> {
     Ok(out)
 }
 
-pub fn num_value<V>(val: V) -> types::Value
+pub fn num_value<V>(val: V) -> value::Value
 where
-    V: Into<f32>,
+    V: Into<f64>,
 {
-    types::Value::Number(val.into())
+    value::Value::Float(val.into())
 }
 
 #[derive(Debug)]

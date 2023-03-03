@@ -21,11 +21,18 @@ pub fn load_tile_data(dest: &mut Tiles, toml: &StringTable) -> Result<u32, Strin
     Ok(count)
 }
 
-pub struct TileFileLoader;
+pub struct TileFileLoader {
+    dump: bool,
+}
 
 impl TileFileLoader {
     pub fn new() -> TileFileLoader {
-        TileFileLoader
+        TileFileLoader { dump: false }
+    }
+
+    pub fn with_dump(mut self) -> Self {
+        self.dump = true;
+        self
     }
 }
 
@@ -59,6 +66,10 @@ impl LoadHandler for TileFileLoader {
             Ok(count) => {
                 log(format!("Loaded {} tiles", count));
             }
+        }
+
+        if self.dump {
+            tiles.dump();
         }
 
         Ok(())

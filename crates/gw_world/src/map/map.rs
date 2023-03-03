@@ -710,7 +710,11 @@ pub fn dump_map(map: &Map) {
         let mut line = format!("{:2} |", y);
         for x in 0..map.width as i32 {
             let tile = map.get_tile(x, y).unwrap();
-            line.push(char::from_u32(tile.glyph).unwrap());
+            let ch = match tile.glyph {
+                0 => ' ',
+                x => char::from_u32(x).unwrap(),
+            };
+            line.push(ch);
         }
         line.push_str(&format!("| {:2}", y));
         println!("{}", line);

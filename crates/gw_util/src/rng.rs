@@ -1,6 +1,9 @@
 use rand::prelude::*;
 use rand_pcg::Mcg128Xsl64;
 
+pub use rand::seq::SliceRandom;
+pub use rand::RngCore;
+
 type RNG = Mcg128Xsl64;
 
 pub struct RandomNumberGenerator {
@@ -29,9 +32,9 @@ impl RandomNumberGenerator {
         count >= self.rand(total)
     }
 
-    /// Returns a random value of whatevuer type you specify
+    /// Returns a random value of 0 <= val < count
     pub fn rand(&mut self, count: u32) -> u32 {
-        self.range(0, count as i32) as u32
+        self.range(0, count as i32 - 1) as u32
     }
 
     /// Returns a random value in the specified range, of type specified at the call site.
@@ -44,6 +47,19 @@ impl RandomNumberGenerator {
         let range = max - min + 1;
         let rng = self.source.next_u32() % (range as u32);
         rng as i32 + min
+    }
+
+    /// Returns a random value in the specified range, of type specified at the call site.
+    /// So range(1.0,6.0) will give you numbers from 1.0 to 5.99999
+    pub fn frange(&mut self, min: f32, max: f32) -> f32 {
+        if max <= min {
+            return min;
+        }
+        let range = max - min;
+        let pct = self.source.next_u32() as f32 / (u32::MAX as f32);
+
+        let rng = pct * range;
+        rng + min
     }
 
     /// Rolls dice, using the classic 3d6 type of format: n is the number of dice, die_type is the size of the dice.
