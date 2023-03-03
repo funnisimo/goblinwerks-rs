@@ -3,7 +3,7 @@ use gw_app::ecs::WindowInfo;
 use gw_app::fps::Fps;
 use gw_app::*;
 
-const FONT: &str = "resources/terminal_8x8.png";
+const FONT: &str = "assets/terminal_8x8.png";
 
 const WHITE: RGBA = RGBA::rgb(255, 255, 255);
 const BLACK: RGBA = RGBA::rgb(0, 0, 0);

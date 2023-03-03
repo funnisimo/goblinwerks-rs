@@ -9,8 +9,8 @@ use std::sync::Arc;
 // subcell rendering is not supported by codepate437 natively
 // you must implement a font that has subcell chars yourself
 
-const FONT: &str = "resources/terminal_8x8.png";
-const SKULL: &str = "resources/skull.png";
+const FONT: &str = "assets/terminal_8x8.png";
+const SKULL: &str = "assets/skull.png";
 
 struct MyRoguelike {
     con: Panel,

@@ -12,8 +12,8 @@ use gw_app::fps::Fps;
 use level::{Level, load_level};
 use player::Player;
 
-const FONT: &str = "resources/terminal_8x8.png";
-const LEVEL_PREFIX: &str = "resources/demo_level";
+const FONT: &str = "assets/terminal_8x8.png";
+const LEVEL_PREFIX: &str = "assets/demo_level";
 
 pub const CONSOLE_WIDTH: u32 = 80;
 pub const CONSOLE_HEIGHT: u32 = 45;

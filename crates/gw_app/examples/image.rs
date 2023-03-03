@@ -3,8 +3,8 @@ use gw_app::img::Images;
 use gw_app::*;
 use std::sync::Arc;
 
-const FONT: &str = "resources/terminal_8x8.png";
-const SKULL: &str = "resources/skull.png";
+const FONT: &str = "assets/terminal_8x8.png";
+const SKULL: &str = "assets/skull.png";
 
 const _WHITE: RGBA = RGBA::rgba(255, 255, 255, 255);
 

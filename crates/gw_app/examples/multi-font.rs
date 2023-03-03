@@ -1,8 +1,8 @@
 use gw_app::color::RGBA;
 use gw_app::*;
 
-const FONTA: &str = "resources/terminal_8x8.png";
-const FONTB: &str = "resources/Runeset_24x24.png";
+const FONTA: &str = "assets/terminal_8x8.png";
+const FONTB: &str = "assets/Runeset_24x24.png";
 
 struct MainScreen {
     left: Panel,

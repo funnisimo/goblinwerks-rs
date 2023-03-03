@@ -9,7 +9,7 @@ use gw_app::*;
 * You can still use transparent colors on offscreen console that you blit on the opaque root console. Simply fill the root console with opaque black (0,0,0,255).
 */
 
-const FONT: &str = "resources/terminal_8x8.png";
+const FONT: &str = "assets/terminal_8x8.png";
 
 struct AlphaTest {
     con: Panel,

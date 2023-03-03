@@ -2,7 +2,7 @@ use gw_app::color::RGBA;
 use gw_app::ecs::Time;
 use gw_app::*;
 
-const FONT: &str = "resources/terminal_8x8.png";
+const FONT: &str = "assets/terminal_8x8.png";
 
 const BLACK: RGBA = RGBA::rgb(0, 0, 0);
 const GRAY: RGBA = RGBA::rgb(128, 128, 128);

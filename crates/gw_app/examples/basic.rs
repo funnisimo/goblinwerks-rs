@@ -1,7 +1,7 @@
 use gw_app::color::{BLACK, RGBA};
 use gw_app::*;
 
-const FONT: &str = "resources/terminal_8x8.png";
+const FONT: &str = "assets/terminal_8x8.png";
 
 const GRAY: RGBA = RGBA::rgba(128, 128, 182, 255);
 

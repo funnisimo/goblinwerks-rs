@@ -1,6 +1,6 @@
 use gw_app::*;
 
-const FONT: &str = "resources/unicode_16x16.png";
+const FONT: &str = "assets/unicode_16x16.png";
 
 const CONSOLE_WIDTH: u32 = 40;
 const CONSOLE_HEIGHT: u32 = 25;

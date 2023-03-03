@@ -7,7 +7,7 @@ Note that this has no effect on the tickrate at which update() is called which s
 You can lower the tickrate by calling your world updating code only once every n calls.
 */
 
-const FONT: &str = "resources/terminal_8x8.png";
+const FONT: &str = "assets/terminal_8x8.png";
 
 struct MyRoguelike {
     con: Panel,

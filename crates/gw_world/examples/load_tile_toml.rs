@@ -3,7 +3,7 @@ use gw_util::toml::parse_reader;
 use gw_world::tile::{load_tile_data, Tiles};
 use std::{fs::File, io::BufReader};
 
-const FILE: &str = "resources/tiles.toml";
+const FILE: &str = "assets/tiles.toml";
 
 fn main() {
     init_colors();

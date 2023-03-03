@@ -2,8 +2,8 @@ use gw_app::color::RGBA;
 use gw_app::font::Fonts;
 use gw_app::*;
 
-const FONT: &str = "resources/terminal_8x8.png";
-const BIG_FONT: &str = "resources/ProjectUtumno_full_32x32.png";
+const FONT: &str = "assets/terminal_8x8.png";
+const BIG_FONT: &str = "assets/ProjectUtumno_full_32x32.png";
 
 const _BLACK: RGBA = RGBA::rgb(0, 0, 0);
 const _GRAY: RGBA = RGBA::rgb(128, 128, 128);

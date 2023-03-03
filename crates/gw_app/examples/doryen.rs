@@ -7,7 +7,7 @@ Apart from the basic real-time walking, this example shows how screenshots can b
 Because it uses UpdateEvent, any combination of keys can be specified to activate it.
 */
 
-const FONT: &str = "resources/terminal_8x8.png";
+const FONT: &str = "assets/terminal_8x8.png";
 
 const CONSOLE_WIDTH: u32 = 80;
 const CONSOLE_HEIGHT: u32 = 45;

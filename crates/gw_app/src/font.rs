@@ -4,8 +4,8 @@ use crate::{log, Glyph};
 use std::{collections::HashMap, sync::Arc};
 use uni_gl::{WebGLRenderingContext, WebGLTexture};
 
-pub static SUBCELL_BYTES: &[u8] = include_bytes!("../resources/subcell.png");
-pub static TERMINAL_8X8_BYTES: &[u8] = include_bytes!("../resources/terminal_8x8.png");
+pub static SUBCELL_BYTES: &[u8] = include_bytes!("../assets/subcell.png");
+pub static TERMINAL_8X8_BYTES: &[u8] = include_bytes!("../assets/terminal_8x8.png");
 
 pub type ToGlyphFn = dyn Fn(char) -> Glyph;
 pub type FromGlyphFn = dyn Fn(Glyph) -> char;

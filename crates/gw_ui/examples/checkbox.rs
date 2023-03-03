@@ -155,7 +155,7 @@ fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Checkboxes Example")
         .file(
-            "resources/styles.css",
+            "assets/styles.css",
             Box::new(|path: &str, data: Vec<u8>, app: &mut Ecs| {
                 let r = load_stylesheet_data(path, data, app);
                 if r.is_ok() {

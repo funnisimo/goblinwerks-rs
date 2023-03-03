@@ -131,7 +131,7 @@ impl Screen for MainScreen {
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("List Example")
-        .file("resources/styles.css", Box::new(load_stylesheet_data))
+        .file("assets/styles.css", Box::new(load_stylesheet_data))
         .vsync(false)
         .build();
 

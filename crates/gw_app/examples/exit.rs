@@ -8,7 +8,7 @@ const GRAY: RGBA = RGBA::rgb(128, 128, 128);
 const RED: RGBA = RGBA::rgb(255, 0, 0);
 const BLUE: RGBA = RGBA::rgb(0, 0, 255);
 
-const FONT: &str = "resources/terminal_8x8.png";
+const FONT: &str = "assets/terminal_8x8.png";
 
 /*
 * This example show how you can intercept the user trying to close the game window.

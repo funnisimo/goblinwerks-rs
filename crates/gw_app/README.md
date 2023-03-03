@@ -16,7 +16,7 @@ struct MainScreen {
 impl ScreenCreator for MainScreen {
     fn create(app: &mut AppContext) -> Box<dyn Screen> {
         let con = app
-            .simple_console(80, 50, "resources/terminal_8x8.png")
+            .simple_console(80, 50, "assets/terminal_8x8.png")
             .expect("Failed to load font");
         Box::new(MainScreen { con })
     }
