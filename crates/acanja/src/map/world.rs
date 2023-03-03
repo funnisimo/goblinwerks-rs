@@ -5,6 +5,7 @@ use gw_util::rng::RngCore;
 use gw_world::map::{Builder, Map};
 use gw_world::tile::Tiles;
 use std::cmp::max;
+use std::f32::consts::PI;
 
 pub fn build_world_map<'t>(tiles: &'t Tiles, prefabs: &Prefabs, width: u32, height: u32) -> Map {
     let mut builder = Builder::new(tiles, width, height);
@@ -29,9 +30,10 @@ pub fn build_world_map<'t>(tiles: &'t Tiles, prefabs: &Prefabs, width: u32, heig
 
         for x in 0..width {
             for y in 0..height {
-                let dx = x as f32 / scale.0 - 0.5;
-                let dy = y as f32 / scale.1 - 0.5;
-                let v = noise.get_noise(dx, dy);
+                let nx = x as f32 / scale.0 - 0.5;
+                let ny = y as f32 / scale.1 - 0.5;
+                // let v = noise.get_noise(nx, ny);
+                let v = cylindernoise(&mut noise, nx, ny);
 
                 let idx = (x + y * width) as usize;
                 elevation[idx] = v;
@@ -86,4 +88,16 @@ pub fn build_world_map<'t>(tiles: &'t Tiles, prefabs: &Prefabs, width: u32, heig
     }
 
     builder.build()
+}
+
+const TAU: f32 = PI * 2.0;
+
+fn cylindernoise(noise: &mut FastNoise, nx: f32, ny: f32) -> f32 {
+    let angle_x = TAU * nx;
+
+    /* In "noise parameter space", we need nx and ny to travel the
+    same distance. The circle created from nx needs to have
+    circumference=1 to match the length=1 line created from ny,
+    which means the circle's radius is 1/2π, or 1/tau */
+    noise.get_noise3d(angle_x.cos() / TAU, (angle_x.sin()) / TAU, ny)
 }
