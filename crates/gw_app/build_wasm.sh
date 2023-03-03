@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cargo build --release --target wasm32-unknown-unknown --example $1
-wasm-bindgen target/wasm32-unknown-unknown/release/examples/$1.wasm --out-dir wasm --no-modules --no-typescript
+wasm-bindgen ../../target/wasm32-unknown-unknown/release/examples/$1.wasm --out-dir wasm --no-modules --no-typescript
 cp -r resources wasm/
 
 FILE=wasm/$1.html

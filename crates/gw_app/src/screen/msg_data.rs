@@ -1,4 +1,3 @@
-#[cfg(feature = "ecs")]
 use legion::Entity;
 use std::collections::HashMap;
 use std::fmt::Display;
@@ -15,7 +14,7 @@ pub enum Key {
     Number(i32),
     Text(String),
     U64(u64),
-    #[cfg(feature = "ecs")]
+
     Entity(Entity),
 }
 
@@ -35,7 +34,6 @@ impl TryInto<usize> for Key {
                 Err(_) => Err(DataConvertError::WrongType),
             },
 
-            #[cfg(feature = "ecs")]
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -57,7 +55,6 @@ impl TryInto<usize> for &Key {
                 Err(_) => Err(DataConvertError::WrongType),
             },
 
-            #[cfg(feature = "ecs")]
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -79,7 +76,6 @@ impl TryInto<i32> for Key {
                 Err(_) => Err(DataConvertError::WrongType),
             },
 
-            #[cfg(feature = "ecs")]
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -101,7 +97,6 @@ impl TryInto<i32> for &Key {
                 Err(_) => Err(DataConvertError::WrongType),
             },
 
-            #[cfg(feature = "ecs")]
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -126,7 +121,6 @@ impl TryInto<u32> for Key {
                 Err(_) => Err(DataConvertError::WrongType),
             },
 
-            #[cfg(feature = "ecs")]
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -151,7 +145,6 @@ impl TryInto<u32> for &Key {
                 Err(_) => Err(DataConvertError::WrongType),
             },
 
-            #[cfg(feature = "ecs")]
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -173,7 +166,6 @@ impl TryInto<u64> for Key {
             },
             Key::U64(v) => Ok(v),
 
-            #[cfg(feature = "ecs")]
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -195,7 +187,6 @@ impl TryInto<u64> for &Key {
             },
             Key::U64(v) => Ok(*v),
 
-            #[cfg(feature = "ecs")]
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -209,7 +200,6 @@ impl Display for Key {
             Key::Text(v) => write!(f, "{}", v),
             Key::U64(v) => write!(f, "{}", v),
 
-            #[cfg(feature = "ecs")]
             Key::Entity(entity) => {
                 write!(f, "{:?}", entity)
             }
@@ -217,7 +207,6 @@ impl Display for Key {
     }
 }
 
-#[cfg(feature = "ecs")]
 impl TryInto<Entity> for Key {
     type Error = DataConvertError;
 
@@ -238,7 +227,7 @@ impl TryFrom<MsgData> for Key {
             MsgData::Index(v) => Ok(Key::Index(v)),
             MsgData::Number(v) => Ok(Key::Number(v)),
             MsgData::Text(v) => Ok(Key::Text(v)),
-            #[cfg(feature = "ecs")]
+
             MsgData::Entity(v) => Ok(Key::Entity(v)),
             _ => Err(DataConvertError::WrongType),
         }
@@ -287,14 +276,12 @@ impl From<&String> for Key {
     }
 }
 
-#[cfg(feature = "ecs")]
 impl From<Entity> for Key {
     fn from(v: Entity) -> Self {
         Key::Entity(v)
     }
 }
 
-#[cfg(feature = "ecs")]
 impl From<&Entity> for Key {
     fn from(v: &Entity) -> Self {
         Key::Entity(v.clone())
@@ -315,7 +302,7 @@ pub enum MsgData {
     Map(HashMap<Key, MsgData>),
     Error,
     U64(u64),
-    #[cfg(feature = "ecs")]
+
     Entity(Entity),
 }
 
@@ -641,7 +628,6 @@ impl TryInto<bool> for &MsgData {
     }
 }
 
-#[cfg(feature = "ecs")]
 impl TryInto<Entity> for MsgData {
     type Error = DataConvertError;
 
@@ -682,7 +668,7 @@ impl Display for MsgData {
                 write!(f, "}}")
             }
             MsgData::U64(v) => write!(f, "{}", v),
-            #[cfg(feature = "ecs")]
+
             MsgData::Entity(entity) => {
                 write!(f, "{:?}", entity)
             }
@@ -764,13 +750,12 @@ impl From<Key> for MsgData {
             Key::Number(v) => MsgData::Number(v),
             Key::Text(v) => MsgData::Text(v),
             Key::U64(v) => MsgData::Number(v as i32),
-            #[cfg(feature = "ecs")]
+
             Key::Entity(v) => MsgData::Entity(v),
         }
     }
 }
 
-#[cfg(feature = "ecs")]
 impl From<Entity> for MsgData {
     fn from(value: Entity) -> Self {
         MsgData::Entity(value)

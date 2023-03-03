@@ -1,11 +1,9 @@
 use crate::map::{CellFlags, Map};
 use crate::memory::MapMemory;
 use gw_app::color::{named, RGBA};
-use gw_app::console::dump_buffer;
 use gw_app::ecs::{systems::ResourceSet, Read, Write};
-use gw_app::Ecs;
-use gw_app::{log, Buffer};
-use gw_ui::ui::*;
+use gw_app::{log, AppEvent, Buffer, ScreenResult};
+use gw_app::{Console, Ecs};
 use gw_util::point::Point;
 
 enum VisType {
@@ -55,155 +53,100 @@ impl AlwaysVisible {
 }
 impl VisSource for AlwaysVisible {}
 
-static VIEW_PORT: ViewPort = ViewPort {};
-
-pub struct ViewPort {}
-
-impl ViewPort {
-    pub fn new<F>(parent: &dyn ParentNode, init: F) -> ()
-    where
-        F: FnOnce(&mut ViewPortBuilder) -> (),
-    {
-        let node = Element::new(&VIEW_PORT);
-        parent.add_child(node.clone());
-        node.set_click(true);
-
-        let mut builder = ViewPortBuilder { node: node.clone() };
-        init(&mut builder);
-
-        if node.size().is_none() {
-            // set as parent size
-        }
-    }
+pub struct ViewPort {
+    con: Console,
 }
 
-impl Tag for ViewPort {
-    fn as_str(&self) -> &'static str {
-        "viewport"
+impl ViewPort {
+    pub fn builder() -> ViewPortBuilder {
+        ViewPortBuilder::new()
     }
 
-    fn can_focus(&self, _el: &Element) -> bool {
-        true
+    fn new(builder: ViewPortBuilder) -> Self {
+        let con = Console::new(builder.size.0, builder.size.1, &builder.font);
+        ViewPort { con }
     }
 
-    fn handle_click(&self, root: &Element, el: &Element, point: Point) -> Option<UiAction> {
-        // match self {
-        //     Tag::ViewPort => {
-        if el.contains(point) {
-            let ret = self.handle_activate(root, el);
-            return ret;
-        }
-
-        for child in el.children() {
-            if let Some(action) = child.handle_click(root, point) {
-                return Some(action);
-            }
-        }
-        //     }
-        // }
+    pub fn input(&mut self, _ecs: &mut Ecs, _event: &AppEvent) -> Option<ScreenResult> {
         None
     }
 
-    fn draw(&self, el: &Element, buf: &mut Buffer, ecs: &mut Ecs) {
-        draw_map(el, buf, ecs);
+    pub fn update(&mut self, _ecs: &mut Ecs) -> Option<ScreenResult> {
+        None
+    }
+
+    pub fn render(&mut self, ecs: &mut Ecs) {
+        // Do we need to draw?
+        draw_map(self, ecs);
+        self.con.render(ecs);
     }
 }
 
 ////////////////////////////////////////
 
 pub struct ViewPortBuilder {
-    node: Element,
+    size: (u32, u32),
+    extents: (f32, f32, f32, f32),
+    id: String,
+    font: String,
 }
 
 impl ViewPortBuilder {
-    pub fn text(&self, text: &str) -> &Self {
-        self.node.set_text(text);
+    fn new() -> Self {
+        ViewPortBuilder {
+            size: (0, 0),
+            extents: (0.0, 0.0, 1.0, 1.0),
+            id: "MAP".to_string(),
+            font: "DEFAULT".to_string(),
+        }
+    }
+
+    pub fn id(mut self, id: &str) -> Self {
+        self.id = id.to_string();
         self
     }
 
-    pub fn id(&self, id: &str) -> &Self {
-        self.node.set_id(id);
+    pub fn size(mut self, width: u32, height: u32) -> Self {
+        self.size = (width, height);
         self
     }
 
-    // pub fn width(&self, width: u32) -> &Self {
-    //     let height = self.node.size().unwrap_or((0, 1)).1;
-    //     let current = self.node.size().unwrap_or((0, height));
-    //     self.node.set_size(width, current.1);
-    //     self
-    // }
-
-    // pub fn activate(&self, func: Box<UiActionFn>) -> &Self {
-    //     self.node.set_activate(func);
-    //     self
-    // }
-
-    // pub fn pos(&self, x: i32, y: i32) -> &Self {
-    //     self.node.pos = Some((x, y));
-    //     self
-    // }
-
-    // pub fn size(&self, width: u32, height: u32) -> &Self {
-    //     self.node.set_size(width, height);
-    //     self
-    // }
-
-    pub fn class(&self, class: &str) -> &Self {
-        self.node.add_class(class);
+    pub fn extents(mut self, left: f32, top: f32, right: f32, bottom: f32) -> Self {
+        self.extents = (left, top, right, bottom);
         self
     }
 
-    pub fn focus(&self) -> &Self {
-        self.node.add_prop("focus");
+    pub fn font(mut self, font: &str) -> Self {
+        self.font = font.to_string();
         self
     }
-}
 
-impl Padded for ViewPortBuilder {
-    fn el(&self) -> &Element {
-        &self.node
+    pub fn build(self) -> ViewPort {
+        ViewPort::new(self)
     }
 }
 
-impl Positioned for ViewPortBuilder {
-    fn el(&self) -> &Element {
-        &self.node
-    }
-}
-
-impl Keyed for ViewPortBuilder {
-    fn el(&self) -> &Element {
-        &self.node
-    }
-}
-
-// impl ParentNode for ViewPort {
-//     fn add_child(&mut self, node: Element) {
-//         panic!("ViewPort nodes cannot have children!");
-//     }
-// }
-
-fn draw_map(el: &Element, buf: &mut Buffer, ecs: &mut Ecs) {
+fn draw_map(viewport: &mut ViewPort, ecs: &mut Ecs) {
     let (mut map, mut memory) = <(Write<Map>, Write<MapMemory>)>::fetch_mut(&mut ecs.resources);
 
     let vis = AlwaysVisible::new();
     // let fov = global_world().get_fov(world.hero_entity()).unwrap().borrow();
 
-    let pos = el.inner_pos().unwrap();
-    let size = el.inner_size().unwrap();
-    // TODO - let offset = viewport_data.offset;
+    let size = viewport.con.size();
+    // TODO - let offset = viewport.offset;
+    let viewport_needs_draw = false; // viewport.needs_draw || map.needs_draw();
 
-    for dy in 0..size.1 as i32 {
-        let y = dy + pos.1;
-        for dx in 0..size.0 as i32 {
-            let x = dx + pos.0;
+    let buf = viewport.con.buffer_mut();
+    // DO NOT CLEAR BUFFER!!!
 
+    for y in 0..size.1 as i32 {
+        for x in 0..size.0 as i32 {
             let idx = match map.to_idx(x, y) {
                 None => continue,
                 Some(idx) => idx,
             };
 
-            let needs_draw = true; // map.needs_draw_idx(idx); // self.needs_draw
+            let needs_draw = map.needs_draw_idx(idx) || viewport_needs_draw;
             let needs_snapshot = map.needs_snapshot_idx(idx);
             let (visible, revealed, mapped) = match vis.get_vis_type(idx) {
                 VisType::MAPPED => (false, false, true),
@@ -312,35 +255,4 @@ fn draw_map(el: &Element, buf: &mut Buffer, ecs: &mut Ecs) {
 }
 
 #[cfg(test)]
-mod test {
-
-    use super::*;
-
-    #[test]
-    fn parent_size() {
-        let ui = page((80, 50), "DEFAULT", |body| {
-            ViewPort::new(body, |button| {
-                button.id("MAP");
-            });
-        });
-
-        let viewport = ui.find_by_id("MAP").unwrap();
-
-        assert_eq!(viewport.pos().unwrap(), (0, 0));
-        assert_eq!(viewport.size().unwrap(), (80, 50));
-    }
-
-    #[test]
-    fn set_size() {
-        let ui = page((80, 50), "DEFAULT", |body| {
-            ViewPort::new(body, |button| {
-                button.id("MAP").size(40, 40).pos(10, 10);
-            });
-        });
-
-        let viewport = ui.find_by_id("MAP").unwrap();
-
-        assert_eq!(viewport.pos().unwrap(), (10, 10));
-        assert_eq!(viewport.size().unwrap(), (40, 40));
-    }
-}
+mod test {}

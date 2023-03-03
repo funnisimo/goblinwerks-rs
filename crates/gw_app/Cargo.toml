@@ -19,10 +19,6 @@ keywords = [
 homepage = "https://github.com/funnisimo/goblinwerks-rs"
 readme = "README.md"
 
-[features]
-default = ["ecs"]
-ecs     = ["dep:legion"]
-
 [dependencies]
 uni-gl         = "0.2"
 lazy_static    = "1.4"
@@ -69,7 +65,7 @@ web-sys = { version = "0.3.60", features = [
     "XmlHttpRequest",
     "XmlHttpRequestResponseType",
 ] }
-legion = { version = "0.4", optional = true, default-features = false, features = [
+legion = { version = "0.4", default-features = false, features = [
     "wasm-bindgen",
 ] }
 
@@ -81,4 +77,4 @@ winapi = { version = "0.3.9", features = [
     "winbase",
     "errhandlingapi",
 ] }
-legion = { version = "0.4", optional = true, default-features = false }
+legion = { version = "0.4" }

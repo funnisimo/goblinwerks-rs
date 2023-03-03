@@ -1,4 +1,4 @@
-use crate::console;
+use crate::log;
 use js_sys::Uint8Array;
 use std;
 use std::cell::RefCell;
@@ -38,7 +38,7 @@ impl FileSystem {
             let status = req.status().unwrap();
             if status == 200 {
                 if let Ok(data) = req.response() {
-                    console(format!("got file - {}", file_name));
+                    log(format!("got file - {}", file_name));
                     let array = Uint8Array::new(&data);
                     *load_buffer_state.borrow_mut() = BufferState::Buffer(array.to_vec());
                     return;

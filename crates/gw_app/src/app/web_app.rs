@@ -1,6 +1,6 @@
 mod web_keycode;
 
-use crate::console;
+use crate::log;
 use crate::AppConfig;
 use js_sys::Uint8Array;
 use wasm_bindgen::__rt::IntoJsResult;
@@ -45,10 +45,10 @@ fn request_full_screen(canvas: &HtmlCanvasElement) {
 
 impl App {
     pub fn new(config: AppConfig) -> App {
-        if config.headless {
-            // Right now we did not support headless in web.
-            unimplemented!();
-        }
+        // if config.headless {
+        //     // Right now we did not support headless in web.
+        //     unimplemented!();
+        // }
         let window = web_sys::window().expect("no global `window` exists");
         let document = window.document().expect("should have a document on window");
         let canvas_element = document.create_element("canvas").unwrap();
@@ -185,7 +185,7 @@ impl App {
                 event.prevent_default();
                 events
                     .borrow_mut()
-                    .push(AppEvent::KeyDown(events::KeyDownEvent {
+                    .push(AppEvent::KeyDown(events::KeyEvent {
                         code: event.code(),
                         key: event.key(),
                         key_code: get_virtual_key(&event).unwrap_or(VirtualKeyCode::Unlabeled),
@@ -207,16 +207,14 @@ impl App {
                     .borrow_mut()
                     .push(AppEvent::CharEvent(event.key().chars().next().unwrap()));
             }
-            events
-                .borrow_mut()
-                .push(AppEvent::KeyUp(events::KeyUpEvent {
-                    code: event.code(),
-                    key: event.key(),
-                    key_code: get_virtual_key(&event).unwrap_or(VirtualKeyCode::Unlabeled),
-                    shift: event.shift_key(),
-                    alt: event.alt_key(),
-                    ctrl: event.ctrl_key(),
-                }));
+            events.borrow_mut().push(AppEvent::KeyUp(events::KeyEvent {
+                code: event.code(),
+                key: event.key(),
+                key_code: get_virtual_key(&event).unwrap_or(VirtualKeyCode::Unlabeled),
+                shift: event.shift_key(),
+                alt: event.alt_key(),
+                ctrl: event.ctrl_key(),
+            }));
         });
         self.app_canvas
             .add_event_listener_with_callback("keyup", key_up_listener.as_ref().unchecked_ref())
@@ -228,7 +226,7 @@ impl App {
         let resize_listener = Closure::<dyn FnMut(_)>::new(move |_: Event| {
             let width = (resize_canvas.offset_width() as f32 * hidpi_factor).round() as u32;
             let height = (resize_canvas.offset_height() as f32 * hidpi_factor).round() as u32;
-            console(format!("resized - {}x{}", width, height));
+            log(format!("resized - {}x{}", width, height));
             events.borrow_mut().push(AppEvent::Resized((width, height)));
         });
         window().set_onresize(Some(resize_listener.as_ref().unchecked_ref()));
