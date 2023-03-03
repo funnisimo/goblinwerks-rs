@@ -3,6 +3,16 @@
 version = 3
 
 [[package]]
+name = "acanja"
+version = "0.1.0"
+dependencies = [
+ "gw_app",
+ "gw_ui",
+ "gw_util",
+ "gw_world",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

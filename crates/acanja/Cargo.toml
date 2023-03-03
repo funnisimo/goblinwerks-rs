@@ -1,0 +1,12 @@
+[package]
+name    = "acanja"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+gw_app   = { path = "../gw_app" }
+gw_util  = { path = "../gw_util" }
+gw_ui    = { path = "../gw_ui" }
+gw_world = { path = "../gw_world" }
