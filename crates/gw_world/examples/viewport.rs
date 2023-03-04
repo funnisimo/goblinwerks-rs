@@ -3,7 +3,7 @@ use gw_util::point::Point;
 use gw_world::map::{dig_room_level, dump_map};
 use gw_world::memory::MapMemory;
 use gw_world::tile::Tiles;
-use gw_world::widget::Viewport;
+use gw_world::widget::{Camera, Viewport};
 
 struct MainScreen {
     viewport: Viewport,
@@ -11,7 +11,8 @@ struct MainScreen {
 
 impl MainScreen {
     pub fn new() -> Box<Self> {
-        let viewport = Viewport::builder("VIEWPORT").size(80, 50).build();
+        // viewport is 1/2 size that map will be...  So scroll around with arrow keys...
+        let viewport = Viewport::builder("VIEWPORT").size(40, 25).build();
 
         Box::new(MainScreen { viewport })
     }
@@ -33,8 +34,8 @@ impl Screen for MainScreen {
         resources.insert(MapMemory::new(80, 50));
     }
 
-    fn input(&mut self, app: &mut Ecs, ev: &AppEvent) -> ScreenResult {
-        if let Some(result) = self.viewport.input(app, ev) {
+    fn input(&mut self, ecs: &mut Ecs, ev: &AppEvent) -> ScreenResult {
+        if let Some(result) = self.viewport.input(ecs, ev) {
             return result;
         }
 
@@ -42,13 +43,34 @@ impl Screen for MainScreen {
             AppEvent::KeyDown(key_down) => match key_down.key_code {
                 VirtualKeyCode::Space => {
                     let new_map = {
-                        let tiles = app.resources.get::<Tiles>().unwrap();
+                        let tiles = ecs.resources.get::<Tiles>().unwrap();
                         dig_room_level(&tiles, 80, 50)
                     };
-                    app.resources.insert(new_map);
+                    ecs.resources.insert(new_map);
                 }
                 VirtualKeyCode::Escape => {
                     return ScreenResult::Quit;
+                }
+                VirtualKeyCode::Down => {
+                    if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
+                        log("Camera down");
+                        camera.pos.y = camera.pos.y + 1;
+                    }
+                }
+                VirtualKeyCode::Left => {
+                    if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
+                        camera.pos.x = camera.pos.x - 1;
+                    }
+                }
+                VirtualKeyCode::Up => {
+                    if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
+                        camera.pos.y = camera.pos.y - 1;
+                    }
+                }
+                VirtualKeyCode::Right => {
+                    if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
+                        camera.pos.x = camera.pos.x + 1;
+                    }
                 }
                 _ => {}
             },

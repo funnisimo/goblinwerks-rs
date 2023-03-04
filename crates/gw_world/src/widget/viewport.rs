@@ -1,5 +1,6 @@
 use crate::map::{CellFlags, Map};
 use crate::memory::MapMemory;
+use gw_app::color::named::BLACK;
 use gw_app::color::{named, RGBA};
 use gw_app::ecs::{systems::ResourceSet, Read, Write};
 use gw_app::messages::Messages;
@@ -55,10 +56,23 @@ impl AlwaysVisible {
 }
 impl VisSource for AlwaysVisible {}
 
+pub struct Camera {
+    pub pos: Point,
+}
+
+impl Camera {
+    pub fn new() -> Self {
+        Camera {
+            pos: Point::new(0, 0),
+        }
+    }
+}
+
 pub struct Viewport {
     pub con: Panel,
     id: String,
     last_mouse: Point,
+    last_camera_pos: Point,
 }
 
 impl Viewport {
@@ -72,6 +86,7 @@ impl Viewport {
             con,
             id: builder.id,
             last_mouse: Point::new(-1, -1),
+            last_camera_pos: Point::new(-1, -1),
         }
     }
 
@@ -156,22 +171,42 @@ impl ViewPortBuilder {
 }
 
 fn draw_map(viewport: &mut Viewport, ecs: &mut Ecs) {
-    let (mut map, mut memory) = <(Write<Map>, Write<MapMemory>)>::fetch_mut(&mut ecs.resources);
+    if !ecs.resources.contains::<Camera>() {
+        let mut camera = Camera::new();
+        let size = ecs.resources.get::<Map>().unwrap().get_size();
+
+        camera.pos = Point::new(size.0 as i32 / 2, size.1 as i32 / 2);
+        ecs.resources.insert(camera);
+    }
+
+    let (mut map, mut memory, camera) =
+        <(Write<Map>, Write<MapMemory>, Read<Camera>)>::fetch_mut(&mut ecs.resources);
 
     let vis = AlwaysVisible::new();
     // let fov = global_world().get_fov(world.hero_entity()).unwrap().borrow();
 
     let size = viewport.con.size();
     // TODO - let offset = viewport.offset;
-    let viewport_needs_draw = false; // viewport.needs_draw || map.needs_draw();
+    let viewport_needs_draw = camera.pos != viewport.last_camera_pos; // viewport.needs_draw || map.needs_draw();
+    viewport.last_camera_pos = camera.pos;
 
     let buf = viewport.con.buffer_mut();
     // DO NOT CLEAR BUFFER!!!
 
-    for y in 0..size.1 as i32 {
-        for x in 0..size.0 as i32 {
+    let left = camera.pos.x - size.0 as i32 / 2;
+    let top = camera.pos.y - size.1 as i32 / 2;
+    let black = BLACK.into();
+
+    for y0 in 0..size.1 as i32 {
+        let y = y0 + top;
+        for x0 in 0..size.0 as i32 {
+            let x = x0 + left;
             let idx = match map.to_idx(x, y) {
-                None => continue,
+                None => {
+                    // TODO - Fancy?
+                    buf.draw(x0, y0, 0, black, black);
+                    continue;
+                }
                 Some(idx) => idx,
             };
 
@@ -194,8 +229,8 @@ fn draw_map(viewport: &mut Viewport, ecs: &mut Ecs) {
                         match map.get_tile_at_idx(idx) {
                             None => {
                                 buf.print_opt(
-                                    x,
-                                    y,
+                                    x0,
+                                    y0,
                                     Some('!'),
                                     Some(named::RED.into()),
                                     Some(named::BLACK.into()),
@@ -263,7 +298,7 @@ fn draw_map(viewport: &mut Viewport, ecs: &mut Ecs) {
                     //     bg = named::YELLOW.into();
                     // }
 
-                    buf.draw(x, y, glyph, fg, bg);
+                    buf.draw(x0, y0, glyph, fg, bg);
                     map.clear_needs_draw_idx(idx);
                 } else {
                     let mut bg = named::BLACK.into();
@@ -272,7 +307,7 @@ fn draw_map(viewport: &mut Viewport, ecs: &mut Ecs) {
                     } else if map.has_flag_xy(x as i32, y as i32, CellFlags::IS_HIGHLIGHTED) {
                         bg = RGBA::alpha_mix(&bg, &RGBA::rgba(255, 255, 0, 128))
                     }
-                    buf.print_opt(x, y, Some(' '), Some(named::BLACK.into()), Some(bg));
+                    buf.print_opt(x0, y0, Some(' '), Some(named::BLACK.into()), Some(bg));
                 }
             }
         }
