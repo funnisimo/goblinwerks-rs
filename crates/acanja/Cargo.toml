@@ -11,6 +11,4 @@ gw_util              = { path = "../gw_util" }
 gw_ui                = { path = "../gw_ui" }
 gw_world             = { path = "../gw_world" }
 toml_edit            = "0.19.4"
-bracket-noise        = "0.8.7"
-noise                = "0.8.2"
 opensimplex_noise_rs = "0.3.0"
