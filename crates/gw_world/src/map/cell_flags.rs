@@ -16,9 +16,10 @@ bitflags! {
         const IS_HIGHLIGHTED = fl!(1);
 
         const NEEDS_DRAW = fl!(2);
-        const NEEDS_SNAPSHOT = fl!(3);
-        const TILE_CHANGED = fl!(4);   // NO STABLE SNAPSHOT
-        const ENTITY_CHANGED = fl!(5);    // NEEDS REDRAW
+        const DRAWN_THIS_FRAME = fl!(3);
+        const NEEDS_SNAPSHOT = fl!(4);
+        const TILE_CHANGED = fl!(5);   // NO STABLE SNAPSHOT
+        const ENTITY_CHANGED = fl!(6);    // NEEDS REDRAW
 
         // TODO
         // BLOCKED_MOVE

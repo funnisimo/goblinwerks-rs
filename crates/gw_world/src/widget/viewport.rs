@@ -1,12 +1,16 @@
 use crate::map::{CellFlags, Map};
 use crate::memory::MapMemory;
+use crate::position::Position;
+use crate::sprite::Sprite;
 use gw_app::color::named::BLACK;
 use gw_app::color::{named, RGBA};
+use gw_app::ecs::query::IntoQuery;
 use gw_app::ecs::{systems::ResourceSet, Read, Write};
 use gw_app::messages::Messages;
 use gw_app::{log, AppEvent, Buffer, ScreenResult};
 use gw_app::{Ecs, Panel};
 use gw_util::point::Point;
+use gw_util::rect::Rect;
 use gw_util::value::Value;
 
 enum VisType {
@@ -136,8 +140,26 @@ impl Viewport {
     }
 
     pub fn render(&mut self, ecs: &mut Ecs) {
+        if !ecs.resources.contains::<Camera>() {
+            let map_size = ecs.resources.get::<Map>().unwrap().get_size();
+            let mut camera = Camera::new();
+            camera.pos = Point::new(map_size.0 as i32 / 2, map_size.1 as i32 / 2);
+            ecs.resources.insert(camera);
+        }
+
+        let viewport_needs_draw = {
+            let camera = ecs.resources.get::<Camera>().unwrap();
+            let viewport_needs_draw = self.needs_draw || self.last_camera_pos != camera.pos; // viewport.needs_draw || map.needs_draw();
+            self.last_camera_pos = camera.pos;
+            self.needs_draw = false;
+            viewport_needs_draw
+        };
+
         // Do we need to draw?
-        draw_map(self, ecs);
+        draw_map(self, ecs, viewport_needs_draw);
+        draw_actors(self, ecs);
+        clear_needs_draw(self, ecs);
+
         self.con.render(ecs);
     }
 }
@@ -181,15 +203,7 @@ impl ViewPortBuilder {
     }
 }
 
-fn draw_map(viewport: &mut Viewport, ecs: &mut Ecs) {
-    if !ecs.resources.contains::<Camera>() {
-        let mut camera = Camera::new();
-        let size = ecs.resources.get::<Map>().unwrap().get_size();
-
-        camera.pos = Point::new(size.0 as i32 / 2, size.1 as i32 / 2);
-        ecs.resources.insert(camera);
-    }
-
+fn draw_map(viewport: &mut Viewport, ecs: &mut Ecs, needs_draw: bool) {
     let (mut map, mut memory, camera) =
         <(Write<Map>, Write<MapMemory>, Read<Camera>)>::fetch_mut(&mut ecs.resources);
 
@@ -198,9 +212,6 @@ fn draw_map(viewport: &mut Viewport, ecs: &mut Ecs) {
 
     let size = viewport.con.size();
     // TODO - let offset = viewport.offset;
-    let viewport_needs_draw = viewport.needs_draw || camera.pos != viewport.last_camera_pos; // viewport.needs_draw || map.needs_draw();
-    viewport.last_camera_pos = camera.pos;
-    viewport.needs_draw = false;
 
     let buf = viewport.con.buffer_mut();
     // DO NOT CLEAR BUFFER!!!
@@ -222,7 +233,7 @@ fn draw_map(viewport: &mut Viewport, ecs: &mut Ecs) {
                 Some(idx) => idx,
             };
 
-            let needs_draw = map.needs_draw_idx(idx) || viewport_needs_draw;
+            let needs_draw = needs_draw || map.needs_draw_idx(idx);
             let needs_snapshot = map.needs_snapshot_idx(idx);
             let (visible, revealed, mapped) = match vis.get_vis_type(idx) {
                 VisType::MAPPED => (false, false, true),
@@ -311,7 +322,8 @@ fn draw_map(viewport: &mut Viewport, ecs: &mut Ecs) {
                     // }
 
                     buf.draw(x0, y0, glyph, fg, bg);
-                    map.clear_needs_draw_idx(idx);
+                    // map.clear_needs_draw_idx(idx);
+                    map.set_flag_xy(x, y, CellFlags::DRAWN_THIS_FRAME);
                 } else {
                     let mut bg = named::BLACK.into();
                     if map.has_flag_xy(x as i32, y as i32, CellFlags::IS_CURSOR) {
@@ -328,6 +340,72 @@ fn draw_map(viewport: &mut Viewport, ecs: &mut Ecs) {
     // dump_buffer(buf);
 
     // self.needs_redraw = false;
+}
+
+fn draw_actors(viewport: &mut Viewport, ecs: &mut Ecs) {
+    let (map, camera) = <(Read<Map>, Read<Camera>)>::fetch(&ecs.resources);
+
+    let size = viewport.con.size();
+    // TODO - let offset = viewport.offset;
+
+    let buf = viewport.con.buffer_mut();
+    // DO NOT CLEAR BUFFER!!!
+
+    let left = camera.pos.x - size.0 as i32 / 2;
+    let top = camera.pos.y - size.1 as i32 / 2;
+    let bounds = Rect::with_size(left, top, size.0 as i32, size.1 as i32);
+
+    let mut query = <(&Position, &Sprite)>::query();
+
+    for (pos, sprite) in query.iter(&ecs.world) {
+        if bounds.contains(pos.x, pos.y) {
+            if map.has_flag_xy(pos.x, pos.y, CellFlags::DRAWN_THIS_FRAME) {
+                let bufx = pos.x - left;
+                let bufy = pos.y - top;
+
+                let fg = buf.get_fore(bufx, bufy).unwrap();
+                let bg = buf.get_back(bufx, bufy).unwrap();
+
+                buf.draw(
+                    bufx,
+                    bufy,
+                    sprite.glyph,
+                    RGBA::alpha_mix(fg, &sprite.fg),
+                    RGBA::alpha_mix(bg, &sprite.bg),
+                );
+            }
+        }
+    }
+
+    // dump_buffer(buf);
+
+    // self.needs_redraw = false;
+}
+
+fn clear_needs_draw(viewport: &mut Viewport, ecs: &mut Ecs) {
+    let (mut map, camera) = <(Write<Map>, Read<Camera>)>::fetch_mut(&mut ecs.resources);
+
+    let size = viewport.con.size();
+
+    let left = camera.pos.x - size.0 as i32 / 2;
+    let top = camera.pos.y - size.1 as i32 / 2;
+
+    for y0 in 0..size.1 as i32 {
+        let y = y0 + top;
+        for x0 in 0..size.0 as i32 {
+            let x = x0 + left;
+            let _idx = match map.to_idx(x, y) {
+                None => {
+                    continue;
+                }
+                Some(idx) => idx,
+            };
+
+            if map.has_flag_xy(x, y, CellFlags::DRAWN_THIS_FRAME) {
+                map.clear_flag_xy(x, y, CellFlags::DRAWN_THIS_FRAME | CellFlags::NEEDS_DRAW);
+            }
+        }
+    }
 }
 
 #[cfg(test)]

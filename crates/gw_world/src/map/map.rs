@@ -570,6 +570,17 @@ impl Map {
         }
     }
 
+    pub fn clear_flag_xy(&mut self, x: i32, y: i32, flag: CellFlags) {
+        let idx = match self.to_idx(x, y) {
+            None => panic!("asked for tile at invalid x,y {},{}", x, y),
+            Some(idx) => idx,
+        };
+        let flags = &mut self.cell_flags[idx];
+        if flags.intersects(flag) {
+            flags.remove(flag);
+        }
+    }
+
     pub fn clear_flag_with_redraw(&mut self, flag: CellFlags) {
         for cell in self.cell_flags.iter_mut() {
             if cell.intersects(flag) {
