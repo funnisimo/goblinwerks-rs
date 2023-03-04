@@ -76,6 +76,8 @@ sprite = "=|BLACK|DARK_GRAY"
 flavor = "a counter"
 move   = "BLOCKS_MOVE"
 
+######## WORLD TILES
+
 [DEEP_OCEAN]
 kind   = "LAKE"
 sprite = "~|DARKEST_BLUE|BLACK"
@@ -96,8 +98,51 @@ move   = "BLOCKS_MOVE"
 
 [BEACH]
 kind   = "FLOOR"
-sprite = ";|BROWN|LIGHT_BROWN"
+sprite = ";|LIGHTGOLDENROD|KHAKI"
 flavor = "beach"
+
+[MOUNTAIN]
+kind   = "FLOOR"
+sprite = "^|BLACK|DARK_BROWN"
+flavor = "mountains"
+move   = "BLOCKS_MOVE"
+
+[FOREST_MOUNTAIN]
+kind   = "FLOOR"
+sprite = "^|DARKGREEN|DARK_BROWN"
+flavor = "forested mountains"
+move   = "BLOCKS_MOVE"
+
+[SNOW_MOUNTAIN]
+kind   = "FLOOR"
+sprite = "^|WHITE|DARK_BROWN"
+flavor = "snowy mountains"
+move   = "BLOCKS_MOVE"
+
+[HILL]
+kind   = "FLOOR"
+sprite = "^|LIGHT_BROWN|BROWN"
+flavor = "hills"
+
+[SHRUB_HILL]
+kind   = "FLOOR"
+sprite = "^|LIGHTGREEN|BROWN"
+flavor = "shrubbed hills"
+
+[FOREST_HILL]
+kind   = "FLOOR"
+sprite = "^|DARKGREEN|BROWN"
+flavor = "forested hills"
+
+[SHRUB_DESERT]
+kind   = "FLOOR"
+sprite = ".|DARKKHAKI|OLIVE"
+flavor = "shrubbed desert"
+
+[DESERT]
+kind   = "FLOOR"
+sprite = ".|KHAKI|DARKKHAKI"
+flavor = "desert"
 
 [GRASSLAND]
 kind   = "FLOOR"
@@ -109,19 +154,7 @@ kind   = "FLOOR"
 sprite = ".|DARK_GREEN|DARKEST_GREEN"
 flavor = "forest"
 
-[HILL]
+[RAINFOREST]
 kind   = "FLOOR"
-sprite = "^|LIGHT_BROWN|BROWN"
-flavor = "hills"
-
-[MOUNTAIN]
-kind   = "FLOOR"
-sprite = "^|BLACK|DARK_BROWN"
-flavor = "mountains"
-move   = "BLOCKS_MOVE"
-
-[SNOW]
-kind   = "FLOOR"
-sprite = "^|WHITE|DARK_BROWN"
-flavor = "snowy mountains"
-move   = "BLOCKS_MOVE"
+sprite = ".|DARK_TEAL|DARKEST_TEAL"
+flavor = "rainforest"

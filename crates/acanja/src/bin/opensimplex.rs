@@ -24,25 +24,32 @@ impl MainScreen {
     }
 
     pub fn draw(&mut self) {
-        let seed = self.rng.next_u64();
-
         let width = self.con.width() as usize;
         let height = self.con.height() as usize;
 
-        let mut values = get_noise(
+        let mut elevation = get_noise(
             NoiseConfig {
                 size: (width, height),
                 pcts: (1.0, 1.0, 1.0),
                 ..Default::default()
             },
-            seed,
+            self.rng.next_u64(),
         );
 
         // let mut values = vec![0.5; width * height];
-        print_histogram(&values);
+        print_histogram(&elevation);
 
-        square_bump((width, height), &mut values, 1.0);
-        print_histogram(&values);
+        square_bump((width, height), &mut elevation, 1.0);
+        print_histogram(&elevation);
+
+        let moisture = get_noise(
+            NoiseConfig {
+                size: (width, height),
+                pcts: (1.0, 1.0, 1.0),
+                ..Default::default()
+            },
+            self.rng.next_u64(),
+        );
 
         let buf = self.con.buffer_mut();
         let black = BLACK.into();
@@ -50,30 +57,11 @@ impl MainScreen {
         for y in 0..height {
             for x in 0..width {
                 let idx = (x + width * y) as usize;
-                let v = values[idx];
+                let e = elevation[idx];
+                let m = moisture[idx];
 
-                let alpha = (255.0 * v) as u8;
-                if alpha < 128 {
-                    buf.draw(
-                        x as i32,
-                        y as i32,
-                        0,
-                        black,
-                        RGBA::rgba(0, 0, 255, 255 - alpha),
-                    );
-                } else if alpha > 215 {
-                    buf.draw(x as i32, y as i32, 0, black, named::WHITE.into());
-                } else if alpha > 205 {
-                    buf.draw(x as i32, y as i32, 0, black, named::SADDLEBROWN.into());
-                } else if alpha > 190 {
-                    buf.draw(x as i32, y as i32, 0, black, named::GRAY14.into());
-                } else if alpha > 175 {
-                    buf.draw(x as i32, y as i32, 0, black, named::DARKGREEN.into());
-                } else if alpha > 140 {
-                    buf.draw(x as i32, y as i32, 0, black, named::GREEN.into());
-                } else {
-                    buf.draw(x as i32, y as i32, 0, black, named::SANDYBROWN.into());
-                }
+                let c = biome_color(e, m);
+                buf.draw(x as i32, y as i32, 0, black, c);
             }
         }
     }
@@ -252,4 +240,67 @@ fn normalize(values: &mut Vec<f64>) {
         let norm = ((v - lo) / range).clamp(0.0, 1.0);
         values[idx] = norm;
     }
+}
+
+fn biome_color(e: f64, m: f64) -> RGBA {
+    // these thresholds will need tuning to match your generator
+    if e < 0.3 {
+        return RGBA::rgb(0, 0, 64); // DEEP OCEAN;
+    }
+    if e < 0.4 {
+        return RGBA::rgb(0, 0, 128); // OCEAN;
+    }
+    if e < 0.5 {
+        return RGBA::rgb(0, 0, 200); // SHALLOW OCEAN;
+    }
+    if e < 0.52 {
+        return named::LIGHTGOLDENROD.into(); // BEACH;
+    }
+
+    if e > 0.8 {
+        if m < 0.1 {
+            return RGBA::rgb(200, 200, 200); // SCORCHED;
+        }
+        if m < 0.2 {
+            return RGBA::rgb(200, 150, 125); // BARE;
+        }
+        if m < 0.5 {
+            return RGBA::rgb(200, 190, 180); // TUNDRA;
+        }
+        return named::SNOW.into(); // SNOW;
+    }
+
+    if e > 0.7 {
+        if m < 0.33 {
+            return named::CORNSILK.into(); // TEMPERATE_DESERT;
+        }
+        if m < 0.66 {
+            return named::OLIVEDRAB.into(); // SHRUBLAND;
+        }
+        return RGBA::rgb(0, 100, 100); // TAIGA;
+    }
+
+    if e > 0.6 {
+        if m < 0.16 {
+            return named::DARKKHAKI.into(); // TEMPERATE_DESERT;
+        }
+        if m < 0.50 {
+            return named::LIGHTGREEN.into(); // GRASSLAND;
+        }
+        if m < 0.83 {
+            return named::DARKGREEN.into(); // TEMPERATE_DECIDUOUS_FOREST;
+        }
+        return RGBA::rgb(0, 128, 128); // TEMPERATE_RAIN_FOREST;
+    }
+
+    if m < 0.16 {
+        return named::LIGHTGOLDENROD.into(); // SUBTROPICAL_DESERT;
+    }
+    if m < 0.33 {
+        return named::LIGHTGREEN.into(); // GRASSLAND;
+    }
+    if m < 0.66 {
+        return named::OLIVEDRAB.into(); // TROPICAL_SEASONAL_FOREST;
+    }
+    return RGBA::rgb(0, 96, 96); // TROPICAL_RAIN_FOREST;
 }
