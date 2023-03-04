@@ -1,6 +1,6 @@
 use gw_app::*;
 use gw_util::point::Point;
-use gw_world::map::{dig_room_level, dump_map};
+use gw_world::map::{dig_room_level, dump_map, Map};
 use gw_world::memory::MapMemory;
 use gw_world::tile::Tiles;
 use gw_world::widget::{Camera, Viewport};
@@ -72,6 +72,20 @@ impl Screen for MainScreen {
                         camera.pos.x = camera.pos.x + 1;
                     }
                 }
+                VirtualKeyCode::Equals => {
+                    let size = self.viewport.size();
+                    self.viewport
+                        .resize((size.0 - 8).max(20), (size.1 - 5).max(10));
+                    log(format!("Viewport size={:?}", self.viewport.size()));
+                }
+                VirtualKeyCode::Minus => {
+                    let map_size = ecs.resources.get::<Map>().unwrap().get_size();
+                    let size = self.viewport.size();
+                    self.viewport
+                        .resize((size.0 + 8).min(map_size.0), (size.1 + 5).min(map_size.1));
+                    log(format!("Viewport size={:?}", self.viewport.size()));
+                }
+
                 _ => {}
             },
             _ => {}

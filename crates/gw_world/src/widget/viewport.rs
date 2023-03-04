@@ -73,6 +73,7 @@ pub struct Viewport {
     id: String,
     last_mouse: Point,
     last_camera_pos: Point,
+    needs_draw: bool,
 }
 
 impl Viewport {
@@ -87,7 +88,17 @@ impl Viewport {
             id: builder.id,
             last_mouse: Point::new(-1, -1),
             last_camera_pos: Point::new(-1, -1),
+            needs_draw: true,
         }
+    }
+
+    pub fn size(&self) -> (u32, u32) {
+        self.con.size()
+    }
+
+    pub fn resize(&mut self, width: u32, height: u32) {
+        self.con.resize(width, height);
+        self.needs_draw = true;
     }
 
     pub fn input(&mut self, ecs: &mut Ecs, event: &AppEvent) -> Option<ScreenResult> {
@@ -187,8 +198,9 @@ fn draw_map(viewport: &mut Viewport, ecs: &mut Ecs) {
 
     let size = viewport.con.size();
     // TODO - let offset = viewport.offset;
-    let viewport_needs_draw = camera.pos != viewport.last_camera_pos; // viewport.needs_draw || map.needs_draw();
+    let viewport_needs_draw = viewport.needs_draw || camera.pos != viewport.last_camera_pos; // viewport.needs_draw || map.needs_draw();
     viewport.last_camera_pos = camera.pos;
+    viewport.needs_draw = false;
 
     let buf = viewport.con.buffer_mut();
     // DO NOT CLEAR BUFFER!!!
