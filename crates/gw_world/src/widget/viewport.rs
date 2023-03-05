@@ -359,6 +359,10 @@ fn draw_actors(viewport: &mut Viewport, ecs: &mut Ecs) {
 
     for (pos, sprite) in query.iter(&ecs.world) {
         if bounds.contains(pos.x, pos.y) {
+            if !map.has_xy(pos.x, pos.y) {
+                // NOTE - This is an error somewhere, but instead of panicing we just ignore it.
+                continue;
+            }
             if map.has_flag_xy(pos.x, pos.y, CellFlags::DRAWN_THIS_FRAME) {
                 let bufx = pos.x - left;
                 let bufy = pos.y - top;
