@@ -1,4 +1,15 @@
-use gw_app::ecs::Entity;
+use gw_app::{
+    ecs::{scoped_resource, Entity, EntityStore},
+    screen::BoxedScreen,
+    Ecs, ScreenResult,
+};
+
+use crate::{
+    action::{Action, ActionResult, BoxedAction},
+    actor::Actor,
+    hero::Hero,
+    log::Logger,
+};
 
 #[derive(Copy, Clone, Debug)]
 struct TaskEntry {
@@ -69,6 +80,105 @@ impl TaskList {
 
     pub fn unpop(&mut self, entity: Entity) -> () {
         self.tasks.insert(0, TaskEntry::new(entity, self.time));
+    }
+}
+
+pub enum DoNextActionResult {
+    Hero,
+    Mob,
+    Done,
+    PushMode(BoxedScreen),
+}
+
+pub struct Executor {
+    tasks: TaskList,
+}
+
+impl Executor {
+    pub fn new() -> Self {
+        Executor {
+            tasks: TaskList::new(),
+        }
+    }
+
+    pub fn get_next_action(&self, entity: Entity, ecs: &mut Ecs) -> Option<BoxedAction> {
+        let mut entry = match ecs.world.entry(entity) {
+            None => return None,
+            Some(entry) => entry,
+        };
+
+        let ai_fn = {
+            let actor = entry.get_component_mut::<Actor>().unwrap();
+            match actor.next_action.take() {
+                Some(action) => return Some(action),
+                None => actor.ai,
+            }
+        };
+
+        ai_fn(ecs, entity)
+    }
+
+    #[must_use]
+    pub fn do_next_action(&mut self, ecs: &mut Ecs) -> DoNextActionResult {
+        let hero_entity = ecs.resources.get::<Hero>().unwrap().entity;
+
+        loop {
+            match self.tasks.pop() {
+                None => return DoNextActionResult::Done,
+                Some(entity) => {
+                    let is_player = entity == hero_entity;
+
+                    match self.get_next_action(entity, ecs) {
+                        None => continue,
+                        Some(mut action) => {
+                            'inner: loop {
+                                match action.execute(ecs) {
+                                    ActionResult::Dead(_) => {
+                                        // no rescedule - entity dead
+                                        let mut logger = ecs.resources.get_mut::<Logger>().unwrap();
+                                        logger.debug(format!("{:?} - Dead result", entity));
+                                        break 'inner;
+                                    }
+                                    ActionResult::Done(time) => {
+                                        // do_debug!("{} - Done result : {}", entity, time);
+                                        self.tasks.insert(entity, time);
+
+                                        break 'inner;
+                                    }
+                                    ActionResult::Fail(msg) => {
+                                        let mut logger = ecs.resources.get_mut::<Logger>().unwrap();
+                                        logger.debug(format!("#[violetred]{}", msg));
+                                        self.tasks.unpop(entity); // reschedule in future?
+                                        break 'inner;
+                                    }
+                                    ActionResult::Replace(new_action) => {
+                                        // do_debug!("{} - Replace result - {:?}", entity, new_action);
+                                        action = new_action;
+                                    }
+                                    ActionResult::WaitForInput => {
+                                        // debug_msg(format!("{} - Wait for input", entity));
+                                        self.tasks.unpop(entity); // try again next cycle
+                                        return DoNextActionResult::Done;
+                                    }
+                                    ActionResult::Retry => {
+                                        self.tasks.unpop(entity);
+                                        break 'inner;
+                                    }
+                                    ActionResult::PushMode(mode) => {
+                                        self.tasks.unpop(entity); // try again next cycle
+                                        return DoNextActionResult::PushMode(mode);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return match is_player {
+                        true => DoNextActionResult::Hero,
+                        false => DoNextActionResult::Mob,
+                    };
+                }
+            }
+        }
     }
 }
 

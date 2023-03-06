@@ -5,6 +5,7 @@ use gw_app::ecs::*;
 use gw_app::ecs::{systems::ResourceSet, Read};
 use gw_app::*;
 use gw_util::point::Point;
+use gw_world::hero::Hero;
 use gw_world::map::dump_map;
 use gw_world::map::Map;
 use gw_world::memory::MapMemory;
@@ -13,7 +14,7 @@ use gw_world::sprite::Sprite;
 use gw_world::tile::{TileFileLoader, Tiles};
 use gw_world::widget::{Camera, Viewport};
 
-struct Player;
+struct UserControl;
 
 struct MainScreen {
     viewport: Viewport,
@@ -50,11 +51,13 @@ impl Screen for MainScreen {
         resources.get_or_insert_with(|| Prefabs::default());
 
         // add position + sprite for actor
-        ecs.world.push((
+        let entity = ecs.world.push((
             Position::new(80, 50),
             Sprite::new('@' as Glyph, WHITE.into(), RGBA::new()),
-            Player,
+            UserControl,
         ));
+
+        resources.insert(Hero::new(entity));
 
         self.build_new_map(ecs);
     }
@@ -73,41 +76,24 @@ impl Screen for MainScreen {
                     return ScreenResult::Quit;
                 }
                 VirtualKeyCode::Down => {
-                    let mut query = <(&mut Position,)>::query().filter(component::<Player>());
+                    let mut query = <(&mut Position,)>::query().filter(component::<UserControl>());
                     let (mut pos,) = query.iter_mut(&mut ecs.world).next().unwrap();
                     pos.y = pos.y + 1;
-
-                    if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
-                        log("Camera down");
-                        camera.pos.y = pos.y;
-                    }
                 }
                 VirtualKeyCode::Left => {
-                    let mut query = <(&mut Position,)>::query().filter(component::<Player>());
+                    let mut query = <(&mut Position,)>::query().filter(component::<UserControl>());
                     let (mut pos,) = query.iter_mut(&mut ecs.world).next().unwrap();
                     pos.x = pos.x - 1;
-
-                    if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
-                        camera.pos.x = pos.x
-                    }
                 }
                 VirtualKeyCode::Up => {
-                    let mut query = <(&mut Position,)>::query().filter(component::<Player>());
+                    let mut query = <(&mut Position,)>::query().filter(component::<UserControl>());
                     let (mut pos,) = query.iter_mut(&mut ecs.world).next().unwrap();
                     pos.y = pos.y - 1;
-
-                    if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
-                        camera.pos.y = pos.y;
-                    }
                 }
                 VirtualKeyCode::Right => {
-                    let mut query = <(&mut Position,)>::query().filter(component::<Player>());
+                    let mut query = <(&mut Position,)>::query().filter(component::<UserControl>());
                     let (mut pos,) = query.iter_mut(&mut ecs.world).next().unwrap();
                     pos.x = pos.x + 1;
-
-                    if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
-                        camera.pos.x = pos.x;
-                    }
                 }
                 VirtualKeyCode::Equals => {
                     let size = self.viewport.size();
@@ -126,6 +112,17 @@ impl Screen for MainScreen {
             },
             _ => {}
         }
+
+        ScreenResult::Continue
+    }
+
+    fn update(&mut self, ecs: &mut Ecs) -> ScreenResult {
+        // Pre Update
+
+        // Update
+
+        // Post Update
+        camera_follows_player(ecs);
 
         ScreenResult::Continue
     }
@@ -165,4 +162,14 @@ fn main() {
         .build();
 
     app.run(MainScreen::new());
+}
+
+fn camera_follows_player(ecs: &mut Ecs) {
+    let mut query = <(&Position,)>::query().filter(component::<UserControl>());
+    let (pos,) = query.iter(&ecs.world).next().unwrap();
+
+    if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
+        camera.pos.x = pos.x;
+        camera.pos.y = pos.y;
+    }
 }
