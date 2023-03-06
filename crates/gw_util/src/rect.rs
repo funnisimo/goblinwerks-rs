@@ -87,14 +87,14 @@ impl Rect {
 
     /// Returns the rectangle's width
     #[must_use]
-    pub fn width(&self) -> i32 {
-        i32::abs(self.x2 - self.x1) + 1
+    pub fn width(&self) -> u32 {
+        ((self.x2 - self.x1).abs() + 1) as u32
     }
 
     /// Returns the rectangle's height
     #[must_use]
-    pub fn height(&self) -> i32 {
-        i32::abs(self.y2 - self.y1) + 1
+    pub fn height(&self) -> u32 {
+        ((self.y2 - self.y1).abs() + 1) as u32
     }
 }
 
@@ -104,9 +104,9 @@ impl ops::Add<Rect> for Rect {
         let w = self.width();
         let h = self.height();
         self.x1 += rhs.x1;
-        self.x2 = self.x1 + w;
+        self.x2 = self.x1 + w as i32;
         self.y1 += rhs.y1;
-        self.y2 = self.y1 + h;
+        self.y2 = self.y1 + h as i32;
         self
     }
 }

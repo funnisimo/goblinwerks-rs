@@ -1,5 +1,7 @@
+pub mod blob;
 pub mod extents;
 pub mod formula;
+pub mod grid;
 pub mod point;
 pub mod rect;
 pub mod rng;
