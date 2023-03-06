@@ -1,6 +1,9 @@
+use std::{iter::Enumerate, slice::Iter};
+
 use crate::{
     point::{Point, DIRS4},
     rect::Rect,
+    rng::RandomNumberGenerator,
 };
 
 #[derive(Debug, Clone)]
@@ -82,6 +85,39 @@ where
             .iter()
             .fold(0, |out, v| if *v == val { out + 1 } else { out })
     }
+
+    pub fn iter(&self) -> GridIterator<T> {
+        GridIterator::new(self.data.iter(), self.width())
+    }
+}
+
+pub struct GridIterator<'g, T> {
+    iter: Enumerate<Iter<'g, T>>,
+    width: usize,
+}
+
+impl<'g, T> GridIterator<'g, T> {
+    fn new(iter: Iter<'g, T>, width: usize) -> Self {
+        GridIterator {
+            iter: iter.enumerate(),
+            width,
+        }
+    }
+}
+
+impl<'g, T> Iterator for GridIterator<'g, T> {
+    type Item = (i32, i32, &'g T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.iter.next() {
+            None => None,
+            Some((idx, val)) => {
+                let x = idx as i32 % self.width as i32;
+                let y = idx as i32 / self.width as i32;
+                Some((x, y, val))
+            }
+        }
+    }
 }
 
 // Marks a cell as being a member of blobNumber, then recursively iterates through the rest of the blob
@@ -103,6 +139,54 @@ where
             continue;
         }
         if *dest.get_unchecked(x, y) != find {
+            continue;
+        }
+        dest.set(x, y, replace);
+        done.set(x, y, true);
+        count += 1;
+
+        // Iterate through the four cardinal neighbors.
+        for dir in DIRS4.iter() {
+            let new_x = x + dir.x;
+            let new_y = y + dir.y;
+            // If the neighbor is an unmarked region cell,
+            todo.push(Point::new(new_x, new_y));
+        }
+    }
+
+    count
+}
+
+// Marks a cell as being a member of blobNumber, then recursively iterates through the rest of the blob
+pub fn spread_replace<T>(
+    dest: &mut Grid<T>,
+    x: i32,
+    y: i32,
+    find: T,
+    replace: T,
+    rng: &mut RandomNumberGenerator,
+    chance: u32,
+) -> u32
+where
+    T: PartialEq + Copy + Default,
+{
+    let mut done = Grid::new(dest.width(), dest.height(), false);
+    let mut todo: Vec<Point> = vec![Point::new(x, y)];
+
+    let mut count = 0;
+
+    while todo.len() > 0 {
+        let item = todo.pop().unwrap();
+        let x = item.x;
+        let y = item.y;
+
+        if !dest.has_xy(x, y) || *done.get_unchecked(x, y) {
+            continue;
+        }
+        if *dest.get_unchecked(x, y) != find {
+            continue;
+        }
+        if rng.chance(chance) == false {
             continue;
         }
         dest.set(x, y, replace);

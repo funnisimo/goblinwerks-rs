@@ -22,13 +22,13 @@ impl Default for BlobConfig {
         BlobConfig {
             rng: RandomNumberGenerator::new(),
             rounds: 5,
-            min_width: 10,
-            min_height: 10,
-            max_width: 40,
-            max_height: 20,
+            min_width: 999,
+            min_height: 999,
+            max_width: 999,
+            max_height: 999,
             percent_seeded: 50,
-            birth_parameters: [false, false, false, false, false, false, true, true, true], // 'ffffffttt',
-            survival_parameters: [false, false, false, false, true, true, true, true, true], // 'ffffttttt',
+            birth_parameters: [false, false, false, false, false, false, true, true, true], // 'ffffffttt',  TODO - birth_count?
+            survival_parameters: [false, false, false, false, true, true, true, true, true], // 'ffffttttt',    TODO - survival_count?
         }
     }
 }
@@ -171,7 +171,7 @@ fn cellular_automata_round(
                 }
             }
 
-            if *buffer2.get_unchecked(i, j) != 0 && birth_parameters[count] {
+            if *buffer2.get_unchecked(i, j) == 0 && birth_parameters[count] {
                 grid.set(i, j, 1); // birth
                 did_something = true;
             } else if *buffer2.get_unchecked(i, j) != 0 && survival_parameters[count] {
