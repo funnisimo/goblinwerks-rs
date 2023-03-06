@@ -5,12 +5,17 @@ use gw_app::ecs::*;
 use gw_app::ecs::{systems::ResourceSet, Read};
 use gw_app::*;
 use gw_util::point::Point;
+use gw_world::action::move_step::MoveStepAction;
+use gw_world::actor::Actor;
+use gw_world::ai::user::ai_user_control;
 use gw_world::hero::Hero;
+use gw_world::log::Logger;
 use gw_world::map::dump_map;
 use gw_world::map::Map;
 use gw_world::memory::MapMemory;
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
+use gw_world::task::{DoNextActionResult, Executor};
 use gw_world::tile::{TileFileLoader, Tiles};
 use gw_world::widget::{Camera, Viewport};
 
@@ -18,13 +23,17 @@ struct UserControl;
 
 struct MainScreen {
     viewport: Viewport,
+    executor: Executor,
 }
 
 impl MainScreen {
     pub fn new() -> Box<Self> {
         let viewport = Viewport::builder("VIEWPORT").size(80, 50).build();
 
-        Box::new(MainScreen { viewport })
+        Box::new(MainScreen {
+            viewport,
+            executor: Executor::new(),
+        })
     }
 
     fn build_new_map(&self, ecs: &mut Ecs) {
@@ -42,6 +51,11 @@ impl MainScreen {
         ecs.resources.insert(map);
         ecs.resources.insert(MapMemory::new(160, 100));
     }
+
+    fn post_action(&mut self, ecs: &mut Ecs) {
+        // Post Update
+        camera_follows_player(ecs);
+    }
 }
 
 impl Screen for MainScreen {
@@ -49,15 +63,18 @@ impl Screen for MainScreen {
         let resources = &mut ecs.resources;
         resources.get_or_insert_with(|| Tiles::default());
         resources.get_or_insert_with(|| Prefabs::default());
+        resources.get_or_insert_with(|| Logger::new());
 
         // add position + sprite for actor
         let entity = ecs.world.push((
             Position::new(80, 50),
             Sprite::new('@' as Glyph, WHITE.into(), RGBA::new()),
-            UserControl,
+            UserControl, // Do we need this?
+            Actor::new(ai_user_control),
         ));
 
         resources.insert(Hero::new(entity));
+        self.executor.insert(entity, 0);
 
         self.build_new_map(ecs);
     }
@@ -76,24 +93,48 @@ impl Screen for MainScreen {
                     return ScreenResult::Quit;
                 }
                 VirtualKeyCode::Down => {
-                    let mut query = <(&mut Position,)>::query().filter(component::<UserControl>());
-                    let (mut pos,) = query.iter_mut(&mut ecs.world).next().unwrap();
-                    pos.y = pos.y + 1;
+                    let hero_entity = ecs.resources.get::<Hero>().unwrap().entity;
+
+                    let mut entry = ecs.world.entry(hero_entity).unwrap();
+                    let actor = entry.get_component_mut::<Actor>().unwrap();
+                    actor.next_action = Some(Box::new(MoveStepAction::new(hero_entity, 0, 1)));
+
+                    // let mut query = <(&mut Position,)>::query().filter(component::<UserControl>());
+                    // let (mut pos,) = query.iter_mut(&mut ecs.world).next().unwrap();
+                    // pos.y = pos.y + 1;
                 }
                 VirtualKeyCode::Left => {
-                    let mut query = <(&mut Position,)>::query().filter(component::<UserControl>());
-                    let (mut pos,) = query.iter_mut(&mut ecs.world).next().unwrap();
-                    pos.x = pos.x - 1;
+                    let hero_entity = ecs.resources.get::<Hero>().unwrap().entity;
+
+                    let mut entry = ecs.world.entry(hero_entity).unwrap();
+                    let actor = entry.get_component_mut::<Actor>().unwrap();
+                    actor.next_action = Some(Box::new(MoveStepAction::new(hero_entity, -1, 0)));
+
+                    // let mut query = <(&mut Position,)>::query().filter(component::<UserControl>());
+                    // let (mut pos,) = query.iter_mut(&mut ecs.world).next().unwrap();
+                    // pos.x = pos.x - 1;
                 }
                 VirtualKeyCode::Up => {
-                    let mut query = <(&mut Position,)>::query().filter(component::<UserControl>());
-                    let (mut pos,) = query.iter_mut(&mut ecs.world).next().unwrap();
-                    pos.y = pos.y - 1;
+                    let hero_entity = ecs.resources.get::<Hero>().unwrap().entity;
+
+                    let mut entry = ecs.world.entry(hero_entity).unwrap();
+                    let actor = entry.get_component_mut::<Actor>().unwrap();
+                    actor.next_action = Some(Box::new(MoveStepAction::new(hero_entity, 0, -1)));
+
+                    // let mut query = <(&mut Position,)>::query().filter(component::<UserControl>());
+                    // let (mut pos,) = query.iter_mut(&mut ecs.world).next().unwrap();
+                    // pos.y = pos.y - 1;
                 }
                 VirtualKeyCode::Right => {
-                    let mut query = <(&mut Position,)>::query().filter(component::<UserControl>());
-                    let (mut pos,) = query.iter_mut(&mut ecs.world).next().unwrap();
-                    pos.x = pos.x + 1;
+                    let hero_entity = ecs.resources.get::<Hero>().unwrap().entity;
+
+                    let mut entry = ecs.world.entry(hero_entity).unwrap();
+                    let actor = entry.get_component_mut::<Actor>().unwrap();
+                    actor.next_action = Some(Box::new(MoveStepAction::new(hero_entity, 1, 0)));
+
+                    // let mut query = <(&mut Position,)>::query().filter(component::<UserControl>());
+                    // let (mut pos,) = query.iter_mut(&mut ecs.world).next().unwrap();
+                    // pos.x = pos.x + 1;
                 }
                 VirtualKeyCode::Equals => {
                     let size = self.viewport.size();
@@ -120,11 +161,27 @@ impl Screen for MainScreen {
         // Pre Update
 
         // Update
-
-        // Post Update
-        camera_follows_player(ecs);
-
-        ScreenResult::Continue
+        loop {
+            // if world.is_game_over() {
+            //     return (self.game_over)(world, ctx);
+            // } else if !world.animations().is_empty() {
+            //     return ScreenResult::Continue;
+            // }
+            let res = self.executor.do_next_action(ecs);
+            self.post_action(ecs);
+            match res {
+                DoNextActionResult::Done => {
+                    return ScreenResult::Continue;
+                }
+                DoNextActionResult::Mob => {
+                    continue;
+                }
+                DoNextActionResult::Hero => {
+                    return ScreenResult::Continue;
+                }
+                DoNextActionResult::PushMode(mode) => return ScreenResult::Push(mode),
+            }
+        }
     }
 
     fn message(&mut self, _app: &mut Ecs, id: String, value: Option<Value>) -> ScreenResult {

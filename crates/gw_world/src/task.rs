@@ -101,6 +101,14 @@ impl Executor {
         }
     }
 
+    pub fn insert(&mut self, entity: Entity, in_time: u32) {
+        self.tasks.insert(entity, in_time)
+    }
+
+    pub fn remove(&mut self, entity: Entity) {
+        self.tasks.remove(entity);
+    }
+
     pub fn get_next_action(&self, entity: Entity, ecs: &mut Ecs) -> Option<BoxedAction> {
         let mut entry = match ecs.world.entry(entity) {
             None => return None,

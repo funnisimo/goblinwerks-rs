@@ -1,5 +1,4 @@
 use crate::action::BoxedAction;
-use crate::ai::idle::ai_idle;
 use crate::ai::AiFn;
 
 pub struct Actor {
@@ -10,12 +9,12 @@ pub struct Actor {
 }
 
 impl Actor {
-    pub fn new() -> Self {
+    pub fn new(ai: AiFn) -> Self {
         Actor {
             busy_time: 0,
             act_time: 100,
             next_action: None,
-            ai: ai_idle,
+            ai,
         }
     }
 }

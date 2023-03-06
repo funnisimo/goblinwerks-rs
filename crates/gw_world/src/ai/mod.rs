@@ -12,6 +12,7 @@ use gw_app::ecs::{Ecs, Entity};
 
 pub mod idle;
 pub mod mirror_player;
+pub mod user;
 
 // mod basic_monster;
 // pub use basic_monster::BasicMonster;
