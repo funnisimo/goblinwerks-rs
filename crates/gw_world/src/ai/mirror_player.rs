@@ -1,7 +1,8 @@
 use crate::action::{move_step::MoveStepAction, BoxedAction};
 use crate::hero::Hero;
+use crate::level::Level;
 use crate::position::Position;
-use gw_app::ecs::{Ecs, Entity};
+use gw_app::ecs::Entity;
 use gw_util::point::Point;
 
 struct MirrorState {
@@ -16,7 +17,7 @@ impl MirrorState {
     }
 }
 
-pub fn ai_mirror_player(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
+pub fn ai_mirror_player(ecs: &mut Level, entity: Entity) -> Option<BoxedAction> {
     let hero_entity = ecs.resources.get::<Hero>().unwrap().entity;
 
     let hero_point = {

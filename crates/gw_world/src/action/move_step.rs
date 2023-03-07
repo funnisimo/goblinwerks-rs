@@ -2,11 +2,12 @@ use crate::action::idle::IdleAction;
 use crate::action::{Action, ActionResult};
 use crate::actor::Actor;
 use crate::hero::Hero;
+use crate::level::Level;
 use crate::log::Logger;
 use crate::map::Map;
 use crate::position::Position;
 use gw_app::ecs::systems::ResourceSet;
-use gw_app::ecs::{Ecs, Entity, EntityStore, Read, Write};
+use gw_app::ecs::{Entity, EntityStore, Read, Write};
 
 #[derive(Copy, Clone, Debug)]
 pub struct MoveStepAction {
@@ -20,10 +21,10 @@ impl MoveStepAction {
         MoveStepAction { entity, dx, dy }
     }
 
-    fn validate(&mut self, ecs: &mut Ecs) -> Option<ActionResult> {
-        let Ecs {
+    fn validate(&mut self, level: &mut Level) -> Option<ActionResult> {
+        let Level {
             resources, world, ..
-        } = ecs;
+        } = level;
 
         let (map, hero, mut log) = <(Read<Map>, Read<Hero>, Write<Logger>)>::fetch_mut(resources);
 
@@ -88,10 +89,10 @@ impl MoveStepAction {
         None
     }
 
-    fn do_action(&mut self, ecs: &mut Ecs) -> ActionResult {
-        let Ecs {
+    fn do_action(&mut self, level: &mut Level) -> ActionResult {
+        let Level {
             resources, world, ..
-        } = ecs;
+        } = level;
 
         let mut map = resources.get_mut::<Map>().unwrap();
 
@@ -137,10 +138,10 @@ impl MoveStepAction {
 }
 
 impl Action for MoveStepAction {
-    fn execute(&mut self, ecs: &mut Ecs) -> ActionResult {
-        match self.validate(ecs) {
+    fn execute(&mut self, level: &mut Level) -> ActionResult {
+        match self.validate(level) {
             Some(res) => res,
-            None => self.do_action(ecs),
+            None => self.do_action(level),
         }
     }
 }

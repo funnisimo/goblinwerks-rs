@@ -1,5 +1,6 @@
 use crate::action::BoxedAction;
-use gw_app::ecs::{Ecs, Entity};
+use crate::level::Level;
+use gw_app::ecs::Entity;
 
 // mod mirror_player;
 // pub use mirror_player::MirrorPlayerAI;
@@ -17,7 +18,7 @@ pub mod user;
 // mod basic_monster;
 // pub use basic_monster::BasicMonster;
 
-pub type AiFn = fn(&mut Ecs, Entity) -> Option<BoxedAction>;
+pub type AiFn = fn(&mut Level, Entity) -> Option<BoxedAction>;
 
 // pub trait AI: Send + Sync {
 //     fn next_action(&self, ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction>;

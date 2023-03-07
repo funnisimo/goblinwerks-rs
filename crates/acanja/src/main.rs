@@ -1,6 +1,8 @@
 use gw_app::ecs::{systems::ResourceSet, Read};
 use gw_app::*;
 use gw_util::point::Point;
+use gw_world::level::Level;
+use gw_world::log::Logger;
 use gw_world::map::dump_map;
 use gw_world::memory::MapMemory;
 use gw_world::tile::{TileFileLoader, Tiles};
@@ -21,7 +23,7 @@ impl MainScreen {
         Box::new(MainScreen { viewport })
     }
 
-    fn build_new_map(&self, ecs: &mut Ecs) {
+    fn build_new_level(&self, ecs: &mut Ecs) {
         let mut map = {
             let (tiles, prefabs) = <(Read<Tiles>, Read<Prefabs>)>::fetch(&ecs.resources);
 
@@ -33,8 +35,13 @@ impl MainScreen {
         map.reveal_all();
         map.make_fully_visible();
 
-        ecs.resources.insert(map);
-        ecs.resources.insert(MapMemory::new(80, 50));
+        let mut level = Level::new();
+
+        level.resources.insert(map);
+        level.resources.insert(MapMemory::new(80, 50));
+        level.resources.insert(Logger::new());
+
+        ecs.resources.insert(level);
     }
 }
 
@@ -43,8 +50,9 @@ impl Screen for MainScreen {
         let resources = &mut ecs.resources;
         resources.get_or_insert_with(|| Tiles::default());
         resources.get_or_insert_with(|| Prefabs::default());
+        resources.get_or_insert_with(|| Logger::new());
 
-        self.build_new_map(ecs);
+        self.build_new_level(ecs);
     }
 
     fn input(&mut self, ecs: &mut Ecs, ev: &AppEvent) -> ScreenResult {
@@ -55,7 +63,7 @@ impl Screen for MainScreen {
         match ev {
             AppEvent::KeyDown(key_down) => match key_down.key_code {
                 VirtualKeyCode::Space => {
-                    self.build_new_map(ecs);
+                    self.build_new_level(ecs);
                 }
                 VirtualKeyCode::Escape => {
                     return ScreenResult::Quit;

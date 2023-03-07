@@ -143,8 +143,16 @@ impl TileBuilder {
     pub fn set(&mut self, field: &str, value: &str) -> Result<(), String> {
         match field {
             "sprite" => {
+                log(format!("parse sprite for tile - {}", value));
                 let sprite: Sprite = match value.parse() {
-                    Err(e) => return Err(format!("Failed to parse sprite : {} - {}", value, e)),
+                    Err(e) => {
+                        log(format!(
+                            "Failed to parse sprite for tile - {} - {:?}",
+                            value,
+                            value.chars().collect::<Vec<char>>()
+                        ));
+                        return Err(format!("Failed to parse sprite : {} - {}", value, e));
+                    }
                     Ok(sprite) => sprite,
                 };
                 self.tile.glyph = sprite.glyph;

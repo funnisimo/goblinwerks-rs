@@ -28,7 +28,9 @@ pub fn get_color_opt(name: &str) -> Option<RGBA> {
 
 pub fn get_color(name: &str) -> Result<RGBA, ColorParseErr> {
     let name = name.trim().to_lowercase();
-    if name.starts_with("#") {
+    if name.len() == 0 {
+        return Ok(RGBA::new());
+    } else if name.starts_with("#") {
         return parse_color_hex(&name);
     } else if name.starts_with("(") || name.starts_with("rgb(") || name.starts_with("rgba(") {
         return parse_color_rgb(&name);

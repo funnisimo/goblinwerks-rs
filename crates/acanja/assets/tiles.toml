@@ -76,6 +76,12 @@ sprite = "=|BLACK|DARK_GRAY"
 flavor = "a counter"
 move   = "BLOCKS_MOVE"
 
+[TOWN]
+kind   = "FLOOR"
+sprite = "0x7F|WHITE|DARK_GRAY"
+flavor = "a town"
+move   = "PORTAL_DOWN"
+
 ######## WORLD TILES
 
 [DEEP_OCEAN]

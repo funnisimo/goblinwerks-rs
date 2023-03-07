@@ -10,7 +10,6 @@ dependencies = [
  "gw_ui",
  "gw_util",
  "gw_world",
- "opensimplex_noise_rs",
  "toml_edit 0.19.4",
 ]
 
@@ -833,8 +832,10 @@ dependencies = [
  "assert_approx_eq",
  "chrono",
  "getrandom",
+ "gw_app",
  "lazy_static",
  "legion",
+ "opensimplex_noise_rs",
  "pest",
  "pest_derive",
  "rand",

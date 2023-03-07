@@ -1,105 +1,30 @@
-use gw_app::{
-    color::named::{self, BLACK},
-    *,
-};
-use gw_util::rng::{RandomNumberGenerator, RngCore};
 use opensimplex_noise_rs::OpenSimplexNoise;
+use std::f64::consts::PI;
 
-struct MainScreen {
-    con: Panel,
-    rng: RandomNumberGenerator,
-    // values: Vec<f64>,
-    // scale: (f64, f64),
+const TAU: f64 = PI as f64 * 2.0;
+
+pub fn cylindernoise(noise: &mut OpenSimplexNoise, nx: f64, ny: f64) -> f64 {
+    let angle_x = TAU * nx;
+
+    /* In "noise parameter space", we need nx and ny to travel the
+    same distance. The circle created from nx needs to have
+    circumference=1 to match the length=1 line created from ny,
+    which means the circle's radius is 1/2π, or 1/tau */
+    noise.eval_3d(angle_x.cos() / TAU, (angle_x.sin()) / TAU, ny)
 }
 
-impl MainScreen {
-    pub fn new() -> Box<Self> {
-        let con = Panel::new(160, 100, "DEFAULT");
-        let rng = RandomNumberGenerator::new();
-        Box::new(MainScreen {
-            con,
-            rng,
-            // values: vec![0.0; 160 * 100], // scale: (1.0, 1.0),
-        })
-    }
-
-    pub fn draw(&mut self) {
-        let seed = self.rng.next_u64();
-
-        let width = self.con.width() as usize;
-        let height = self.con.height() as usize;
-
-        let mut values = get_noise(
-            NoiseConfig {
-                size: (width, height),
-                pcts: (1.0, 1.0, 1.0),
-                ..Default::default()
-            },
-            seed,
-        );
-
-        // let mut values = vec![0.5; width * height];
-        print_histogram(&values);
-
-        let buf = self.con.buffer_mut();
-        let black = BLACK.into();
-
-        for y in 0..height {
-            for x in 0..width {
-                let idx = (x + width * y) as usize;
-                let v = values[idx];
-
-                let alpha = (255.0 * v) as u8;
-                buf.draw(x as i32, y as i32, 0, black, RGBA::rgba(255, 0, 0, alpha));
-            }
-        }
-    }
+pub fn torusnoise(noise: &mut OpenSimplexNoise, nx: f64, ny: f64) -> f64 {
+    let angle_x = TAU * nx;
+    let angle_y = TAU * ny;
+    noise.eval_4d(
+        angle_x.cos() / TAU,
+        angle_x.sin() / TAU,
+        angle_y.cos() / TAU,
+        angle_y.sin() / TAU,
+    )
 }
 
-impl Screen for MainScreen {
-    fn setup(&mut self, _ecs: &mut Ecs) {
-        self.draw();
-    }
-
-    fn input(&mut self, _ecs: &mut Ecs, ev: &AppEvent) -> ScreenResult {
-        match ev {
-            AppEvent::KeyDown(key) => match key.key_code {
-                VirtualKeyCode::Escape => return ScreenResult::Quit,
-                // VirtualKeyCode::X => {
-                //     if key.shift {
-                //         self.scale.0 = self.scale.0 * 2.0;
-                //     } else {
-                //         self.scale.0 = self.scale.0 / 2.0;
-                //     }
-                //     self.draw();
-                // }
-                // VirtualKeyCode::Y => {
-                //     if key.shift {
-                //         self.scale.1 = self.scale.1 * 2.0;
-                //     } else {
-                //         self.scale.1 = self.scale.1 / 2.0;
-                //     }
-                //     self.draw();
-                // }
-                _ => self.draw(),
-            },
-            AppEvent::MouseDown(_) => self.draw(),
-            _ => {}
-        }
-        ScreenResult::Continue
-    }
-
-    fn render(&mut self, app: &mut Ecs) {
-        self.con.render(app);
-    }
-}
-
-fn main() {
-    let app = AppBuilder::new(1024, 768).title("Minimal Example").build();
-    app.run(MainScreen::new());
-}
-
-struct NoiseConfig {
+pub struct NoiseConfig {
     pub size: (usize, usize),
     pub offsets: (f64, f64, f64),
     pub mults: (f64, f64, f64),
@@ -121,7 +46,7 @@ impl Default for NoiseConfig {
     }
 }
 
-fn get_noise(config: NoiseConfig, seed: u64) -> Vec<f64> {
+pub fn get_noise(config: NoiseConfig, seed: u64) -> Vec<f64> {
     let size = config.size;
     let offsets = config.offsets;
     let mults = config.mults;
@@ -171,7 +96,7 @@ fn get_noise(config: NoiseConfig, seed: u64) -> Vec<f64> {
     values
 }
 
-fn print_histogram(values: &Vec<f64>) {
+pub fn print_histogram(values: &Vec<f64>) {
     let mut histogram: Vec<u32> = vec![0; 10];
 
     for v in values.iter() {
@@ -191,7 +116,7 @@ fn print_histogram(values: &Vec<f64>) {
     }
 }
 
-fn square_bump(size: (usize, usize), values: &mut Vec<f64>, pow: f64) {
+pub fn square_bump(size: (usize, usize), values: &mut Vec<f64>, pow: f64) {
     for y in 0..size.1 {
         for x in 0..size.0 {
             let idx = x + size.0 * y;
@@ -208,7 +133,7 @@ fn square_bump(size: (usize, usize), values: &mut Vec<f64>, pow: f64) {
     }
 }
 
-fn normalize(values: &mut Vec<f64>) {
+pub fn normalize(values: &mut Vec<f64>) {
     let mut lo: f64 = f64::MAX;
     let mut hi: f64 = f64::MIN;
 

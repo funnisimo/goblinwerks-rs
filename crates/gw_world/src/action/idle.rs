@@ -1,5 +1,6 @@
 use crate::action::{Action, ActionResult};
-use gw_app::ecs::{Ecs, Entity};
+use crate::level::Level;
+use gw_app::ecs::Entity;
 
 #[derive(Copy, Clone, Debug)]
 pub struct IdleAction {
@@ -14,8 +15,8 @@ impl IdleAction {
 }
 
 impl Action for IdleAction {
-    fn execute(&mut self, ecs: &mut Ecs) -> ActionResult {
-        match ecs.world.contains(self.entity) {
+    fn execute(&mut self, level: &mut Level) -> ActionResult {
+        match level.world.contains(self.entity) {
             false => {
                 // TODO - log?  This is an action on a non-existant entity.
                 ActionResult::Dead(self.entity)

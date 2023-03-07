@@ -1,3 +1,4 @@
+use crate::level::Level;
 use crate::map::{CellFlags, Map};
 use crate::memory::MapMemory;
 use crate::position::Position;
@@ -5,6 +6,7 @@ use crate::sprite::Sprite;
 use gw_app::color::named::BLACK;
 use gw_app::color::{named, RGBA};
 use gw_app::ecs::query::IntoQuery;
+use gw_app::ecs::Entity;
 use gw_app::ecs::{systems::ResourceSet, Read, Write};
 use gw_app::messages::Messages;
 use gw_app::{log, AppEvent, Buffer, ScreenResult};
@@ -62,12 +64,30 @@ impl VisSource for AlwaysVisible {}
 
 pub struct Camera {
     pub pos: Point,
+    pub follows: Option<Entity>,
 }
 
 impl Camera {
     pub fn new() -> Self {
         Camera {
             pos: Point::new(0, 0),
+            follows: None,
+        }
+    }
+}
+
+pub fn update_camera_follows(level: &mut Level) {
+    if let Some(mut camera) = level.resources.get_mut::<Camera>() {
+        if let Some(ref entity) = camera.follows {
+            if let Some(entry) = level.world.entry(*entity) {
+                if let Ok(pos) = entry.get_component::<Position>() {
+                    camera.pos.x = pos.x;
+                    camera.pos.y = pos.y;
+                }
+            } else {
+                camera.follows = None;
+                log("Cancelling camera follows - entity not found.");
+            }
         }
     }
 }
@@ -140,15 +160,22 @@ impl Viewport {
     }
 
     pub fn render(&mut self, ecs: &mut Ecs) {
-        if !ecs.resources.contains::<Camera>() {
-            let map_size = ecs.resources.get::<Map>().unwrap().get_size();
+        let mut level = match ecs.resources.get_mut::<Level>() {
+            None => panic!(
+                "Level not found.  Viewport uses Level resource to find map, camera, and memory."
+            ),
+            Some(level) => level,
+        };
+
+        if !level.resources.contains::<Camera>() {
+            let map_size = level.resources.get::<Map>().unwrap().get_size();
             let mut camera = Camera::new();
             camera.pos = Point::new(map_size.0 as i32 / 2, map_size.1 as i32 / 2);
-            ecs.resources.insert(camera);
+            level.resources.insert(camera);
         }
 
         let viewport_needs_draw = {
-            let camera = ecs.resources.get::<Camera>().unwrap();
+            let camera = level.resources.get::<Camera>().unwrap();
             let viewport_needs_draw = self.needs_draw || self.last_camera_pos != camera.pos; // viewport.needs_draw || map.needs_draw();
             self.last_camera_pos = camera.pos;
             self.needs_draw = false;
@@ -156,9 +183,11 @@ impl Viewport {
         };
 
         // Do we need to draw?
-        draw_map(self, ecs, viewport_needs_draw);
-        draw_actors(self, ecs);
-        clear_needs_draw(self, ecs);
+        draw_map(self, &mut level, viewport_needs_draw);
+        draw_actors(self, &mut level);
+        clear_needs_draw(self, &mut level);
+
+        drop(level);
 
         self.con.render(ecs);
     }
@@ -203,7 +232,7 @@ impl ViewPortBuilder {
     }
 }
 
-fn draw_map(viewport: &mut Viewport, ecs: &mut Ecs, needs_draw: bool) {
+fn draw_map(viewport: &mut Viewport, ecs: &mut Level, needs_draw: bool) {
     let (mut map, mut memory, camera) =
         <(Write<Map>, Write<MapMemory>, Read<Camera>)>::fetch_mut(&mut ecs.resources);
 
@@ -342,7 +371,7 @@ fn draw_map(viewport: &mut Viewport, ecs: &mut Ecs, needs_draw: bool) {
     // self.needs_redraw = false;
 }
 
-fn draw_actors(viewport: &mut Viewport, ecs: &mut Ecs) {
+fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
     let (map, camera) = <(Read<Map>, Read<Camera>)>::fetch(&ecs.resources);
 
     let size = viewport.con.size();
@@ -386,7 +415,7 @@ fn draw_actors(viewport: &mut Viewport, ecs: &mut Ecs) {
     // self.needs_redraw = false;
 }
 
-fn clear_needs_draw(viewport: &mut Viewport, ecs: &mut Ecs) {
+fn clear_needs_draw(viewport: &mut Viewport, ecs: &mut Level) {
     let (mut map, camera) = <(Write<Map>, Read<Camera>)>::fetch_mut(&mut ecs.resources);
 
     let size = viewport.con.size();

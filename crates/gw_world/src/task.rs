@@ -8,6 +8,7 @@ use crate::{
     action::{Action, ActionResult, BoxedAction},
     actor::Actor,
     hero::Hero,
+    level::Level,
     log::Logger,
 };
 
@@ -34,6 +35,10 @@ impl TaskList {
             tasks: Vec::new(),
             time: 0,
         }
+    }
+
+    pub fn clear(&mut self) {
+        self.tasks.clear();
     }
 
     pub fn next_time(&self) -> u64 {
@@ -101,6 +106,10 @@ impl Executor {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.tasks.clear();
+    }
+
     pub fn insert(&mut self, entity: Entity, in_time: u32) {
         self.tasks.insert(entity, in_time)
     }
@@ -109,7 +118,7 @@ impl Executor {
         self.tasks.remove(entity);
     }
 
-    pub fn get_next_action(&self, entity: Entity, ecs: &mut Ecs) -> Option<BoxedAction> {
+    pub fn get_next_action(&self, entity: Entity, ecs: &mut Level) -> Option<BoxedAction> {
         let mut entry = match ecs.world.entry(entity) {
             None => return None,
             Some(entry) => entry,
@@ -127,7 +136,7 @@ impl Executor {
     }
 
     #[must_use]
-    pub fn do_next_action(&mut self, ecs: &mut Ecs) -> DoNextActionResult {
+    pub fn do_next_action(&mut self, ecs: &mut Level) -> DoNextActionResult {
         let hero_entity = ecs.resources.get::<Hero>().unwrap().entity;
 
         loop {

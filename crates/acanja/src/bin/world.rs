@@ -6,6 +6,7 @@ use gw_util::blob::{Blob, BlobConfig};
 use gw_util::grid::{spread_replace, Grid};
 use gw_util::point::Point;
 use gw_util::rng::{RandomNumberGenerator, RngCore};
+use gw_world::level::Level;
 use gw_world::map::dump_map;
 use gw_world::map::Map;
 use gw_world::memory::MapMemory;
@@ -28,7 +29,7 @@ impl MainScreen {
         Box::new(MainScreen { viewport })
     }
 
-    fn build_new_map(&self, ecs: &mut Ecs) {
+    fn build_new_level(&self, ecs: &mut Ecs) {
         let mut map = {
             let (tiles, prefabs) = <(Read<Tiles>, Read<Prefabs>)>::fetch(&ecs.resources);
 
@@ -40,8 +41,12 @@ impl MainScreen {
         map.reveal_all();
         map.make_fully_visible();
 
-        ecs.resources.insert(map);
-        ecs.resources.insert(MapMemory::new(160, 100));
+        let mut level = Level::new();
+
+        level.resources.insert(map);
+        level.resources.insert(MapMemory::new(160, 100));
+
+        ecs.resources.insert(level);
     }
 }
 
@@ -51,7 +56,7 @@ impl Screen for MainScreen {
         resources.get_or_insert_with(|| Tiles::default());
         resources.get_or_insert_with(|| Prefabs::default());
 
-        self.build_new_map(ecs);
+        self.build_new_level(ecs);
     }
 
     fn input(&mut self, ecs: &mut Ecs, ev: &AppEvent) -> ScreenResult {
@@ -62,31 +67,39 @@ impl Screen for MainScreen {
         match ev {
             AppEvent::KeyDown(key_down) => match key_down.key_code {
                 VirtualKeyCode::Space => {
-                    self.build_new_map(ecs);
+                    self.build_new_level(ecs);
                 }
                 VirtualKeyCode::Escape => {
                     return ScreenResult::Quit;
                 }
                 VirtualKeyCode::Down => {
-                    if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
+                    let level = ecs.resources.get::<Level>().unwrap();
+                    if let Some(mut camera) = level.resources.get_mut::<Camera>() {
                         log("Camera down");
                         camera.pos.y = camera.pos.y + 1;
                     }
+                    drop(level);
                 }
                 VirtualKeyCode::Left => {
-                    if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
+                    let level = ecs.resources.get::<Level>().unwrap();
+                    if let Some(mut camera) = level.resources.get_mut::<Camera>() {
                         camera.pos.x = camera.pos.x - 1;
                     }
+                    drop(level);
                 }
                 VirtualKeyCode::Up => {
-                    if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
+                    let level = ecs.resources.get::<Level>().unwrap();
+                    if let Some(mut camera) = level.resources.get_mut::<Camera>() {
                         camera.pos.y = camera.pos.y - 1;
                     }
+                    drop(level);
                 }
                 VirtualKeyCode::Right => {
-                    if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
+                    let level = ecs.resources.get::<Level>().unwrap();
+                    if let Some(mut camera) = level.resources.get_mut::<Camera>() {
                         camera.pos.x = camera.pos.x + 1;
                     }
+                    drop(level);
                 }
                 VirtualKeyCode::Equals => {
                     let size = self.viewport.size();
@@ -95,11 +108,13 @@ impl Screen for MainScreen {
                     log(format!("Viewport size={:?}", self.viewport.size()));
                 }
                 VirtualKeyCode::Minus => {
-                    let map_size = ecs.resources.get::<Map>().unwrap().get_size();
+                    let level = ecs.resources.get::<Level>().unwrap();
+                    let map_size = level.resources.get::<Map>().unwrap().get_size();
                     let size = self.viewport.size();
                     self.viewport
                         .resize((size.0 + 8).min(map_size.0), (size.1 + 5).min(map_size.1));
                     log(format!("Viewport size={:?}", self.viewport.size()));
+                    drop(level);
                 }
                 _ => {}
             },
@@ -188,10 +203,10 @@ fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32) ->
         forest_count = forest_count + count;
 
         let pct = forest_count as f32 / land_count as f32;
-        log(format!(
-            "spread forest @ {},{} => {} - pct land covered = {:.2}",
-            x, y, count, pct
-        ));
+        // log(format!(
+        //     "spread forest @ {},{} => {} - pct land covered = {:.2}",
+        //     x, y, count, pct
+        // ));
         if pct > 0.3 {
             break;
         }
@@ -206,6 +221,8 @@ fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32) ->
             map.set_tile(x, y, forest.clone());
         }
     }
+
+    // ADD TOWNS...
 
     map
 }
