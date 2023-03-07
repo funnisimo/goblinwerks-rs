@@ -10,9 +10,7 @@ use gw_world::actor::Actor;
 use gw_world::ai::user::ai_user_control;
 use gw_world::hero::Hero;
 use gw_world::level::Level;
-use gw_world::log::Logger;
 use gw_world::map::Map;
-use gw_world::memory::MapMemory;
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
 use gw_world::task::{DoNextActionResult, Executor};
@@ -51,8 +49,6 @@ impl MainScreen {
         let mut level = Level::new("WORLD");
 
         level.resources.insert(map);
-        level.resources.insert(MapMemory::new(160, 100));
-        level.resources.insert(Logger::new());
 
         // add position + sprite for actor
         let entity = level.world.push((
@@ -85,7 +81,6 @@ impl Screen for MainScreen {
         let resources = &mut ecs.resources;
         resources.get_or_insert_with(|| Tiles::default());
         resources.get_or_insert_with(|| Prefabs::default());
-        resources.get_or_insert_with(|| Logger::new());
 
         self.build_new_level(ecs);
     }

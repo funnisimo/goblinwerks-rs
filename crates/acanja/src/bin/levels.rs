@@ -1,13 +1,12 @@
 use acanja::map::prefab::{PrefabFileLoader, Prefabs};
+use acanja::map::town::build_town_map;
 use acanja::map::world::build_world_map;
 use gw_app::ecs::*;
 use gw_app::ecs::{systems::ResourceSet, Read};
 use gw_app::*;
 use gw_util::point::Point;
 use gw_world::level::{Level, Levels};
-use gw_world::log::Logger;
 use gw_world::map::Map;
-use gw_world::memory::MapMemory;
 use gw_world::tile::{TileFileLoader, Tiles};
 use gw_world::widget::{Camera, Viewport};
 
@@ -37,9 +36,24 @@ impl MainScreen {
         let mut level = Level::new("WORLD");
 
         level.resources.insert(map);
-        level.resources.insert(MapMemory::new(160, 100));
-        level.resources.insert(Logger::new());
+        level
+    }
 
+    fn build_new_town(&mut self, ecs: &mut Ecs) -> Level {
+        let mut map = {
+            let (tiles, prefabs) = <(Read<Tiles>, Read<Prefabs>)>::fetch(&ecs.resources);
+
+            log(format!("- prefabs: {}", prefabs.len()));
+            // let mut map = dig_room_level(&tiles, 80, 50);
+            build_town_map(&tiles, &prefabs, 160, 100)
+        };
+
+        map.reveal_all();
+        map.make_fully_visible();
+
+        let mut level = Level::new("WORLD");
+
+        level.resources.insert(map);
         level
     }
 
@@ -48,6 +62,20 @@ impl MainScreen {
 
         let index = levels.push(self.build_new_world(ecs));
         levels.set_current_index(index);
+
+        log(format!("Built world map - {}/{}", index, levels.len()));
+
+        levels.push(self.build_new_town(ecs));
+        levels.push(self.build_new_town(ecs));
+        levels.push(self.build_new_town(ecs));
+        levels.push(self.build_new_town(ecs));
+
+        log(format!(
+            "Built 4 town maps - total levels = {}",
+            levels.len()
+        ));
+
+        ecs.resources.insert(levels);
     }
 
     #[allow(dead_code)]
@@ -61,7 +89,7 @@ impl Screen for MainScreen {
         let resources = &mut ecs.resources;
         resources.get_or_insert_with(|| Tiles::default());
         resources.get_or_insert_with(|| Prefabs::default());
-        resources.get_or_insert_with(|| Logger::new());
+        resources.insert(Levels::new());
 
         self.build_new_levels(ecs);
     }
@@ -109,7 +137,12 @@ impl Screen for MainScreen {
                     self.viewport
                         .resize((size.0 + 8).min(map_size.0), (size.1 + 5).min(map_size.1));
                     log(format!("Viewport size={:?}", self.viewport.size()));
-                    drop(level);
+                }
+                VirtualKeyCode::Return => {
+                    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+                    let idx = levels.current_index();
+                    let next_idx = (idx + 1) % levels.len();
+                    levels.set_current_index(next_idx);
                 }
                 _ => {}
             },
@@ -145,6 +178,11 @@ impl Screen for MainScreen {
     }
 
     fn render(&mut self, app: &mut Ecs) {
+        {
+            let mut levels = app.resources.get_mut::<Levels>().unwrap();
+            let level = levels.current_mut();
+            self.viewport.draw_level(level);
+        }
         self.viewport.render(app);
     }
 }

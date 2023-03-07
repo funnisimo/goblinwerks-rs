@@ -12,7 +12,7 @@ struct MyRoguelike {
 
 impl MyRoguelike {
     fn new() -> Box<Self> {
-        let con = Panel::new(80, 50, FONT);
+        let con = Panel::new(1024 / 8, 768 / 8, FONT);
         Box::new(MyRoguelike { con })
     }
 }
@@ -50,6 +50,14 @@ impl Screen for MyRoguelike {
             (con_size.0 / 2) as i32,
             (con_size.1 / 2) as i32 + 2,
             &format!("screen: {} x {}", screen_size.0, screen_size.1),
+        );
+
+        let pot_size = buffer.pot_size();
+
+        draw::plain(buffer).align(TextAlign::Center).print(
+            (con_size.0 / 2) as i32,
+            (con_size.1 / 2) as i32 + 4,
+            &format!("pot size: {} x {}", pot_size.0, pot_size.1),
         );
 
         // buffer.back(

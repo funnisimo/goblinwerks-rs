@@ -3,11 +3,10 @@ use crate::action::{Action, ActionResult};
 use crate::actor::Actor;
 use crate::hero::Hero;
 use crate::level::Level;
-use crate::log::Logger;
 use crate::map::Map;
 use crate::position::Position;
 use gw_app::ecs::systems::ResourceSet;
-use gw_app::ecs::{Entity, EntityStore, Read, Write};
+use gw_app::ecs::{Entity, EntityStore, Read};
 
 #[derive(Copy, Clone, Debug)]
 pub struct MoveStepAction {
@@ -26,7 +25,7 @@ impl MoveStepAction {
             resources, world, ..
         } = level;
 
-        let (map, hero, mut log) = <(Read<Map>, Read<Hero>, Write<Logger>)>::fetch_mut(resources);
+        let (map, hero) = <(Read<Map>, Read<Hero>)>::fetch(resources);
 
         let entry = world.entry_mut(self.entity).unwrap();
 
@@ -78,7 +77,7 @@ impl MoveStepAction {
         if map.blocked_xy(new_x, new_y) {
             let flavor = &map.get_tile(new_x, new_y).unwrap().flavor;
             if actor_is_hero {
-                log.log(format!("Blocked by {}", flavor));
+                level.logger.log(format!("Blocked by {}", flavor));
             }
             return Some(ActionResult::Replace(Box::new(IdleAction::new(
                 self.entity,

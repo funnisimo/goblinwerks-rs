@@ -3,7 +3,6 @@ use crate::{
     actor::Actor,
     hero::Hero,
     level::Level,
-    log::Logger,
 };
 use gw_app::{ecs::Entity, screen::BoxedScreen};
 
@@ -131,8 +130,8 @@ impl Executor {
     }
 
     #[must_use]
-    pub fn do_next_action(&mut self, ecs: &mut Level) -> DoNextActionResult {
-        let hero_entity = ecs.resources.get::<Hero>().unwrap().entity;
+    pub fn do_next_action(&mut self, level: &mut Level) -> DoNextActionResult {
+        let hero_entity = level.resources.get::<Hero>().unwrap().entity;
 
         loop {
             match self.tasks.pop() {
@@ -140,15 +139,14 @@ impl Executor {
                 Some(entity) => {
                     let is_player = entity == hero_entity;
 
-                    match self.get_next_action(entity, ecs) {
+                    match self.get_next_action(entity, level) {
                         None => continue,
                         Some(mut action) => {
                             'inner: loop {
-                                match action.execute(ecs) {
+                                match action.execute(level) {
                                     ActionResult::Dead(_) => {
                                         // no rescedule - entity dead
-                                        let mut logger = ecs.resources.get_mut::<Logger>().unwrap();
-                                        logger.debug(format!("{:?} - Dead result", entity));
+                                        level.logger.debug(format!("{:?} - Dead result", entity));
                                         break 'inner;
                                     }
                                     ActionResult::Done(time) => {
@@ -158,8 +156,7 @@ impl Executor {
                                         break 'inner;
                                     }
                                     ActionResult::Fail(msg) => {
-                                        let mut logger = ecs.resources.get_mut::<Logger>().unwrap();
-                                        logger.debug(format!("#[violetred]{}", msg));
+                                        level.logger.debug(format!("#[violetred]{}", msg));
                                         self.tasks.unpop(entity); // reschedule in future?
                                         break 'inner;
                                     }

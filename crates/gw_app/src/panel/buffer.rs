@@ -1,6 +1,7 @@
 use crate::{
     color::RGBA,
     font::{default_to_glyph, ToGlyphFn},
+    log,
 };
 
 pub type Glyph = u32;
@@ -104,14 +105,18 @@ impl Buffer {
         }
         self.pot_height = pot_height;
         self.pot_width = pot_width;
-        self.back.clear();
-        self.fore.clear();
-        self.glyph.clear();
-        for _ in 0..(pot_width * pot_height) as usize {
-            self.back.push(RGBA::rgba(0, 0, 0, 255));
-            self.fore.push(RGBA::rgba(255, 255, 255, 255));
-            self.glyph.push(' ' as u32);
+        let size = (pot_width * pot_height) as usize;
+
+        if size > self.back.len() {
+            log("Buffer resized");
+            self.back.resize(size, RGBA::rgb(0, 0, 0));
+            self.fore.resize(size, RGBA::rgb(255, 255, 255));
+            self.glyph.resize(size, 0);
         }
+
+        self.back.fill(RGBA::rgb(0, 0, 0));
+        self.fore.fill(RGBA::rgb(255, 255, 255));
+        self.glyph.fill(0);
     }
 
     /// for fast reading of the characters values

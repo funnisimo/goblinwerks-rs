@@ -2,8 +2,6 @@ use gw_app::ecs::{systems::ResourceSet, Read};
 use gw_app::*;
 use gw_util::point::Point;
 use gw_world::level::Level;
-use gw_world::log::Logger;
-use gw_world::map::dump_map;
 use gw_world::memory::MapMemory;
 use gw_world::tile::{TileFileLoader, Tiles};
 use gw_world::widget::Viewport;
@@ -39,7 +37,6 @@ impl MainScreen {
 
         level.resources.insert(map);
         level.resources.insert(MapMemory::new(80, 50));
-        level.resources.insert(Logger::new());
 
         ecs.resources.insert(level);
     }
@@ -50,7 +47,6 @@ impl Screen for MainScreen {
         let resources = &mut ecs.resources;
         resources.get_or_insert_with(|| Tiles::default());
         resources.get_or_insert_with(|| Prefabs::default());
-        resources.get_or_insert_with(|| Logger::new());
 
         self.build_new_level(ecs);
     }

@@ -311,12 +311,13 @@ impl PanelProgram {
         gl.use_program(&self.program);
         let (pot_width, pot_height) = buffer.pot_size();
         let ascii_tex = WebGLTexture(self.ascii.0);
+        let data_len = (pot_width * pot_height) as usize;
         self.update_uniform_texture(
             gl,
             DoryenUniforms::Ascii,
             GLYPH_TEXTURE,
             &ascii_tex,
-            u32_to_u8(&buffer.glyphs()[..]),
+            u32_to_u8(&buffer.glyphs()[..data_len]),
             pot_width,
             pot_height,
         );
@@ -326,7 +327,7 @@ impl PanelProgram {
             DoryenUniforms::Foreground,
             FG_TEXTURE,
             &fore_tex,
-            color_to_u8(&buffer.foregrounds()[..]),
+            color_to_u8(&buffer.foregrounds()[..data_len]),
             pot_width,
             pot_height,
         );
@@ -336,7 +337,7 @@ impl PanelProgram {
             DoryenUniforms::Background,
             BG_TEXTURE,
             &back_tex,
-            color_to_u8(&buffer.backgrounds()[..]),
+            color_to_u8(&buffer.backgrounds()[..data_len]),
             pot_width,
             pot_height,
         );
