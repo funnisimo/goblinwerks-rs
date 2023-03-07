@@ -3,9 +3,7 @@ use acanja::map::town::build_town_map;
 use gw_app::ecs::{systems::ResourceSet, Read};
 use gw_app::*;
 use gw_util::point::Point;
-use gw_world::level::Level;
-use gw_world::map::dump_map;
-use gw_world::memory::MapMemory;
+use gw_world::map::Map;
 use gw_world::tile::{TileFileLoader, Tiles};
 use gw_world::widget::Viewport;
 
@@ -20,7 +18,7 @@ impl MainScreen {
         Box::new(MainScreen { viewport })
     }
 
-    fn build_new_level(&self, ecs: &mut Ecs) {
+    fn build_new_level(&mut self, ecs: &mut Ecs) {
         let mut map = {
             let (tiles, prefabs) = <(Read<Tiles>, Read<Prefabs>)>::fetch(&ecs.resources);
 
@@ -32,12 +30,8 @@ impl MainScreen {
         map.reveal_all();
         map.make_fully_visible();
 
-        let mut level = Level::new("TOWN");
-
-        level.resources.insert(map);
-        level.resources.insert(MapMemory::new(80, 50));
-
-        ecs.resources.insert(level);
+        ecs.resources.insert(map);
+        self.viewport.set_needs_draw();
     }
 }
 
@@ -87,6 +81,10 @@ impl Screen for MainScreen {
     }
 
     fn render(&mut self, app: &mut Ecs) {
+        {
+            let mut map = app.resources.get_mut::<Map>().unwrap();
+            self.viewport.draw_map(&mut *map, None, (0, 0), false);
+        }
         self.viewport.render(app);
     }
 }

@@ -11,7 +11,6 @@ use gw_world::ai::user::ai_user_control;
 use gw_world::hero::Hero;
 use gw_world::level::Level;
 use gw_world::log::Logger;
-use gw_world::map::dump_map;
 use gw_world::map::Map;
 use gw_world::memory::MapMemory;
 use gw_world::position::Position;
@@ -191,6 +190,10 @@ impl Screen for MainScreen {
     }
 
     fn render(&mut self, app: &mut Ecs) {
+        {
+            let mut level = app.resources.get_mut::<Level>().unwrap();
+            self.viewport.draw_level(&mut *level);
+        }
         self.viewport.render(app);
     }
 }

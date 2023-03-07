@@ -1,16 +1,11 @@
-use gw_app::{
-    ecs::{scoped_resource, Entity, EntityStore},
-    screen::BoxedScreen,
-    Ecs, ScreenResult,
-};
-
 use crate::{
-    action::{Action, ActionResult, BoxedAction},
+    action::{ActionResult, BoxedAction},
     actor::Actor,
     hero::Hero,
     level::Level,
     log::Logger,
 };
+use gw_app::{ecs::Entity, screen::BoxedScreen};
 
 #[derive(Copy, Clone, Debug)]
 struct TaskEntry {

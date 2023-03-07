@@ -1,3 +1,4 @@
+use gw_app::ecs::{Read, ResourceSet, Write};
 use gw_app::*;
 use gw_util::point::Point;
 use gw_world::map::{dig_room_level, dump_map, Map};
@@ -11,8 +12,7 @@ struct MainScreen {
 
 impl MainScreen {
     pub fn new() -> Box<Self> {
-        // viewport is 1/2 size that map will be...  So scroll around with arrow keys...
-        let viewport = Viewport::builder("VIEWPORT").size(40, 25).build();
+        let viewport = Viewport::builder("VIEWPORT").size(80, 50).build();
 
         Box::new(MainScreen { viewport })
     }
@@ -32,6 +32,7 @@ impl Screen for MainScreen {
         resources.insert(tiles);
         resources.insert(map);
         resources.insert(MapMemory::new(80, 50));
+        resources.insert(Camera::new().with_pos(40, 25));
     }
 
     fn input(&mut self, ecs: &mut Ecs, ev: &AppEvent) -> ScreenResult {
@@ -54,22 +55,22 @@ impl Screen for MainScreen {
                 VirtualKeyCode::Down => {
                     if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
                         log("Camera down");
-                        camera.pos.y = camera.pos.y + 1;
+                        camera.center.y = camera.center.y + 1;
                     }
                 }
                 VirtualKeyCode::Left => {
                     if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
-                        camera.pos.x = camera.pos.x - 1;
+                        camera.center.x = camera.center.x - 1;
                     }
                 }
                 VirtualKeyCode::Up => {
                     if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
-                        camera.pos.y = camera.pos.y - 1;
+                        camera.center.y = camera.center.y - 1;
                     }
                 }
                 VirtualKeyCode::Right => {
                     if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
-                        camera.pos.x = camera.pos.x + 1;
+                        camera.center.x = camera.center.x + 1;
                     }
                 }
                 VirtualKeyCode::Equals => {
@@ -110,6 +111,11 @@ impl Screen for MainScreen {
     }
 
     fn render(&mut self, app: &mut Ecs) {
+        {
+            let (mut map, camera) = <(Write<Map>, Read<Camera>)>::fetch_mut(&mut app.resources);
+            let offset = camera.offset_for(self.viewport.size());
+            self.viewport.draw_map(&mut map, None, offset, false);
+        }
         self.viewport.render(app);
     }
 }

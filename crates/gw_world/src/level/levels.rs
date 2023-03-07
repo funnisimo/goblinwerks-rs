@@ -17,8 +17,9 @@ impl Levels {
         self.cache.len()
     }
 
-    pub fn push(&mut self, level: Level) {
+    pub fn push(&mut self, level: Level) -> usize {
         self.cache.push(level);
+        self.cache.len() - 1
     }
 
     /// puts the given level into the given index, returns the old level

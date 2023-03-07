@@ -9,7 +9,7 @@ use gw_app::ecs::query::IntoQuery;
 use gw_app::ecs::Entity;
 use gw_app::ecs::{systems::ResourceSet, Read, Write};
 use gw_app::messages::Messages;
-use gw_app::{log, AppEvent, Buffer, ScreenResult};
+use gw_app::{log, AppEvent, ScreenResult};
 use gw_app::{Ecs, Panel};
 use gw_util::point::Point;
 use gw_util::rect::Rect;
@@ -63,16 +63,29 @@ impl AlwaysVisible {
 impl VisSource for AlwaysVisible {}
 
 pub struct Camera {
-    pub pos: Point,
+    pub center: Point,
     pub follows: Option<Entity>,
 }
 
 impl Camera {
     pub fn new() -> Self {
         Camera {
-            pos: Point::new(0, 0),
+            center: Point::new(0, 0),
             follows: None,
         }
+    }
+
+    pub fn with_pos(mut self, x: i32, y: i32) -> Self {
+        self.center.x = x;
+        self.center.y = y;
+        self
+    }
+
+    pub fn offset_for(&self, size: (u32, u32)) -> (i32, i32) {
+        (
+            self.center.x - size.0 as i32 / 2,
+            self.center.y - size.1 as i32 / 2,
+        )
     }
 }
 
@@ -81,8 +94,8 @@ pub fn update_camera_follows(level: &mut Level) {
         if let Some(ref entity) = camera.follows {
             if let Some(entry) = level.world.entry(*entity) {
                 if let Ok(pos) = entry.get_component::<Position>() {
-                    camera.pos.x = pos.x;
-                    camera.pos.y = pos.y;
+                    camera.center.x = pos.x;
+                    camera.center.y = pos.y;
                 }
             } else {
                 camera.follows = None;
@@ -125,6 +138,10 @@ impl Viewport {
         self.needs_draw = true;
     }
 
+    pub fn set_needs_draw(&mut self) {
+        self.needs_draw = true;
+    }
+
     pub fn input(&mut self, ecs: &mut Ecs, event: &AppEvent) -> Option<ScreenResult> {
         match event {
             AppEvent::MousePos(screen_pct) => match self.con.mouse_point(*screen_pct) {
@@ -159,36 +176,59 @@ impl Viewport {
         None
     }
 
-    pub fn render(&mut self, ecs: &mut Ecs) {
-        let mut level = match ecs.resources.get_mut::<Level>() {
-            None => panic!(
-                "Level not found.  Viewport uses Level resource to find map, camera, and memory."
-            ),
-            Some(level) => level,
-        };
-
+    pub fn draw_level(&mut self, level: &mut Level) {
         if !level.resources.contains::<Camera>() {
             let map_size = level.resources.get::<Map>().unwrap().get_size();
             let mut camera = Camera::new();
-            camera.pos = Point::new(map_size.0 as i32 / 2, map_size.1 as i32 / 2);
+            camera.center = Point::new(map_size.0 as i32 / 2, map_size.1 as i32 / 2);
             level.resources.insert(camera);
         }
 
         let viewport_needs_draw = {
             let camera = level.resources.get::<Camera>().unwrap();
-            let viewport_needs_draw = self.needs_draw || self.last_camera_pos != camera.pos; // viewport.needs_draw || map.needs_draw();
-            self.last_camera_pos = camera.pos;
+            let viewport_needs_draw = self.needs_draw || self.last_camera_pos != camera.center; // viewport.needs_draw || map.needs_draw();
+            self.last_camera_pos = camera.center;
             self.needs_draw = false;
             viewport_needs_draw
         };
 
-        // Do we need to draw?
-        draw_map(self, &mut level, viewport_needs_draw);
-        draw_actors(self, &mut level);
-        clear_needs_draw(self, &mut level);
+        let offset = {
+            let camera = level.resources.get::<Camera>().unwrap();
+            camera.offset_for(self.con.size())
+        };
 
-        drop(level);
+        if level.resources.contains::<MapMemory>() {
+            let (mut map, mut memory) =
+                <(Write<Map>, Write<MapMemory>)>::fetch_mut(&mut level.resources);
 
+            draw_map(
+                self,
+                &mut map,
+                Some(&mut memory),
+                offset,
+                viewport_needs_draw,
+            );
+        } else {
+            let mut map = level.resources.get_mut::<Map>().unwrap();
+            draw_map(self, &mut map, None, offset, viewport_needs_draw);
+        }
+
+        draw_actors(self, level);
+        clear_needs_draw(self, level);
+    }
+
+    pub fn draw_map(
+        &mut self,
+        map: &mut Map,
+        memory: Option<&mut MapMemory>,
+        offset: (i32, i32),
+        force_draw: bool,
+    ) {
+        let needs_draw = force_draw || self.needs_draw;
+        draw_map(self, map, memory, offset, needs_draw);
+    }
+
+    pub fn render(&mut self, ecs: &mut Ecs) {
         self.con.render(ecs);
     }
 }
@@ -232,10 +272,13 @@ impl ViewPortBuilder {
     }
 }
 
-fn draw_map(viewport: &mut Viewport, ecs: &mut Level, needs_draw: bool) {
-    let (mut map, mut memory, camera) =
-        <(Write<Map>, Write<MapMemory>, Read<Camera>)>::fetch_mut(&mut ecs.resources);
-
+fn draw_map(
+    viewport: &mut Viewport,
+    map: &mut Map,
+    mut memory: Option<&mut MapMemory>,
+    offset: (i32, i32),
+    force_draw: bool,
+) {
     let vis = AlwaysVisible::new();
     // let fov = global_world().get_fov(world.hero_entity()).unwrap().borrow();
 
@@ -245,8 +288,8 @@ fn draw_map(viewport: &mut Viewport, ecs: &mut Level, needs_draw: bool) {
     let buf = viewport.con.buffer_mut();
     // DO NOT CLEAR BUFFER!!!
 
-    let left = camera.pos.x - size.0 as i32 / 2;
-    let top = camera.pos.y - size.1 as i32 / 2;
+    let left = offset.0; // camera.pos.x - size.0 as i32 / 2;
+    let top = offset.1; // camera.pos.y - size.1 as i32 / 2;
     let black = BLACK.into();
 
     for y0 in 0..size.1 as i32 {
@@ -262,8 +305,8 @@ fn draw_map(viewport: &mut Viewport, ecs: &mut Level, needs_draw: bool) {
                 Some(idx) => idx,
             };
 
-            let needs_draw = needs_draw || map.needs_draw_idx(idx);
-            let needs_snapshot = map.needs_snapshot_idx(idx);
+            let needs_draw = force_draw || map.needs_draw_idx(idx);
+            let needs_snapshot = memory.is_none() || map.needs_snapshot_idx(idx);
             let (visible, revealed, mapped) = match vis.get_vis_type(idx) {
                 VisType::MAPPED => (false, false, true),
                 VisType::REVEALED => (false, true, false),
@@ -276,29 +319,33 @@ fn draw_map(viewport: &mut Viewport, ecs: &mut Level, needs_draw: bool) {
                 // println!("draw : {}", idx);
 
                 if revealed || mapped {
-                    if needs_snapshot {
-                        // println!(": tile changed - {},{}", x, y);
-                        match map.get_tile_at_idx(idx) {
-                            None => {
-                                buf.print_opt(
-                                    x0,
-                                    y0,
-                                    Some('!'),
-                                    Some(named::RED.into()),
-                                    Some(named::BLACK.into()),
-                                );
-                                continue;
-                            }
-                            Some(tile) => {
-                                memory.set_sprite(x, y, tile.fg, tile.bg, tile.glyph);
-                                map.clear_needs_snapshot_idx(idx);
+                    let (glyph, mut fg, mut bg) = match needs_snapshot {
+                        true => {
+                            // println!(": tile changed - {},{}", x, y);
+                            match map.get_tile_at_idx(idx) {
+                                None => {
+                                    buf.print_opt(
+                                        x0,
+                                        y0,
+                                        Some('!'),
+                                        Some(named::RED.into()),
+                                        Some(named::BLACK.into()),
+                                    );
+                                    continue;
+                                }
+                                Some(tile) => {
+                                    if let Some(memory) = memory.as_mut() {
+                                        memory.set_sprite(x, y, tile.fg, tile.bg, tile.glyph);
+                                        map.clear_needs_snapshot_idx(idx);
+                                    }
+                                    (tile.glyph, tile.fg.clone(), tile.bg.clone())
+                                }
                             }
                         }
-                    }
-
-                    let (glyph, mut fg, mut bg) = match memory.get_sprite(x, y) {
-                        Some(buf) => (buf.glyph, buf.fg.clone(), buf.bg.clone()),
-                        None => (0, RGBA::new(), RGBA::new()),
+                        false => match memory.as_mut().unwrap().get_sprite(x, y) {
+                            Some(buf) => (buf.glyph, buf.fg.clone(), buf.bg.clone()),
+                            None => (0, RGBA::new(), RGBA::new()),
+                        },
                     };
 
                     if mapped {
@@ -380,8 +427,8 @@ fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
     let buf = viewport.con.buffer_mut();
     // DO NOT CLEAR BUFFER!!!
 
-    let left = camera.pos.x - size.0 as i32 / 2;
-    let top = camera.pos.y - size.1 as i32 / 2;
+    let left = camera.center.x - size.0 as i32 / 2;
+    let top = camera.center.y - size.1 as i32 / 2;
     let bounds = Rect::with_size(left, top, size.0 as i32, size.1 as i32);
 
     let mut query = <(&Position, &Sprite)>::query();
@@ -420,8 +467,8 @@ fn clear_needs_draw(viewport: &mut Viewport, ecs: &mut Level) {
 
     let size = viewport.con.size();
 
-    let left = camera.pos.x - size.0 as i32 / 2;
-    let top = camera.pos.y - size.1 as i32 / 2;
+    let left = camera.center.x - size.0 as i32 / 2;
+    let top = camera.center.y - size.1 as i32 / 2;
 
     for y0 in 0..size.1 as i32 {
         let y = y0 + top;

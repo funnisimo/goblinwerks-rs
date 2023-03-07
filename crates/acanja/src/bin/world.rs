@@ -1,14 +1,9 @@
 use acanja::map::prefab::{PrefabFileLoader, Prefabs};
 use acanja::map::world::build_world_map;
-// use acanja::map::world::build_world_map;
 use gw_app::ecs::{systems::ResourceSet, Read};
 use gw_app::*;
-use gw_util::blob::{Blob, BlobConfig};
-use gw_util::grid::{spread_replace, Grid};
 use gw_util::point::Point;
-use gw_util::rng::{RandomNumberGenerator, RngCore};
 use gw_world::level::Level;
-use gw_world::map::dump_map;
 use gw_world::map::Map;
 use gw_world::memory::MapMemory;
 use gw_world::tile::{TileFileLoader, Tiles};
@@ -77,28 +72,28 @@ impl Screen for MainScreen {
                     let level = ecs.resources.get::<Level>().unwrap();
                     if let Some(mut camera) = level.resources.get_mut::<Camera>() {
                         log("Camera down");
-                        camera.pos.y = camera.pos.y + 1;
+                        camera.center.y = camera.center.y + 1;
                     }
                     drop(level);
                 }
                 VirtualKeyCode::Left => {
                     let level = ecs.resources.get::<Level>().unwrap();
                     if let Some(mut camera) = level.resources.get_mut::<Camera>() {
-                        camera.pos.x = camera.pos.x - 1;
+                        camera.center.x = camera.center.x - 1;
                     }
                     drop(level);
                 }
                 VirtualKeyCode::Up => {
                     let level = ecs.resources.get::<Level>().unwrap();
                     if let Some(mut camera) = level.resources.get_mut::<Camera>() {
-                        camera.pos.y = camera.pos.y - 1;
+                        camera.center.y = camera.center.y - 1;
                     }
                     drop(level);
                 }
                 VirtualKeyCode::Right => {
                     let level = ecs.resources.get::<Level>().unwrap();
                     if let Some(mut camera) = level.resources.get_mut::<Camera>() {
-                        camera.pos.x = camera.pos.x + 1;
+                        camera.center.x = camera.center.x + 1;
                     }
                     drop(level);
                 }
@@ -141,6 +136,10 @@ impl Screen for MainScreen {
     }
 
     fn render(&mut self, app: &mut Ecs) {
+        {
+            let mut level = app.resources.get_mut::<Level>().unwrap();
+            self.viewport.draw_level(&mut *level);
+        }
         self.viewport.render(app);
     }
 }

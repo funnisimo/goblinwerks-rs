@@ -5,6 +5,8 @@ use crate::messages::Messages;
 use crate::panel::PanelProgram;
 use crate::{font::Fonts, log, App, AppConfig, AppInput};
 use legion::systems::Resource;
+
+pub use legion::systems::ResourceSet;
 pub use legion::*;
 
 #[derive(Debug, Clone)]

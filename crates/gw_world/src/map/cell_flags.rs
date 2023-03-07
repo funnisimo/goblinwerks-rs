@@ -67,6 +67,7 @@ impl FromStr for CellFlags {
                 "IS_HIGHLIGHTED" => result |= CellFlags::IS_HIGHLIGHTED,
 
                 "NEEDS_DRAW" => result |= CellFlags::NEEDS_DRAW,
+                "DRAWN_THIS_FRAME" => result |= CellFlags::DRAWN_THIS_FRAME,
                 "NEEDS_SNAPSHOT" => result |= CellFlags::NEEDS_SNAPSHOT,
                 "TILE_CHANGED" => result |= CellFlags::TILE_CHANGED,
                 "ENTITY_CHANGED" => result |= CellFlags::ENTITY_CHANGED,

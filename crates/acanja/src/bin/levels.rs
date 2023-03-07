@@ -4,7 +4,7 @@ use gw_app::ecs::*;
 use gw_app::ecs::{systems::ResourceSet, Read};
 use gw_app::*;
 use gw_util::point::Point;
-use gw_world::level::Level;
+use gw_world::level::{Level, Levels};
 use gw_world::log::Logger;
 use gw_world::map::Map;
 use gw_world::memory::MapMemory;
@@ -22,7 +22,7 @@ impl MainScreen {
         Box::new(MainScreen { viewport })
     }
 
-    fn build_new_level(&mut self, ecs: &mut Ecs) {
+    fn build_new_world(&mut self, ecs: &mut Ecs) -> Level {
         let mut map = {
             let (tiles, prefabs) = <(Read<Tiles>, Read<Prefabs>)>::fetch(&ecs.resources);
 
@@ -40,7 +40,14 @@ impl MainScreen {
         level.resources.insert(MapMemory::new(160, 100));
         level.resources.insert(Logger::new());
 
-        ecs.resources.insert(level);
+        level
+    }
+
+    fn build_new_levels(&mut self, ecs: &mut Ecs) {
+        let mut levels = Levels::new();
+
+        let index = levels.push(self.build_new_world(ecs));
+        levels.set_current_index(index);
     }
 
     #[allow(dead_code)]
@@ -56,7 +63,7 @@ impl Screen for MainScreen {
         resources.get_or_insert_with(|| Prefabs::default());
         resources.get_or_insert_with(|| Logger::new());
 
-        self.build_new_level(ecs);
+        self.build_new_levels(ecs);
     }
 
     fn input(&mut self, ecs: &mut Ecs, ev: &AppEvent) -> ScreenResult {
@@ -67,30 +74,26 @@ impl Screen for MainScreen {
         match ev {
             AppEvent::KeyDown(key_down) => match key_down.key_code {
                 VirtualKeyCode::Space => {
-                    self.build_new_level(ecs);
+                    self.build_new_levels(ecs);
                 }
                 VirtualKeyCode::Escape => {
                     return ScreenResult::Quit;
                 }
                 VirtualKeyCode::Down => {
-                    let mut level = ecs.resources.get_mut::<Level>().unwrap();
-                    move_camera(&mut *level, 0, 1);
-                    drop(level);
+                    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+                    move_camera(&mut *levels, 0, 1);
                 }
                 VirtualKeyCode::Left => {
-                    let mut level = ecs.resources.get_mut::<Level>().unwrap();
-                    move_camera(&mut *level, -1, 0);
-                    drop(level);
+                    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+                    move_camera(&mut *levels, -1, 0);
                 }
                 VirtualKeyCode::Up => {
-                    let mut level = ecs.resources.get_mut::<Level>().unwrap();
-                    move_camera(&mut *level, 0, -1);
-                    drop(level);
+                    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+                    move_camera(&mut *levels, 0, -1);
                 }
                 VirtualKeyCode::Right => {
-                    let mut level = ecs.resources.get_mut::<Level>().unwrap();
-                    move_camera(&mut *level, 1, 0);
-                    drop(level);
+                    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+                    move_camera(&mut *levels, 1, 0);
                 }
                 VirtualKeyCode::Equals => {
                     let size = self.viewport.size();
@@ -99,7 +102,8 @@ impl Screen for MainScreen {
                     log(format!("Viewport size={:?}", self.viewport.size()));
                 }
                 VirtualKeyCode::Minus => {
-                    let level = ecs.resources.get::<Level>().unwrap();
+                    let levels = ecs.resources.get::<Levels>().unwrap();
+                    let level = levels.current();
                     let map_size = level.resources.get::<Map>().unwrap().get_size();
                     let size = self.viewport.size();
                     self.viewport
@@ -162,8 +166,9 @@ fn main() {
     app.run(MainScreen::new());
 }
 
-fn move_camera(level: &mut Level, dx: i32, dy: i32) {
+fn move_camera(levels: &mut Levels, dx: i32, dy: i32) {
+    let level = levels.current_mut();
     let mut camera = level.resources.get_mut::<Camera>().unwrap();
-    camera.pos.x = camera.pos.x + dx;
-    camera.pos.y = camera.pos.y + dy;
+    camera.center.x = camera.center.x + dx;
+    camera.center.y = camera.center.y + dy;
 }
