@@ -58,7 +58,7 @@ impl MainScreen {
             Actor::new(ai_user_control),
         ));
 
-        let mut camera = Camera::new();
+        let mut camera = Camera::new(80, 50);
         camera.follows = Some(entity);
         level.resources.insert(camera);
 

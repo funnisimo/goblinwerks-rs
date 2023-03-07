@@ -32,7 +32,7 @@ impl Screen for MainScreen {
         resources.insert(tiles);
         resources.insert(map);
         resources.insert(MapMemory::new(80, 50));
-        resources.insert(Camera::new().with_pos(40, 25));
+        resources.insert(Camera::new(80, 50));
     }
 
     fn input(&mut self, ecs: &mut Ecs, ev: &AppEvent) -> ScreenResult {

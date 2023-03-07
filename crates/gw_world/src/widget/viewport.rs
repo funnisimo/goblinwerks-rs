@@ -65,17 +65,19 @@ impl VisSource for AlwaysVisible {}
 pub struct Camera {
     pub center: Point,
     pub follows: Option<Entity>,
+    pub size: (u32, u32),
 }
 
 impl Camera {
-    pub fn new() -> Self {
+    pub fn new(width: u32, height: u32) -> Self {
         Camera {
-            center: Point::new(0, 0),
+            center: Point::new(width as i32 / 2, height as i32 / 2),
             follows: None,
+            size: (width, height),
         }
     }
 
-    pub fn with_pos(mut self, x: i32, y: i32) -> Self {
+    pub fn with_center(mut self, x: i32, y: i32) -> Self {
         self.center.x = x;
         self.center.y = y;
         self
@@ -86,6 +88,10 @@ impl Camera {
             self.center.x - size.0 as i32 / 2,
             self.center.y - size.1 as i32 / 2,
         )
+    }
+
+    pub fn resize(&mut self, width: u32, height: u32) {
+        self.size = (width, height);
     }
 }
 
@@ -179,8 +185,7 @@ impl Viewport {
     pub fn draw_level(&mut self, level: &mut Level) {
         if !level.resources.contains::<Camera>() {
             let map_size = level.resources.get::<Map>().unwrap().get_size();
-            let mut camera = Camera::new();
-            camera.center = Point::new(map_size.0 as i32 / 2, map_size.1 as i32 / 2);
+            let camera = Camera::new(map_size.0, map_size.1);
             level.resources.insert(camera);
         }
 
@@ -194,6 +199,9 @@ impl Viewport {
 
         let offset = {
             let camera = level.resources.get::<Camera>().unwrap();
+            if self.con.size() != camera.size {
+                self.resize(camera.size.0, camera.size.1);
+            }
             camera.offset_for(self.con.size())
         };
 
