@@ -132,6 +132,7 @@ impl Screen for MainScreen {
                     let size = camera.size;
                     camera.resize((size.0 - 8).max(16), (size.1 - 5).max(10));
                     log(format!("Viewport size={:?}", self.viewport.size()));
+                    self.viewport.set_needs_draw();
                 }
                 VirtualKeyCode::Minus => {
                     // zoom out
@@ -143,6 +144,7 @@ impl Screen for MainScreen {
                     let size = camera.size;
                     camera.resize((size.0 + 8).min(map_size.0), (size.1 + 5).min(map_size.1));
                     log(format!("Viewport size={:?}", self.viewport.size()));
+                    self.viewport.set_needs_draw();
                 }
                 VirtualKeyCode::Return => {
                     let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
