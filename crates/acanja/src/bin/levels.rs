@@ -1,40 +1,25 @@
 use acanja::map::prefab::{PrefabFileLoader, Prefabs};
 use acanja::map::world::build_world_map;
-use gw_app::color::named::WHITE;
 use gw_app::ecs::*;
 use gw_app::ecs::{systems::ResourceSet, Read};
 use gw_app::*;
 use gw_util::point::Point;
-use gw_world::action::move_step::MoveStepAction;
-use gw_world::actor::Actor;
-use gw_world::ai::user::ai_user_control;
-use gw_world::hero::Hero;
 use gw_world::level::Level;
 use gw_world::log::Logger;
-use gw_world::map::dump_map;
 use gw_world::map::Map;
 use gw_world::memory::MapMemory;
-use gw_world::position::Position;
-use gw_world::sprite::Sprite;
-use gw_world::task::{DoNextActionResult, Executor};
 use gw_world::tile::{TileFileLoader, Tiles};
-use gw_world::widget::{update_camera_follows, Camera, Viewport};
-
-struct UserControl;
+use gw_world::widget::{Camera, Viewport};
 
 struct MainScreen {
     viewport: Viewport,
-    executor: Executor,
 }
 
 impl MainScreen {
     pub fn new() -> Box<Self> {
-        let viewport = Viewport::builder("VIEWPORT").size(80, 50).build();
+        let viewport = Viewport::builder("VIEWPORT").size(160, 100).build();
 
-        Box::new(MainScreen {
-            viewport,
-            executor: Executor::new(),
-        })
+        Box::new(MainScreen { viewport })
     }
 
     fn build_new_level(&mut self, ecs: &mut Ecs) {
@@ -49,35 +34,18 @@ impl MainScreen {
         map.reveal_all();
         map.make_fully_visible();
 
-        let mut level = Level::new();
+        let mut level = Level::new("WORLD");
 
         level.resources.insert(map);
         level.resources.insert(MapMemory::new(160, 100));
         level.resources.insert(Logger::new());
 
-        // add position + sprite for actor
-        let entity = level.world.push((
-            Position::new(80, 50),
-            Sprite::new('@' as Glyph, WHITE.into(), RGBA::new()),
-            UserControl, // Do we need this?
-            Actor::new(ai_user_control),
-        ));
-
-        let mut camera = Camera::new();
-        camera.follows = Some(entity);
-        level.resources.insert(camera);
-
-        level.resources.insert(Hero::new(entity));
-
-        self.executor.clear();
-        self.executor.insert(entity, 0);
-
         ecs.resources.insert(level);
     }
 
-    fn post_action(&mut self, level: &mut Level) {
+    #[allow(dead_code)]
+    fn post_action(&mut self, _level: &mut Level) {
         // Post Update
-        update_camera_follows(level);
     }
 }
 
@@ -106,22 +74,22 @@ impl Screen for MainScreen {
                 }
                 VirtualKeyCode::Down => {
                     let mut level = ecs.resources.get_mut::<Level>().unwrap();
-                    move_hero(&mut *level, 0, 1);
+                    move_camera(&mut *level, 0, 1);
                     drop(level);
                 }
                 VirtualKeyCode::Left => {
                     let mut level = ecs.resources.get_mut::<Level>().unwrap();
-                    move_hero(&mut *level, -1, 0);
+                    move_camera(&mut *level, -1, 0);
                     drop(level);
                 }
                 VirtualKeyCode::Up => {
                     let mut level = ecs.resources.get_mut::<Level>().unwrap();
-                    move_hero(&mut *level, 0, -1);
+                    move_camera(&mut *level, 0, -1);
                     drop(level);
                 }
                 VirtualKeyCode::Right => {
                     let mut level = ecs.resources.get_mut::<Level>().unwrap();
-                    move_hero(&mut *level, 1, 0);
+                    move_camera(&mut *level, 1, 0);
                     drop(level);
                 }
                 VirtualKeyCode::Equals => {
@@ -147,32 +115,14 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn update(&mut self, ecs: &mut Ecs) -> ScreenResult {
+    fn update(&mut self, _ecs: &mut Ecs) -> ScreenResult {
         // Pre Update
 
-        let mut level = ecs.resources.get_mut::<Level>().unwrap();
         // Update
-        loop {
-            // if world.is_game_over() {
-            //     return (self.game_over)(world, ctx);
-            // } else if !world.animations().is_empty() {
-            //     return ScreenResult::Continue;
-            // }
-            let res = self.executor.do_next_action(&mut *level);
-            self.post_action(&mut *level);
-            match res {
-                DoNextActionResult::Done => {
-                    return ScreenResult::Continue;
-                }
-                DoNextActionResult::Mob => {
-                    continue;
-                }
-                DoNextActionResult::Hero => {
-                    return ScreenResult::Continue;
-                }
-                DoNextActionResult::PushMode(mode) => return ScreenResult::Push(mode),
-            }
-        }
+
+        // post update
+
+        ScreenResult::Continue
     }
 
     fn message(&mut self, _app: &mut Ecs, id: String, value: Option<Value>) -> ScreenResult {
@@ -212,10 +162,8 @@ fn main() {
     app.run(MainScreen::new());
 }
 
-fn move_hero(level: &mut Level, dx: i32, dy: i32) {
-    let hero_entity = level.resources.get::<Hero>().unwrap().entity;
-
-    let mut entry = level.world.entry(hero_entity).unwrap();
-    let actor = entry.get_component_mut::<Actor>().unwrap();
-    actor.next_action = Some(Box::new(MoveStepAction::new(hero_entity, dx, dy)));
+fn move_camera(level: &mut Level, dx: i32, dy: i32) {
+    let mut camera = level.resources.get_mut::<Camera>().unwrap();
+    camera.pos.x = camera.pos.x + dx;
+    camera.pos.y = camera.pos.y + dy;
 }

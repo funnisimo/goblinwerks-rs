@@ -32,7 +32,7 @@ impl MainScreen {
         map.reveal_all();
         map.make_fully_visible();
 
-        let mut level = Level::new();
+        let mut level = Level::new("TOWN");
 
         level.resources.insert(map);
         level.resources.insert(MapMemory::new(80, 50));
