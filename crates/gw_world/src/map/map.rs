@@ -1,4 +1,5 @@
 use super::{CellFlags, MapFlags};
+use super::{CellMut, CellRef};
 // use crate::fov::FovSource;
 use crate::tile::Tile;
 use crate::tile::TileLayer;
@@ -210,6 +211,20 @@ impl Map {
             self.cell_flags[idx].insert(CellFlags::NEEDS_DRAW | CellFlags::TILE_CHANGED);
         }
         self.any_tile_change = true;
+    }
+
+    pub fn get_cell(&self, x: i32, y: i32) -> Option<CellRef> {
+        match self.to_idx(x, y) {
+            None => None,
+            Some(idx) => Some(CellRef::new(self, idx)),
+        }
+    }
+
+    pub fn get_cell_mut(&mut self, x: i32, y: i32) -> Option<CellMut> {
+        match self.to_idx(x, y) {
+            None => None,
+            Some(idx) => Some(CellMut::new(self, idx)),
+        }
     }
 
     pub fn reset_tiles(&mut self, x: i32, y: i32, ground: Arc<Tile>) {

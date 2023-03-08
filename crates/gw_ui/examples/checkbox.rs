@@ -132,9 +132,9 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn message(&mut self, _app: &mut Ecs, id: String, _value: Option<Value>) -> ScreenResult {
+    fn message(&mut self, _app: &mut Ecs, id: &str, _value: Option<Value>) -> ScreenResult {
         log(format!("message - {}", id));
-        match id.as_str() {
+        match id {
             "LEFT" | "RIGHT" | "CENTER" => {
                 self.ui
                     .find_by_id("ALIGN_MSG")

@@ -7,7 +7,7 @@ use gw_app::messages::Messages;
 use gw_app::*;
 use gw_util::point::Point;
 use gw_world::level::{Level, Levels};
-use gw_world::map::Map;
+use gw_world::map::{Cell, Map};
 use gw_world::tile::{TileFileLoader, Tiles};
 use gw_world::widget::{Camera, Viewport};
 
@@ -178,8 +178,8 @@ impl Screen for MainScreen {
                 let levels = ecs.resources.get::<Levels>().unwrap();
                 let level = levels.current();
                 let map = level.resources.get::<Map>().unwrap();
-                let tiles = map.get_tiles(pt.x, pt.y);
-                log(format!("Mouse Pos = {} - {}", pt, tiles.flavor()));
+                let cell = map.get_cell(pt.x, pt.y).unwrap();
+                log(format!("Mouse Pos = {} - {}", pt, cell.flavor()));
             }
             "VIEWPORT_CLICK" => {
                 let pt: Point = value.unwrap().try_into().unwrap();

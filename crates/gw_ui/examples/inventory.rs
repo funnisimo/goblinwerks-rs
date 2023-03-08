@@ -120,8 +120,8 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn message(&mut self, app: &mut Ecs, id: String, value: Option<Value>) -> ScreenResult {
-        match id.as_str() {
+    fn message(&mut self, app: &mut Ecs, id: &str, value: Option<Value>) -> ScreenResult {
+        match id {
             "CREATE" => {
                 let (item_kinds,) = <(Read<ItemKinds>,)>::fetch(&app.resources);
 

@@ -96,9 +96,9 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn message(&mut self, _app: &mut Ecs, id: String, value: Option<Value>) -> ScreenResult {
+    fn message(&mut self, _app: &mut Ecs, id: &str, value: Option<Value>) -> ScreenResult {
         log(format!("message - {}", id));
-        match id.as_str() {
+        match id {
             "PICK" => {
                 self.ui
                     .find_by_id("PICK_MSG")
