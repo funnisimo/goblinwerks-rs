@@ -241,10 +241,10 @@ mod test {
         let mut map = Map::new(20, 20);
         let tiles = Tiles::default();
         map.fill(tiles.get("FLOOR").unwrap());
-        map.set_tile(10, 9, tiles.get("WALL").unwrap());
-        map.set_tile(7, 10, tiles.get("WALL").unwrap());
-        map.set_tile(14, 9, tiles.get("WALL").unwrap());
-        map.set_tile(10, 11, tiles.get("WALL").unwrap());
+        map.reset_tiles(10, 9, tiles.get("WALL").unwrap());
+        map.reset_tiles(7, 10, tiles.get("WALL").unwrap());
+        map.reset_tiles(14, 9, tiles.get("WALL").unwrap());
+        map.reset_tiles(10, 11, tiles.get("WALL").unwrap());
         ecs.resources.insert(map);
 
         let entity = ecs.world.push((Position::new(10, 10),));
@@ -265,10 +265,10 @@ mod test {
         let mut map = Map::new(20, 20);
         let tiles = Tiles::default();
         map.fill(tiles.get("FLOOR").unwrap());
-        map.set_tile(10, 9, tiles.get("WALL").unwrap());
-        map.set_tile(7, 10, tiles.get("WALL").unwrap());
-        map.set_tile(14, 9, tiles.get("WALL").unwrap());
-        map.set_tile(10, 11, tiles.get("WALL").unwrap());
+        map.reset_tiles(10, 9, tiles.get("WALL").unwrap());
+        map.reset_tiles(7, 10, tiles.get("WALL").unwrap());
+        map.reset_tiles(14, 9, tiles.get("WALL").unwrap());
+        map.reset_tiles(10, 11, tiles.get("WALL").unwrap());
         ecs.resources.insert(map);
 
         let entity = ecs.world.push((Position::new(10, 10),));

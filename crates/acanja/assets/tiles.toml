@@ -78,7 +78,7 @@ move   = "BLOCKS_MOVE"
 
 [TOWN]
 kind   = "FLOOR"
-sprite = "0x7F|WHITE|DARK_GRAY"
+sprite = "0x7F|YELLOW|NONE"
 flavor = "a town"
 move   = "PORTAL_DOWN"
 

@@ -4,8 +4,8 @@ use gw_util::blob::{Blob, BlobConfig};
 use gw_util::grid::{spread_replace, Grid};
 use gw_util::noise::{get_noise, print_histogram, square_bump, NoiseConfig};
 use gw_util::rng::{RandomNumberGenerator, RngCore};
-use gw_world::map::{Builder, Map};
-use gw_world::tile::Tiles;
+use gw_world::map::{find_random_point, Builder, Map};
+use gw_world::tile::{TileKind, Tiles};
 
 pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32) -> Map {
     let mut map = Map::new(width, height);
@@ -62,13 +62,21 @@ pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32
     let forest = tiles.get("FOREST").unwrap();
     for (x, y, v) in grid.iter() {
         if *v == 1 {
-            map.set_tile(x, y, grassland.clone());
+            map.reset_tiles(x, y, grassland.clone());
         } else if *v == 2 {
-            map.set_tile(x, y, forest.clone());
+            map.reset_tiles(x, y, forest.clone());
         }
     }
 
     // ADD TOWNS...
+    for _ in 0..4 {
+        let town_loc = find_random_point(&mut map, &mut rng, |_x, _y, tiles| {
+            tiles.ground().kind == TileKind::FLOOR && tiles.feature().is_null()
+        })
+        .expect("Failed to find town location");
+
+        map.place_feature(town_loc.x, town_loc.y, tiles.get("TOWN").unwrap());
+    }
 
     map
 }

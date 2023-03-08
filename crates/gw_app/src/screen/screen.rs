@@ -76,7 +76,7 @@ pub trait Screen {
     fn resume(&mut self, ecs: &mut Ecs) {}
 
     /// called when a message is sent via app.send_message(...)
-    fn message(&mut self, ecs: &mut Ecs, id: String, data: Option<Value>) -> ScreenResult {
+    fn message(&mut self, ecs: &mut Ecs, id: &str, data: Option<Value>) -> ScreenResult {
         ScreenResult::Continue
     }
 

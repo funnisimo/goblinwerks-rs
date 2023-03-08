@@ -1,6 +1,5 @@
 use crate::tile::{Tile, Tiles};
 use crate::{map::Map, tile::TileKind};
-use gw_app::log;
 use gw_util::rect::Rect;
 use gw_util::rng::RandomNumberGenerator;
 use std::cmp::{max, min};
@@ -48,7 +47,7 @@ impl<'t> Builder<'t> {
             None => panic!("Tile does not exist - {}", name),
             Some(tile) => {
                 // log(format!("set_tile({},{},{}", x, y, name));s
-                self.map.set_tile(x, y, tile);
+                self.map.reset_tiles(x, y, tile);
             }
         };
     }
@@ -71,13 +70,13 @@ impl<'t> Builder<'t> {
         let map = &mut self.map;
 
         for x in 0..=right {
-            map.set_tile(x, 0, wall.clone());
-            map.set_tile(x, bottom, wall.clone());
+            map.reset_tiles(x, 0, wall.clone());
+            map.reset_tiles(x, bottom, wall.clone());
         }
 
         for y in 0..=bottom {
-            map.set_tile(0, y, wall.clone());
-            map.set_tile(right, y, wall.clone());
+            map.reset_tiles(0, y, wall.clone());
+            map.reset_tiles(right, y, wall.clone());
         }
         self
     }
@@ -91,7 +90,7 @@ impl<'t> Builder<'t> {
         for _i in 0..count {
             let x = self.rng.roll_dice(1, 79);
             let y = self.rng.roll_dice(1, 49);
-            map.set_tile(x, y, tile.clone());
+            map.reset_tiles(x, y, tile.clone());
         }
         self
     }
@@ -101,7 +100,7 @@ impl<'t> Builder<'t> {
         for x in min(x1, x2)..=max(x1, x2) {
             if !self.get_tile(x, y).kind.contains(TileKind::FLOOR) {
                 let map = &mut self.map;
-                map.set_tile(x, y, hall.clone());
+                map.reset_tiles(x, y, hall.clone());
             }
         }
         self
@@ -112,7 +111,7 @@ impl<'t> Builder<'t> {
         for y in min(y1, y2)..=max(y1, y2) {
             if !self.get_tile(x, y).kind.contains(TileKind::FLOOR) {
                 let map = &mut self.map;
-                map.set_tile(x, y, hall.clone());
+                map.reset_tiles(x, y, hall.clone());
             }
         }
         self
@@ -142,7 +141,7 @@ impl<'t> Builder<'t> {
         let tile = self.tiles.get(name).unwrap();
         for y in room.y1 + 1..=room.y2 {
             for x in room.x1 + 1..=room.x2 {
-                map.set_tile(x, y, tile.clone());
+                map.reset_tiles(x, y, tile.clone());
             }
         }
 

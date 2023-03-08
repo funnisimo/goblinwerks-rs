@@ -29,7 +29,7 @@ impl MainScreen {
 }
 
 impl Screen for MainScreen {
-    fn message(&mut self, _app: &mut Ecs, _id: String, value: Option<Value>) -> ScreenResult {
+    fn message(&mut self, _app: &mut Ecs, _id: &str, value: Option<Value>) -> ScreenResult {
         match value {
             Some(Value::Boolean(true)) => {
                 log("You chose to quit.");

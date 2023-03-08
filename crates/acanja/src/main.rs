@@ -72,8 +72,8 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn message(&mut self, _app: &mut Ecs, id: String, value: Option<Value>) -> ScreenResult {
-        match id.as_str() {
+    fn message(&mut self, _app: &mut Ecs, id: &str, value: Option<Value>) -> ScreenResult {
+        match id {
             "VIEWPORT_MOVE" => {
                 // let pt: Point = value.unwrap().try_into().unwrap();
                 // log(format!("Mouse Pos = {}", pt));

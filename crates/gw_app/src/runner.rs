@@ -191,7 +191,7 @@ impl Runner {
 
         for (id, val) in messages {
             if let Some(screen) = self.screens.last_mut() {
-                match screen.message(ctx, id, val) {
+                match screen.message(ctx, &id, val) {
                     ScreenResult::Capture(name) => return Some(RunnerEvent::Capture(name)),
                     ScreenResult::Pop => {
                         clear_screen(ctx, None);

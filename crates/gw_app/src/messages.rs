@@ -15,7 +15,11 @@ impl Messages {
         self.data.as_mut().unwrap().push((id.to_string(), data));
     }
 
-    pub fn take(&mut self) -> Vec<(String, Option<Value>)> {
+    pub(crate) fn take(&mut self) -> Vec<(String, Option<Value>)> {
         self.data.replace(Vec::new()).unwrap()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &(String, Option<Value>)> {
+        self.data.as_ref().unwrap().iter()
     }
 }

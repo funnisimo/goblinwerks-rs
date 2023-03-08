@@ -284,7 +284,7 @@ impl Screen for MultiChoice {
         ScreenResult::Continue
     }
 
-    fn message(&mut self, app: &mut Ecs, id: String, value: Option<Value>) -> ScreenResult {
+    fn message(&mut self, app: &mut Ecs, id: &str, value: Option<Value>) -> ScreenResult {
         match id.as_ref() {
             "OK" => {
                 let ret = get_value(self);

@@ -1,6 +1,7 @@
 use super::{CellFlags, MapFlags};
 // use crate::fov::FovSource;
 use crate::tile::Tile;
+use crate::tile::TileLayer;
 use crate::tile::TileSet;
 use crate::tile::NO_TILE;
 use gw_app::ecs::Entity;
@@ -211,18 +212,16 @@ impl Map {
         self.any_tile_change = true;
     }
 
-    pub fn set_tile(&mut self, x: i32, y: i32, tile: Arc<Tile>) -> bool {
+    pub fn reset_tiles(&mut self, x: i32, y: i32, ground: Arc<Tile>) {
         let idx = match self.to_idx(x, y) {
-            None => return false,
+            None => return,
             Some(idx) => idx,
         };
-        self.ground[idx] = tile;
+        self.ground[idx] = ground;
+        self.feature[idx] = NO_TILE.clone();
         self.cell_flags[idx]
             .insert(CellFlags::NEEDS_DRAW | CellFlags::TILE_CHANGED | CellFlags::NEEDS_SNAPSHOT);
         self.any_tile_change = true;
-        // self.mark_changed_idx(idx);
-        // self.tile_mark_changed_idx(idx);
-        true
     }
 
     pub fn get_tiles(&self, x: i32, y: i32) -> TileSet {
@@ -237,6 +236,72 @@ impl Map {
             Some(tile) => TileSet::new(tile.clone(), self.feature[idx].clone()),
             None => TileSet::new(NO_TILE.clone(), NO_TILE.clone()),
         }
+    }
+
+    pub fn place_tile(&mut self, x: i32, y: i32, tile: Arc<Tile>) -> bool {
+        match tile.layer {
+            TileLayer::GROUND => self.place_ground(x, y, tile),
+            TileLayer::FEATURE => self.place_feature(x, y, tile),
+            _ => false,
+        }
+    }
+
+    pub fn force_tile(&mut self, x: i32, y: i32, tile: Arc<Tile>) {
+        match tile.layer {
+            TileLayer::GROUND => self.force_ground(x, y, tile),
+            TileLayer::FEATURE => self.force_feature(x, y, tile),
+            _ => {}
+        }
+    }
+
+    pub fn place_ground(&mut self, x: i32, y: i32, ground: Arc<Tile>) -> bool {
+        // let idx = match self.to_idx(x, y) {
+        //     None => return false,
+        //     Some(idx) => idx,
+        // };
+
+        // TODO - Check priority vs existing tile (if any)
+        // TODO - Check feature required tile (+priority)
+
+        self.force_ground(x, y, ground);
+        true
+    }
+
+    pub fn force_ground(&mut self, x: i32, y: i32, ground: Arc<Tile>) {
+        let idx = match self.to_idx(x, y) {
+            None => return,
+            Some(idx) => idx,
+        };
+
+        self.ground[idx] = ground;
+        self.cell_flags[idx]
+            .insert(CellFlags::NEEDS_DRAW | CellFlags::TILE_CHANGED | CellFlags::NEEDS_SNAPSHOT);
+        self.any_tile_change = true;
+    }
+
+    pub fn place_feature(&mut self, x: i32, y: i32, feature: Arc<Tile>) -> bool {
+        // let idx = match self.to_idx(x, y) {
+        //     None => return false,
+        //     Some(idx) => idx,
+        // };
+
+        // TODO - Check priority vs existing tile (if any)
+        // TODO - Check feature required tile (+priority)
+
+        self.force_feature(x, y, feature);
+        true
+    }
+
+    pub fn force_feature(&mut self, x: i32, y: i32, feature: Arc<Tile>) {
+        let idx = match self.to_idx(x, y) {
+            None => return,
+            Some(idx) => idx,
+        };
+
+        self.feature[idx] = feature;
+        self.cell_flags[idx]
+            .insert(CellFlags::NEEDS_DRAW | CellFlags::TILE_CHANGED | CellFlags::NEEDS_SNAPSHOT);
+        self.any_tile_change = true;
     }
 
     pub fn has_blocker_xy(&self, x: i32, y: i32) -> bool {

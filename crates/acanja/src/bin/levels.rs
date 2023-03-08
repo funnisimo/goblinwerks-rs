@@ -3,6 +3,7 @@ use acanja::map::town::build_town_map;
 use acanja::map::world::build_world_map;
 use gw_app::ecs::*;
 use gw_app::ecs::{systems::ResourceSet, Read};
+use gw_app::messages::Messages;
 use gw_app::*;
 use gw_util::point::Point;
 use gw_world::level::{Level, Levels};
@@ -170,11 +171,15 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn message(&mut self, _app: &mut Ecs, id: String, value: Option<Value>) -> ScreenResult {
-        match id.as_str() {
+    fn message(&mut self, ecs: &mut Ecs, id: &str, value: Option<Value>) -> ScreenResult {
+        match id {
             "VIEWPORT_MOVE" => {
-                // let pt: Point = value.unwrap().try_into().unwrap();
-                // log(format!("Mouse Pos = {}", pt));
+                let pt: Point = value.unwrap().try_into().unwrap();
+                let levels = ecs.resources.get::<Levels>().unwrap();
+                let level = levels.current();
+                let map = level.resources.get::<Map>().unwrap();
+                let tiles = map.get_tiles(pt.x, pt.y);
+                log(format!("Mouse Pos = {} - {}", pt, tiles.flavor()));
             }
             "VIEWPORT_CLICK" => {
                 let pt: Point = value.unwrap().try_into().unwrap();
