@@ -52,7 +52,9 @@ impl Levels {
                 self.cache.len()
             );
         }
+
         self.current = id;
+        self.current_mut().set_needs_draw()
     }
 
     pub fn current(&self) -> &Level {

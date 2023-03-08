@@ -66,6 +66,7 @@ pub struct Camera {
     pub center: Point,
     pub follows: Option<Entity>,
     pub size: (u32, u32),
+    needs_draw: bool,
 }
 
 impl Camera {
@@ -74,6 +75,7 @@ impl Camera {
             center: Point::new(width as i32 / 2, height as i32 / 2),
             follows: None,
             size: (width, height),
+            needs_draw: true,
         }
     }
 
@@ -92,6 +94,28 @@ impl Camera {
 
     pub fn resize(&mut self, width: u32, height: u32) {
         self.size = (width, height);
+        self.set_needs_draw();
+    }
+
+    pub fn set_center(&mut self, x: i32, y: i32) {
+        self.center.set(x, y);
+        self.set_needs_draw();
+    }
+
+    pub fn set_center_point(&mut self, pt: &Point) {
+        self.set_center(pt.x, pt.y);
+    }
+
+    pub fn needs_draw(&self) -> bool {
+        self.needs_draw
+    }
+
+    pub fn clear_needs_draw(&mut self) {
+        self.needs_draw = false;
+    }
+
+    pub fn set_needs_draw(&mut self) {
+        self.needs_draw = true;
     }
 }
 
@@ -100,8 +124,7 @@ pub fn update_camera_follows(level: &mut Level) {
         if let Some(ref entity) = camera.follows {
             if let Some(entry) = level.world.entry(*entity) {
                 if let Ok(pos) = entry.get_component::<Position>() {
-                    camera.center.x = pos.x;
-                    camera.center.y = pos.y;
+                    camera.set_center(pos.x, pos.y);
                 }
             } else {
                 camera.follows = None;
@@ -141,10 +164,6 @@ impl Viewport {
 
     pub fn resize(&mut self, width: u32, height: u32) {
         self.con.resize(width, height);
-        self.needs_draw = true;
-    }
-
-    pub fn set_needs_draw(&mut self) {
         self.needs_draw = true;
     }
 
@@ -189,20 +208,17 @@ impl Viewport {
             level.resources.insert(camera);
         }
 
-        let viewport_needs_draw = {
-            let camera = level.resources.get::<Camera>().unwrap();
-            let viewport_needs_draw = self.needs_draw || self.last_camera_pos != camera.center; // viewport.needs_draw || map.needs_draw();
-            self.last_camera_pos = camera.center;
-            self.needs_draw = false;
-            viewport_needs_draw
-        };
-
         let offset = {
             let camera = level.resources.get::<Camera>().unwrap();
             if self.con.size() != camera.size {
                 self.resize(camera.size.0, camera.size.1);
             }
             camera.offset_for(self.con.size())
+        };
+
+        let viewport_needs_draw = {
+            let camera = level.resources.get::<Camera>().unwrap();
+            level.needs_draw() || camera.needs_draw() || self.needs_draw
         };
 
         if level.resources.contains::<MapMemory>() {
@@ -470,8 +486,10 @@ fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
     // self.needs_redraw = false;
 }
 
-fn clear_needs_draw(viewport: &mut Viewport, ecs: &mut Level) {
-    let (mut map, camera) = <(Write<Map>, Read<Camera>)>::fetch_mut(&mut ecs.resources);
+fn clear_needs_draw(viewport: &mut Viewport, level: &mut Level) {
+    level.clear_needs_draw();
+
+    let (mut map, mut camera) = <(Write<Map>, Write<Camera>)>::fetch_mut(&mut level.resources);
 
     let size = viewport.con.size();
 
@@ -494,6 +512,9 @@ fn clear_needs_draw(viewport: &mut Viewport, ecs: &mut Level) {
             }
         }
     }
+
+    viewport.needs_draw = false;
+    camera.clear_needs_draw();
 }
 
 #[cfg(test)]

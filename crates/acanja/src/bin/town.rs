@@ -31,7 +31,6 @@ impl MainScreen {
         map.make_fully_visible();
 
         ecs.resources.insert(map);
-        self.viewport.set_needs_draw();
     }
 }
 
