@@ -33,6 +33,8 @@ impl MainScreen {
         map.reveal_all();
         map.make_fully_visible();
 
+        // Need to add towns
+
         let mut level = Level::new("WORLD");
 
         level.resources.insert(map);
@@ -129,7 +131,7 @@ impl Screen for MainScreen {
                     let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
                     let level = levels.current_mut();
                     let mut camera = level.resources.get_mut::<Camera>().unwrap();
-                    let size = camera.size;
+                    let size = camera.size();
                     camera.resize((size.0 - 8).max(16), (size.1 - 5).max(10));
                     log(format!("Viewport size={:?}", self.viewport.size()));
                 }
@@ -140,7 +142,7 @@ impl Screen for MainScreen {
                     let (map, mut camera) =
                         <(Read<Map>, Write<Camera>)>::fetch_mut(&mut level.resources);
                     let map_size = map.get_size();
-                    let size = camera.size;
+                    let size = camera.size();
                     camera.resize((size.0 + 8).min(map_size.0), (size.1 + 5).min(map_size.1));
                     log(format!("Viewport size={:?}", self.viewport.size()));
                 }
@@ -213,6 +215,5 @@ fn main() {
 fn move_camera(levels: &mut Levels, dx: i32, dy: i32) {
     let level = levels.current_mut();
     let mut camera = level.resources.get_mut::<Camera>().unwrap();
-    camera.center.x = camera.center.x + dx;
-    camera.center.y = camera.center.y + dy;
+    camera.move_center(dx, dy);
 }

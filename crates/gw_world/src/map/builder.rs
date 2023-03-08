@@ -1,5 +1,6 @@
 use crate::tile::{Tile, Tiles};
 use crate::{map::Map, tile::TileKind};
+use gw_app::log;
 use gw_util::rect::Rect;
 use gw_util::rng::RandomNumberGenerator;
 use std::cmp::{max, min};
@@ -45,12 +46,15 @@ impl<'t> Builder<'t> {
     pub fn set_tile(&mut self, x: i32, y: i32, name: &str) {
         match self.tiles.get(name) {
             None => panic!("Tile does not exist - {}", name),
-            Some(tile) => self.map.set_tile(x, y, tile),
+            Some(tile) => {
+                // log(format!("set_tile({},{},{}", x, y, name));s
+                self.map.set_tile(x, y, tile);
+            }
         };
     }
 
     pub fn get_tile(&self, x: i32, y: i32) -> Arc<Tile> {
-        self.map.get_tile(x, y).expect("x,y out of bounds.")
+        self.map.get_tiles(x, y).ground()
     }
 
     pub fn rng_mut(&mut self) -> &mut RandomNumberGenerator {
@@ -93,28 +97,22 @@ impl<'t> Builder<'t> {
     }
 
     pub fn add_horizontal_hall(&mut self, x1: i32, x2: i32, y: i32, name: &str) -> &mut Self {
-        let map = &mut self.map;
         let hall = self.tiles.get(name).unwrap();
         for x in min(x1, x2)..=max(x1, x2) {
-            match map.get_tile(x, y) {
-                Some(tile) if !tile.kind.contains(TileKind::FLOOR) => {
-                    map.set_tile(x, y, hall.clone());
-                }
-                _ => (),
+            if !self.get_tile(x, y).kind.contains(TileKind::FLOOR) {
+                let map = &mut self.map;
+                map.set_tile(x, y, hall.clone());
             }
         }
         self
     }
 
     pub fn add_vertical_hall(&mut self, y1: i32, y2: i32, x: i32, name: &str) -> &mut Self {
-        let map = &mut self.map;
         let hall = self.tiles.get(name).unwrap();
         for y in min(y1, y2)..=max(y1, y2) {
-            match map.get_tile(x, y) {
-                Some(tile) if !tile.kind.contains(TileKind::FLOOR) => {
-                    map.set_tile(x, y, hall.clone());
-                }
-                _ => (),
+            if !self.get_tile(x, y).kind.contains(TileKind::FLOOR) {
+                let map = &mut self.map;
+                map.set_tile(x, y, hall.clone());
             }
         }
         self
@@ -126,13 +124,10 @@ impl<'t> Builder<'t> {
         let top = room.y1 - 1;
         let bottom = room.y2 + 1;
 
-        let map: &Map = &self.map;
-
         for y in top..=bottom {
             for x in left..=right {
-                match map.get_tile(x, y) {
-                    Some(tile) if tile.kind.contains(TileKind::FLOOR) => return false,
-                    _ => (),
+                if self.get_tile(x, y).kind.contains(TileKind::FLOOR) {
+                    return false;
                 }
             }
         }

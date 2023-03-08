@@ -62,12 +62,12 @@ flavor = "a bridge"
 
 [ISLAND]
 kind   = "FLOOR"
-sprite = " |DARK_GREEN|DARKEST_GREEN"
+sprite = " |GREEN|DARKER_GREEN"
 flavor = "some grass"
 
 [LANDING]
 kind   = "FLOOR"
-sprite = " |DARK_GREEN|DARKEST_GREEN"
+sprite = " |DARK_GREEN|DARKER_GREEN"
 flavor = "some grass"
 
 [COUNTER]
@@ -86,19 +86,19 @@ move   = "PORTAL_DOWN"
 
 [DEEP_OCEAN]
 kind   = "LAKE"
-sprite = "~|DARKEST_BLUE|BLACK"
+sprite = "~|DARK_BLUE|DARKEST_BLUE"
 flavor = "deep ocean"
 move   = "BLOCKS_MOVE"
 
 [OCEAN]
 kind   = "LAKE"
-sprite = "~|DARKER_BLUE|DARKEST_BLUE"
+sprite = "~|DARK_BLUE|DARKER_BLUE"
 flavor = "ocean"
 move   = "BLOCKS_MOVE"
 
 [SHALLOW_OCEAN]
 kind   = "LAKE"
-sprite = "~|DARK_BLUE|DARKER_BLUE"
+sprite = "~|BLUE|DARK_BLUE"
 flavor = "shallow ocean"
 move   = "BLOCKS_MOVE"
 

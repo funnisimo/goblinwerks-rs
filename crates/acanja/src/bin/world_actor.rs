@@ -59,7 +59,7 @@ impl MainScreen {
         ));
 
         let mut camera = Camera::new(80, 50);
-        camera.follows = Some(entity);
+        camera.set_follows(entity);
         level.resources.insert(camera);
 
         level.resources.insert(Hero::new(entity));

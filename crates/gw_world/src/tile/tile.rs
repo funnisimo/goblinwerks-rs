@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 lazy_static! {
     pub static ref NO_TILE: Arc<Tile> = TileBuilder::new("NONE")
-        .sprite(':' as Glyph, RGBA::rgb(32, 32, 96), RGBA::new())
+        // .sprite(0 as Glyph, RGBA::new(), RGBA::new())
         .build();
 }
 
@@ -24,6 +24,7 @@ pub struct Tile {
     pub flags: TileFlags,
     pub move_flags: TileMove,
     pub liquid: TileLiquid,
+    pub layer: TileLayer,
     pub actions: HashMap<TileAction, String>,
     pub kind: TileKind,
     pub treasure: Treasure,
@@ -45,7 +46,7 @@ impl Tile {
             id: id.to_owned(),
 
             glyph: 0,
-            fg: RGBA::rgba(255, 255, 255, 255),
+            fg: RGBA::rgba(0, 0, 0, 0),
             bg: RGBA::rgba(0, 0, 0, 0),
 
             flags: TileFlags::empty(),
@@ -54,6 +55,7 @@ impl Tile {
             kind: TileKind::empty(),
             actions: HashMap::new(),
             liquid: TileLiquid::NONE,
+            layer: TileLayer::GROUND,
 
             mimic: None,
             object: 0,
@@ -66,6 +68,10 @@ impl Tile {
             flavor: "".to_owned(),
             description: "".to_owned(),
         }
+    }
+
+    pub fn is_null(&self) -> bool {
+        self.kind.is_empty()
     }
 
     pub fn blocks(&self) -> bool {
@@ -94,6 +100,11 @@ impl TileBuilder {
 
     pub fn kind(mut self, kind: TileKind) -> Self {
         self.tile.kind.insert(kind);
+        self
+    }
+
+    pub fn layer(mut self, layer: TileLayer) -> Self {
+        self.tile.layer = layer;
         self
     }
 
@@ -175,6 +186,9 @@ impl TileBuilder {
             "move" => {
                 self.tile.move_flags.apply(value);
             }
+            "layer" => {
+                self.tile.layer = value.parse().unwrap();
+            }
             _ => return Err(format!("Unknown tile field - {}", field)),
         }
         Ok(())
@@ -207,6 +221,7 @@ impl TileBuilder {
 // }
 
 pub fn load_default_tiles(cache: &mut Tiles) {
+    cache.insert(NO_TILE.clone());
     cache.insert(
         TileBuilder::new("ERROR")
             .sprite('!' as Glyph, named::RED.into(), named::BLACK.into())

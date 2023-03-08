@@ -75,7 +75,7 @@ impl MoveStepAction {
         let actor_is_hero = self.entity == hero.entity;
 
         if map.blocked_xy(new_x, new_y) {
-            let flavor = &map.get_tile(new_x, new_y).unwrap().flavor;
+            let flavor = map.get_tiles(new_x, new_y).flavor();
             if actor_is_hero {
                 level.logger.log(format!("Blocked by {}", flavor));
             }

@@ -72,28 +72,28 @@ impl Screen for MainScreen {
                     let level = ecs.resources.get::<Level>().unwrap();
                     if let Some(mut camera) = level.resources.get_mut::<Camera>() {
                         log("Camera down");
-                        camera.center.y = camera.center.y + 1;
+                        camera.move_center(0, 1);
                     }
                     drop(level);
                 }
                 VirtualKeyCode::Left => {
                     let level = ecs.resources.get::<Level>().unwrap();
                     if let Some(mut camera) = level.resources.get_mut::<Camera>() {
-                        camera.center.x = camera.center.x - 1;
+                        camera.move_center(-1, 0);
                     }
                     drop(level);
                 }
                 VirtualKeyCode::Up => {
                     let level = ecs.resources.get::<Level>().unwrap();
                     if let Some(mut camera) = level.resources.get_mut::<Camera>() {
-                        camera.center.y = camera.center.y - 1;
+                        camera.move_center(0, -1);
                     }
                     drop(level);
                 }
                 VirtualKeyCode::Right => {
                     let level = ecs.resources.get::<Level>().unwrap();
                     if let Some(mut camera) = level.resources.get_mut::<Camera>() {
-                        camera.center.x = camera.center.x + 1;
+                        camera.move_center(1, 0);
                     }
                     drop(level);
                 }

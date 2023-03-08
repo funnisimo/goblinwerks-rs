@@ -114,6 +114,9 @@ impl RGBA {
     }
 
     pub fn alpha_mix(base: &RGBA, with: &RGBA) -> RGBA {
+        if base.a() <= 0 {
+            return with.clone();
+        }
         if with.a() <= 0 {
             return base.clone();
         }

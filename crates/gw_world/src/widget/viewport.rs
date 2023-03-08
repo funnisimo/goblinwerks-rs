@@ -63,9 +63,9 @@ impl AlwaysVisible {
 impl VisSource for AlwaysVisible {}
 
 pub struct Camera {
-    pub center: Point,
-    pub follows: Option<Entity>,
-    pub size: (u32, u32),
+    center: Point,
+    follows: Option<Entity>,
+    size: (u32, u32),
     needs_draw: bool,
 }
 
@@ -92,6 +92,10 @@ impl Camera {
         )
     }
 
+    pub fn size(&self) -> (u32, u32) {
+        self.size
+    }
+
     pub fn resize(&mut self, width: u32, height: u32) {
         self.size = (width, height);
         self.set_needs_draw();
@@ -99,6 +103,12 @@ impl Camera {
 
     pub fn set_center(&mut self, x: i32, y: i32) {
         self.center.set(x, y);
+        self.set_needs_draw();
+    }
+
+    pub fn move_center(&mut self, dx: i32, dy: i32) {
+        self.center.x = self.center.x + dx;
+        self.center.y = self.center.y + dy;
         self.set_needs_draw();
     }
 
@@ -115,6 +125,16 @@ impl Camera {
     }
 
     pub fn set_needs_draw(&mut self) {
+        self.needs_draw = true;
+    }
+
+    pub fn set_follows(&mut self, entity: Entity) {
+        self.follows = Some(entity);
+        self.needs_draw = true;
+    }
+
+    pub fn clear_follows(&mut self) {
+        self.follows = None;
         self.needs_draw = true;
     }
 }
@@ -138,7 +158,6 @@ pub struct Viewport {
     pub con: Panel,
     id: String,
     last_mouse: Point,
-    last_camera_pos: Point,
     needs_draw: bool,
 }
 
@@ -153,7 +172,6 @@ impl Viewport {
             con,
             id: builder.id,
             last_mouse: Point::new(-1, -1),
-            last_camera_pos: Point::new(-1, -1),
             needs_draw: true,
         }
     }
@@ -346,25 +364,19 @@ fn draw_map(
                     let (glyph, mut fg, mut bg) = match needs_snapshot {
                         true => {
                             // println!(": tile changed - {},{}", x, y);
-                            match map.get_tile_at_idx(idx) {
-                                None => {
-                                    buf.print_opt(
-                                        x0,
-                                        y0,
-                                        Some('!'),
-                                        Some(named::RED.into()),
-                                        Some(named::BLACK.into()),
-                                    );
-                                    continue;
-                                }
-                                Some(tile) => {
-                                    if let Some(memory) = memory.as_mut() {
-                                        memory.set_sprite(x, y, tile.fg, tile.bg, tile.glyph);
-                                        map.clear_needs_snapshot_idx(idx);
-                                    }
-                                    (tile.glyph, tile.fg.clone(), tile.bg.clone())
-                                }
+                            let tiles = map.get_tiles_at_idx(idx);
+                            let tile_sprite = tiles.sprite();
+                            if let Some(memory) = memory.as_mut() {
+                                memory.set_sprite(
+                                    x,
+                                    y,
+                                    tile_sprite.fg,
+                                    tile_sprite.bg,
+                                    tile_sprite.glyph,
+                                );
+                                map.clear_needs_snapshot_idx(idx);
                             }
+                            (tile_sprite.glyph, tile_sprite.fg, tile_sprite.bg)
                         }
                         false => match memory.as_mut().unwrap().get_sprite(x, y) {
                             Some(buf) => (buf.glyph, buf.fg.clone(), buf.bg.clone()),

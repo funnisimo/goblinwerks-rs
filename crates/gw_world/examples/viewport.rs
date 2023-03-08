@@ -55,22 +55,22 @@ impl Screen for MainScreen {
                 VirtualKeyCode::Down => {
                     if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
                         log("Camera down");
-                        camera.center.y = camera.center.y + 1;
+                        camera.move_center(0, 1);
                     }
                 }
                 VirtualKeyCode::Left => {
                     if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
-                        camera.center.x = camera.center.x - 1;
+                        camera.move_center(-1, 0);
                     }
                 }
                 VirtualKeyCode::Up => {
                     if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
-                        camera.center.y = camera.center.y - 1;
+                        camera.move_center(0, -1);
                     }
                 }
                 VirtualKeyCode::Right => {
                     if let Some(mut camera) = ecs.resources.get_mut::<Camera>() {
-                        camera.center.x = camera.center.x + 1;
+                        camera.move_center(1, 0);
                     }
                 }
                 VirtualKeyCode::Equals => {

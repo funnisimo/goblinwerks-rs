@@ -164,8 +164,8 @@ impl Prefab {
                         let tile = builder.get_tile(x, y);
                         if !cell.matches(&tile) {
                             log(format!(
-                                "- match failed for {},{} with cell: {:?} and tile: {:?}",
-                                x, y, cell, tile
+                                "- match failed for {},{} with cell: {:?} and tile: {}",
+                                x, y, cell, &tile.id
                             ));
                             return false;
                         }

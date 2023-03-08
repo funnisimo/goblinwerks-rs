@@ -145,6 +145,14 @@ mod test {
     use gw_app::color::named;
 
     #[test]
+    fn default() {
+        let sprite = Sprite::default();
+        assert_eq!(sprite.glyph, 0);
+        assert_eq!(sprite.fg, RGBA::rgba(0, 0, 0, 0));
+        assert_eq!(sprite.bg, RGBA::rgba(0, 0, 0, 0));
+    }
+
+    #[test]
     fn from_text() {
         init_colors();
 
