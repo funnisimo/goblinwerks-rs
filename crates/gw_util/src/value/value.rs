@@ -11,11 +11,11 @@ use std::fmt::Display;
 /// The result of an evaluation.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
-    Blank,
+    Empty,
     Index(usize),
-    Number(u64),
+    Integer(u64),
     Float(f64),
-    Text(String),
+    String(String),
     Boolean(bool),
     List(Vec<Value>),
     Map(HashMap<Key, Value>),
@@ -25,6 +25,91 @@ pub enum Value {
 }
 
 impl Value {
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            Value::Empty => "empty",
+            Value::Boolean(_) => "bool",
+            Value::Entity(_) => "Entity",
+            Value::Float(_) => "float",
+            Value::Index(_) => "usize",
+            Value::List(_) => "vec",
+            Value::Map(_) => "map",
+            Value::Integer(_) => "int",
+            Value::Point(_, _) => "Point",
+            Value::String(_) => "String",
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        match self {
+            Value::Empty => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_bool(&self) -> bool {
+        match self {
+            Value::Boolean(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_entity(&self) -> bool {
+        match self {
+            Value::Entity(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_float(&self) -> bool {
+        match self {
+            Value::Float(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_index(&self) -> bool {
+        match self {
+            Value::Index(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_list(&self) -> bool {
+        match self {
+            Value::List(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_map(&self) -> bool {
+        match self {
+            Value::Map(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_int(&self) -> bool {
+        match self {
+            Value::Integer(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_point(&self) -> bool {
+        match self {
+            Value::Point(_, _) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_string(&self) -> bool {
+        match self {
+            Value::String(_) => true,
+            _ => false,
+        }
+    }
+
     pub fn get_value(&self, key: &str) -> Option<&Value> {
         match self {
             Value::Map(map) => map.get(&key.into()),
@@ -89,12 +174,12 @@ impl Value {
                 Ok(v) => Some(v),
                 Err(_) => None,
             },
-            Value::Number(v) => match (*v).try_into() {
+            Value::Integer(v) => match (*v).try_into() {
                 Ok(v) => Some(v),
                 Err(_) => None,
             },
             Value::Float(v) => Some(v.trunc() as u64),
-            Value::Text(v) => match v.parse::<u64>() {
+            Value::String(v) => match v.parse::<u64>() {
                 Err(_) => None,
                 Ok(v) => Some(v),
             },
@@ -111,9 +196,9 @@ impl Value {
     pub fn as_float(&self) -> Option<f64> {
         match self {
             Value::Index(v) => Some(*v as f64),
-            Value::Number(v) => Some(*v as f64),
+            Value::Integer(v) => Some(*v as f64),
             Value::Float(v) => Some(*v),
-            Value::Text(v) => match v.parse::<f64>() {
+            Value::String(v) => match v.parse::<f64>() {
                 Err(_) => None,
                 Ok(v) => Some(v),
             },
@@ -133,6 +218,20 @@ impl Value {
             _ => None,
         }
     }
+
+    pub fn as_entity(&self) -> Option<&Entity> {
+        match self {
+            Value::Entity(e) => Some(e),
+            _ => None,
+        }
+    }
+
+    pub fn to_entity(self) -> Option<Entity> {
+        match self {
+            Value::Entity(e) => Some(e),
+            _ => None,
+        }
+    }
 }
 
 impl TryInto<usize> for Value {
@@ -144,7 +243,7 @@ impl TryInto<usize> for Value {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
-            Value::Number(v) => match v.try_into() {
+            Value::Integer(v) => match v.try_into() {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
@@ -152,7 +251,7 @@ impl TryInto<usize> for Value {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
-            Value::Text(v) => match v.parse::<usize>() {
+            Value::String(v) => match v.parse::<usize>() {
                 Err(_) => Err(DataConvertError::WrongType),
                 Ok(v) => Ok(v),
             },
@@ -210,12 +309,12 @@ impl TryInto<u64> for Value {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
-            Value::Number(v) => match v.try_into() {
+            Value::Integer(v) => match v.try_into() {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
             Value::Float(v) => Ok(v.trunc() as u64),
-            Value::Text(v) => match v.parse::<u64>() {
+            Value::String(v) => match v.parse::<u64>() {
                 Err(_) => Err(DataConvertError::WrongType),
                 Ok(v) => Ok(v),
             },
@@ -241,12 +340,12 @@ impl TryInto<i64> for Value {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
-            Value::Number(v) => match v.try_into() {
+            Value::Integer(v) => match v.try_into() {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
             Value::Float(v) => Ok(v.trunc() as i64),
-            Value::Text(v) => match v.parse::<i64>() {
+            Value::String(v) => match v.parse::<i64>() {
                 Err(_) => Err(DataConvertError::WrongType),
                 Ok(v) => Ok(v),
             },
@@ -272,12 +371,12 @@ impl TryInto<u32> for Value {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
-            Value::Number(v) => match v.try_into() {
+            Value::Integer(v) => match v.try_into() {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
             Value::Float(v) => Ok(v.trunc() as u32),
-            Value::Text(v) => match v.parse::<u32>() {
+            Value::String(v) => match v.parse::<u32>() {
                 Err(_) => Err(DataConvertError::WrongType),
                 Ok(v) => Ok(v),
             },
@@ -303,12 +402,12 @@ impl TryInto<i32> for Value {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
-            Value::Number(v) => match v.try_into() {
+            Value::Integer(v) => match v.try_into() {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
             Value::Float(v) => Ok(v.floor() as i32),
-            Value::Text(v) => match v.parse::<i32>() {
+            Value::String(v) => match v.parse::<i32>() {
                 Err(_) => Err(DataConvertError::WrongType),
                 Ok(v) => Ok(v),
             },
@@ -334,12 +433,12 @@ impl TryInto<u16> for Value {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
-            Value::Number(v) => match v.try_into() {
+            Value::Integer(v) => match v.try_into() {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
             Value::Float(v) => Ok(v.trunc() as u16),
-            Value::Text(v) => match v.parse::<u16>() {
+            Value::String(v) => match v.parse::<u16>() {
                 Err(_) => Err(DataConvertError::WrongType),
                 Ok(v) => Ok(v),
             },
@@ -365,12 +464,12 @@ impl TryInto<i16> for Value {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
-            Value::Number(v) => match v.try_into() {
+            Value::Integer(v) => match v.try_into() {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
             Value::Float(v) => Ok(v.trunc() as i16),
-            Value::Text(v) => match v.parse::<i16>() {
+            Value::String(v) => match v.parse::<i16>() {
                 Err(_) => Err(DataConvertError::WrongType),
                 Ok(v) => Ok(v),
             },
@@ -396,12 +495,12 @@ impl TryInto<u8> for Value {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
-            Value::Number(v) => match v.try_into() {
+            Value::Integer(v) => match v.try_into() {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
             Value::Float(v) => Ok(v.trunc() as u8),
-            Value::Text(v) => match v.parse::<u8>() {
+            Value::String(v) => match v.parse::<u8>() {
                 Err(_) => Err(DataConvertError::WrongType),
                 Ok(v) => Ok(v),
             },
@@ -427,12 +526,12 @@ impl TryInto<i8> for Value {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
-            Value::Number(v) => match v.try_into() {
+            Value::Integer(v) => match v.try_into() {
                 Ok(v) => Ok(v),
                 Err(_) => Err(DataConvertError::WrongType),
             },
             Value::Float(v) => Ok(v.trunc() as i8),
-            Value::Text(v) => match v.parse::<i8>() {
+            Value::String(v) => match v.parse::<i8>() {
                 Err(_) => Err(DataConvertError::WrongType),
                 Ok(v) => Ok(v),
             },
@@ -455,9 +554,9 @@ impl TryInto<f64> for Value {
     fn try_into(self) -> Result<f64, DataConvertError> {
         match self {
             Value::Index(v) => Ok(v as f64),
-            Value::Number(v) => Ok(v as f64),
+            Value::Integer(v) => Ok(v as f64),
             Value::Float(v) => Ok(v),
-            Value::Text(v) => match v.parse::<f64>() {
+            Value::String(v) => match v.parse::<f64>() {
                 Err(_) => Err(DataConvertError::WrongType),
                 Ok(v) => Ok(v),
             },
@@ -480,9 +579,9 @@ impl TryInto<f32> for Value {
     fn try_into(self) -> Result<f32, DataConvertError> {
         match self {
             Value::Index(v) => Ok(v as f32),
-            Value::Number(v) => Ok(v as f32),
+            Value::Integer(v) => Ok(v as f32),
             Value::Float(v) => Ok(v as f32),
-            Value::Text(v) => match v.parse::<f32>() {
+            Value::String(v) => match v.parse::<f32>() {
                 Err(_) => Err(DataConvertError::WrongType),
                 Ok(v) => Ok(v),
             },
@@ -503,9 +602,9 @@ impl TryInto<bool> for Value {
     fn try_into(self) -> Result<bool, DataConvertError> {
         match self {
             Value::Index(v) => Ok(v != 0),
-            Value::Number(v) => Ok(v != 0),
+            Value::Integer(v) => Ok(v != 0),
             Value::Float(v) => Ok(v != 0.0),
-            Value::Text(v) => Ok(v.len() > 0),
+            Value::String(v) => Ok(v.len() > 0),
             Value::Boolean(v) => match v {
                 true => Ok(true),
                 false => Ok(false),
@@ -563,11 +662,11 @@ impl TryInto<Vec<Value>> for Value {
 impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::Blank => write!(f, "()"),
+            Value::Empty => write!(f, "()"),
             Value::Index(v) => write!(f, "{}", v),
-            Value::Number(v) => write!(f, "{}", v),
+            Value::Integer(v) => write!(f, "{}", v),
             Value::Float(v) => write!(f, "{}", v),
-            Value::Text(v) => write!(f, "{}", v),
+            Value::String(v) => write!(f, "{}", v),
             Value::Boolean(v) => match v {
                 true => write!(f, "true"),
                 false => write!(f, "false"),
@@ -607,56 +706,56 @@ impl From<usize> for Value {
 // u64
 impl From<u64> for Value {
     fn from(v: u64) -> Self {
-        Value::Number(v as u64)
+        Value::Integer(v as u64)
     }
 }
 
 // i64
 impl From<i64> for Value {
     fn from(v: i64) -> Self {
-        Value::Number(v as u64)
+        Value::Integer(v as u64)
     }
 }
 
 // u32
 impl From<u32> for Value {
     fn from(v: u32) -> Self {
-        Value::Number(v as u64)
+        Value::Integer(v as u64)
     }
 }
 
 // i32
 impl From<i32> for Value {
     fn from(v: i32) -> Self {
-        Value::Number(v as u64)
+        Value::Integer(v as u64)
     }
 }
 
 // u16
 impl From<u16> for Value {
     fn from(v: u16) -> Self {
-        Value::Number(v as u64)
+        Value::Integer(v as u64)
     }
 }
 
 // i16
 impl From<i16> for Value {
     fn from(v: i16) -> Self {
-        Value::Number(v as u64)
+        Value::Integer(v as u64)
     }
 }
 
 // u8
 impl From<u8> for Value {
     fn from(v: u8) -> Self {
-        Value::Number(v as u64)
+        Value::Integer(v as u64)
     }
 }
 
 // i8
 impl From<i8> for Value {
     fn from(v: i8) -> Self {
-        Value::Number(v as u64)
+        Value::Integer(v as u64)
     }
 }
 
@@ -676,19 +775,19 @@ impl From<f32> for Value {
 
 impl From<&str> for Value {
     fn from(v: &str) -> Self {
-        Value::Text(v.to_owned())
+        Value::String(v.to_owned())
     }
 }
 
 impl From<String> for Value {
     fn from(v: String) -> Self {
-        Value::Text(v)
+        Value::String(v)
     }
 }
 
 impl From<&String> for Value {
     fn from(v: &String) -> Self {
-        Value::Text(v.clone())
+        Value::String(v.clone())
     }
 }
 
@@ -720,8 +819,8 @@ impl From<Key> for Value {
     fn from(value: Key) -> Self {
         match value {
             Key::Index(v) => Value::Index(v),
-            Key::Number(v) => Value::Number(v),
-            Key::Text(v) => Value::Text(v),
+            Key::Number(v) => Value::Integer(v),
+            Key::Text(v) => Value::String(v),
 
             Key::Entity(v) => Value::Entity(v),
         }

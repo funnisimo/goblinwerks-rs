@@ -23,7 +23,7 @@ fn map_as_text(data: Option<HashMap<Key, Value>>) -> String {
 fn data_as_text(data: Option<Value>) -> String {
     match data {
         None => "Cancelled.".to_owned(),
-        Some(Value::Text(val)) => val,
+        Some(Value::String(val)) => val,
         Some(Value::List(val)) => val
             .iter()
             .map(|v| v.to_string())

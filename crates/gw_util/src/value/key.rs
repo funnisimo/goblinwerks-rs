@@ -213,8 +213,8 @@ impl TryFrom<Value> for Key {
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
             Value::Index(v) => Ok(Key::Index(v)),
-            Value::Number(v) => Ok(Key::Number(v)),
-            Value::Text(v) => Ok(Key::Text(v)),
+            Value::Integer(v) => Ok(Key::Number(v)),
+            Value::String(v) => Ok(Key::Text(v)),
 
             Value::Entity(v) => Ok(Key::Entity(v)),
             _ => Err(DataConvertError::WrongType),

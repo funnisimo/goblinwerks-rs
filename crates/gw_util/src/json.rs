@@ -26,12 +26,12 @@ impl<'a> Into<Value> for JsonValue<'a> {
         match self {
             JsonValue::Array(arr) => Value::List(arr.into_iter().map(|jv| jv.into()).collect()),
             JsonValue::Boolean(val) => Value::Boolean(val),
-            JsonValue::Null => Value::Blank,
+            JsonValue::Null => Value::Empty,
             JsonValue::Number(val) => {
                 if val.contains(".") {
                     Value::Float(val.parse().unwrap())
                 } else {
-                    Value::Number(val.parse().unwrap())
+                    Value::Integer(val.parse().unwrap())
                 }
             }
             JsonValue::Object(obj) => {
@@ -43,7 +43,7 @@ impl<'a> Into<Value> for JsonValue<'a> {
 
                 Value::Map(map)
             }
-            JsonValue::String(str) => Value::Text(str.to_string()),
+            JsonValue::String(str) => Value::String(str.to_string()),
         }
     }
 }

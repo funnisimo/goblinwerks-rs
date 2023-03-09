@@ -36,10 +36,10 @@ impl Into<Value> for toml::Value {
         match self {
             toml::Value::Array(arr) => Value::List(arr.into_iter().map(|v| v.into()).collect()),
             toml::Value::Boolean(v) => Value::Boolean(v),
-            toml::Value::Datetime(v) => Value::Text(v.to_string()),
+            toml::Value::Datetime(v) => Value::String(v.to_string()),
             toml::Value::Float(v) => Value::Float(v),
-            toml::Value::Integer(v) => Value::Number(v as u64),
-            toml::Value::String(v) => Value::Text(v),
+            toml::Value::Integer(v) => Value::Integer(v as u64),
+            toml::Value::String(v) => Value::String(v),
             toml::Value::Table(obj) => {
                 let mut map: HashMap<Key, Value> = HashMap::new();
 

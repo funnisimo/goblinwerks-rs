@@ -34,8 +34,8 @@ impl Tag for Text {
 
     fn value(&self, el: &Element) -> Option<Value> {
         match el.text().as_ref() {
-            None => return Some(Value::Text("".to_string())),
-            Some(txt) => return Some(Value::Text(txt.to_owned())),
+            None => return Some(Value::String("".to_string())),
+            Some(txt) => return Some(Value::String(txt.to_owned())),
         }
     }
 
