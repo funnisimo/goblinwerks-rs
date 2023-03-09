@@ -9,10 +9,10 @@ bitflags! {
     pub struct TileKind: u32 {
     const FLOOR = fl!(0);
     const HALL = fl!(1);
-    const FIXTURE = fl!(2);
+    const FEATURE = fl!(2); // FIXTURE?
     const DOOR = fl!(3);
     const WALL = fl!(4);
-    const IMPREGNABLE = fl!(5);
+    const IMPREGNABLE = fl!(5); // Flag?
     const LAKE = fl!(6);
     const RIVER = fl!(7);
     const CHASM = fl!(8);
@@ -57,7 +57,7 @@ impl FromStr for TileKind {
             match val.trim().to_uppercase().as_ref() {
                 "FLOOR" => result |= TileKind::FLOOR,
                 "HALL" => result |= TileKind::HALL,
-                "FIXTURE" => result |= TileKind::FIXTURE,
+                "FEATURE" => result |= TileKind::FEATURE,
                 "DOOR" => result |= TileKind::DOOR,
                 "WALL" => result |= TileKind::WALL,
                 "IMPREGNABLE" => result |= TileKind::IMPREGNABLE,

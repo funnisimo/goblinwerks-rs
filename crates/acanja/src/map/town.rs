@@ -1,10 +1,17 @@
 use super::prefab::*;
 use gw_app::log;
+use gw_util::point::Point;
 use gw_util::rng::SliceRandom;
-use gw_world::map::{Builder, Map};
+use gw_world::map::{Builder, Map, PortalInfo};
 use gw_world::tile::Tiles;
 
-pub fn build_town_map<'t>(tiles: &'t Tiles, prefabs: &Prefabs, width: u32, height: u32) -> Map {
+pub fn build_town_map<'t>(
+    tiles: &'t Tiles,
+    prefabs: &Prefabs,
+    width: u32,
+    height: u32,
+    id: &str,
+) -> Map {
     let mut builder = Builder::new(tiles, width, height);
 
     loop {
@@ -15,6 +22,20 @@ pub fn build_town_map<'t>(tiles: &'t Tiles, prefabs: &Prefabs, width: u32, heigh
             None => break,
             Some(x) => x,
         };
+
+        // Add way out...
+        let y = height as i32 / 2 - 1;
+        builder.place_tile(0, y, "EXIT_TOWN_LEFT");
+        builder.place_tile(0, y + 1, "EXIT_TOWN_LEFT");
+        builder.place_tile(0, y + 2, "EXIT_TOWN_LEFT");
+
+        builder.set_location("START", Point::new(1, y + 1));
+        let mut portal = PortalInfo::new("WORLD", id);
+        portal.set_flavor("a way back to the world");
+        builder
+            .set_portal(Point::new(0, y), portal.clone())
+            .set_portal(Point::new(0, y + 1), portal.clone())
+            .set_portal(Point::new(0, y + 2), portal);
 
         log("Adding bridge...");
         x = match add_bridge(&mut builder, x) {
@@ -94,7 +115,7 @@ fn add_landing(builder: &mut Builder) -> Option<i32> {
 }
 
 fn add_bridge(builder: &mut Builder, x: i32) -> Option<i32> {
-    let y0 = (builder.size().1 - 3) as i32 / 2;
+    let y0 = builder.size().1 as i32 / 2 - 1;
 
     for dx in 0..9 {
         builder.set_tile(x + dx, y0, "BRIDGE");

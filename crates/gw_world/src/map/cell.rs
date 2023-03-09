@@ -5,11 +5,13 @@ use crate::{
     tile::{Tile, TileFlags, TileMove, TileSet},
 };
 
-use super::Map;
+use super::{CellFlags, Map};
 
 pub trait Cell {
     fn ground(&self) -> &Arc<Tile>;
     fn feature(&self) -> &Arc<Tile>;
+    fn index(&self) -> usize;
+    fn map(&self) -> &Map;
 
     fn get_tiles(&self) -> TileSet {
         TileSet::new(self.ground().clone(), self.feature().clone())
@@ -17,12 +19,20 @@ pub trait Cell {
 
     // Flags
 
-    fn has_flag(&self, flag: TileFlags) -> bool {
+    fn has_tile_flag(&self, flag: TileFlags) -> bool {
         self.ground().flags.contains(flag) || self.feature().flags.contains(flag)
     }
 
-    fn has_any_flag(&self, flag: TileFlags) -> bool {
+    fn has_any_tile_flag(&self, flag: TileFlags) -> bool {
         self.ground().flags.intersects(flag) || self.feature().flags.intersects(flag)
+    }
+
+    fn has_cell_flag(&self, flag: CellFlags) -> bool {
+        self.map().has_flag_idx(self.index(), flag)
+    }
+
+    fn has_any_cell_flag(&self, flag: CellFlags) -> bool {
+        self.map().has_any_flag_idx(self.index(), flag)
     }
 
     // Move Flags
@@ -68,6 +78,14 @@ pub trait Cell {
     // flavor
 
     fn flavor(&self) -> String {
+        if self.has_cell_flag(CellFlags::IS_PORTAL) {
+            if let Some(ref info) = self.map().get_portal_idx(self.index()) {
+                if let Some(ref flavor) = info.flavor() {
+                    return flavor.clone();
+                }
+            }
+        }
+
         let ground = self.ground();
         let feature = self.feature();
 
@@ -105,6 +123,13 @@ impl<'m> Cell for CellRef<'m> {
     fn feature(&self) -> &'m Arc<Tile> {
         &self.map.feature[self.idx]
     }
+
+    fn index(&self) -> usize {
+        self.idx
+    }
+    fn map(&self) -> &Map {
+        self.map
+    }
 }
 
 ///////////////////
@@ -127,5 +152,12 @@ impl<'m> Cell for CellMut<'m> {
 
     fn feature(&self) -> &Arc<Tile> {
         &self.map.feature[self.idx]
+    }
+
+    fn index(&self) -> usize {
+        self.idx
+    }
+    fn map(&self) -> &Map {
+        self.map
     }
 }

@@ -4,7 +4,7 @@ use gw_util::blob::{Blob, BlobConfig};
 use gw_util::grid::{spread_replace, Grid};
 use gw_util::noise::{get_noise, print_histogram, square_bump, NoiseConfig};
 use gw_util::rng::{RandomNumberGenerator, RngCore};
-use gw_world::map::{find_random_point, Builder, Cell, Map};
+use gw_world::map::{find_random_point, Builder, Cell, Map, PortalInfo};
 use gw_world::tile::{TileKind, Tiles};
 
 pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32) -> Map {
@@ -69,13 +69,22 @@ pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32
     }
 
     // ADD TOWNS...
-    for _ in 0..4 {
+    for i in 1..=4 {
         let town_loc = find_random_point(&mut map, &mut rng, |_x, _y, tiles| {
             tiles.ground().kind == TileKind::FLOOR && tiles.feature().is_null()
         })
         .expect("Failed to find town location");
 
         map.place_feature(town_loc.x, town_loc.y, tiles.get("TOWN").unwrap());
+
+        // For when you come out of the town
+        let loc_name = format!("TOWN{}", i);
+        map.set_location(&loc_name, town_loc);
+
+        // For going into the town
+        let mut portal = PortalInfo::new(&loc_name, "START");
+        portal.set_flavor(&format!("the town of {}", &loc_name));
+        map.set_portal(town_loc, portal);
     }
 
     map

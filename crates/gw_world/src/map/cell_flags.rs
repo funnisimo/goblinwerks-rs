@@ -21,6 +21,8 @@ bitflags! {
         const TILE_CHANGED = fl!(5);   // NO STABLE SNAPSHOT
         const ENTITY_CHANGED = fl!(6);    // NEEDS REDRAW
 
+        const IS_PORTAL = fl!(7);
+
         // TODO
         // BLOCKED_MOVE
         // BLOCKED_VISION
@@ -71,6 +73,8 @@ impl FromStr for CellFlags {
                 "NEEDS_SNAPSHOT" => result |= CellFlags::NEEDS_SNAPSHOT,
                 "TILE_CHANGED" => result |= CellFlags::TILE_CHANGED,
                 "ENTITY_CHANGED" => result |= CellFlags::ENTITY_CHANGED,
+
+                "IS_PORTAL" => result |= CellFlags::IS_PORTAL,
 
                 "" => {}
                 _ => return Err(format!("Unknown TileFlag1: {}", s)),

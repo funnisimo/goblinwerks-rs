@@ -89,12 +89,14 @@ impl Tile {
 
 pub struct TileBuilder {
     tile: Tile,
+    layer_set: bool,
 }
 
 impl TileBuilder {
     pub fn new(id: &str) -> Self {
         TileBuilder {
             tile: Tile::new(id),
+            layer_set: false,
         }
     }
 
@@ -175,6 +177,9 @@ impl TileBuilder {
                     Err(e) => return Err(format!("Failed to parse kind : {} - {}", value, e)),
                     Ok(kind) => kind,
                 };
+                if kind == TileKind::FEATURE && !self.layer_set {
+                    self.tile.layer = TileLayer::FEATURE;
+                }
                 self.tile.kind = kind;
             }
             "flavor" => {
@@ -188,6 +193,7 @@ impl TileBuilder {
             }
             "layer" => {
                 self.tile.layer = value.parse().unwrap();
+                self.layer_set = true;
             }
             _ => return Err(format!("Unknown tile field - {}", field)),
         }

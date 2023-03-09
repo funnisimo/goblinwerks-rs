@@ -77,6 +77,7 @@ impl From<&str> for PortalFlags {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct PortalInfo {
     pub(crate) flavor: Option<String>,
     pub(crate) flags: PortalFlags,

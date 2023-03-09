@@ -38,8 +38,8 @@ pub struct Map {
     any_entity_change: bool, // TODO - MapFlags
     any_tile_change: bool,   // TODO - MapFlags
 
-    pub locations: HashMap<String, Point>,
-    pub portals: HashMap<Point, PortalInfo>,
+    pub(super) locations: HashMap<String, Point>,
+    pub(super) portals: HashMap<Point, PortalInfo>,
 
     // per cell information
     pub ground: Vec<Arc<Tile>>,
@@ -122,8 +122,24 @@ impl Map {
         point.x >= 0 && point.x < self.width as i32 && point.y >= 0 && point.y < self.height as i32
     }
 
-    pub fn get_portal(&self, x: i32, y: i32) -> Option<&PortalInfo> {
+    pub fn get_portal_xy(&self, x: i32, y: i32) -> Option<&PortalInfo> {
         self.portals.get(&Point::new(x, y))
+    }
+
+    pub fn get_portal(&self, point: &Point) -> Option<&PortalInfo> {
+        self.portals.get(&point)
+    }
+
+    pub(super) fn get_portal_idx(&self, idx: usize) -> Option<&PortalInfo> {
+        let point = self.to_point(idx);
+        self.portals.get(&point)
+    }
+
+    pub fn set_portal(&mut self, point: Point, info: PortalInfo) {
+        self.portals.insert(point, info);
+        if let Some(idx) = self.to_idx(point.x, point.y) {
+            self.cell_flags[idx].insert(CellFlags::IS_PORTAL);
+        }
     }
 
     pub fn get_location(&self, id: &str) -> Option<Point> {
@@ -131,6 +147,10 @@ impl Map {
             None => None,
             Some(pt) => Some(pt.clone()),
         }
+    }
+
+    pub fn set_location(&mut self, id: &str, point: Point) {
+        self.locations.insert(id.to_string(), point);
     }
 
     // pub fn revealed_xy(&self, x: i32, y: i32) -> bool {
@@ -244,6 +264,7 @@ impl Map {
         };
         self.ground[idx] = ground;
         self.feature[idx] = NO_TILE.clone();
+
         self.cell_flags[idx]
             .insert(CellFlags::NEEDS_DRAW | CellFlags::TILE_CHANGED | CellFlags::NEEDS_SNAPSHOT);
         self.any_tile_change = true;
@@ -648,6 +669,22 @@ impl Map {
             None => panic!("asked for tile at invalid x,y {},{}", x, y),
             Some(idx) => idx,
         };
+        self.cell_flags[idx].contains(flag)
+    }
+
+    pub(super) fn has_flag_idx(&self, idx: usize, flag: CellFlags) -> bool {
+        self.cell_flags[idx].contains(flag)
+    }
+
+    pub fn has_any_flag_xy(&self, x: i32, y: i32, flag: CellFlags) -> bool {
+        let idx = match self.to_idx(x, y) {
+            None => panic!("asked for tile at invalid x,y {},{}", x, y),
+            Some(idx) => idx,
+        };
+        self.cell_flags[idx].intersects(flag)
+    }
+
+    pub(super) fn has_any_flag_idx(&self, idx: usize, flag: CellFlags) -> bool {
         self.cell_flags[idx].intersects(flag)
     }
 

@@ -3,7 +3,6 @@ use acanja::map::town::build_town_map;
 use acanja::map::world::build_world_map;
 use gw_app::ecs::*;
 use gw_app::ecs::{systems::ResourceSet, Read};
-use gw_app::messages::Messages;
 use gw_app::*;
 use gw_util::point::Point;
 use gw_world::level::{Level, Levels};
@@ -42,19 +41,21 @@ impl MainScreen {
         level
     }
 
-    fn build_new_town(&mut self, ecs: &mut Ecs) -> Level {
+    fn build_new_town(&mut self, ecs: &mut Ecs, idx: u8) -> Level {
+        let town_name = format!("TOWN{}", idx);
+
         let mut map = {
             let (tiles, prefabs) = <(Read<Tiles>, Read<Prefabs>)>::fetch(&ecs.resources);
 
             log(format!("- prefabs: {}", prefabs.len()));
             // let mut map = dig_room_level(&tiles, 80, 50);
-            build_town_map(&tiles, &prefabs, 80, 50)
+            build_town_map(&tiles, &prefabs, 80, 50, &town_name)
         };
 
         map.reveal_all();
         map.make_fully_visible();
 
-        let mut level = Level::new("WORLD");
+        let mut level = Level::new(&town_name);
 
         level.resources.insert(map);
         level.resources.insert(Camera::new(80, 50));
@@ -69,10 +70,10 @@ impl MainScreen {
 
         log(format!("Built world map - {}/{}", index, levels.len()));
 
-        levels.push(self.build_new_town(ecs));
-        levels.push(self.build_new_town(ecs));
-        levels.push(self.build_new_town(ecs));
-        levels.push(self.build_new_town(ecs));
+        levels.push(self.build_new_town(ecs, 1));
+        levels.push(self.build_new_town(ecs, 2));
+        levels.push(self.build_new_town(ecs, 3));
+        levels.push(self.build_new_town(ecs, 4));
 
         log(format!(
             "Built 4 town maps - total levels = {}",
@@ -183,7 +184,34 @@ impl Screen for MainScreen {
             }
             "VIEWPORT_CLICK" => {
                 let pt: Point = value.unwrap().try_into().unwrap();
-                log(format!("CLICK = {}", pt));
+
+                let levels = ecs.resources.get::<Levels>().unwrap();
+                let level = levels.current();
+                let map = level.resources.get::<Map>().unwrap();
+
+                if let Some(portal) = map.get_portal(&pt) {
+                    if let Some(map_index) = levels.index_of(portal.map_id()) {
+                        log(format!(
+                            "Enter Portal = {} - {}::{}",
+                            portal.flavor().as_ref().unwrap(),
+                            portal.map_id(),
+                            portal.location()
+                        ));
+
+                        drop(map);
+                        drop(level);
+                        drop(levels);
+
+                        let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+                        levels.set_current_index(map_index);
+                    } else {
+                        log(format!(
+                            "Enter Portal with UNKNOWN map = {} - {}",
+                            portal.flavor().as_ref().unwrap(),
+                            portal.map_id()
+                        ));
+                    }
+                }
             }
             _ => {}
         }

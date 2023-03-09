@@ -77,10 +77,16 @@ flavor = "a counter"
 move   = "BLOCKS_MOVE"
 
 [TOWN]
-kind   = "FLOOR"
+kind   = "FEATURE"
 sprite = "0x7F|YELLOW|NONE"
 flavor = "a town"
 move   = "PORTAL_DOWN"
+
+[EXIT_TOWN_LEFT]
+kind   = "FEATURE"
+sprite = "<|YELLOW|NONE"
+flavor = "a way to leave town"
+move   = "PORTAL_UP"
 
 ######## WORLD TILES
 

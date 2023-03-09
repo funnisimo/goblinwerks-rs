@@ -1,7 +1,6 @@
 use crate::value::{Key, Value};
 use std::collections::HashMap;
-use std::fs::{read_to_string, File};
-use std::io::{BufRead, BufReader};
+use std::fs::read_to_string;
 use toml::Table;
 
 pub fn parse_file(path: &str) -> Result<Value, String> {

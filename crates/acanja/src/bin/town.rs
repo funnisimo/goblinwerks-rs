@@ -24,7 +24,7 @@ impl MainScreen {
 
             log(format!("- prefabs: {}", prefabs.len()));
             // let mut map = dig_room_level(&tiles, 80, 50);
-            build_town_map(&tiles, &prefabs, 80, 50)
+            build_town_map(&tiles, &prefabs, 80, 50, "TOWN")
         };
 
         map.reveal_all();

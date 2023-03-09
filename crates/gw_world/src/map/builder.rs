@@ -1,6 +1,7 @@
-use super::Cell;
+use super::{Cell, PortalInfo};
 use crate::tile::{Tile, Tiles};
 use crate::{map::Map, tile::TileKind};
+use gw_util::point::Point;
 use gw_util::rect::Rect;
 use gw_util::rng::RandomNumberGenerator;
 use std::cmp::{max, min};
@@ -53,12 +54,32 @@ impl<'t> Builder<'t> {
         };
     }
 
+    pub fn place_tile(&mut self, x: i32, y: i32, name: &str) {
+        match self.tiles.get(name) {
+            None => panic!("Tile does not exist - {}", name),
+            Some(tile) => {
+                // log(format!("set_tile({},{},{}", x, y, name));s
+                self.map.place_tile(x, y, tile);
+            }
+        };
+    }
+
     pub fn get_tile(&self, x: i32, y: i32) -> Arc<Tile> {
         self.map.get_cell(x, y).unwrap().ground().clone()
     }
 
     pub fn rng_mut(&mut self) -> &mut RandomNumberGenerator {
         &mut self.rng
+    }
+
+    pub fn set_portal(&mut self, point: Point, info: PortalInfo) -> &mut Self {
+        self.map.set_portal(point, info);
+        self
+    }
+
+    pub fn set_location(&mut self, location: &str, point: Point) -> &mut Self {
+        self.map.set_location(location, point);
+        self
     }
 
     pub fn add_border(&mut self, name: &str) -> &mut Self {
