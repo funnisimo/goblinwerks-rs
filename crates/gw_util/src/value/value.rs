@@ -819,8 +819,9 @@ impl From<Key> for Value {
     fn from(value: Key) -> Self {
         match value {
             Key::Index(v) => Value::Index(v),
-            Key::Number(v) => Value::Integer(v),
-            Key::Text(v) => Value::String(v),
+            Key::Integer(v) => Value::Integer(v),
+            Key::String(v) => Value::String(v),
+            Key::Point(x, y) => Value::Point(x, y),
 
             Key::Entity(v) => Value::Entity(v),
         }
