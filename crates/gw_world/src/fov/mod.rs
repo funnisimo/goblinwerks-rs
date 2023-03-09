@@ -1,3 +1,5 @@
+use crate::map::Cell;
+use crate::map::Map;
 use gw_util::point::Point;
 use std::cmp::min;
 
@@ -10,8 +12,6 @@ pub use mask::*;
 
 mod fov;
 pub use fov::*;
-
-use crate::map::Map;
 
 // CREDIT - This is adapted from: http://roguebasin.roguelikedevelopment.org/index.php?title=Improved_Shadowcasting_in_Java
 
@@ -80,7 +80,7 @@ pub trait FovTarget {
 
 impl FovSource for Map {
     fn is_opaque(&self, x: i32, y: i32) -> bool {
-        self.get_tiles(x, y).blocks_vision()
+        self.get_cell(x, y).unwrap().blocks_vision()
     }
 
     fn has_xy(&self, x: i32, y: i32) -> bool {

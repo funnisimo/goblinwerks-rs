@@ -1,3 +1,4 @@
+use super::Cell;
 use crate::tile::{Tile, Tiles};
 use crate::{map::Map, tile::TileKind};
 use gw_util::rect::Rect;
@@ -53,7 +54,7 @@ impl<'t> Builder<'t> {
     }
 
     pub fn get_tile(&self, x: i32, y: i32) -> Arc<Tile> {
-        self.map.get_tiles(x, y).ground()
+        self.map.get_cell(x, y).unwrap().ground().clone()
     }
 
     pub fn rng_mut(&mut self) -> &mut RandomNumberGenerator {

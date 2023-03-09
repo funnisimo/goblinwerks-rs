@@ -4,7 +4,7 @@ use gw_util::blob::{Blob, BlobConfig};
 use gw_util::grid::{spread_replace, Grid};
 use gw_util::noise::{get_noise, print_histogram, square_bump, NoiseConfig};
 use gw_util::rng::{RandomNumberGenerator, RngCore};
-use gw_world::map::{find_random_point, Builder, Map};
+use gw_world::map::{find_random_point, Builder, Cell, Map};
 use gw_world::tile::{TileKind, Tiles};
 
 pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32) -> Map {

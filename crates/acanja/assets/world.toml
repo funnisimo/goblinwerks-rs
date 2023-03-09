@@ -1,0 +1,16 @@
+# This file sets how the world will be built
+
+[WORLD]
+width  = 160
+height = 100
+
+[[WORLD.steps]]
+FILL = "OCEAN"
+
+[[WORLD.steps]]
+BLOB   = { min_height = 0.5, max_height = 0.8, min_width = 0.8, max_width = 0.5, tile = "ISLAND" }
+REPEAT = { max = 10, until_tile_pct = { tile = "ISLAND", pct = 0.4 } }
+
+[[WORLD.steps]]
+SPREAD = { tile = "FOREST", chance = 0.4, match_tile = "ISLAND" }
+REPEAT = { max = 10, until_tile_pct = { tile = "FOREST", pct = 0.4, of_tile = "ISLAND" } }

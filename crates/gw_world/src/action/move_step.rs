@@ -3,6 +3,7 @@ use crate::action::{Action, ActionResult};
 use crate::actor::Actor;
 use crate::hero::Hero;
 use crate::level::Level;
+use crate::map::Cell;
 use crate::map::Map;
 use crate::position::Position;
 use gw_app::ecs::systems::ResourceSet;
@@ -75,7 +76,7 @@ impl MoveStepAction {
         let actor_is_hero = self.entity == hero.entity;
 
         if map.blocked_xy(new_x, new_y) {
-            let flavor = map.get_tiles(new_x, new_y).flavor();
+            let flavor = map.get_cell(new_x, new_y).unwrap().flavor();
             if actor_is_hero {
                 level.logger.log(format!("Blocked by {}", flavor));
             }

@@ -24,6 +24,117 @@ pub enum Value {
     Entity(Entity),
 }
 
+impl Value {
+    pub fn get_value(&self, key: &str) -> Option<&Value> {
+        match self {
+            Value::Map(map) => map.get(&key.into()),
+            _ => None,
+        }
+    }
+
+    pub fn get_index(&self, index: usize) -> Option<&Value> {
+        match self {
+            Value::List(list) => list.get(index),
+            _ => None,
+        }
+    }
+
+    pub fn get_path(&self, path: &str) -> Option<&Value> {
+        match self {
+            Value::Map(map) => {
+                let keys: Vec<&str> = path.splitn(2, '.').collect();
+                match map.get(&keys[0].into()) {
+                    None => None,
+                    Some(value) => match keys.len() {
+                        1 => Some(value),
+                        _ => value.get_path(keys[1]),
+                    },
+                }
+            }
+            _ => None,
+        }
+    }
+
+    pub fn as_map(&self) -> Option<&HashMap<Key, Value>> {
+        match self {
+            Value::Map(map) => Some(map),
+            _ => None,
+        }
+    }
+
+    pub fn to_map(self) -> Option<HashMap<Key, Value>> {
+        match self {
+            Value::Map(map) => Some(map),
+            _ => None,
+        }
+    }
+
+    pub fn as_list(&self) -> Option<&Vec<Value>> {
+        match self {
+            Value::List(list) => Some(list),
+            _ => None,
+        }
+    }
+
+    pub fn to_list(self) -> Option<Vec<Value>> {
+        match self {
+            Value::List(list) => Some(list),
+            _ => None,
+        }
+    }
+
+    pub fn as_int(&self) -> Option<u64> {
+        match self {
+            Value::Index(v) => match (*v).try_into() {
+                Ok(v) => Some(v),
+                Err(_) => None,
+            },
+            Value::Number(v) => match (*v).try_into() {
+                Ok(v) => Some(v),
+                Err(_) => None,
+            },
+            Value::Float(v) => Some(v.trunc() as u64),
+            Value::Text(v) => match v.parse::<u64>() {
+                Err(_) => None,
+                Ok(v) => Some(v),
+            },
+            Value::Boolean(v) => match v {
+                true => Some(1),
+                false => Some(0),
+            },
+
+            // Value::Blank => Ok(0.0),
+            _ => None,
+        }
+    }
+
+    pub fn as_float(&self) -> Option<f64> {
+        match self {
+            Value::Index(v) => Some(*v as f64),
+            Value::Number(v) => Some(*v as f64),
+            Value::Float(v) => Some(*v),
+            Value::Text(v) => match v.parse::<f64>() {
+                Err(_) => None,
+                Ok(v) => Some(v),
+            },
+            Value::Boolean(v) => match v {
+                true => Some(1.0),
+                false => Some(0.0),
+            },
+
+            // Value::Blank => Ok(0.0),
+            _ => None,
+        }
+    }
+
+    pub fn as_point(&self) -> Option<Point> {
+        match self {
+            Value::Point(x, y) => Some(Point::new(*x, *y)),
+            _ => None,
+        }
+    }
+}
+
 impl TryInto<usize> for Value {
     type Error = DataConvertError;
 
@@ -422,6 +533,28 @@ impl TryInto<Entity> for Value {
     fn try_into(self) -> Result<Entity, DataConvertError> {
         match self {
             Value::Entity(e) => Ok(e),
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
+impl TryInto<HashMap<Key, Value>> for Value {
+    type Error = DataConvertError;
+
+    fn try_into(self) -> Result<HashMap<Key, Value>, Self::Error> {
+        match self {
+            Value::Map(map) => Ok(map),
+            _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
+impl TryInto<Vec<Value>> for Value {
+    type Error = DataConvertError;
+
+    fn try_into(self) -> Result<Vec<Value>, Self::Error> {
+        match self {
+            Value::List(val) => Ok(val),
             _ => Err(DataConvertError::WrongType),
         }
     }

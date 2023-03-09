@@ -1,0 +1,166 @@
+# tiles
+
+# This file holds the configuration for all of the tiles in the game.
+# It is a "TOML" file and the data must be formatted accordingly.
+
+# Each tile starts a table entry
+# e.g.
+# [ID]
+# sprite = " :red:black"
+# ...
+
+# the fields that you can set on a tile include:
+# sprite = "<char>:<fg>:<bg>" or "<char>:<fg>" or "<bg>"
+
+# colors can be either...
+# - hex colors (#rgb, #rgba, #rrggbb, #rrggbbaa): e.g. #39f or #F407A935 
+# . - hex is not case sensitive
+# - named colors: colors that are pre-loaded (either in the colors file or from defaults): e.g. white
+# . - names are case sensitive
+
+[ERROR]
+sprite = "!:RED:BLACK"
+
+[WALL]
+kind   = "WALL"
+sprite = "#;GRAY;BLACK"
+move   = "BLOCKS_ALL"
+flavor = "a solid granite wall"
+
+[FLOOR]
+kind   = "FLOOR"
+sprite = ".;DARK_GRAY;BLACK"
+flavor = "the stone floor"
+
+[HALL]
+kind   = "HALL"
+sprite = ".;GRAY;BLACK"
+flavor = "the stone hallway"
+
+[UP_STAIRS]
+kind   = "STAIRS"
+sprite = "<;CYAN;BLACK"
+flags  = "CLIMB_PORTAL"
+flavor = "some stairs leading up"
+
+[DOWN_STAIRS]
+kind   = "STAIRS"
+sprite = ">;CYAN;BLACK"
+flags  = "DESCEND_PORTAL"
+flavor = "some stairs leading down"
+
+[LAKE]
+kind   = "LAKE"
+sprite = "~:blue:dark_blue"
+flavor = "some water"
+move   = "BLOCKS_MOVE"
+
+[BRIDGE]
+kind   = "BRIDGE"
+sprite = "=:brown:darkest_brown"
+flavor = "a bridge"
+
+[ISLAND]
+kind   = "FLOOR"
+sprite = " |GREEN|DARKER_GREEN"
+flavor = "some grass"
+
+[LANDING]
+kind   = "FLOOR"
+sprite = " |DARK_GREEN|DARKER_GREEN"
+flavor = "some grass"
+
+[COUNTER]
+kind   = "FLOOR"
+sprite = "=|BLACK|DARK_GRAY"
+flavor = "a counter"
+move   = "BLOCKS_MOVE"
+
+[TOWN]
+kind   = "FLOOR"
+sprite = "0x7F|YELLOW|NONE"
+flavor = "a town"
+move   = "PORTAL_DOWN"
+
+######## WORLD TILES
+
+[DEEP_OCEAN]
+kind   = "LAKE"
+sprite = "~|DARK_BLUE|DARKEST_BLUE"
+flavor = "deep ocean"
+move   = "BLOCKS_MOVE"
+
+[OCEAN]
+kind   = "LAKE"
+sprite = "~|DARK_BLUE|DARKER_BLUE"
+flavor = "ocean"
+move   = "BLOCKS_MOVE"
+
+[SHALLOW_OCEAN]
+kind   = "LAKE"
+sprite = "~|BLUE|DARK_BLUE"
+flavor = "shallow ocean"
+move   = "BLOCKS_MOVE"
+
+[BEACH]
+kind   = "FLOOR"
+sprite = ";|LIGHTGOLDENROD|KHAKI"
+flavor = "beach"
+
+[MOUNTAIN]
+kind   = "FLOOR"
+sprite = "^|BLACK|DARK_BROWN"
+flavor = "mountains"
+move   = "BLOCKS_MOVE"
+
+[FOREST_MOUNTAIN]
+kind   = "FLOOR"
+sprite = "^|DARKGREEN|DARK_BROWN"
+flavor = "forested mountains"
+move   = "BLOCKS_MOVE"
+
+[SNOW_MOUNTAIN]
+kind   = "FLOOR"
+sprite = "^|WHITE|DARK_BROWN"
+flavor = "snowy mountains"
+move   = "BLOCKS_MOVE"
+
+[HILL]
+kind   = "FLOOR"
+sprite = "^|LIGHT_BROWN|BROWN"
+flavor = "hills"
+
+[SHRUB_HILL]
+kind   = "FLOOR"
+sprite = "^|LIGHTGREEN|BROWN"
+flavor = "shrubbed hills"
+
+[FOREST_HILL]
+kind   = "FLOOR"
+sprite = "^|DARKGREEN|BROWN"
+flavor = "forested hills"
+
+[SHRUB_DESERT]
+kind   = "FLOOR"
+sprite = ".|DARKKHAKI|OLIVE"
+flavor = "shrubbed desert"
+
+[DESERT]
+kind   = "FLOOR"
+sprite = ".|KHAKI|DARKKHAKI"
+flavor = "desert"
+
+[GRASSLAND]
+kind   = "FLOOR"
+sprite = ".|GREEN|DARK_GREEN"
+flavor = "grassland"
+
+[FOREST]
+kind   = "FLOOR"
+sprite = ".|DARK_GREEN|DARKEST_GREEN"
+flavor = "forest"
+
+[RAINFOREST]
+kind   = "FLOOR"
+sprite = ".|DARK_TEAL|DARKEST_TEAL"
+flavor = "rainforest"

@@ -1,9 +1,8 @@
+use super::{Cell, CellMut, CellRef, PortalInfo};
 use super::{CellFlags, MapFlags};
-use super::{CellMut, CellRef};
 // use crate::fov::FovSource;
 use crate::tile::Tile;
 use crate::tile::TileLayer;
-use crate::tile::TileSet;
 use crate::tile::NO_TILE;
 use gw_app::ecs::Entity;
 use gw_util::point::distance;
@@ -40,7 +39,7 @@ pub struct Map {
     any_tile_change: bool,   // TODO - MapFlags
 
     pub locations: HashMap<String, Point>,
-    pub portals: HashMap<Point, (u32, String)>,
+    pub portals: HashMap<Point, PortalInfo>,
 
     // per cell information
     pub ground: Vec<Arc<Tile>>,
@@ -123,11 +122,8 @@ impl Map {
         point.x >= 0 && point.x < self.width as i32 && point.y >= 0 && point.y < self.height as i32
     }
 
-    pub fn get_portal(&self, x: i32, y: i32) -> Option<(u32, String)> {
-        match self.portals.get(&Point::new(x, y)) {
-            None => None,
-            Some((id, location)) => Some((*id, location.clone())),
-        }
+    pub fn get_portal(&self, x: i32, y: i32) -> Option<&PortalInfo> {
+        self.portals.get(&Point::new(x, y))
     }
 
     pub fn get_location(&self, id: &str) -> Option<Point> {
@@ -220,10 +216,24 @@ impl Map {
         }
     }
 
+    pub(crate) fn get_cell_at_idx(&self, idx: usize) -> Option<CellRef> {
+        match idx < self.ground.len() {
+            false => None,
+            true => Some(CellRef::new(self, idx)),
+        }
+    }
+
     pub fn get_cell_mut(&mut self, x: i32, y: i32) -> Option<CellMut> {
         match self.to_idx(x, y) {
             None => None,
             Some(idx) => Some(CellMut::new(self, idx)),
+        }
+    }
+
+    pub(crate) fn get_cell_mut_at_idx(&mut self, idx: usize) -> Option<CellMut> {
+        match idx < self.ground.len() {
+            false => None,
+            true => Some(CellMut::new(self, idx)),
         }
     }
 
@@ -239,19 +249,19 @@ impl Map {
         self.any_tile_change = true;
     }
 
-    pub fn get_tiles(&self, x: i32, y: i32) -> TileSet {
-        match self.to_idx(x, y) {
-            None => TileSet::new(NO_TILE.clone(), NO_TILE.clone()),
-            Some(idx) => TileSet::new(self.ground[idx].clone(), self.feature[idx].clone()),
-        }
-    }
+    // pub fn get_tiles(&self, x: i32, y: i32) -> TileSet {
+    //     match self.to_idx(x, y) {
+    //         None => TileSet::new(NO_TILE.clone(), NO_TILE.clone()),
+    //         Some(idx) => TileSet::new(self.ground[idx].clone(), self.feature[idx].clone()),
+    //     }
+    // }
 
-    pub(crate) fn get_tiles_at_idx(&self, idx: usize) -> TileSet {
-        match self.ground.get(idx) {
-            Some(tile) => TileSet::new(tile.clone(), self.feature[idx].clone()),
-            None => TileSet::new(NO_TILE.clone(), NO_TILE.clone()),
-        }
-    }
+    // pub(crate) fn get_tiles_at_idx(&self, idx: usize) -> TileSet {
+    //     match self.ground.get(idx) {
+    //         Some(tile) => TileSet::new(tile.clone(), self.feature[idx].clone()),
+    //         None => TileSet::new(NO_TILE.clone(), NO_TILE.clone()),
+    //     }
+    // }
 
     pub fn place_tile(&mut self, x: i32, y: i32, tile: Arc<Tile>) -> bool {
         match tile.layer {
@@ -735,14 +745,15 @@ impl Map {
 
 pub fn find_random_point<F>(map: &Map, rng: &mut RandomNumberGenerator, func: F) -> Option<Point>
 where
-    F: Fn(i32, i32, TileSet) -> bool,
+    F: Fn(i32, i32, CellRef) -> bool,
 {
     for _ in 0..200 {
         let x = rng.range(0i32, map.width as i32 - 1);
         let y = rng.range(0i32, map.height as i32 - 1);
-        let tiles = map.get_tiles(x, y);
-        if func(x, y, tiles) {
-            return Some(Point::new(x, y));
+        if let Some(cell) = map.get_cell(x, y) {
+            if func(x, y, cell) {
+                return Some(Point::new(x, y));
+            }
         }
     }
     None
@@ -750,7 +761,7 @@ where
 
 pub fn closest_points_matching<F>(map: &Map, x: i32, y: i32, func: F) -> Vec<Point>
 where
-    F: Fn(i32, i32, TileSet) -> bool,
+    F: Fn(i32, i32, CellRef) -> bool,
 {
     let mut points: Vec<Point> = Vec::new();
 
@@ -769,9 +780,10 @@ where
                     continue;
                 }
 
-                let tiles = map.get_tiles(x1, y1);
-                if func(x1, y1, tiles) {
-                    points.push(Point::new(x1, y1));
+                if let Some(cell) = map.get_cell(x1, y1) {
+                    if func(x1, y1, cell) {
+                        points.push(Point::new(x1, y1));
+                    }
                 }
             }
         }
@@ -795,8 +807,8 @@ pub fn dump_map(map: &Map) {
     for y in 0..map.height as i32 {
         let mut line = format!("{:2} |", y);
         for x in 0..map.width as i32 {
-            let tiles = map.get_tiles(x, y);
-            let sprite = tiles.sprite();
+            let cell = map.get_cell(x, y).unwrap();
+            let sprite = cell.sprite();
             let ch = match sprite.glyph {
                 0 => ' ',
                 x => char::from_u32(x).unwrap(),

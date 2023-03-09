@@ -1,4 +1,5 @@
 use crate::level::Level;
+use crate::map::Cell;
 use crate::map::{CellFlags, Map};
 use crate::memory::MapMemory;
 use crate::position::Position;
@@ -364,8 +365,8 @@ fn draw_map(
                     let (glyph, mut fg, mut bg) = match needs_snapshot {
                         true => {
                             // println!(": tile changed - {},{}", x, y);
-                            let tiles = map.get_tiles_at_idx(idx);
-                            let tile_sprite = tiles.sprite();
+                            let cell = map.get_cell_at_idx(idx).unwrap();
+                            let tile_sprite = cell.sprite();
                             if let Some(memory) = memory.as_mut() {
                                 memory.set_sprite(
                                     x,

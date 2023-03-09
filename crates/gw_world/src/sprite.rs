@@ -58,7 +58,7 @@ impl FromStr for Sprite {
             Some((_idx, ch)) => ch,
         };
 
-        log(format!("parse sprite - {}, sep={}", str, sep));
+        // log(format!("parse sprite - {}, sep={}", str, sep));
 
         let parts: Vec<&str> = str.split(sep).map(|p| p.trim()).collect();
         let (ch, fg, bg) = match parts.len() {
@@ -71,7 +71,7 @@ impl FromStr for Sprite {
             _ => return Err(SpriteParseError::WrongFormat),
         };
 
-        log(format!("- ch={}", ch));
+        // log(format!("- ch={}", ch));
         let glyph = match ch.chars().count() {
             0 => 0,
             1 => match ch.chars().next() {

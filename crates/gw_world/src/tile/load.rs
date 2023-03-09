@@ -3,14 +3,27 @@ use super::Tiles;
 use gw_app::ecs::Ecs;
 use gw_app::loader::{LoadError, LoadHandler};
 use gw_app::log;
-use gw_util::toml::StringTable;
+use gw_util::value::Value;
 
-pub fn load_tile_data(dest: &mut Tiles, toml: &StringTable) -> Result<u32, String> {
+pub fn load_tile_data(dest: &mut Tiles, toml: Value) -> Result<u32, String> {
+    let map = match toml.to_map() {
+        None => return Err("Wrong data format.".to_string()),
+        Some(v) => v,
+    };
+
     let mut count: u32 = 0;
-    for (name, data) in toml.iter() {
-        let mut builder = TileBuilder::new(name);
-        for (key, value) in data.iter() {
-            if let Err(e) = builder.set(&key.to_lowercase(), value) {
+
+    for (name, data) in map.iter() {
+        let mut builder = TileBuilder::new(&name.to_string());
+
+        let data_table = match data.as_map() {
+            None => return Err(format!("Bad data format - {}", name.to_string())),
+            Some(v) => v,
+        };
+
+        for (key, value) in data_table.iter() {
+            let key_val = key.to_string().to_lowercase();
+            if let Err(e) = builder.set(&key_val, &value.to_string()) {
                 return Err(format!("Error processing tile[{}] - {}", &name, e));
             }
         }
@@ -51,7 +64,7 @@ impl LoadHandler for TileFileLoader {
             Ok(v) => v,
         };
 
-        let string_table = match gw_util::toml::parse_to_string_table(&string) {
+        let string_table = match gw_util::toml::parse_string(&string) {
             Err(e) => {
                 return Err(LoadError::ParseError(format!(
                     "Failed to parse '{}' => {}",
@@ -61,7 +74,7 @@ impl LoadHandler for TileFileLoader {
             Ok(v) => v,
         };
 
-        match load_tile_data(&mut tiles, &string_table) {
+        match load_tile_data(&mut tiles, string_table) {
             Err(e) => return Err(LoadError::ProcessError(e)),
             Ok(count) => {
                 log(format!("Loaded {} tiles", count));

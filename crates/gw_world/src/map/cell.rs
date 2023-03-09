@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     sprite::Sprite,
-    tile::{Tile, TileFlags, TileMove},
+    tile::{Tile, TileFlags, TileMove, TileSet},
 };
 
 use super::Map;
@@ -10,6 +10,10 @@ use super::Map;
 pub trait Cell {
     fn ground(&self) -> &Arc<Tile>;
     fn feature(&self) -> &Arc<Tile>;
+
+    fn get_tiles(&self) -> TileSet {
+        TileSet::new(self.ground().clone(), self.feature().clone())
+    }
 
     // Flags
 
@@ -94,11 +98,11 @@ impl<'m> CellRef<'m> {
 }
 
 impl<'m> Cell for CellRef<'m> {
-    fn ground(&self) -> &Arc<Tile> {
+    fn ground(&self) -> &'m Arc<Tile> {
         &self.map.ground[self.idx]
     }
 
-    fn feature(&self) -> &Arc<Tile> {
+    fn feature(&self) -> &'m Arc<Tile> {
         &self.map.feature[self.idx]
     }
 }

@@ -154,7 +154,7 @@ impl TileBuilder {
     pub fn set(&mut self, field: &str, value: &str) -> Result<(), String> {
         match field {
             "sprite" => {
-                log(format!("parse sprite for tile - {}", value));
+                // log(format!("parse sprite for tile - {}", value));
                 let sprite: Sprite = match value.parse() {
                     Err(e) => {
                         log(format!(

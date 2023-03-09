@@ -1,0 +1,46 @@
+{
+  "MAPS": ["WORLD", "TOWN1", "TOWN2", "TOWN3", "TOWN4"],
+  "WORLD": {
+    "width": 160,
+    "height": 100,
+    "steps": [
+      { "FILL": "OCEAN" },
+      {
+        "BLOB": { "width": [0.5, 0.8], "height": [0.5, 0.8], "tile": "ISLAND" },
+        "REPEAT_UNTIL": { "tile_pct": { "tile": "ISLAND", "pct": 0.3 } }
+      },
+      {
+        "SPREAD": { "tile": "FOREST", "match_tile": "ISLAND", "chance": 0.5 },
+        "REPEAT_UNTIL": {
+          "tile_pct": { "tile": "FOREST", "pct": 0.3, "of_tile": "ISLAND" }
+        }
+      }
+    ]
+  },
+  "TOWN1": {
+    "width": 80,
+    "height": 50,
+    "steps": [
+      { "FILL": "OCEAN" },
+      { "LANDING_LEFT": { "start": 1.5, "decrement": 0.3, "tile": "LANDING" } },
+      {
+        "CIRCLE": { "tile": "ISLAND", "x": 40, "y": 25, "radius": 0.2 } //
+      },
+      {
+        "CIRCLE": {
+          "radius": [0.1, 0.3],
+          "tile": "ISLAND",
+          "match_tile": ["ISLAND", "OCEAN"]
+        },
+        "REPEAT_UNTIL": { "tile": "ISLAND", "pct": 0.4 }
+      },
+      {
+        "BRIDGE_X": {
+          "height": 3,
+          "from_tile": "LANDING",
+          "to_tile": "ISLAND"
+        }
+      }
+    ]
+  }
+}
