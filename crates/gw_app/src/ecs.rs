@@ -5,9 +5,29 @@ use crate::messages::Messages;
 use crate::panel::PanelProgram;
 use crate::{font::Fonts, log, App, AppConfig, AppInput};
 pub use atomic_refcell::{AtomicRef, AtomicRefMut, BorrowError, BorrowMutError};
+use lazy_static::lazy_static;
+use legion::serialize::Canon;
+pub use legion::storage::Component;
 use legion::systems::Resource;
 pub use legion::systems::ResourceSet;
+pub use legion::Registry;
 pub use legion::*;
+use serde::de::DeserializeSeed;
+pub use serde::{Deserialize, Serialize};
+use std::sync::Mutex;
+
+lazy_static! {
+    pub static ref REGISTRY: Mutex<Registry<String>> = Mutex::new(Registry::new());
+}
+
+pub fn register_component<C>(name: &str)
+where
+    for<'d> C: Component + Serialize + Deserialize<'d>,
+{
+    if let Ok(mut registry) = REGISTRY.lock() {
+        registry.register::<C>(name.to_string());
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct WindowInfo {
@@ -144,4 +164,56 @@ where
     let result = func(ecs, &mut resource);
     ecs.resources.insert(resource);
     return result;
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct MoveToNewWorld;
+
+pub fn move_entity(entity: Entity, src: &mut World, dest: &mut World) -> Entity {
+    let mut registry = REGISTRY.lock().unwrap();
+
+    // add the marker component
+    let mut entry = src.entry(entity).unwrap();
+    entry.add_component(MoveToNewWorld);
+
+    registry.register::<MoveToNewWorld>("MoveToNewWorld".to_string());
+
+    // let mut query = <(Entity, &MoveToNewWorld)>::query();
+    // let src_heros: Vec<Entity> = query.iter(src).map(|(e, _)| *e).collect();
+
+    // println!("Entities to move - {:?}", src_heros);
+
+    let filter = component::<MoveToNewWorld>();
+    let entity_serializer = Canon::default();
+
+    let json = serde_json::to_value(&src.as_serializable(filter, &*registry, &entity_serializer))
+        .expect("Failed to serialize world!");
+    // println!("JSON = {:#}", json);
+
+    // for hero in src_heros {
+    // println!("- Deleting = {:?}", hero);
+    // src.remove(hero); // Delete the original entity
+    // }
+
+    src.remove(entity);
+
+    let mut query = <(Entity, &MoveToNewWorld)>::query();
+
+    // let heros: Vec<Entity> = query.iter(dest).map(|(e, _)| *e).collect();
+    // println!("Dest starting entities = {:?}", heros);
+
+    // registries are also serde deserializers
+    registry
+        .as_deserialize_into_world(dest, &entity_serializer)
+        .deserialize(json)
+        .expect("Failed to deserialize world!");
+
+    let new_entities: Vec<Entity> = query.iter(dest).map(|(e, _)| *e).collect();
+
+    let entity = new_entities.into_iter().next().unwrap();
+
+    let mut entry = dest.entry(entity).unwrap();
+    entry.remove_component::<MoveToNewWorld>();
+
+    entity
 }

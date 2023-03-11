@@ -1,4 +1,4 @@
-use crate::level::Level;
+use crate::level::{Level, Levels};
 use crate::map::Cell;
 use crate::map::{CellFlags, Map};
 use crate::memory::MapMemory;
@@ -186,9 +186,51 @@ impl Viewport {
         self.needs_draw = true;
     }
 
+    fn get_map_cell(&self, ecs: &Ecs, screen_pct: (f32, f32)) -> Option<Point> {
+        let view_point = self.con.mouse_point(screen_pct).unwrap();
+
+        let (map_size, offset) = match ecs.resources.get::<Levels>() {
+            Some(levels) => {
+                let level = levels.current();
+                let map_size = level.resources.get::<Map>().unwrap().get_size();
+                let camera = level.resources.get::<Camera>().unwrap();
+                let offset: Point = camera.offset_for(camera.size()).into();
+                (map_size, offset)
+            }
+            None => match ecs.resources.get::<Level>() {
+                Some(level) => {
+                    let map_size = level.resources.get::<Map>().unwrap().get_size();
+                    let camera = level.resources.get::<Camera>().unwrap();
+                    let offset: Point = camera.offset_for(camera.size()).into();
+                    (map_size, offset)
+                }
+                None => {
+                    let map_size = match ecs.resources.get::<Map>() {
+                        Some(map) => map.get_size(),
+                        None => return None,
+                    };
+                    let camera = ecs.resources.get::<Camera>().unwrap();
+                    let offset: Point = camera.offset_for(camera.size()).into();
+                    (map_size, offset)
+                }
+            },
+        };
+
+        let map_point: Point = view_point + offset;
+
+        if map_point.x < 0
+            || map_point.y < 0
+            || map_point.x >= map_size.0 as i32
+            || map_point.y >= map_size.1 as i32
+        {
+            return None;
+        }
+        Some(map_point)
+    }
+
     pub fn input(&mut self, ecs: &mut Ecs, event: &AppEvent) -> Option<ScreenResult> {
         match event {
-            AppEvent::MousePos(screen_pct) => match self.con.mouse_point(*screen_pct) {
+            AppEvent::MousePos(screen_pct) => match self.get_map_cell(ecs, *screen_pct) {
                 None => {}
                 Some(cell) => {
                     if cell != self.last_mouse {
@@ -201,7 +243,7 @@ impl Viewport {
                     }
                 }
             },
-            AppEvent::MouseDown(mouse) => match self.con.mouse_point(mouse.pos) {
+            AppEvent::MouseDown(mouse) => match self.get_map_cell(ecs, mouse.pos) {
                 None => {}
                 Some(cell) => {
                     let mut msgs = ecs.resources.get_mut::<Messages>().unwrap();

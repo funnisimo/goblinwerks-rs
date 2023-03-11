@@ -38,8 +38,8 @@ pub struct Map {
     any_entity_change: bool, // TODO - MapFlags
     any_tile_change: bool,   // TODO - MapFlags
 
-    pub(super) locations: HashMap<String, Point>,
-    pub(super) portals: HashMap<Point, PortalInfo>,
+    pub locations: HashMap<String, Point>,
+    pub portals: HashMap<Point, PortalInfo>,
 
     // per cell information
     pub ground: Vec<Arc<Tile>>,
@@ -392,21 +392,34 @@ impl Map {
         self.actors[idx].iter().map(|(a, _)| *a)
     }
 
+    pub fn remove_actor_at_xy(&mut self, x: i32, y: i32, entity: Entity) {
+        match self.to_idx(x, y) {
+            None => {}
+            Some(idx) => self.remove_actor(idx, entity),
+        }
+    }
+
     pub fn remove_actor(&mut self, idx: usize, entity: Entity) {
         if !self.has_idx(idx) {
             return;
         }
 
+        self.mark_entity_changed_idx(idx);
         match self.actors[idx].iter().position(|e| e.0 == entity) {
             None => {}
             Some(found_idx) => {
-                self.mark_entity_changed_idx(idx);
                 self.actors[idx].remove(found_idx);
                 self.blocked[idx] = self.actors[idx]
                     .iter()
                     .fold(false, |out: bool, ent| out || ent.1)
                     || self.items[idx].iter().fold(false, |out, ent| out || ent.1);
             }
+        }
+    }
+    pub fn add_actor_at_xy(&mut self, x: i32, y: i32, entity: Entity, blocks: bool) {
+        match self.to_idx(x, y) {
+            None => {}
+            Some(idx) => self.add_actor(idx, entity, blocks),
         }
     }
 

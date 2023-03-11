@@ -13,7 +13,7 @@ use gw_world::level::Level;
 use gw_world::map::Map;
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
-use gw_world::task::{DoNextActionResult, Executor};
+use gw_world::task::DoNextActionResult;
 use gw_world::tile::{TileFileLoader, Tiles};
 use gw_world::widget::{update_camera_follows, Camera, Viewport};
 
@@ -21,7 +21,7 @@ struct UserControl;
 
 struct MainScreen {
     viewport: Viewport,
-    executor: Executor,
+    // executor: Executor,
 }
 
 impl MainScreen {
@@ -30,7 +30,7 @@ impl MainScreen {
 
         Box::new(MainScreen {
             viewport,
-            executor: Executor::new(),
+            // executor: Executor::new(),
         })
     }
 
@@ -55,7 +55,7 @@ impl MainScreen {
             Position::new(80, 50),
             Sprite::new('@' as Glyph, WHITE.into(), RGBA::new()),
             UserControl, // Do we need this?
-            Actor::new(ai_user_control),
+            Actor::new("USER_CONTROL"),
         ));
 
         let mut camera = Camera::new(80, 50);
@@ -63,9 +63,7 @@ impl MainScreen {
         level.resources.insert(camera);
 
         level.resources.insert(Hero::new(entity));
-
-        self.executor.clear();
-        self.executor.insert(entity, 0);
+        level.reset_tasks();
 
         ecs.resources.insert(level);
     }
@@ -145,28 +143,31 @@ impl Screen for MainScreen {
         // Pre Update
 
         let mut level = ecs.resources.get_mut::<Level>().unwrap();
-        // Update
-        loop {
-            // if world.is_game_over() {
-            //     return (self.game_over)(world, ctx);
-            // } else if !world.animations().is_empty() {
-            //     return ScreenResult::Continue;
-            // }
-            let res = self.executor.do_next_action(&mut *level);
-            self.post_action(&mut *level);
-            match res {
-                DoNextActionResult::Done => {
-                    return ScreenResult::Continue;
+
+        level.execute(|level, executor| {
+            // Update
+            loop {
+                // if world.is_game_over() {
+                //     return (self.game_over)(world, ctx);
+                // } else if !world.animations().is_empty() {
+                //     return ScreenResult::Continue;
+                // }
+                let res = executor.do_next_action(&mut *level);
+                self.post_action(&mut *level);
+                match res {
+                    DoNextActionResult::Done => {
+                        return ScreenResult::Continue;
+                    }
+                    DoNextActionResult::Mob => {
+                        continue;
+                    }
+                    DoNextActionResult::Hero => {
+                        return ScreenResult::Continue;
+                    }
+                    DoNextActionResult::PushMode(mode) => return ScreenResult::Push(mode),
                 }
-                DoNextActionResult::Mob => {
-                    continue;
-                }
-                DoNextActionResult::Hero => {
-                    return ScreenResult::Continue;
-                }
-                DoNextActionResult::PushMode(mode) => return ScreenResult::Push(mode),
             }
-        }
+        })
     }
 
     fn message(&mut self, _app: &mut Ecs, id: &str, value: Option<Value>) -> ScreenResult {

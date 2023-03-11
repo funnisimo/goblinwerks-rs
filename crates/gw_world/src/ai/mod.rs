@@ -1,6 +1,12 @@
 use crate::action::BoxedAction;
+use crate::ai::idle::ai_idle;
+use crate::ai::user::ai_user_control;
 use crate::level::Level;
 use gw_app::ecs::Entity;
+use mirror_entity::MirrorEntity;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 // mod mirror_player;
 // pub use mirror_player::MirrorPlayerAI;
@@ -12,7 +18,7 @@ use gw_app::ecs::Entity;
 // pub use player::PlayerAI;
 
 pub mod idle;
-pub mod mirror_player;
+pub mod mirror_entity;
 pub mod user;
 
 // mod basic_monster;
@@ -20,9 +26,81 @@ pub mod user;
 
 pub type AiFn = fn(&mut Level, Entity) -> Option<BoxedAction>;
 
-// pub trait AI: Send + Sync {
-//     fn next_action(&self, ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction>;
-// }
+#[allow(unused_variables)]
+pub trait AiHandler: Send + Sync {
+    fn on_enter(&self, level: &mut Level, entity: Entity) -> () {}
+    fn next_action(&self, level: &mut Level, entity: Entity) -> Option<BoxedAction>;
+    fn on_exit(&self, level: &mut Level, entity: Entity) -> () {}
+}
+
+impl<F> AiHandler for F
+where
+    F: Fn(&mut Level, Entity) -> Option<BoxedAction> + Send + Sync,
+{
+    fn next_action(&self, level: &mut Level, entity: Entity) -> Option<BoxedAction> {
+        (self)(level, entity)
+    }
+}
+
+// pub type BoxedAiHandler = Box<dyn AiHandler>;
+
+lazy_static::lazy_static! {
+    pub static ref AI_HANDLERS: Mutex<HashMap<String,Arc<dyn AiHandler>>> = {
+        let mut handlers: HashMap<String,Arc<dyn AiHandler>> = HashMap::new();
+        handlers.insert("IDLE".to_string(), Arc::new(ai_idle));
+        handlers.insert("USER_CONTROL".to_string(), Arc::new(ai_user_control));
+        handlers.insert("MIRROR_ENTITY".to_string(), Arc::new(MirrorEntity));
+        Mutex::new(handlers)
+    };
+
+    pub static ref DEFAULT_AI: Arc<dyn AiHandler> = Arc::new(ai_idle);
+}
+
+pub fn register_ai(name: &str, handler: Arc<dyn AiHandler>) {
+    AI_HANDLERS
+        .lock()
+        .unwrap()
+        .insert(name.to_string(), handler);
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct AI {
+    stack: Vec<String>,
+}
+
+impl AI {
+    pub fn new() -> Self {
+        AI { stack: Vec::new() }
+    }
+
+    pub fn push(&mut self, name: &str) {
+        // TODO - Validate name
+        self.stack.push(name.to_string());
+    }
+
+    pub fn pop(&mut self) {
+        self.stack.pop();
+    }
+
+    pub fn replace(&mut self, name: &str) {
+        self.stack.pop();
+        self.stack.push(name.to_string());
+    }
+
+    pub fn current(&self) -> Arc<dyn AiHandler> {
+        let handlers = AI_HANDLERS.lock().unwrap();
+
+        let name = match self.stack.last() {
+            None => return DEFAULT_AI.clone(),
+            Some(name) => name,
+        };
+
+        match handlers.get(name) {
+            None => DEFAULT_AI.clone(),
+            Some(handler) => handler.clone(),
+        }
+    }
+}
 
 // pub type BoxedAI = Box<dyn AI>;
 

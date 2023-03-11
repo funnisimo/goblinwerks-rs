@@ -1,4 +1,5 @@
 use super::distance;
+use serde::{Deserialize, Serialize};
 use std::{fmt::Display, ops};
 
 pub static DIRS: [Point; 8] = [
@@ -131,7 +132,7 @@ impl Iterator for RingIterator {
 
 pub const ZERO_POINT: Point = Point { x: 0, y: 0 };
 
-#[derive(Eq, PartialEq, Copy, Clone, Debug, Hash, Default)]
+#[derive(Eq, PartialEq, Copy, Clone, Debug, Hash, Default, Serialize, Deserialize)]
 /// Helper struct defining a 2D point in space.
 pub struct Point {
     /// The point's X location

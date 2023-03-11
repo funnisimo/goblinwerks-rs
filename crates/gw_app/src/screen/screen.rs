@@ -7,9 +7,9 @@ pub enum ScreenResult {
     /// Continue to process the frame
     Continue,
     /// Push a new screen onto the stack
-    Push(Box<dyn Screen>),
+    Push(BoxedScreen),
     /// Replace the current screen with this new one
-    Replace(Box<dyn Screen>),
+    Replace(BoxedScreen),
     /// Pop the current screen off the stack
     Pop,
     /// Quit the application

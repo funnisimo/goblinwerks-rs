@@ -4,6 +4,7 @@ use gw_app::log;
 use gw_app::Glyph;
 use gw_app::RGBA;
 use gw_util::text::find_first_of;
+use serde::{Deserialize, Serialize};
 use std::convert::From;
 use std::fmt::Display;
 use std::str::FromStr;
@@ -26,7 +27,7 @@ impl Display for SpriteParseError {
 }
 
 // #[derive(Component, Default, Clone, Copy, Debug)]
-#[derive(Default, Clone, Debug, PartialEq)]
+#[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Sprite {
     pub glyph: Glyph,
     pub fg: RGBA,

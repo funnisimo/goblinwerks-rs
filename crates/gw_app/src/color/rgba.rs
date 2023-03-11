@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 // use crate::console;
 use super::{get_color, ColorParseErr};
 use std::{ops, str::FromStr};
@@ -12,7 +14,7 @@ pub const BLACK: RGBA = RGBA::rgba(0, 0, 0, 255);
 pub type RGB = (u8, u8, u8);
 
 /// Tuple of Red,Green,Blue,Alpha components 0-255
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RGBA(pub u8, pub u8, pub u8, pub u8);
 
 impl RGBA {

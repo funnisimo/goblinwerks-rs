@@ -1,5 +1,8 @@
+use legion::Registry;
+
 use crate::color::init_colors;
 use crate::ecs::Ecs;
+use crate::ecs::REGISTRY;
 use crate::font::FromGlyphFn;
 use crate::font::ToGlyphFn;
 use crate::loader::BoxedLoadHandler;
@@ -130,6 +133,16 @@ impl AppBuilder {
     pub fn images(mut self, image_paths: &[&str]) -> Self {
         for image_path in image_paths {
             self.images.push((*image_path).to_owned());
+        }
+        self
+    }
+
+    pub fn register_components<F>(self, func: F) -> Self
+    where
+        F: FnOnce(&mut Registry<String>) -> (),
+    {
+        if let Ok(mut registry) = REGISTRY.lock() {
+            (func)(&mut *registry);
         }
         self
     }

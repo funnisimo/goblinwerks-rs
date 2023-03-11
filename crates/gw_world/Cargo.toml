@@ -13,5 +13,4 @@ gw_util      = { path = "../gw_util" }
 lazy_static  = "1.4.0"
 gw_ui        = { path = "../gw_ui" }
 num-rational = "0.4"
-
-[dev-dependencies]
+serde        = "1.0.154"

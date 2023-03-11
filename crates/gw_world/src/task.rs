@@ -43,7 +43,11 @@ impl TaskList {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.tasks.len() == 0
+        self.tasks.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.tasks.len()
     }
 
     pub fn insert(&mut self, entity: Entity, in_time: u32) -> () {
@@ -104,6 +108,14 @@ impl Executor {
         self.tasks.clear();
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.tasks.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.tasks.len()
+    }
+
     pub fn insert(&mut self, entity: Entity, in_time: u32) {
         self.tasks.insert(entity, in_time)
     }
@@ -112,21 +124,22 @@ impl Executor {
         self.tasks.remove(entity);
     }
 
-    pub fn get_next_action(&self, entity: Entity, ecs: &mut Level) -> Option<BoxedAction> {
-        let mut entry = match ecs.world.entry(entity) {
+    pub fn get_next_action(&self, entity: Entity, level: &mut Level) -> Option<BoxedAction> {
+        let mut entry = match level.world.entry(entity) {
             None => return None,
             Some(entry) => entry,
         };
 
-        let ai_fn = {
+        let ai = {
             let actor = entry.get_component_mut::<Actor>().unwrap();
             match actor.next_action.take() {
                 Some(action) => return Some(action),
-                None => actor.ai,
+                None => &mut actor.ai,
             }
         };
 
-        ai_fn(ecs, entity)
+        let ai_fn = ai.current();
+        ai_fn.next_action(level, entity)
     }
 
     #[must_use]
