@@ -4,7 +4,7 @@ use gw_util::blob::{Blob, BlobConfig};
 use gw_util::grid::{spread_replace, Grid};
 use gw_util::noise::{get_noise, print_histogram, square_bump, NoiseConfig};
 use gw_util::rng::{RandomNumberGenerator, RngCore};
-use gw_world::map::{find_random_point, Builder, Cell, Map, PortalInfo};
+use gw_world::map::{find_random_point, Builder, Cell, Map, PortalFlags, PortalInfo};
 use gw_world::tile::{TileKind, Tiles};
 
 pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32) -> Map {
@@ -84,6 +84,7 @@ pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32
         // For going into the town
         let mut portal = PortalInfo::new(&loc_name, "START");
         portal.set_flavor(&format!("the town of {}", &loc_name));
+        portal.set_flags(PortalFlags::ON_DESCEND);
         map.set_portal(town_loc, portal);
     }
 

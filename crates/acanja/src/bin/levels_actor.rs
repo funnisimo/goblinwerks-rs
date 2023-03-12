@@ -9,7 +9,7 @@ use gw_world::action::move_step::MoveStepAction;
 use gw_world::actor::Actor;
 use gw_world::hero::Hero;
 use gw_world::level::{Level, Levels};
-use gw_world::map::{Cell, Map};
+use gw_world::map::{Cell, Map, PortalFlags};
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
 use gw_world::task::DoNextActionResult;
@@ -177,6 +177,16 @@ impl Screen for MainScreen {
                     let next_idx = (idx + 1) % levels.len();
                     levels.set_current_index(next_idx);
                 }
+                VirtualKeyCode::Period if key_down.shift => {
+                    // '>'
+                    let hero_point = get_hero_point(ecs);
+                    try_move_hero_world(ecs, &hero_point, PortalFlags::ON_DESCEND);
+                }
+                VirtualKeyCode::Comma if key_down.shift => {
+                    // '<'
+                    let hero_point = get_hero_point(ecs);
+                    try_move_hero_world(ecs, &hero_point, PortalFlags::ON_CLIMB);
+                }
                 _ => {}
             },
             _ => {}
@@ -231,8 +241,7 @@ impl Screen for MainScreen {
             }
             "VIEWPORT_CLICK" => {
                 let pt: Point = value.unwrap().try_into().unwrap();
-
-                try_move_hero(ecs, &pt);
+                try_move_hero_world(ecs, &pt, PortalFlags::ON_DESCEND | PortalFlags::ON_CLIMB);
             }
             _ => {}
         }
@@ -287,7 +296,21 @@ fn move_hero(level: &mut Level, dx: i32, dy: i32) {
     actor.next_action = Some(Box::new(MoveStepAction::new(hero_entity, dx, dy)));
 }
 
-fn try_move_hero(ecs: &mut Ecs, pt: &Point) {
+fn get_hero_point(ecs: &mut Ecs) -> Point {
+    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+    let level = levels.current_mut();
+    let hero_entity = level.resources.get::<Hero>().unwrap().entity;
+
+    level
+        .world
+        .entry(hero_entity)
+        .unwrap()
+        .get_component::<Position>()
+        .unwrap()
+        .point()
+}
+
+fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
     let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
     let level = levels.current_mut();
 
@@ -299,8 +322,12 @@ fn try_move_hero(ecs: &mut Ecs, pt: &Point) {
 
     let (new_map_id, location) = {
         match map.get_portal(&pt) {
-            None => return,
+            None => return false,
             Some(info) => {
+                if !info.flags().contains(flag) {
+                    return false;
+                }
+
                 log(format!(
                     "Enter Portal = {} - {}::{}",
                     info.flavor().as_ref().unwrap(),
@@ -325,7 +352,7 @@ fn try_move_hero(ecs: &mut Ecs, pt: &Point) {
     drop(level);
 
     let new_map = match levels.index_of(&new_map_id) {
-        None => return,
+        None => return false,
         Some(id) => id,
     };
 
@@ -355,4 +382,5 @@ fn try_move_hero(ecs: &mut Ecs, pt: &Point) {
         let pos = entry.get_component_mut::<Position>().unwrap();
         pos.set(new_pt.x, new_pt.y);
     }
+    true
 }

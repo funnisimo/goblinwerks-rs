@@ -821,6 +821,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "gw_ecs"
+version = "0.1.0"
+dependencies = [
+ "atomic_refcell",
+ "bit-set",
+ "downcast-rs",
+ "itertools",
+ "parking_lot 0.12.1",
+ "paste",
+ "smallvec",
+ "thiserror",
+]
+
+[[package]]
 name = "gw_ui"
 version = "0.1.0"
 dependencies = [

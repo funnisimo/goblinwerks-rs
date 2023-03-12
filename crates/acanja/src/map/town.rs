@@ -2,7 +2,7 @@ use super::prefab::*;
 use gw_app::log;
 use gw_util::point::Point;
 use gw_util::rng::SliceRandom;
-use gw_world::map::{Builder, Map, PortalInfo};
+use gw_world::map::{Builder, Map, PortalFlags, PortalInfo};
 use gw_world::tile::Tiles;
 
 pub fn build_town_map<'t>(
@@ -32,6 +32,7 @@ pub fn build_town_map<'t>(
         builder.set_location("START", Point::new(1, y + 1));
         let mut portal = PortalInfo::new("WORLD", id);
         portal.set_flavor("a way back to the world");
+        portal.set_flags(PortalFlags::ON_CLIMB);
         builder
             .set_portal(Point::new(0, y), portal.clone())
             .set_portal(Point::new(0, y + 1), portal.clone())
