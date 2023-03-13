@@ -1,7 +1,6 @@
 pub mod action;
 pub mod actor;
 pub mod ai;
-pub mod flags;
 pub mod fov;
 pub mod hero;
 pub mod level;

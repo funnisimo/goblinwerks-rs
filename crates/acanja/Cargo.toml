@@ -12,3 +12,4 @@ gw_ui     = { path = "../gw_ui" }
 gw_world  = { path = "../gw_world" }
 toml_edit = "0.19.4"
 serde     = "1.0.154"
+rand      = "0.8.5"

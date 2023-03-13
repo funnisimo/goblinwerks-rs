@@ -1,6 +1,6 @@
 use super::FovTarget;
-use crate::fl;
 use bitflags::bitflags;
+use gw_util::fl;
 use std::fmt;
 
 ///////////////////////////////////////////////////////////

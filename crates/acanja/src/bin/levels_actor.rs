@@ -38,6 +38,7 @@ impl MainScreen {
 
         map.reveal_all();
         map.make_fully_visible();
+        let start_loc = map.locations.get("START").unwrap().clone();
 
         log(format!("locations = {:?}", &map.locations));
         log(format!("portals   = {:?}", &map.portals));
@@ -48,7 +49,7 @@ impl MainScreen {
 
         // add position + sprite for actor
         let entity = level.world.push((
-            Position::new(80, 50),
+            Position::new(start_loc.x, start_loc.y),
             Sprite::new('@' as Glyph, WHITE.into(), RGBA::new()),
             UserControl, // Do we need this?
             Actor::new("USER_CONTROL"),

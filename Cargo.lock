@@ -10,6 +10,7 @@ dependencies = [
  "gw_ui",
  "gw_util",
  "gw_world",
+ "rand",
  "serde",
  "toml_edit 0.19.4",
 ]
@@ -826,7 +827,9 @@ version = "0.1.0"
 dependencies = [
  "atomic_refcell",
  "bit-set",
+ "bitflags",
  "downcast-rs",
+ "gw_util",
  "itertools",
  "parking_lot 0.12.1",
  "paste",

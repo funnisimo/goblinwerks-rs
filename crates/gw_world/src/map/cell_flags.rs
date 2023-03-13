@@ -1,5 +1,5 @@
-use crate::fl;
 use bitflags::bitflags;
+use gw_util::fl;
 use std::convert::From;
 use std::fmt;
 use std::str::FromStr;

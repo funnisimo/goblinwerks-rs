@@ -4,8 +4,11 @@ use gw_util::blob::{Blob, BlobConfig};
 use gw_util::grid::{spread_replace, Grid};
 use gw_util::noise::{get_noise, print_histogram, square_bump, NoiseConfig};
 use gw_util::rng::{RandomNumberGenerator, RngCore};
-use gw_world::map::{find_random_point, Builder, Cell, Map, PortalFlags, PortalInfo};
+use gw_world::map::{
+    closest_points_matching, find_random_point, Builder, Cell, Map, PortalFlags, PortalInfo,
+};
 use gw_world::tile::{TileKind, Tiles};
+use rand::prelude::SliceRandom;
 
 pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32) -> Map {
     let mut map = Map::new(width, height);
@@ -87,6 +90,20 @@ pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32
         portal.set_flags(PortalFlags::ON_DESCEND);
         map.set_portal(town_loc, portal);
     }
+
+    // ADD STARTING LOCATION
+    let start_loc = {
+        let choices =
+            closest_points_matching(&map, width as i32 / 2, height as i32 / 2, |_x, _y, cell| {
+                !cell.blocks()
+            });
+        if choices.len() == 0 {
+            panic!("Failed to find starting location!");
+        }
+        choices.choose(&mut rng).unwrap().clone()
+    };
+
+    map.locations.insert("START".to_string(), start_loc);
 
     map
 }
