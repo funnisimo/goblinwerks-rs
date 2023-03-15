@@ -113,7 +113,7 @@ impl Screen for MainScreen {
     fn render(&mut self, app: &mut Ecs) {
         {
             let (mut map, camera) = <(Write<Map>, Read<Camera>)>::fetch_mut(&mut app.resources);
-            let offset = camera.offset_for(self.viewport.size());
+            let offset = camera.offset();
             self.viewport.draw_map(&mut map, None, offset, false);
         }
         self.viewport.render(app);

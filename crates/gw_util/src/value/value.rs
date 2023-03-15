@@ -212,6 +212,13 @@ impl Value {
         }
     }
 
+    pub fn as_bool(&self) -> Option<bool> {
+        match self {
+            Value::Boolean(v) => Some(*v),
+            _ => None,
+        }
+    }
+
     pub fn as_point(&self) -> Option<Point> {
         match self {
             Value::Point(x, y) => Some(Point::new(*x, *y)),

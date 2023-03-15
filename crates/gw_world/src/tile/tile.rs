@@ -1,6 +1,8 @@
 use super::*;
+use crate::sprite::parse_glyph;
 use crate::sprite::Sprite;
 use crate::treasure::Treasure;
+use gw_app::color::get_color;
 use gw_app::color::named;
 use gw_app::log;
 use gw_app::Glyph;
@@ -117,6 +119,21 @@ impl TileBuilder {
         self
     }
 
+    pub fn glyph(mut self, glyph: Glyph) -> Self {
+        self.tile.glyph = glyph;
+        self
+    }
+
+    pub fn fg(mut self, fg: RGBA) -> Self {
+        self.tile.fg = fg;
+        self
+    }
+
+    pub fn bg(mut self, bg: RGBA) -> Self {
+        self.tile.bg = bg;
+        self
+    }
+
     pub fn flavor(mut self, text: &str) -> Self {
         self.tile.flavor = text.to_string();
         self
@@ -172,13 +189,22 @@ impl TileBuilder {
                 self.tile.fg = sprite.fg;
                 self.tile.bg = sprite.bg;
             }
+            "glyph" => {
+                self.tile.glyph = parse_glyph(value).expect("Unknown glyph");
+            }
+            "fg" => {
+                self.tile.fg = get_color(value).expect("Unknown fg color");
+            }
+            "bg" => {
+                self.tile.bg = get_color(value).expect("Unknown bg color");
+            }
             "kind" => {
                 let kind: TileKind = match value.parse() {
                     Err(e) => return Err(format!("Failed to parse kind : {} - {}", value, e)),
                     Ok(kind) => kind,
                 };
                 if kind == TileKind::FEATURE && !self.layer_set {
-                    self.tile.layer = TileLayer::FEATURE;
+                    self.tile.layer = TileLayer::FIXTURE;
                 }
                 self.tile.kind = kind;
             }

@@ -73,24 +73,9 @@ impl FromStr for Sprite {
         };
 
         // log(format!("- ch={}", ch));
-        let glyph = match ch.chars().count() {
-            0 => 0,
-            1 => match ch.chars().next() {
-                None => return Err(SpriteParseError::WrongFormat),
-                Some(ch) => ch as Glyph,
-            },
-            _ => {
-                if !ch.starts_with("0x") {
-                    return Err(SpriteParseError::WrongFormat);
-                }
-                match u32::from_str_radix(&ch[2..], 16) {
-                    Err(e) => {
-                        log(format!("- ch parse error - {:?}", e));
-                        return Err(SpriteParseError::WrongFormat);
-                    }
-                    Ok(val) => val,
-                }
-            }
+        let glyph = match parse_glyph(ch) {
+            Err(e) => return Err(e),
+            Ok(v) => v,
         };
 
         let fg = match get_color(fg) {
@@ -114,6 +99,30 @@ impl From<&str> for Sprite {
             Err(_) => panic!("Failed to parse Sprite: {}", s),
         }
     }
+}
+
+pub fn parse_glyph(ch: &str) -> Result<Glyph, SpriteParseError> {
+    // log(format!("- ch={}", ch));
+    let glyph = match ch.chars().count() {
+        0 => 0,
+        1 => match ch.chars().next() {
+            None => return Err(SpriteParseError::WrongFormat),
+            Some(ch) => ch as Glyph,
+        },
+        _ => {
+            if !ch.starts_with("0x") {
+                return Err(SpriteParseError::WrongFormat);
+            }
+            match u32::from_str_radix(&ch[2..], 16) {
+                Err(e) => {
+                    log(format!("- ch parse error - {:?}", e));
+                    return Err(SpriteParseError::WrongFormat);
+                }
+                Ok(val) => val,
+            }
+        }
+    };
+    Ok(glyph)
 }
 
 pub fn from_text(ch: &str, fg: &str, bg: &str) -> Result<Sprite, SpriteParseError> {

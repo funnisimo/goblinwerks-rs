@@ -9,7 +9,7 @@ use std::str::FromStr;
 pub enum TileLayer {
     #[default]
     GROUND,
-    FEATURE,
+    FIXTURE,
     ITEM,
     LIQUID,
     ACTOR,

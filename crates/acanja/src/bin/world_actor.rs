@@ -15,7 +15,7 @@ use gw_world::position::Position;
 use gw_world::sprite::Sprite;
 use gw_world::task::DoNextActionResult;
 use gw_world::tile::{TileFileLoader, Tiles};
-use gw_world::widget::{update_camera_follows, Camera, Viewport};
+use gw_world::widget::{update_camera_follows, Camera, Lock, Viewport, Wrap};
 
 struct UserControl;
 
@@ -26,7 +26,10 @@ struct MainScreen {
 
 impl MainScreen {
     pub fn new() -> Box<Self> {
-        let viewport = Viewport::builder("VIEWPORT").size(80, 50).build();
+        let viewport = Viewport::builder("VIEWPORT")
+            .size(80, 50)
+            .lock(Lock::XY)
+            .build();
 
         Box::new(MainScreen {
             viewport,

@@ -3,6 +3,7 @@ use uni_gl::BufferBit;
 use super::input::AppInput;
 use crate::ecs::{init_ecs, scoped_resource, Ecs, Time, WindowInfo};
 use crate::ecs::{systems::ResourceSet, Read, Write};
+use crate::font::{default_from_glyph, default_to_glyph};
 use crate::fps::Fps;
 use crate::load_screen::LoadingScreen;
 use crate::loader::Loader;
@@ -306,7 +307,8 @@ impl Runner {
         let mut loader = ctx.resources.get_mut::<Loader>().unwrap();
 
         for (font, transform) in self.builder.fonts.drain(..) {
-            let (to_glyph, from_glyph) = transform.unwrap();
+            let (to_glyph, from_glyph) =
+                transform.unwrap_or((&default_to_glyph, &default_from_glyph));
             loader
                 .load_font_with_transform(&font, to_glyph, from_glyph)
                 .expect("Failed to load font.");

@@ -55,6 +55,151 @@ trait VisSource {
 //     }
 // }
 
+#[derive(Debug, Copy, Clone, Default)]
+pub enum Wrap {
+    #[default]
+    None,
+    X,
+    Y,
+    XY,
+}
+
+impl Wrap {
+    pub fn try_wrap_x(&self, x: i32, width: u32) -> Option<i32> {
+        match self {
+            Wrap::None | Wrap::Y => {
+                if x < 0 || x >= width as i32 {
+                    return None;
+                }
+                Some(x)
+            }
+            _ => {
+                let mut tx = x;
+                while tx < 0 {
+                    tx += width as i32;
+                }
+                Some(tx % width as i32)
+            }
+        }
+    }
+
+    pub fn try_wrap_y(&self, y: i32, height: u32) -> Option<i32> {
+        match self {
+            Wrap::None | Wrap::X => {
+                if y < 0 || y >= height as i32 {
+                    return None;
+                }
+                Some(y)
+            }
+            _ => {
+                let mut ty = y;
+                while ty < 0 {
+                    ty += height as i32;
+                }
+                Some(ty % height as i32)
+            }
+        }
+    }
+
+    pub fn try_wrap(&self, x: i32, y: i32, width: u32, height: u32) -> Option<(i32, i32)> {
+        let x0 = match self.try_wrap_x(x, width) {
+            None => return None,
+            Some(x) => x,
+        };
+
+        let y0 = match self.try_wrap_y(y, height) {
+            None => return None,
+            Some(y) => y,
+        };
+
+        Some((x0, y0))
+    }
+
+    pub fn wrap_x(&self, x: i32, width: u32) -> i32 {
+        match self {
+            Wrap::None | Wrap::Y => x,
+            _ => {
+                let mut tx = x;
+                while tx < 0 {
+                    tx += width as i32;
+                }
+                tx % width as i32
+            }
+        }
+    }
+
+    pub fn wrap_y(&self, y: i32, height: u32) -> i32 {
+        match self {
+            Wrap::None | Wrap::X => y,
+            _ => {
+                let mut ty = y;
+                while ty < 0 {
+                    ty += height as i32;
+                }
+                ty % height as i32
+            }
+        }
+    }
+
+    pub fn wrap(&self, x: i32, y: i32, width: u32, height: u32) -> (i32, i32) {
+        let x0 = self.wrap_x(x, width);
+        let y0 = self.wrap_y(y, height);
+        (x0, y0)
+    }
+}
+
+#[derive(Debug, Copy, Clone, Default)]
+pub enum Lock {
+    #[default]
+    None,
+    X,
+    Y,
+    XY,
+}
+
+impl Lock {
+    pub fn lock_x(&self, x: i32, width: u32, map_width: u32) -> i32 {
+        match self {
+            Lock::None | Lock::Y => x,
+            _ => {
+                if x < 0 {
+                    return 0;
+                }
+                if x + width as i32 >= map_width as i32 {
+                    return map_width.saturating_sub(width) as i32;
+                }
+                x
+            }
+        }
+    }
+
+    pub fn lock_y(&self, y: i32, height: u32, map_height: u32) -> i32 {
+        match self {
+            Lock::None | Lock::X => y,
+            _ => {
+                if y < 0 {
+                    return 0;
+                }
+                if y + height as i32 >= map_height as i32 {
+                    return map_height.saturating_sub(height) as i32;
+                }
+                y
+            }
+        }
+    }
+
+    pub fn lock(
+        &self,
+        (x, y): (i32, i32),
+        view_size: (u32, u32),
+        map_size: (u32, u32),
+    ) -> (i32, i32) {
+        let x0 = self.lock_x(x, view_size.0, map_size.0);
+        let y0 = self.lock_y(y, view_size.1, map_size.1);
+        (x0, y0)
+    }
+}
+
 struct AlwaysVisible {}
 impl AlwaysVisible {
     fn new() -> Self {
@@ -86,10 +231,10 @@ impl Camera {
         self
     }
 
-    pub fn offset_for(&self, size: (u32, u32)) -> (i32, i32) {
+    pub fn offset(&self) -> (i32, i32) {
         (
-            self.center.x - size.0 as i32 / 2,
-            self.center.y - size.1 as i32 / 2,
+            self.center.x - self.size.0 as i32 / 2,
+            self.center.y - self.size.1 as i32 / 2,
         )
     }
 
@@ -160,6 +305,8 @@ pub struct Viewport {
     id: String,
     last_mouse: Point,
     needs_draw: bool,
+    wrap: Wrap,
+    lock: Lock,
 }
 
 impl Viewport {
@@ -168,12 +315,16 @@ impl Viewport {
     }
 
     fn new(builder: ViewPortBuilder) -> Self {
-        let con = Panel::new(builder.size.0, builder.size.1, &builder.font);
+        let extents = builder.extents;
+        let con = Panel::new(builder.size.0, builder.size.1, &builder.font)
+            .with_extents(extents.0, extents.1, extents.2, extents.3);
         Viewport {
             con,
             id: builder.id,
             last_mouse: Point::new(-1, -1),
             needs_draw: true,
+            wrap: builder.wrap,
+            lock: builder.lock,
         }
     }
 
@@ -187,21 +338,26 @@ impl Viewport {
     }
 
     fn get_map_cell(&self, ecs: &Ecs, screen_pct: (f32, f32)) -> Option<Point> {
-        let view_point = self.con.mouse_point(screen_pct).unwrap();
+        let view_point = match self.con.mouse_point(screen_pct) {
+            None => return None,
+            Some(pt) => pt,
+        };
 
         let (map_size, offset) = match ecs.resources.get::<Levels>() {
             Some(levels) => {
                 let level = levels.current();
                 let map_size = level.resources.get::<Map>().unwrap().get_size();
                 let camera = level.resources.get::<Camera>().unwrap();
-                let offset: Point = camera.offset_for(camera.size()).into();
+                let base_offset = camera.offset();
+                let offset: Point = self.lock.lock(base_offset, camera.size(), map_size).into();
                 (map_size, offset)
             }
             None => match ecs.resources.get::<Level>() {
                 Some(level) => {
                     let map_size = level.resources.get::<Map>().unwrap().get_size();
                     let camera = level.resources.get::<Camera>().unwrap();
-                    let offset: Point = camera.offset_for(camera.size()).into();
+                    let base_offset = camera.offset();
+                    let offset: Point = self.lock.lock(base_offset, camera.size(), map_size).into();
                     (map_size, offset)
                 }
                 None => {
@@ -210,22 +366,21 @@ impl Viewport {
                         None => return None,
                     };
                     let camera = ecs.resources.get::<Camera>().unwrap();
-                    let offset: Point = camera.offset_for(camera.size()).into();
+                    let base_offset = camera.offset();
+                    let offset: Point = self.lock.lock(base_offset, camera.size(), map_size).into();
                     (map_size, offset)
                 }
             },
         };
 
         let map_point: Point = view_point + offset;
-
-        if map_point.x < 0
-            || map_point.y < 0
-            || map_point.x >= map_size.0 as i32
-            || map_point.y >= map_size.1 as i32
+        match self
+            .wrap
+            .try_wrap(map_point.x, map_point.y, map_size.0, map_size.1)
         {
-            return None;
+            None => None,
+            Some((x, y)) => Some(Point::new(x, y)),
         }
-        Some(map_point)
     }
 
     pub fn input(&mut self, ecs: &mut Ecs, event: &AppEvent) -> Option<ScreenResult> {
@@ -270,11 +425,15 @@ impl Viewport {
         }
 
         let offset = {
-            let camera = level.resources.get::<Camera>().unwrap();
+            let (map, camera) = <(Read<Map>, Read<Camera>)>::fetch(&level.resources);
+
             if self.con.size() != camera.size {
                 self.resize(camera.size.0, camera.size.1);
             }
-            camera.offset_for(self.con.size())
+            let base_offset = camera.offset();
+            self.lock
+                .lock(base_offset, camera.size(), map.get_size())
+                .into()
         };
 
         let viewport_needs_draw = {
@@ -325,6 +484,8 @@ pub struct ViewPortBuilder {
     extents: (f32, f32, f32, f32),
     id: String,
     font: String,
+    wrap: Wrap,
+    lock: Lock,
 }
 
 impl ViewPortBuilder {
@@ -334,6 +495,8 @@ impl ViewPortBuilder {
             extents: (0.0, 0.0, 1.0, 1.0),
             id: id.to_string(),
             font: "DEFAULT".to_string(),
+            wrap: Wrap::None,
+            lock: Lock::None,
         }
     }
 
@@ -352,6 +515,16 @@ impl ViewPortBuilder {
         self
     }
 
+    pub fn wrap(mut self, wrap: Wrap) -> Self {
+        self.wrap = wrap;
+        self
+    }
+
+    pub fn lock(mut self, lock: Lock) -> Self {
+        self.lock = lock;
+        self
+    }
+
     pub fn build(self) -> Viewport {
         Viewport::new(self)
     }
@@ -367,6 +540,8 @@ fn draw_map(
     let vis = AlwaysVisible::new();
     // let fov = global_world().get_fov(world.hero_entity()).unwrap().borrow();
 
+    let wrap = viewport.wrap;
+    let map_size = map.get_size();
     let size = viewport.con.size();
     // TODO - let offset = viewport.offset;
 
@@ -378,17 +553,16 @@ fn draw_map(
     let black = BLACK.into();
 
     for y0 in 0..size.1 as i32 {
-        let y = y0 + top;
         for x0 in 0..size.0 as i32 {
-            let x = x0 + left;
-            let idx = match map.to_idx(x, y) {
+            let (x, y) = match wrap.try_wrap(x0 + left, y0 + top, map_size.0, map_size.1) {
                 None => {
                     // TODO - Fancy?
                     buf.draw(x0, y0, 0, black, black);
                     continue;
                 }
-                Some(idx) => idx,
+                Some((x, y)) => (x, y),
             };
+            let idx = map.to_idx(x, y).unwrap();
 
             let needs_draw = force_draw || map.needs_draw_idx(idx);
             let needs_snapshot = memory.is_none() || map.needs_snapshot_idx(idx);
@@ -500,28 +674,42 @@ fn draw_map(
 fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
     let (map, camera) = <(Read<Map>, Read<Camera>)>::fetch(&ecs.resources);
 
+    let wrap = viewport.wrap;
+    let map_size = map.get_size();
     let size = viewport.con.size();
     // TODO - let offset = viewport.offset;
 
     let buf = viewport.con.buffer_mut();
     // DO NOT CLEAR BUFFER!!!
 
-    let left = camera.center.x - size.0 as i32 / 2;
-    let top = camera.center.y - size.1 as i32 / 2;
+    let base_left = viewport
+        .lock
+        .lock_x(camera.center.x - size.0 as i32 / 2, size.0, map_size.0);
+    let base_top = viewport
+        .lock
+        .lock_y(camera.center.y - size.1 as i32 / 2, size.1, map_size.1);
+
+    let left = wrap.wrap_x(base_left, map_size.0);
+    let top = wrap.wrap_y(base_top, map_size.1);
     let bounds = Rect::with_size(left, top, size.0 as i32, size.1 as i32);
 
     let mut query = <(&Position, &Sprite)>::query();
 
     for (pos, sprite) in query.iter(&ecs.world) {
-        if bounds.contains(pos.x, pos.y) {
-            if !map.has_xy(pos.x, pos.y) {
-                // NOTE - This is an error somewhere, but instead of panicing we just ignore it.
-                continue;
-            }
-            if map.has_flag_xy(pos.x, pos.y, CellFlags::DRAWN_THIS_FRAME) {
-                let bufx = pos.x - left;
-                let bufy = pos.y - top;
+        let mut vx = pos.x;
+        while vx < left {
+            vx += map_size.0 as i32;
+        }
+        let mut vy = pos.y;
+        while vy < top {
+            vy += map_size.1 as i32;
+        }
 
+        if bounds.contains(vx, vy) {
+            let bufx = vx - left;
+            let bufy = vy - top;
+
+            if map.has_flag_xy(pos.x, pos.y, CellFlags::DRAWN_THIS_FRAME) {
                 let fg = buf.get_fore(bufx, bufy).unwrap();
                 let bg = buf.get_back(bufx, bufy).unwrap();
 

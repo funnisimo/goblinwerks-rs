@@ -287,7 +287,7 @@ impl Map {
     pub fn place_tile(&mut self, x: i32, y: i32, tile: Arc<Tile>) -> bool {
         match tile.layer {
             TileLayer::GROUND => self.place_ground(x, y, tile),
-            TileLayer::FEATURE => self.place_feature(x, y, tile),
+            TileLayer::FIXTURE => self.place_feature(x, y, tile),
             _ => false,
         }
     }
@@ -295,7 +295,7 @@ impl Map {
     pub fn force_tile(&mut self, x: i32, y: i32, tile: Arc<Tile>) {
         match tile.layer {
             TileLayer::GROUND => self.force_ground(x, y, tile),
-            TileLayer::FEATURE => self.force_feature(x, y, tile),
+            TileLayer::FIXTURE => self.force_feature(x, y, tile),
             _ => {}
         }
     }
