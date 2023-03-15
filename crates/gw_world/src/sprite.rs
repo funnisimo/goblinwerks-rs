@@ -12,6 +12,7 @@ use std::str::FromStr;
 #[derive(Debug)]
 pub enum SpriteParseError {
     WrongFormat,
+    BadGlyph(String),
     BadForeColor(ColorParseErr),
     BadBackColor(ColorParseErr),
 }
@@ -22,6 +23,7 @@ impl Display for SpriteParseError {
             SpriteParseError::WrongFormat => write!(f, "Wrong format"),
             SpriteParseError::BadForeColor(err) => write!(f, "Bad Fore Color - {:?}", err),
             SpriteParseError::BadBackColor(err) => write!(f, "Bad Back Color - {:?}", err),
+            SpriteParseError::BadGlyph(g) => write!(f, "Bad Glyph - {:?}", g),
         }
     }
 }
@@ -106,17 +108,17 @@ pub fn parse_glyph(ch: &str) -> Result<Glyph, SpriteParseError> {
     let glyph = match ch.chars().count() {
         0 => 0,
         1 => match ch.chars().next() {
-            None => return Err(SpriteParseError::WrongFormat),
+            None => return Err(SpriteParseError::BadGlyph(ch.to_string())),
             Some(ch) => ch as Glyph,
         },
         _ => {
             if !ch.starts_with("0x") {
-                return Err(SpriteParseError::WrongFormat);
+                return Err(SpriteParseError::BadGlyph(ch.to_string()));
             }
             match u32::from_str_radix(&ch[2..], 16) {
                 Err(e) => {
                     log(format!("- ch parse error - {:?}", e));
-                    return Err(SpriteParseError::WrongFormat);
+                    return Err(SpriteParseError::BadGlyph(ch.to_string()));
                 }
                 Ok(val) => val,
             }

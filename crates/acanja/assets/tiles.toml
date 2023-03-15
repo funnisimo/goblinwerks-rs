@@ -77,13 +77,13 @@ flavor = "a counter"
 move   = "BLOCKS_MOVE"
 
 [TOWN]
-kind   = "FEATURE"
+kind   = "FIXTURE"
 sprite = "0x7F|YELLOW|NONE"
 flavor = "a town"
 move   = "PORTAL_DOWN"
 
 [EXIT_TOWN_LEFT]
-kind   = "FEATURE"
+kind   = "FIXTURE"
 sprite = "<|YELLOW|NONE"
 flavor = "a way to leave town"
 move   = "PORTAL_UP"
@@ -114,19 +114,19 @@ sprite = ";|LIGHTGOLDENROD|KHAKI"
 flavor = "beach"
 
 [MOUNTAIN]
-kind   = "FLOOR"
+kind   = "WALL"
 sprite = "^|BLACK|DARK_BROWN"
 flavor = "mountains"
 move   = "BLOCKS_MOVE"
 
 [FOREST_MOUNTAIN]
-kind   = "FLOOR"
+kind   = "WALL"
 sprite = "^|DARKGREEN|DARK_BROWN"
 flavor = "forested mountains"
 move   = "BLOCKS_MOVE"
 
 [SNOW_MOUNTAIN]
-kind   = "FLOOR"
+kind   = "WALL"
 sprite = "^|WHITE|DARK_BROWN"
 flavor = "snowy mountains"
 move   = "BLOCKS_MOVE"

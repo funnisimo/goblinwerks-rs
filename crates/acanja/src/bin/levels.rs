@@ -7,7 +7,7 @@ use gw_app::*;
 use gw_util::point::Point;
 use gw_world::level::{Level, Levels};
 use gw_world::map::{Cell, Map};
-use gw_world::tile::{TileFileLoader, Tiles};
+use gw_world::tile::{TileTomlFileLoader, Tiles};
 use gw_world::widget::{Camera, Viewport};
 
 struct MainScreen {
@@ -233,7 +233,7 @@ fn main() {
         .title("Acanja - World Viewer")
         .file(
             "assets/tiles.toml",
-            Box::new(TileFileLoader::new().with_dump()),
+            Box::new(TileTomlFileLoader::new().with_dump()),
         )
         .file(
             "assets/store_prefab.toml",

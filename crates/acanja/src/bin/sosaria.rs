@@ -7,8 +7,8 @@ use gw_util::point::Point;
 use gw_world::level::Level;
 use gw_world::map::Map;
 // use gw_world::memory::MapMemory;
-use gw_world::tile::TileBuilder;
-use gw_world::tile::{TileFileLoader, Tiles};
+use gw_world::tile::Tiles;
+use gw_world::tile::{TileBuilder, TileJsonFileLoader};
 use gw_world::widget::{Camera, Viewport, Wrap};
 use std::{collections::HashMap, fs::read_to_string};
 
@@ -35,61 +35,39 @@ fn load_map(path: &str, json_file: &str, tiles: &mut Tiles) -> Map {
     let mut default_tile = "NONE".to_string();
 
     let tile_info = root.get(&"tiles".into()).unwrap().as_map().unwrap();
-    for (id, info) in tile_info.iter() {
-        let glyph = id.to_string();
-        // println!("TILE {} = {:?}", glyph, info);
-
-        let info = info.as_map().unwrap();
-
-        let id = info.get(&"id".into()).unwrap().to_string().to_uppercase();
-        let mut builder = TileBuilder::new(&id);
-        tile_lookup.insert(glyph.clone(), Place::Tile(id.clone()));
-
-        builder.set("glyph", &glyph).expect("Failed to set glyph");
-
-        for (field, val) in info.iter() {
-            let mut field = field.to_string().to_lowercase();
-            let mut value = val.to_string();
-
-            if field == "id" {
-                continue;
-            } else if field == "blocks" {
-                value = match value.as_str() {
-                    "move" => "BLOCKS_MOVE".to_string(),
-                    "sight" => "BLOCKS_VISION".to_string(),
-                    "vision" => "BLOCKS_VISION".to_string(),
-                    "true" => "BLOCKS_MOVE | BLOCKS_VISION".to_string(),
-                    _ => panic!("Unexpected blocks value - {}", value),
-                };
-                field = "move".to_string();
-            } else if field == "ch" {
-                field = "glyph".to_string();
-            } else if field == "glyph" {
-                if val.is_int() {
-                    let int: u32 = val.as_int().unwrap() as u32;
-                    value = format!("0x{:x}", int);
-                }
+    for (ch, info) in tile_info.iter() {
+        if info.is_string() {
+            if default_tile == "NONE" {
+                default_tile = info.to_string().to_uppercase();
             }
+            tile_lookup.insert(ch.to_string(), Place::Tile(info.to_string().to_uppercase()));
+        } else if info.is_map() {
+            let info = info.as_map().unwrap();
 
-            if field == "default" {
-                tile_lookup.insert("DEFAULT".to_string(), Place::Tile(id.clone()));
-                default_tile = id.clone();
-            } else {
-                builder
-                    .set(field.as_str(), value.as_str())
-                    .expect("Unknown field in tile");
+            let tile_id = info.get(&"id".into()).expect(&format!(
+                "Tile entry is missing 'id' field - {}",
+                ch.to_string()
+            ));
+            tile_lookup.insert(
+                ch.to_string(),
+                Place::Tile(tile_id.to_string().to_uppercase()),
+            );
+
+            if default_tile == "NONE" || info.contains_key(&"default".into()) {
+                default_tile = tile_id.to_string().to_uppercase();
             }
-        }
-
-        let tile = builder.build();
-        println!("TILE = {:?}", &tile);
-        tiles.insert(tile);
-
-        if !tile_lookup.contains_key("DEFAULT") {
-            tile_lookup.insert("DEFAULT".to_string(), Place::Tile(id.clone()));
-            default_tile = id.clone();
+        } else {
+            panic!(
+                "Found unexpected tiles entry - {}: {:?}",
+                ch.to_string(),
+                info
+            );
         }
     }
+
+    println!("DEFAULT TILE = {}", default_tile);
+
+    tile_lookup.insert("DEFAULT".to_string(), Place::Tile(default_tile.clone()));
 
     println!("Tile Lookup = {:?}", tile_lookup);
 
@@ -97,71 +75,41 @@ fn load_map(path: &str, json_file: &str, tiles: &mut Tiles) -> Map {
 
     let fixture_info = root.get(&"fixtures".into()).unwrap().as_map().unwrap();
     for (id, info) in fixture_info.iter() {
-        let glyph = id.to_string();
-        // println!("TILE {} = {:?}", glyph, info);
+        if info.is_string() {
+            tile_lookup.insert(
+                id.to_string(),
+                Place::Fixture(default_tile.clone(), info.to_string().to_uppercase()),
+            );
+        } else if info.is_map() {
+            let info = info.as_map().unwrap();
 
-        let info = info.as_map().unwrap();
-
-        let id = info.get(&"id".into()).unwrap().to_string().to_uppercase();
-        let mut builder = TileBuilder::new(&id);
-
-        builder.set("glyph", &glyph).expect("Failed to set glyph");
-        builder
-            .set("layer", "FIXTURE")
-            .expect("Failed to set layer");
-
-        for (field, val) in info.iter() {
-            let mut field = field.to_string().to_lowercase();
-            let mut value = val.to_string();
-
-            if field == "id" {
-                continue;
-            } else if field == "blocks" {
-                value = match value.as_str() {
-                    "move" => "BLOCKS_MOVE".to_string(),
-                    "sight" => "BLOCKS_VISION".to_string(),
-                    "vision" => "BLOCKS_VISION".to_string(),
-                    "true" => "BLOCKS_MOVE | BLOCKS_VISION".to_string(),
-                    _ => panic!("Unexpected blocks value - {}", value),
-                };
-                field = "move".to_string();
-            } else if field == "ch" {
-                field = "glyph".to_string();
-            } else if field == "glyph" {
-                if val.is_int() {
-                    let int: u32 = val.as_int().unwrap() as u32;
-                    value = format!("0x{:x}", int);
-                }
-            }
-
-            if field == "tile" {
-                let tile_id = tile_lookup.get(&value).unwrap();
-                match tile_id {
-                    Place::Tile(ground) => {
-                        tile_lookup
-                            .insert(glyph.clone(), Place::Fixture(ground.clone(), id.clone()));
-                    }
-                    _ => panic!("Invalid ground tile in feature"),
-                }
-            } else {
-                builder
-                    .set(field.as_str(), value.as_str())
-                    .expect("Unknown field in tile");
-            }
-        }
-
-        let tile = builder.build();
-        println!("FIXTURE = {:?}", &tile);
-        tiles.insert(tile);
-
-        if !tile_lookup.contains_key(&glyph) {
-            let default = tile_lookup.get("DEFAULT").unwrap();
-            match default {
-                Place::Tile(ground) => {
-                    tile_lookup.insert(glyph, Place::Fixture(ground.clone(), id.clone()));
-                }
-                _ => panic!("Invalid default ground tile!"),
-            }
+            let fix_id = info.get(&"id".into()).expect(&format!(
+                "Fixture entry is missing 'id' field - {}",
+                id.to_string()
+            ));
+            let tile_id = match info.get(&"tile".into()) {
+                None => default_tile.clone(),
+                Some(field) => match tile_lookup.get(&field.to_string()) {
+                    None => panic!(
+                        "Fixture entry references unknown tile - {}",
+                        field.to_string()
+                    ),
+                    Some(t) => match t {
+                        Place::Tile(v) => v.clone(),
+                        x => panic!("Fixture entry references wrong type = {:?}", x),
+                    },
+                },
+            };
+            tile_lookup.insert(
+                id.to_string(),
+                Place::Fixture(tile_id, fix_id.to_string().to_uppercase()),
+            );
+        } else {
+            panic!(
+                "Found unexpected fixtures entry - {}: {:?}",
+                id.to_string(),
+                info
+            );
         }
     }
 
@@ -198,39 +146,49 @@ fn load_map(path: &str, json_file: &str, tiles: &mut Tiles) -> Map {
 
     let location_info = root.get(&"locations".into()).unwrap().as_map().unwrap();
     for (id, info) in location_info.iter() {
-        let glyph = id.to_string();
-        // println!("TILE {} = {:?}", glyph, info);
+        let (ground, fixture, location) = if info.is_string() {
+            (default_tile.clone(), None, info.to_string())
+        } else if info.is_map() {
+            let map = info.as_map().unwrap();
 
-        let info = info.as_map().unwrap();
+            let name = map
+                .get(&"name".into())
+                .expect("Location is missing name field.")
+                .to_string();
 
-        let name = info.get(&"name".into()).unwrap().to_string().to_uppercase();
-
-        let (mut tile, fixture) = match info.get(&"fixture".into()) {
-            None => (default_tile.clone(), None),
-            Some(ch) => match tile_lookup.get(&ch.to_string()) {
-                None => panic!("Location has unknown fixture!"),
-                Some(place) => match place {
-                    Place::Fixture(ground, fixture) => (ground.clone(), Some(fixture.clone())),
-                    x => panic!("Location fixture is not a fixture - {:?}", x),
+            let (mut tile, fixture) = match map.get(&"fixture".into()) {
+                None => (default_tile.clone(), None),
+                Some(fix) => match tile_lookup.get(&fix.to_string()) {
+                    None => panic!("Tile location has unknown fixture - {}", fix.to_string()),
+                    Some(p) => match p {
+                        Place::Fixture(ground, fixture) => (ground.clone(), Some(fixture.clone())),
+                        x => panic!("Tile location has fixture with wrong type - {:?}", x),
+                    },
                 },
-            },
+            };
+
+            tile = match map.get(&"tile".into()) {
+                None => tile,
+                Some(t) => match tile_lookup.get(&t.to_string()) {
+                    None => panic!("Tile location has unknown tile - {}", t.to_string()),
+                    Some(p) => match p {
+                        Place::Tile(t) => t.clone(),
+                        x => panic!("Tile location has tile with wrong type - {:?}", x),
+                    },
+                },
+            };
+
+            (tile, fixture, name)
+        } else {
+            panic!(
+                "Found unexpected locations entry - {}: {:?}",
+                id.to_string(),
+                info
+            );
         };
 
-        match info.get(&"tile".into()) {
-            None => {}
-            Some(ch) => match tile_lookup.get(&ch.to_string()) {
-                None => panic!("Location has unknown tile!"),
-                Some(place) => match place {
-                    Place::Tile(ground) => {
-                        tile = ground.clone();
-                    }
-                    _ => panic!("Actor tile field did not reference a tile"),
-                },
-            },
-        };
-
-        println!("LOCATION - {}", name);
-        tile_lookup.insert(glyph, Place::Location(tile, fixture, name));
+        println!("LOCATION - {}", location);
+        tile_lookup.insert(id.to_string(), Place::Location(ground, fixture, location));
     }
 
     println!("Tile Lookup = {:?}", tile_lookup);
@@ -272,7 +230,10 @@ fn load_map(path: &str, json_file: &str, tiles: &mut Tiles) -> Map {
         panic!("Map has no data!");
     };
 
-    let def_tile = tiles.get(&default_tile).expect("No default tile!");
+    let def_tile = tiles
+        .get(&default_tile)
+        .expect(&format!("No default tile in tiles! - {}", default_tile));
+
     let mut map = Map::new(width, height);
     map.fill(def_tile);
 
@@ -299,7 +260,9 @@ fn load_map(path: &str, json_file: &str, tiles: &mut Tiles) -> Map {
                         map.reset_tiles(x, y, t);
                     }
                     Place::Location(tile, fix, name) => {
-                        let t = tiles.get(tile).expect("Failed to find tile in map");
+                        let t = tiles
+                            .get(tile)
+                            .expect(&format!("Failed to find tile in map - {}", tile));
                         map.reset_tiles(x, y, t);
                         if let Some(fix) = fix {
                             let f = tiles.get(fix).expect("Failed to find fixture.");
@@ -472,15 +435,15 @@ impl Screen for MainScreen {
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Acanja - World Viewer")
+        .font("assets/font_32x58.png")
         .file(
-            "assets/tiles.toml",
-            Box::new(TileFileLoader::new().with_dump()),
+            "assets/maps/tiles.jsonc",
+            Box::new(TileJsonFileLoader::new().with_dump()),
         )
         .file(
             "assets/store_prefab.toml",
             Box::new(PrefabFileLoader::new().with_dump()),
         )
-        .font("assets/font_32x58.png")
         .vsync(false)
         .build();
 

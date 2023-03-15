@@ -6,7 +6,7 @@ use gw_util::point::Point;
 use gw_world::level::Level;
 use gw_world::map::Map;
 use gw_world::memory::MapMemory;
-use gw_world::tile::{TileFileLoader, Tiles};
+use gw_world::tile::{TileTomlFileLoader, Tiles};
 use gw_world::widget::{Camera, Viewport};
 
 const MAP_WIDTH: u32 = 80;
@@ -149,7 +149,7 @@ fn main() {
         .title("Acanja - World Viewer")
         .file(
             "assets/tiles.toml",
-            Box::new(TileFileLoader::new().with_dump()),
+            Box::new(TileTomlFileLoader::new().with_dump()),
         )
         .file(
             "assets/store_prefab.toml",

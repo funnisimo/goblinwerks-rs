@@ -6,7 +6,9 @@ use gw_app::color::get_color;
 use gw_app::color::named;
 use gw_app::log;
 use gw_app::Glyph;
+use gw_app::Value;
 use gw_app::RGBA;
+use gw_util::value::Key;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -170,16 +172,18 @@ impl TileBuilder {
         self
     }
 
-    pub fn set(&mut self, field: &str, value: &str) -> Result<(), String> {
-        match field {
+    pub fn set(&mut self, field: &Key, value: &Value) -> Result<(), String> {
+        let field_str = field.to_string().to_lowercase();
+        match field_str.as_str() {
             "sprite" => {
+                let text = value.to_string();
                 // log(format!("parse sprite for tile - {}", value));
-                let sprite: Sprite = match value.parse() {
+                let sprite: Sprite = match text.parse() {
                     Err(e) => {
                         log(format!(
                             "Failed to parse sprite for tile - {} - {:?}",
-                            value,
-                            value.chars().collect::<Vec<char>>()
+                            text,
+                            text.chars().collect::<Vec<char>>()
                         ));
                         return Err(format!("Failed to parse sprite : {} - {}", value, e));
                     }
@@ -189,17 +193,22 @@ impl TileBuilder {
                 self.tile.fg = sprite.fg;
                 self.tile.bg = sprite.bg;
             }
-            "glyph" => {
-                self.tile.glyph = parse_glyph(value).expect("Unknown glyph");
+            "ch" | "glyph" => {
+                if value.is_int() {
+                    self.tile.glyph = value.as_int().unwrap() as Glyph;
+                } else {
+                    self.tile.glyph = parse_glyph(&value.to_string()).expect("Unknown glyph");
+                }
             }
             "fg" => {
-                self.tile.fg = get_color(value).expect("Unknown fg color");
+                self.tile.fg = get_color(&value.to_string()).expect("Unknown fg color");
             }
             "bg" => {
-                self.tile.bg = get_color(value).expect("Unknown bg color");
+                self.tile.bg = get_color(&value.to_string()).expect("Unknown bg color");
             }
             "kind" => {
-                let kind: TileKind = match value.parse() {
+                let text = value.to_string();
+                let kind: TileKind = match text.parse() {
                     Err(e) => return Err(format!("Failed to parse kind : {} - {}", value, e)),
                     Ok(kind) => kind,
                 };
@@ -209,16 +218,28 @@ impl TileBuilder {
                 self.tile.kind = kind;
             }
             "flavor" => {
-                self.tile.flavor = value.to_owned();
+                self.tile.flavor = value.to_string();
             }
             "flags" => {
-                self.tile.flags.apply(value);
+                self.tile.flags.apply(&value.to_string());
             }
             "move" => {
-                self.tile.move_flags.apply(value);
+                self.tile.move_flags.apply(&value.to_string());
             }
+            "blocks" => match value.to_string().as_str() {
+                "true" => {
+                    self.tile.move_flags.insert(TileMove::BLOCKS_ALL);
+                }
+                "move" => {
+                    self.tile.move_flags.insert(TileMove::BLOCKS_MOVE);
+                }
+                "vision" | "sight" => {
+                    self.tile.move_flags.insert(TileMove::BLOCKS_VISION);
+                }
+                _ => panic!("Unknown 'blocks' value for tile - {}", value),
+            },
             "layer" => {
-                self.tile.layer = value.parse().unwrap();
+                self.tile.layer = value.to_string().parse().unwrap();
                 self.layer_set = true;
             }
             _ => return Err(format!("Unknown tile field - {}", field)),

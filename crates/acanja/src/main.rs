@@ -3,7 +3,7 @@ use gw_app::*;
 use gw_util::point::Point;
 use gw_world::level::Level;
 use gw_world::memory::MapMemory;
-use gw_world::tile::{TileFileLoader, Tiles};
+use gw_world::tile::{TileTomlFileLoader, Tiles};
 use gw_world::widget::Viewport;
 use map::prefab::{PrefabFileLoader, Prefabs};
 use map::town::build_town_map;
@@ -97,7 +97,7 @@ fn main() {
         .title("Acanja")
         .file(
             "assets/tiles.toml",
-            Box::new(TileFileLoader::new().with_dump()),
+            Box::new(TileTomlFileLoader::new().with_dump()),
         )
         .file(
             "assets/store_prefab.toml",

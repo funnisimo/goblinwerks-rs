@@ -1,0 +1,70 @@
+{
+  /* GROUND */
+  "PLAINS": {
+    "glyph": 183,
+    "fg": "light_green",
+    "kind": "FLOOR",
+    "flavor": "some grassland"
+  },
+  "TREES": {
+    "ch": ":",
+    "fg": "dark_green",
+    "kind": "FLOOR",
+    "flavor": "some trees"
+  },
+  "FOREST": {
+    "ch": "%",
+    "fg": "darker_green",
+    "kind": "FLOOR",
+    "flavor": "the forest"
+  },
+  "MOUNTAINS": {
+    "ch": "^",
+    "fg": "darker_sepia",
+    "blocks": true,
+    "kind": "WALL",
+    "flavor": "the mountains"
+  },
+  "LAVA": {
+    "ch": "!",
+    "fg": "red",
+    "bg": "darkest_red",
+    "kind": "WALL",
+    "flavor": "some lava"
+  },
+  "WATER": {
+    "ch": "~",
+    "fg": "blue",
+    "bg": "darkest_blue",
+    "blocks": "move",
+    "kind": "LAKE",
+    "flavor": "some water"
+  },
+
+  /* FIXTURE */
+  "TOWN": {
+    "glyph": 94,
+    "fg": "light_sepia",
+    "layer": "FIXTURE",
+    "flavor": "a town"
+  },
+  "CASTLE": {
+    "glyph": 148,
+    "fg": "white",
+    "layer": "FIXTURE",
+    "flavor": "a castle"
+  },
+  "DUNGEON": {
+    "glyph": 150,
+    "fg": "brown",
+    "layer": "FIXTURE",
+    "flavor": "a dungeon"
+  },
+  "SERPENT": {
+    "ch": "S",
+    "fg": "green",
+    "blocks": "move",
+    "layer": "FIXTURE",
+    "flavor": "a huge menacing serpent"
+  }
+}

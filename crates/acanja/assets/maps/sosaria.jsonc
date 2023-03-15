@@ -2,40 +2,31 @@
   "map": { "filename": "sosaria.txt", "width": 64, "height": 64, "wrap": true },
   "font": "DEFAULT",
   "tiles": {
-    ".": { "id": "Plains", "glyph": 183, "fg": "light_green", "default": true },
-    ":": { "id": "Trees", "fg": "dark_green" },
-    "%": { "id": "Forest", "blocks": "sight", "fg": "darker_green" },
-    "^": {
-      "id": "Mountains",
-      "blocks": true,
-      "fg": "darker_sepia"
-    },
-    "!": { "id": "Lava", "blocks": "move", "fg": "darker_red" },
-    "~": {
-      "id": "Water",
-      "blocks": "move",
-      "fg": "blue",
-      "bg": "darkest_blue"
-    }
+    ".": { "id": "PLAINS", "default": true },
+    ":": "TREES",
+    "%": "FOREST",
+    "^": "MOUNTAINS",
+    "!": "LAVA",
+    "~": "WATER"
   },
   "fixtures": {
-    "T": { "id": "Town", "glyph": 94, "fg": "light_sepia", "tile": "." },
-    "C": { "id": "Castle", "glyph": 148, "fg": "white", "tile": "." },
-    "D": { "id": "Dungeon", "glyph": 150, "fg": "brown", "tile": "." },
-    "S": { "id": "Serpent", "fg": "green", "blocks": "move", "tile": "~" }
+    "T": "TOWN",
+    "C": "CASTLE",
+    "D": "DUNGEON",
+    "S": { "id": "Serpent", "tile": "~" }
   },
   "actors": {
     "*": { "id": "Whirlpool", "tile": "~", "ai": "moves_randomly" }
   },
   "locations": {
-    "@": { "name": "START", "tile": "." },
-    "0": { "name": "MOON_0", "tile": "." },
-    "1": { "name": "MOON_1", "tile": "." },
-    "2": { "name": "MOON_2", "tile": "." },
-    "3": { "name": "MOON_3", "tile": "." },
-    "4": { "name": "MOON_4", "tile": "." },
-    "5": { "name": "MOON_5", "tile": "." },
-    "6": { "name": "MOON_6", "tile": "." },
+    "@": "START",
+    "0": "MOON_0",
+    "1": "MOON_1",
+    "2": "MOON_2",
+    "3": "MOON_3",
+    "4": "MOON_4",
+    "5": "MOON_5",
+    "6": "MOON_6",
     "7": { "name": "MOON_7", "tile": "." },
 
     "w": { "name": "Montor West", "fixture": "T" },

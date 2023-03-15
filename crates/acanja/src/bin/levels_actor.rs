@@ -13,7 +13,7 @@ use gw_world::map::{Cell, Map, PortalFlags};
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
 use gw_world::task::DoNextActionResult;
-use gw_world::tile::{TileFileLoader, Tiles};
+use gw_world::tile::{TileTomlFileLoader, Tiles};
 use gw_world::widget::{update_camera_follows, Camera, Viewport};
 
 #[derive(Serialize, Deserialize)]
@@ -264,7 +264,7 @@ fn main() {
         .title("Acanja - World Viewer")
         .file(
             "assets/tiles.toml",
-            Box::new(TileFileLoader::new().with_dump()),
+            Box::new(TileTomlFileLoader::new().with_dump()),
         )
         .file(
             "assets/store_prefab.toml",
