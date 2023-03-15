@@ -1,0 +1,54 @@
+{
+"map": {"filename": "sosaria.txt", "width": 64, "height": 64, "wrap": true},
+"tiles": {
+	".": {"name": "Plains", "fg": "light_green", "default": true},
+	":": {"name": "Trees", "fg": "dark_green"},
+	"%": {"name": "Forest", "blocks": "sight", "fg": "darker_green"},
+	"^": {"name": "Mountains", "ch": "\u26F0", "blocks": true, "fg": "darker_sepia"},
+	"!": {"name": "Lava", "blocks": "move", "fg": "darker_red"},
+	"~": {"name": "Water", "blocks": "move", "fg": "azure", "bg": "darkest_azure"},
+	"b": {"name":"British", "playerStep": "ENTER_BRITISH", "ch": "\u26FA", "fg": "white", "priority": 1, "location": "BRITISH"},
+	"T": {"name": "Town", "fg": "light_sepia"},
+	"C": {"name": "Castle", "fg": "white"},
+	"D": {"name": "Dungeon", "fg": "brown"}
+	},
+"features": {
+	"ENTER_BRITISH": { "map": "tlb" }
+},
+"fixtures" : {
+	"0": {"entity": "Moongate", "moon_phase": 0},
+	"1": {"entity": "Moongate", "moon_phase": 1},
+	"2": {"entity": "Moongate", "moon_phase": 2},
+	"3": {"entity": "Moongate", "moon_phase": 3},
+	"4": {"entity": "Moongate", "moon_phase": 4},
+	"5": {"entity": "Moongate", "moon_phase": 5},
+	"6": {"entity": "Moongate", "moon_phase": 6},
+	"7": {"entity": "Moongate", "moon_phase": 7},
+	"S": {"entity": "Serpent"},
+	"w": {"entity": "Town", "name":"Montor West"},
+	"e": {"entity": "Town", "name":"Montor East", "color":"black", "tile": "T", "char": "m"},
+	"d": {"entity": "Town", "name":"Dawn", "tile": "%"},
+	"g": {"entity": "Town", "name":"Grey"},
+	"u": {"entity": "Town", "name":"Death Gultch"},
+	"v": {"entity": "Town", "name":"Devil Guard"},
+	"b": {"entity": "Town", "name":"British", "file": "tlb"},
+	"y": {"entity": "Town", "name":"Yew"},
+	"m": {"entity": "Town", "name":"Moon"},
+	"f": {"entity": "Town", "name":"Fawn"},
+	"E": {"entity": "Castle", "name":"Castle Exodus", "file": "exodus"},
+	"K": {"entity": "Castle", "name":"Castle British", "file": "british"},
+	"M": {"entity": "Dungeon", "name":"Doom"},
+	"L": {"entity": "Dungeon", "name":"Clues"},
+	"R": {"entity": "Dungeon", "name":"Mines of Morina", "file": "morinia"},
+	"H": {"entity": "Dungeon", "name":"Fires of Hell", "file": "hell"},
+	"T": {"entity": "Dungeon", "name":"Time Awaits", "file": "time"},
+	"I": {"entity": "Dungeon", "name":"Dardins Pit", "file": "dardins"},
+	"P": {"entity": "Dungeon", "name":"Perinian Depths", "file": "depths"}
+	},
+"named_locations": {
+	"@": {"name": "START", "tile": "."}
+},
+"objects" : [
+	{"x": 15, "y": 51, "entity": "Whirlpool"}
+]
+}

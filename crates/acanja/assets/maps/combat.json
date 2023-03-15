@@ -1,0 +1,51 @@
+{
+"map": {
+	"width": 15, "height": 15, "wrap": false,
+	"visible": true, "spawnHordes": false,
+	"data": [
+	"&&&&&&&&&&&&&&&",
+	"&.............&",
+	"&..f...g...h..&",
+	"&....b...c....&",
+	"&..e...a...d..&",
+	"&.............&",
+	"&.............&",
+	"&.............&",
+	"&.............&",
+	"&.............&",
+	"&.............&",
+	"&.....1.2.....&",
+	"&....3...4....&",
+	"&.............&",
+	"&    FLEE     &"]
+},
+"tiles": {
+	".": {"name": "Plains", "fg": "light_green", "default": true},
+	":": {"name": "Trees", "fg": "dark_green" },
+	"%": {"name": "Forest", "blocks": "sight", "fg": "darker_green" },
+	"^": {"name": "Mountains", "blocks": true, "fg": "darker_sepia" },
+	"!": {"name": "Lava", "blocks": "move", "fg": "darker_red" },
+	"&": {"name": "Brambles", "blocks": true, "fg": "dark_green" },
+	" FLE": {"name": "Text", "fg": "gray", "playerStep": "DF_FLEE_COMBAT", "sacred": true },
+	"X": {"name": "ExitCombat", "extend": "Plains", "playerStep": "DF_EXIT_COMBAT"},
+	"~": {"name": "Water", "blocks": "move", "fg": "azure" }
+},
+"features": {
+	"DF_EXIT_COMBAT": { "emit": "combat.exit" },
+	"DF_FLEE_COMBAT": { "emit": "combat.flee" }
+},
+"named_locations" : {
+	"1": {"name": "Player.0"},
+	"2": {"name": "Player.1"},
+	"3": {"name": "Player.2"},
+	"4": {"name": "Player.3"},
+	"a": {"name": "Foe.0"},
+	"b": {"name": "Foe.1"},
+	"c": {"name": "Foe.2"},
+	"d": {"name": "Foe.3"},
+	"e": {"name": "Foe.4"},
+	"f": {"name": "Foe.5"},
+	"g": {"name": "Foe.6"},
+	"h": {"name": "Foe.7"}
+	}
+}

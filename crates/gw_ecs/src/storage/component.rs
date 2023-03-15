@@ -1,6 +1,6 @@
 use super::VecStorage;
 use atomic_refcell::{AtomicRef, AtomicRefMut};
-use std::ops::Deref;
+// use std::ops::Deref;
 
 /// A marker trait for all types which can be attached to an entity.
 ///

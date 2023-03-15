@@ -1,0 +1,103 @@
+DEATH GULCH
+Begone fool!
+<Bribe> me to enter
+Exodus is four as one!
+
+EXODUS (CASTLE DEATH)
+All may enter, None shall leave
+Choose well your way!
+Save me Please!!!
+Death is here!
+Leave quickly!
+
+FAWN
+- <Pray> for the invocation!
+- <Pray> in the Circle of Light!
+- 'Invoke' the Silver Snake!
+- To pass you need a Mark!
+- Fawn is a nice place!
+- Welcome to Fawn: City of the sea!
+
+DEVIL GUARD
+- 'Marks' gained in dungeons!
+- Hot metal leaves a 'Mark'!
+- The King favors a 'Mark'!
+- A 'Mark' helps invoke the Snake
+- 4 'Marks', 4 uses!
+- Seek ye the dungeon of fire!
+- Mark thee well!
+
+GREY
+- Thieves in bar and guild - Yo! ho! ho! and a bottle of rum!!!
+- Guards - Watch it bub!
+- thieves in armory - Ever seen Exotic arms?
+- bottom left fighter - Exotic clues found at Dawn!
+- hidden wizard - Only Exotics will protect from Great Evil!
+- jesters - Don't you wish you were a Jester!
+- NOTE - Thief by chests attacks you - then all guards attack you on sight
+
+MOON
+- welcome peasant: We are honored!
+- island cleric: Seek ye the Shrines of Truth
+- fighter in boar: <Bribe> guards! They will leave!
+- other fighters in boar: To arms! and To battle!
+- clerics in healing: Peace be with you
+- cleric in healing: I've been beyond the whirlpool!
+- wizard in forest: Dawn rises in the Dark Forest.
+- monsters in forest on left: Depart or Die!
+
+YEW
+- welcome guy = Search and ye shall find!
+- guys around fire circle - Welcome to the Circle of Light!
+- sancere guards and rogation guards - Bonim Anima Teuri, Amen!
+- wanderer - Know ye well thy foes!!
+- wanderer - Peace be with you
+- wanderer - I've been beyond the whirlpool!
+
+CASTLE BRITISH
+- West 8, South 35 and await the Dawn!
+- Cookie cries: Like the food?
+- Iolo sings: Ho eyo he hum!
+- Gwino sings: Muh eh oye oh!
+- Phantom Fighter: The food stinks!
+- The Wise Cleric: 4 cards, 4 slots
+- Enter... If you dare!
+- Chuckles: Welcome all!
+
+BRITAIN
+- Is it not lovely
+- Quest ye unto Lost Ambrosia!
+- Only with Exotic arms can you win
+- Exodus lies beyond the Silver Snake!
+- 'Dawn' comes each new pair!
+- Dupre laughs: Drink up!
+- Round back!
+- Ho! Ho!
+
+MONTOR EAST
+- thief below east: <Insert> cards into pannels!
+- thief above montor: 4 cards, 4 pannels
+- jester in center: Jolly Joe: Ho Ho Ho!
+- fighter, armory: Baby Bob: Bring me bucks!
+- fighter, weaons: 'Cards' are useful!
+- fighter in orc: 'Marks' are useful!
+- fighter in orc: 'Exotics' are useful!
+
+MONTOR WEST
+- wandering thief: Good stuff, eh?
+- fighter, armour: Seek the Jester in castle Fire!
+- fighter, delights: Sentri: Good grog!
+- fighter, delights: Shamino: Good food!
+- thief in prison: <Search> the Shrines!
+- thief in prison: <Search> for cards!
+- guard of prison: None shall pass!
+
+DAWN
+- Welcome to Dawn!
+- <Dig> up Exotics
+- <Dig> carefully!
+- Jolly Good Day!
+- Dawn lasts but a brief moment!
+- Ambrosia awaits!
+- Seek ye thy fortune!
+

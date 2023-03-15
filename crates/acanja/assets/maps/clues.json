@@ -1,0 +1,50 @@
+{
+"map": {"filename": "clues.txt", "width": 16, "height": 16, "wrap": true},
+"config": {"welcome": null, "spawn_delay": 5},
+"tiles": {
+	" ": {"name": "Floor", "lit": "light_green", "dark": "desaturated_chartreuse", "default": true},
+	"~": {"name": "Water", "blocks": true, "lit": "azure", "dark": "dark_blue"},
+	"#": {"name": "Wall", "blocks": true, "blocks_sight": true, "lit": "grey", "dark": "dark_grey"},
+	"+": {"name": "Hidden", "blocks": false, "blocks_sight": true, "lit": "grey", "dark": "dark_grey"},
+	"-": {"name": "Tile", "lit": "lighter_orange", "dark": "darkest_orange"},
+	":": {"name": "Trees", "lit": "dark_green", "dark": "darkest_green"},
+	"*": {"name": "Forcefield", "blocks": true, "blocks_sight": false, "lit": "sky", "dark": "dark_sky"},
+	"!": {"name": "Lava", "blocks": true, "lit": "darker_red", "dark": "darkest_flame"}
+	},
+"fixtures" : {
+	"|": {"entity": "Door", "locked": true},
+	"/": {"entity": "Door", "locked": false},
+	"$": {"entity": "Chest", "locked": true},
+	"1": {"entity": "Message", "text": "Clues to Follow!", "color": "darker_red"},
+	"2": {"entity": "Message", "text": "<INSERT> cards into Exodus!", "color": "darker_red"},
+	"3": {"entity": "Message", "text": "<SEARCH> the shrines!", "color": "darker_red"},
+	"4": {"entity": "Message", "text": "Ha!", "color": "darker_red"},
+	"5": {"entity": "Message", "text": "Don't drink!", "color": "darker_red"},
+	"6": {"entity": "Message", "text": "Don't drink!", "color": "darker_red"},
+	"7": {"entity": "Message", "text": "Gremlins!", "color": "darker_red"},
+	"8": {"entity": "Message", "text": "Windy gold!", "color": "darker_red"},
+
+	"U": {"entity": "Stairs", "up": [0, -16]},
+	"D": {"entity": "Stairs", "down": [0, 16]},
+	"H": {"entity": "Stairs", "up": [0, -16], "down": [0, 16]},
+	"W": {"entity": "Winds", "message": "Winds"},
+	"G": {"entity": "Gremlins"},
+	"T": {"entity": "Trap", "damage": 10},
+
+	"C": {"entity": "Fountain", "cure": true, "message": "Bubbly, effervescent."},
+	"P": {"entity": "Fountain", "poison": true, "message": "Tastes foul."},
+	"E": {"entity": "Fountain", "heal": true, "message": "Soothing."},
+	"X": {"entity": "Fountain", "damage": 10, "message": "Burns your throat."},
+
+	"M": {"entity": "Mark", "mark": "O", "message": "You receive the mark of Force!"},
+	"N": {"entity": "Mark", "mark": "F", "message": "You receive the mark of Fire!"},
+	"K": {"entity": "Mark", "mark": "K", "message": "You receive the mark of Kings!"},
+	"S": {"entity": "Mark", "mark": "S", "message": "You receive the mark of the Snake!"},
+
+	"L": {"entity": "Time", "talk": "You see a vision of the Time Lord.  He tells you: 'The one way is Love, Sol, Moons, Death.  All others Fail.'"},
+
+	"@": {"location": "START", "entity": "Exit"}
+	},
+"objects" : [
+]
+}

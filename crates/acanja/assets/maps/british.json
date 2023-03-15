@@ -1,0 +1,41 @@
+{
+"map": {"filename": "british.txt", "width": 64, "height": 64, "wrap": false},
+"config": {"welcome": "Lord British welcomes you."},
+"tiles": {
+	".": {"name": "Plains", "fg": "light_green"},
+	"~": {"name": "Water", "blocks": "move", "fg": "azure"},
+	"#": {"name": "Wall", "blocks": true, "fg": "grey"},
+	"-": {"name": "Tile", "fg": "lighter_orange", "default": true},
+	":": {"name": "Trees", "fg": "dark_green"},
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ ": {"name": "Text", "fg": "white", "bg": "black", "blocks": "move"},
+	"*": {"name": "Forcefield", "blocks": "move", "fg": "sky"},
+	"!": {"name": "Lava", "blocks": "move", "fg": "darker_red"}
+	},
+"fixtures" : {
+	"|": {"entity": "Door", "locked": true, "tile": "-"},
+	"$": {"entity": "Chest", "locked": true, "tile": "-"},
+
+	"t": {"entity": "Thief", "talk": "West 8, South 35 and await the Dawn!", "tile": "."},
+	"o": {"entity": "Peasant", "name": "Cookie", "talk": "Cookie: Like the food?", "_ai": "StandStill"},
+	"k": {"entity": "Jester", "name": "Iolo", "talk": "Iolo sings: Ho Eyo He Hum!"},
+	"l": {"entity": "Jester", "name": "Gwino", "talk": "Gwino sings: Muh Eh Oye Oh!"},
+	"m": {"entity": "Peasant", "name": "Phantom Fighter", "talk": "Phantom Fighter: The food sucks!", "_ai": "StandStill"},
+	"c": {"entity": "Cleric", "name": "Wise Cleric", "talk": "The Wise Cleric: 4 cards, 4 slots", "ai": "RandomWalk", "walk_delay": "5"},
+	"h": {"entity": "Guard", "talk": "Enter if you dare!"},
+	"j": {"entity": "Jester", "name": "Chuckles", "talk": "Chuckles: Welcome All!"},
+
+	"b": {"entity": "British", "tile": "?"},
+	"f": {"entity": "Guard", "talk": "Good day!", "tile": "."},
+	"g": {"entity": "Guard", "talk": "Good day!"},
+	"i": {"entity": "Guard", "talk": "Good day!", "ai": "RandomWalk"},
+	"n": {"entity": "Cleric", "ai": "RandomWalk", "talk": "Howdy stranger!"},
+	"p": {"entity": "Healer", "ai": "FollowParty"},
+	"r": {"entity": "Oracle"}
+	},
+"named_locations": {
+	"@": {"name": "START", "tile": "-"}
+},
+"objects" : [
+	{"x": 10, "y": 24, "entity": "Ship"}
+]
+}

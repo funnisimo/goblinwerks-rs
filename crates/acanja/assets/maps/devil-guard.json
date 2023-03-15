@@ -1,0 +1,74 @@
+{
+"map": {"filename": "devil-guard.txt", "width": 64, "height": 64, "wrap": false},
+"config": {"welcome": "Welcome to Devil Guard!"},
+"tiles": {
+	".": {"name": "Plains", "lit": "light_green", "dark": "desaturated_chartreuse", "default": true},
+	"~": {"name": "Water", "blocks": true, "lit": "azure", "dark": "dark_blue"},
+	"#": {"name": "Wall", "blocks": true, "blocks_sight": true, "lit": "grey", "dark": "dark_grey"},
+	"-": {"name": "Tile", "lit": "lighter_orange", "dark": "darkest_orange"},
+	":": {"name": "Trees", "lit": "dark_green", "dark": "darkest_green"},
+	"?": {"name": "Letters", "lit": "black", "dark": "black", "blocks": true},
+	"*": {"name": "Forcefield", "blocks": true, "blocks_sight": false, "lit": "sky", "dark": "dark_sky"},
+	"!": {"name": "Lava", "blocks": true, "lit": "darker_red", "dark": "darkest_flame"}
+	},
+"fixtures" : {
+	"|": {"entity": "Door", "locked": true, "tile": "-"},
+	"$": {"entity": "Chest", "locked": true, "tile": "-"},
+	"A": {"entity": "Text", "tile": "?"},
+	"B": {"entity": "Text", "tile": "?"},
+	"C": {"entity": "Text", "tile": "?"},
+	"D": {"entity": "Text", "tile": "?"},
+	"E": {"entity": "Text", "tile": "?"},
+	"F": {"entity": "Text", "tile": "?"},
+	"G": {"entity": "Text", "tile": "?"},
+	"H": {"entity": "Text", "tile": "?"},
+	"I": {"entity": "Text", "tile": "?"},
+	"J": {"entity": "Text", "tile": "?"},
+	"K": {"entity": "Text", "tile": "?"},
+	"L": {"entity": "Text", "tile": "?"},
+	"M": {"entity": "Text", "tile": "?"},
+	"N": {"entity": "Text", "tile": "?"},
+	"O": {"entity": "Text", "tile": "?"},
+	"P": {"entity": "Text", "tile": "?"},
+	"Q": {"entity": "Text", "tile": "?"},
+	"R": {"entity": "Text", "tile": "?"},
+	"S": {"entity": "Text", "tile": "?"},
+	"T": {"entity": "Text", "tile": "?"},
+	"U": {"entity": "Text", "tile": "?"},
+	"V": {"entity": "Text", "tile": "?"},
+	"W": {"entity": "Text", "tile": "?"},
+	"X": {"entity": "Text", "tile": "?"},
+	"Y": {"entity": "Text", "tile": "?"},
+	"Z": {"entity": "Text", "tile": "?"},
+	" ": {"entity": "Text", "tile": "?"},
+
+	"a": {"entity": "Armorer", "tile": "-"},
+	"b": {"entity": "Bartender", "tile": "-"},
+	"c": {"entity": "Weaponer", "tile": "-"},
+	"d": {"entity": "Grocer", "tile": "-"},
+	"e": {"entity": "Healer", "tile": "-"},
+	"k": {"entity": "Guildmaster", "tile": "-"},
+
+	"g": {"entity": "Guard", "talk": "Good day!", "tile": ".", "ai": "RandomWalk"},
+	"h": {"entity": "Guard", "talk": "Good day!", "tile": "%"},
+	"i": {"entity": "Guard", "talk": "Good day!", "tile": "-"},
+
+	"f": {"entity": "Fighter", "tile": ":", "ai": "RandomWalk"},
+	"j": {"entity": "Jester", "tile": ".", "ai": "RandomWalk"},
+
+	"s": {"entity": "Fighter", "tile": ".", "talk": "'Marks' gained in dungeons!"},
+	"t": {"entity": "Fighter", "tile": ".", "talk": "Hot metal leaves a 'Mark'!"},
+	"u": {"entity": "Fighter", "tile": ":", "talk": "The King favors a 'Mark'!"},
+	"v": {"entity": "Fighter", "tile": ":", "talk": "A 'Mark' helps invoke the Snake"},
+	"w": {"entity": "Fighter", "tile": ".", "talk": "4 'Marks', 4 uses!"},
+	"x": {"entity": "Fighter", "tile": ":", "talk": "Seek ye the dungeon of fire!"},
+	"y": {"entity": "Fighter", "tile": ":", "talk": "Mark thee well!"}
+
+
+	},
+"named_locations": {
+	"@": {"name": "START", "tile": "."}
+},
+"objects" : [
+]
+}
