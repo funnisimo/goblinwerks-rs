@@ -3,11 +3,12 @@ use acanja::map::world::build_world_map;
 use gw_app::ecs::{systems::ResourceSet, Read};
 use gw_app::*;
 use gw_util::point::Point;
+use gw_world::camera::Camera;
 use gw_world::level::Level;
 use gw_world::map::Map;
 use gw_world::memory::MapMemory;
 use gw_world::tile::{TileTomlFileLoader, Tiles};
-use gw_world::widget::{Camera, Viewport};
+use gw_world::widget::Viewport;
 
 const MAP_WIDTH: u32 = 80;
 const MAP_HEIGHT: u32 = 50;

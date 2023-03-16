@@ -13,9 +13,11 @@ use gw_world::position::Position;
 use gw_world::sprite::Sprite;
 use gw_world::task::DoNextActionResult;
 // use gw_world::memory::MapMemory;
+use gw_world::camera::{update_camera_follows, Camera};
+use gw_world::map::Wrap;
+use gw_world::tile::TileJsonFileLoader;
 use gw_world::tile::Tiles;
-use gw_world::tile::{TileBuilder, TileJsonFileLoader};
-use gw_world::widget::{update_camera_follows, Camera, Viewport, Wrap};
+use gw_world::widget::Viewport;
 use std::{collections::HashMap, fs::read_to_string};
 
 struct UserControl;

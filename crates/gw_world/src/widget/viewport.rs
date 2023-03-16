@@ -1,5 +1,7 @@
+use crate::camera::Camera;
 use crate::level::{Level, Levels};
 use crate::map::Cell;
+use crate::map::Wrap;
 use crate::map::{CellFlags, Map};
 use crate::memory::MapMemory;
 use crate::position::Position;
@@ -7,10 +9,9 @@ use crate::sprite::Sprite;
 use gw_app::color::named::BLACK;
 use gw_app::color::{named, RGBA};
 use gw_app::ecs::query::IntoQuery;
-use gw_app::ecs::Entity;
 use gw_app::ecs::{systems::ResourceSet, Read, Write};
 use gw_app::messages::Messages;
-use gw_app::{log, AppEvent, ScreenResult};
+use gw_app::{AppEvent, ScreenResult};
 use gw_app::{Ecs, Panel};
 use gw_util::point::Point;
 use gw_util::rect::Rect;
@@ -54,99 +55,6 @@ trait VisSource {
 //         VisType::NONE
 //     }
 // }
-
-#[derive(Debug, Copy, Clone, Default)]
-pub enum Wrap {
-    #[default]
-    None,
-    X,
-    Y,
-    XY,
-}
-
-impl Wrap {
-    pub fn try_wrap_x(&self, x: i32, width: u32) -> Option<i32> {
-        match self {
-            Wrap::None | Wrap::Y => {
-                if x < 0 || x >= width as i32 {
-                    return None;
-                }
-                Some(x)
-            }
-            _ => {
-                let mut tx = x;
-                while tx < 0 {
-                    tx += width as i32;
-                }
-                Some(tx % width as i32)
-            }
-        }
-    }
-
-    pub fn try_wrap_y(&self, y: i32, height: u32) -> Option<i32> {
-        match self {
-            Wrap::None | Wrap::X => {
-                if y < 0 || y >= height as i32 {
-                    return None;
-                }
-                Some(y)
-            }
-            _ => {
-                let mut ty = y;
-                while ty < 0 {
-                    ty += height as i32;
-                }
-                Some(ty % height as i32)
-            }
-        }
-    }
-
-    pub fn try_wrap(&self, x: i32, y: i32, width: u32, height: u32) -> Option<(i32, i32)> {
-        let x0 = match self.try_wrap_x(x, width) {
-            None => return None,
-            Some(x) => x,
-        };
-
-        let y0 = match self.try_wrap_y(y, height) {
-            None => return None,
-            Some(y) => y,
-        };
-
-        Some((x0, y0))
-    }
-
-    pub fn wrap_x(&self, x: i32, width: u32) -> i32 {
-        match self {
-            Wrap::None | Wrap::Y => x,
-            _ => {
-                let mut tx = x;
-                while tx < 0 {
-                    tx += width as i32;
-                }
-                tx % width as i32
-            }
-        }
-    }
-
-    pub fn wrap_y(&self, y: i32, height: u32) -> i32 {
-        match self {
-            Wrap::None | Wrap::X => y,
-            _ => {
-                let mut ty = y;
-                while ty < 0 {
-                    ty += height as i32;
-                }
-                ty % height as i32
-            }
-        }
-    }
-
-    pub fn wrap(&self, x: i32, y: i32, width: u32, height: u32) -> (i32, i32) {
-        let x0 = self.wrap_x(x, width);
-        let y0 = self.wrap_y(y, height);
-        (x0, y0)
-    }
-}
 
 #[derive(Debug, Copy, Clone, Default)]
 pub enum Lock {
@@ -208,98 +116,6 @@ impl AlwaysVisible {
 }
 impl VisSource for AlwaysVisible {}
 
-pub struct Camera {
-    center: Point,
-    follows: Option<Entity>,
-    size: (u32, u32),
-    needs_draw: bool,
-}
-
-impl Camera {
-    pub fn new(width: u32, height: u32) -> Self {
-        Camera {
-            center: Point::new(width as i32 / 2, height as i32 / 2),
-            follows: None,
-            size: (width, height),
-            needs_draw: true,
-        }
-    }
-
-    pub fn with_center(mut self, x: i32, y: i32) -> Self {
-        self.center.x = x;
-        self.center.y = y;
-        self
-    }
-
-    pub fn offset(&self) -> (i32, i32) {
-        (
-            self.center.x - self.size.0 as i32 / 2,
-            self.center.y - self.size.1 as i32 / 2,
-        )
-    }
-
-    pub fn size(&self) -> (u32, u32) {
-        self.size
-    }
-
-    pub fn resize(&mut self, width: u32, height: u32) {
-        self.size = (width, height);
-        self.set_needs_draw();
-    }
-
-    pub fn set_center(&mut self, x: i32, y: i32) {
-        self.center.set(x, y);
-        self.set_needs_draw();
-    }
-
-    pub fn move_center(&mut self, dx: i32, dy: i32) {
-        self.center.x = self.center.x + dx;
-        self.center.y = self.center.y + dy;
-        self.set_needs_draw();
-    }
-
-    pub fn set_center_point(&mut self, pt: &Point) {
-        self.set_center(pt.x, pt.y);
-    }
-
-    pub fn needs_draw(&self) -> bool {
-        self.needs_draw
-    }
-
-    pub fn clear_needs_draw(&mut self) {
-        self.needs_draw = false;
-    }
-
-    pub fn set_needs_draw(&mut self) {
-        self.needs_draw = true;
-    }
-
-    pub fn set_follows(&mut self, entity: Entity) {
-        self.follows = Some(entity);
-        self.needs_draw = true;
-    }
-
-    pub fn clear_follows(&mut self) {
-        self.follows = None;
-        self.needs_draw = true;
-    }
-}
-
-pub fn update_camera_follows(level: &mut Level) {
-    if let Some(mut camera) = level.resources.get_mut::<Camera>() {
-        if let Some(ref entity) = camera.follows {
-            if let Some(entry) = level.world.entry(*entity) {
-                if let Ok(pos) = entry.get_component::<Position>() {
-                    camera.set_center(pos.x, pos.y);
-                }
-            } else {
-                camera.follows = None;
-                log("Cancelling camera follows - entity not found.");
-            }
-        }
-    }
-}
-
 pub struct Viewport {
     pub con: Panel,
     id: String,
@@ -349,7 +165,7 @@ impl Viewport {
                 let map_size = level.resources.get::<Map>().unwrap().get_size();
                 let camera = level.resources.get::<Camera>().unwrap();
                 let base_offset = camera.offset();
-                let offset: Point = self.lock.lock(base_offset, camera.size(), map_size).into();
+                let offset: Point = self.lock.lock(base_offset, *camera.size(), map_size).into();
                 (map_size, offset)
             }
             None => match ecs.resources.get::<Level>() {
@@ -357,7 +173,8 @@ impl Viewport {
                     let map_size = level.resources.get::<Map>().unwrap().get_size();
                     let camera = level.resources.get::<Camera>().unwrap();
                     let base_offset = camera.offset();
-                    let offset: Point = self.lock.lock(base_offset, camera.size(), map_size).into();
+                    let offset: Point =
+                        self.lock.lock(base_offset, *camera.size(), map_size).into();
                     (map_size, offset)
                 }
                 None => {
@@ -367,7 +184,8 @@ impl Viewport {
                     };
                     let camera = ecs.resources.get::<Camera>().unwrap();
                     let base_offset = camera.offset();
-                    let offset: Point = self.lock.lock(base_offset, camera.size(), map_size).into();
+                    let offset: Point =
+                        self.lock.lock(base_offset, *camera.size(), map_size).into();
                     (map_size, offset)
                 }
             },
@@ -427,12 +245,12 @@ impl Viewport {
         let offset = {
             let (map, camera) = <(Read<Map>, Read<Camera>)>::fetch(&level.resources);
 
-            if self.con.size() != camera.size {
-                self.resize(camera.size.0, camera.size.1);
+            if self.con.size() != *camera.size() {
+                self.resize(camera.size().0, camera.size().1);
             }
             let base_offset = camera.offset();
             self.lock
-                .lock(base_offset, camera.size(), map.get_size())
+                .lock(base_offset, *camera.size(), map.get_size())
                 .into()
         };
 
@@ -684,10 +502,10 @@ fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
 
     let base_left = viewport
         .lock
-        .lock_x(camera.center.x - size.0 as i32 / 2, size.0, map_size.0);
+        .lock_x(camera.center().x - size.0 as i32 / 2, size.0, map_size.0);
     let base_top = viewport
         .lock
-        .lock_y(camera.center.y - size.1 as i32 / 2, size.1, map_size.1);
+        .lock_y(camera.center().y - size.1 as i32 / 2, size.1, map_size.1);
 
     let left = wrap.wrap_x(base_left, map_size.0);
     let top = wrap.wrap_y(base_top, map_size.1);
@@ -736,8 +554,8 @@ fn clear_needs_draw(viewport: &mut Viewport, level: &mut Level) {
 
     let size = viewport.con.size();
 
-    let left = camera.center.x - size.0 as i32 / 2;
-    let top = camera.center.y - size.1 as i32 / 2;
+    let left = camera.center().x - size.0 as i32 / 2;
+    let top = camera.center().y - size.1 as i32 / 2;
 
     for y0 in 0..size.1 as i32 {
         let y = y0 + top;

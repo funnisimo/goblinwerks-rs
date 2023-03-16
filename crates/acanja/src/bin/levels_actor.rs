@@ -7,6 +7,7 @@ use gw_app::*;
 use gw_util::point::Point;
 use gw_world::action::move_step::MoveStepAction;
 use gw_world::actor::Actor;
+use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::hero::Hero;
 use gw_world::level::{Level, Levels};
 use gw_world::map::{Cell, Map, PortalFlags};
@@ -14,7 +15,7 @@ use gw_world::position::Position;
 use gw_world::sprite::Sprite;
 use gw_world::task::DoNextActionResult;
 use gw_world::tile::{TileTomlFileLoader, Tiles};
-use gw_world::widget::{update_camera_follows, Camera, Viewport};
+use gw_world::widget::Viewport;
 
 #[derive(Serialize, Deserialize)]
 struct UserControl;

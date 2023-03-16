@@ -8,14 +8,16 @@ use gw_util::point::Point;
 use gw_world::action::move_step::MoveStepAction;
 use gw_world::actor::Actor;
 use gw_world::ai::user::ai_user_control;
+use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::hero::Hero;
 use gw_world::level::Level;
 use gw_world::map::Map;
+use gw_world::map::Wrap;
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
 use gw_world::task::DoNextActionResult;
 use gw_world::tile::{TileTomlFileLoader, Tiles};
-use gw_world::widget::{update_camera_follows, Camera, Lock, Viewport, Wrap};
+use gw_world::widget::{Lock, Viewport};
 
 struct UserControl;
 

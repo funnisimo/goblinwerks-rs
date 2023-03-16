@@ -1,10 +1,11 @@
 use gw_app::ecs::{Read, ResourceSet, Write};
 use gw_app::*;
 use gw_util::point::Point;
+use gw_world::camera::Camera;
 use gw_world::map::{dig_room_level, dump_map, Map};
 use gw_world::memory::MapMemory;
 use gw_world::tile::Tiles;
-use gw_world::widget::{Camera, Viewport};
+use gw_world::widget::Viewport;
 
 struct MainScreen {
     viewport: Viewport,
