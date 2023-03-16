@@ -26,7 +26,7 @@
     "flavor": "the mountains"
   },
   "LAVA": {
-    "ch": "!",
+    "ch": 321,
     "fg": "red",
     "bg": "darkest_red",
     "kind": "WALL",
