@@ -4,13 +4,21 @@ use gw_app::ecs::{systems::ResourceSet, Write};
 use gw_app::*;
 use gw_util::json::parse_file;
 use gw_util::point::Point;
+use gw_world::action::move_step::MoveStepAction;
+use gw_world::actor::Actor;
+use gw_world::hero::Hero;
 use gw_world::level::Level;
 use gw_world::map::Map;
+use gw_world::position::Position;
+use gw_world::sprite::Sprite;
+use gw_world::task::DoNextActionResult;
 // use gw_world::memory::MapMemory;
 use gw_world::tile::Tiles;
 use gw_world::tile::{TileBuilder, TileJsonFileLoader};
-use gw_world::widget::{Camera, Viewport, Wrap};
+use gw_world::widget::{update_camera_follows, Camera, Viewport, Wrap};
 use std::{collections::HashMap, fs::read_to_string};
+
+struct UserControl;
 
 #[derive(Debug, Clone)]
 enum Place {
@@ -278,8 +286,8 @@ fn load_map(path: &str, json_file: &str, tiles: &mut Tiles) -> Map {
     map
 }
 
-const MAP_WIDTH: u32 = 1024 / 32;
-const MAP_HEIGHT: u32 = 768 / 32;
+const CAMERA_WIDTH: u32 = 1024 / 32;
+const CAMERA_HEIGHT: u32 = 768 / 32;
 
 struct MainScreen {
     viewport: Viewport,
@@ -321,14 +329,30 @@ impl MainScreen {
         let mut level = Level::new("WORLD");
 
         level.resources.insert(map);
-        // level.resources.insert(MapMemory::new(160, 100));
-        level
-            .resources
-            .insert(Camera::new(MAP_WIDTH, MAP_HEIGHT).with_center(start_pos.x, start_pos.y));
+
+        // add position + sprite for actor
+        let entity = level.world.push((
+            Position::new(start_pos.x, start_pos.y),
+            Sprite::new('@' as Glyph, WHITE.into(), RGBA::new()),
+            UserControl, // Do we need this?
+            Actor::new("USER_CONTROL"),
+        ));
+
+        let mut camera = Camera::new(CAMERA_WIDTH, CAMERA_HEIGHT);
+        camera.set_follows(entity);
+        level.resources.insert(camera);
+
+        level.resources.insert(Hero::new(entity));
+        level.reset_tasks();
 
         ecs.resources.insert(level);
 
         size
+    }
+
+    fn post_action(&mut self, level: &mut Level) {
+        // Post Update
+        update_camera_follows(level);
     }
 }
 
@@ -357,47 +381,23 @@ impl Screen for MainScreen {
                     return ScreenResult::Quit;
                 }
                 VirtualKeyCode::Down => {
-                    let level = ecs.resources.get::<Level>().unwrap();
-                    if let Some(mut camera) = level.resources.get_mut::<Camera>() {
-                        log("Camera down");
-                        camera.move_center(0, 1);
-                    }
+                    let mut level = ecs.resources.get_mut::<Level>().unwrap();
+                    move_hero(&mut *level, 0, 1);
                     drop(level);
                 }
                 VirtualKeyCode::Left => {
-                    let level = ecs.resources.get::<Level>().unwrap();
-                    if let Some(mut camera) = level.resources.get_mut::<Camera>() {
-                        camera.move_center(-1, 0);
-                    }
+                    let mut level = ecs.resources.get_mut::<Level>().unwrap();
+                    move_hero(&mut *level, -1, 0);
                     drop(level);
                 }
                 VirtualKeyCode::Up => {
-                    let level = ecs.resources.get::<Level>().unwrap();
-                    if let Some(mut camera) = level.resources.get_mut::<Camera>() {
-                        camera.move_center(0, -1);
-                    }
+                    let mut level = ecs.resources.get_mut::<Level>().unwrap();
+                    move_hero(&mut *level, 0, -1);
                     drop(level);
                 }
                 VirtualKeyCode::Right => {
-                    let level = ecs.resources.get::<Level>().unwrap();
-                    if let Some(mut camera) = level.resources.get_mut::<Camera>() {
-                        camera.move_center(1, 0);
-                    }
-                    drop(level);
-                }
-                VirtualKeyCode::Equals => {
-                    let size = self.viewport.size();
-                    self.viewport
-                        .resize((size.0 - 8).max(20), (size.1 - 5).max(10));
-                    log(format!("Viewport size={:?}", self.viewport.size()));
-                }
-                VirtualKeyCode::Minus => {
-                    let level = ecs.resources.get::<Level>().unwrap();
-                    let map_size = level.resources.get::<Map>().unwrap().get_size();
-                    let size = self.viewport.size();
-                    self.viewport
-                        .resize((size.0 + 8).min(map_size.0), (size.1 + 5).min(map_size.1));
-                    log(format!("Viewport size={:?}", self.viewport.size()));
+                    let mut level = ecs.resources.get_mut::<Level>().unwrap();
+                    move_hero(&mut *level, 1, 0);
                     drop(level);
                 }
                 _ => {}
@@ -421,6 +421,37 @@ impl Screen for MainScreen {
             _ => {}
         }
         ScreenResult::Continue
+    }
+
+    fn update(&mut self, ecs: &mut Ecs) -> ScreenResult {
+        // Pre Update
+
+        let mut level = ecs.resources.get_mut::<Level>().unwrap();
+
+        level.execute(|level, executor| {
+            // Update
+            loop {
+                // if world.is_game_over() {
+                //     return (self.game_over)(world, ctx);
+                // } else if !world.animations().is_empty() {
+                //     return ScreenResult::Continue;
+                // }
+                let res = executor.do_next_action(&mut *level);
+                self.post_action(&mut *level);
+                match res {
+                    DoNextActionResult::Done => {
+                        return ScreenResult::Continue;
+                    }
+                    DoNextActionResult::Mob => {
+                        continue;
+                    }
+                    DoNextActionResult::Hero => {
+                        return ScreenResult::Continue;
+                    }
+                    DoNextActionResult::PushMode(mode) => return ScreenResult::Push(mode),
+                }
+            }
+        })
     }
 
     fn render(&mut self, app: &mut Ecs) {
@@ -448,4 +479,12 @@ fn main() {
         .build();
 
     app.run(MainScreen::new());
+}
+
+fn move_hero(level: &mut Level, dx: i32, dy: i32) {
+    let hero_entity = level.resources.get::<Hero>().unwrap().entity;
+
+    let mut entry = level.world.entry(hero_entity).unwrap();
+    let actor = entry.get_component_mut::<Actor>().unwrap();
+    actor.next_action = Some(Box::new(MoveStepAction::new(hero_entity, dx, dy)));
 }

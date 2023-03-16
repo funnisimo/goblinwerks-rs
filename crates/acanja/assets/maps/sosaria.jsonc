@@ -16,7 +16,7 @@
     "S": { "id": "Serpent", "tile": "~" }
   },
   "actors": {
-    "*": { "id": "Whirlpool", "tile": "~", "ai": "moves_randomly" }
+    "*": { "id": "Whirlpool", "tile": "~" }
   },
   "locations": {
     "@": "START",
