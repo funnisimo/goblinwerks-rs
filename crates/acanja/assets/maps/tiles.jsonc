@@ -1,19 +1,20 @@
 {
-  /* GROUND */
+  /* GROUND - WORLD */
+
   "PLAINS": {
-    "glyph": 183,
+    "glyph": 161, // 183,
     "fg": "light_green",
     "kind": "FLOOR",
     "flavor": "some grassland"
   },
   "TREES": {
-    "ch": ":",
+    "ch": 162, // ":",
     "fg": "dark_green",
     "kind": "FLOOR",
     "flavor": "some trees"
   },
   "FOREST": {
-    "ch": "%",
+    "ch": 163, // "%",
     "fg": "darker_green",
     "kind": "FLOOR",
     "flavor": "the forest"
@@ -41,15 +42,16 @@
     "flavor": "some water"
   },
 
-  /* FIXTURE */
+  /* FIXTURE - WORLD */
+
   "TOWN": {
-    "glyph": 94,
+    "glyph": 176, // 94,
     "fg": "light_sepia",
     "layer": "FIXTURE",
     "flavor": "a town"
   },
   "CASTLE": {
-    "glyph": 148,
+    "glyph": 177, // 148,
     "fg": "white",
     "layer": "FIXTURE",
     "flavor": "a castle"
@@ -66,5 +68,135 @@
     "blocks": "move",
     "layer": "FIXTURE",
     "flavor": "a huge menacing serpent"
+  },
+
+  /* GROUND - TOWN */
+
+  "FLOOR": {
+    "ch": 165, // ".",
+    "fg": "#620",
+    "bg": "#410",
+    "flavor": "a stone floor"
+  },
+  "WALL": {
+    "ch": 164, // "#",
+    "fg": "gray",
+    "bg": "darker_gray",
+    "flavor": "a stone wall"
+  },
+  "BRIDGE": {
+    "ch": "=",
+    "fg": "brown",
+    "bg": "darker_brown",
+    "flavor": "a bridge"
+  },
+  "BRIDGE_SPACE": {
+    "ch": " ",
+    "fg": "brown",
+    "bg": "darker_brown",
+    "blocks": "move",
+    "flavor": "a bridge railing"
+  },
+  "BRIDGE_{}": {
+    "ch": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H",
+      "I",
+      "J",
+      "K",
+      "L",
+      "M",
+      "N",
+      "O",
+      "P",
+      "Q",
+      "R",
+      "S",
+      "T",
+      "U",
+      "V",
+      "W",
+      "X",
+      "Y",
+      "Z"
+    ],
+    "fg": "brown",
+    "bg": "darker_brown",
+    "blocks": "move",
+    "flavor": "a bridge railing"
+  },
+
+  /* FIXTURE - TOWN */
+
+  "DOOR_LOCKED": {
+    "ch": 262,
+    "fg": "brown",
+    "bg": "darkest_brown",
+    "kind": "WALL",
+    "flavor": "a locked door"
+  },
+  "CHEST_LOCKED": {
+    "ch": 366,
+    "fg": "gold",
+    "bg": "darkest_gold",
+    "kind": "FIXTURE",
+    "flavor": "a locked chest"
+  },
+
+  "FORCEFIELD": {
+    "ch": 321,
+    "fg": "teal",
+    "bg": "darkest_teal",
+    "kind": "WALL",
+    "flavor": "a forcefield"
+  },
+  "COUNTER_SPACE": {
+    "ch": " ",
+    "fg": "gray",
+    "bg": "dark_gray",
+    "blocks": "move",
+    "layer": "FIXTURE",
+    "flavor": "a countertop"
+  },
+  "COUNTER_{}": {
+    "ch": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H",
+      "I",
+      "J",
+      "K",
+      "L",
+      "M",
+      "N",
+      "O",
+      "P",
+      "Q",
+      "R",
+      "S",
+      "T",
+      "U",
+      "V",
+      "W",
+      "X",
+      "Y",
+      "Z"
+    ],
+    "fg": "gray",
+    "bg": "dark_gray",
+    "blocks": "move",
+    "layer": "FIXTURE",
+    "flavor": "a countertop"
   }
 }

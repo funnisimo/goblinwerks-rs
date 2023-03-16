@@ -46,32 +46,43 @@ fn load_map(path: &str, json_file: &str, tiles: &mut Tiles) -> Map {
 
     let tile_info = root.get(&"tiles".into()).unwrap().as_map().unwrap();
     for (ch, info) in tile_info.iter() {
-        if info.is_string() {
-            if default_tile == "NONE" {
-                default_tile = info.to_string().to_uppercase();
-            }
-            tile_lookup.insert(ch.to_string(), Place::Tile(info.to_string().to_uppercase()));
-        } else if info.is_map() {
-            let info = info.as_map().unwrap();
+        let glyphs = ch.to_string();
 
-            let tile_id = info.get(&"id".into()).expect(&format!(
-                "Tile entry is missing 'id' field - {}",
-                ch.to_string()
-            ));
-            tile_lookup.insert(
-                ch.to_string(),
-                Place::Tile(tile_id.to_string().to_uppercase()),
-            );
+        for glyph in glyphs.chars() {
+            let text = format!("{}", glyph);
 
-            if default_tile == "NONE" || info.contains_key(&"default".into()) {
-                default_tile = tile_id.to_string().to_uppercase();
+            if info.is_string() {
+                let tile_id = info.to_string().to_uppercase().replace("{}", &text);
+
+                if default_tile == "NONE" {
+                    default_tile = tile_id.clone();
+                }
+                tile_lookup.insert(text, Place::Tile(tile_id));
+            } else if info.is_map() {
+                let info = info.as_map().unwrap();
+
+                let tile_id = info
+                    .get(&"id".into())
+                    .expect(&format!(
+                        "Tile entry is missing 'id' field - {}",
+                        ch.to_string()
+                    ))
+                    .to_string()
+                    .to_uppercase()
+                    .replace("{}", &text);
+
+                tile_lookup.insert(text, Place::Tile(tile_id.clone()));
+
+                if default_tile == "NONE" || info.contains_key(&"default".into()) {
+                    default_tile = tile_id;
+                }
+            } else {
+                panic!(
+                    "Found unexpected tiles entry - {}: {:?}",
+                    ch.to_string(),
+                    info
+                );
             }
-        } else {
-            panic!(
-                "Found unexpected tiles entry - {}: {:?}",
-                ch.to_string(),
-                info
-            );
         }
     }
 
@@ -137,17 +148,23 @@ fn load_map(path: &str, json_file: &str, tiles: &mut Tiles) -> Map {
         let info = info.as_map().unwrap();
 
         let id = info.get(&"id".into()).unwrap().to_string().to_uppercase();
-        let tile = info.get(&"tile".into()).unwrap().to_string();
-
-        match tile_lookup.get(&tile) {
-            None => panic!("Actor has unknown tile!"),
-            Some(place) => match place {
-                Place::Tile(ground) => {
-                    tile_lookup.insert(glyph.clone(), Place::Actor(ground.clone(), id.clone()));
-                }
-                _ => panic!("Actor tile field did not reference a tile"),
+        match info.get(&"tile".into()) {
+            None => {
+                tile_lookup.insert(
+                    glyph.clone(),
+                    Place::Actor(default_tile.clone(), id.clone()),
+                );
+            }
+            Some(t) => match tile_lookup.get(&t.to_string()) {
+                None => panic!("Actor has unknown tile! - {}", t.to_string()),
+                Some(place) => match place {
+                    Place::Tile(ground) => {
+                        tile_lookup.insert(glyph.clone(), Place::Actor(ground.clone(), id.clone()));
+                    }
+                    _ => panic!("Actor tile field did not reference a tile"),
+                },
             },
-        }
+        };
     }
 
     println!("Tile Lookup = {:?}", tile_lookup);
@@ -259,26 +276,28 @@ fn load_map(path: &str, json_file: &str, tiles: &mut Tiles) -> Map {
                 None => panic!("Unknown tile in map data - {}", char),
                 Some(place) => match place {
                     Place::Tile(tile) => {
-                        let t = tiles.get(tile).expect("Failed to find tile in map");
+                        let t = tiles
+                            .get(tile)
+                            .expect(&format!("Failed to find tile in tiles - {}", tile));
                         map.reset_tiles(x, y, t);
                     }
                     Place::Fixture(tile, fix) => {
-                        let t = tiles.get(tile).expect("Failed to find tile in map");
+                        let t = tiles.get(tile).expect("Failed to find tile in tiles");
                         map.reset_tiles(x, y, t);
-                        let f = tiles.get(fix).expect("Failed to find fixture.");
+                        let f = tiles.get(fix).expect("Failed to find fixture in tiles.");
                         map.place_feature(x, y, f);
                     }
                     Place::Actor(tile, _) => {
-                        let t = tiles.get(tile).expect("Failed to find tile in map");
+                        let t = tiles.get(tile).expect("Failed to find tile in tiles");
                         map.reset_tiles(x, y, t);
                     }
                     Place::Location(tile, fix, name) => {
                         let t = tiles
                             .get(tile)
-                            .expect(&format!("Failed to find tile in map - {}", tile));
+                            .expect(&format!("Failed to find tile in tiles - {}", tile));
                         map.reset_tiles(x, y, t);
                         if let Some(fix) = fix {
-                            let f = tiles.get(fix).expect("Failed to find fixture.");
+                            let f = tiles.get(fix).expect("Failed to find fixture in tiles.");
                             map.place_feature(x, y, f);
                         }
                         map.set_location(name, Point::new(x, y));
@@ -319,7 +338,7 @@ impl MainScreen {
             // build_world_map(&tiles, &prefabs, MAP_WIDTH, MAP_HEIGHT)
 
             let path = "./assets/maps/";
-            let json_file = "sosaria.jsonc";
+            let json_file = "british.jsonc";
 
             load_map(path, json_file, &mut tiles)
         };

@@ -35,6 +35,7 @@ pub struct Map {
     pub height: u32,
     pub wrap: Wrap,
     flags: MapFlags,
+    pub welcome: Option<String>,
 
     any_entity_change: bool, // TODO - MapFlags
     any_tile_change: bool,   // TODO - MapFlags
@@ -67,6 +68,7 @@ impl Map {
             height: height,
             wrap: Wrap::None,
             flags: MapFlags::empty(),
+            welcome: None,
 
             any_entity_change: true,
             any_tile_change: true,

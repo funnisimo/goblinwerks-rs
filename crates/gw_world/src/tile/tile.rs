@@ -212,7 +212,7 @@ impl TileBuilder {
                     Err(e) => return Err(format!("Failed to parse kind : {} - {}", value, e)),
                     Ok(kind) => kind,
                 };
-                if kind == TileKind::FEATURE && !self.layer_set {
+                if kind == TileKind::FIXTURE && !self.layer_set {
                     self.tile.layer = TileLayer::FIXTURE;
                 }
                 self.tile.kind = kind;

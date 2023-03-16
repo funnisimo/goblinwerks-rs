@@ -14,12 +14,41 @@ pub fn load_tile_data(dest: &mut Tiles, toml: Value) -> Result<u32, String> {
     let mut count: u32 = 0;
 
     for (name, data) in map.iter() {
-        let mut builder = TileBuilder::new(&name.to_string());
-
         let data_table = match data.as_map() {
             None => return Err(format!("Bad data format - {}", name.to_string())),
             Some(v) => v,
         };
+
+        if let Some(ch_value) = data_table.get(&"ch".into()) {
+            if ch_value.is_list() {
+                let chs = ch_value.as_list().unwrap();
+
+                for ch_value in chs {
+                    let ch_text = ch_value.to_string();
+                    let id = name.to_string().replace("{}", &ch_text);
+
+                    let mut builder = TileBuilder::new(&id);
+                    builder
+                        .set(&"ch".into(), ch_value)
+                        .expect("Failed to set ch");
+
+                    for (key, value) in data_table.iter() {
+                        if key == "ch" {
+                            continue;
+                        }
+                        if let Err(e) = builder.set(key, value) {
+                            return Err(format!("Error processing tile[{}] - {}", &name, e));
+                        }
+                    }
+                    dest.insert(builder.build());
+                    count += 1;
+                }
+
+                continue;
+            }
+        }
+
+        let mut builder = TileBuilder::new(&name.to_string());
 
         for (key, value) in data_table.iter() {
             if let Err(e) = builder.set(key, value) {

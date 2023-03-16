@@ -144,6 +144,15 @@ impl TryInto<u64> for Key {
     }
 }
 
+impl PartialEq<u64> for Key {
+    fn eq(&self, other: &u64) -> bool {
+        match self.as_int() {
+            None => false,
+            Some(v) => v == *other,
+        }
+    }
+}
+
 // i64
 impl TryInto<i64> for Key {
     type Error = DataConvertError;
@@ -158,6 +167,15 @@ impl TryInto<i64> for Key {
             },
 
             _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
+impl PartialEq<i64> for Key {
+    fn eq(&self, other: &i64) -> bool {
+        match self.as_int() {
+            None => false,
+            Some(v) => v as i64 == *other,
         }
     }
 }
@@ -180,6 +198,15 @@ impl TryInto<u32> for Key {
     }
 }
 
+impl PartialEq<u32> for Key {
+    fn eq(&self, other: &u32) -> bool {
+        match self.as_int() {
+            None => false,
+            Some(v) => v as u32 == *other,
+        }
+    }
+}
+
 // i32
 impl TryInto<i32> for Key {
     type Error = DataConvertError;
@@ -194,6 +221,15 @@ impl TryInto<i32> for Key {
             },
 
             _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
+impl PartialEq<i32> for Key {
+    fn eq(&self, other: &i32) -> bool {
+        match self.as_int() {
+            None => false,
+            Some(v) => v as i32 == *other,
         }
     }
 }
@@ -216,6 +252,15 @@ impl TryInto<u16> for Key {
     }
 }
 
+impl PartialEq<u16> for Key {
+    fn eq(&self, other: &u16) -> bool {
+        match self.as_int() {
+            None => false,
+            Some(v) => v as u16 == *other,
+        }
+    }
+}
+
 // i16
 impl TryInto<i16> for Key {
     type Error = DataConvertError;
@@ -234,6 +279,15 @@ impl TryInto<i16> for Key {
     }
 }
 
+impl PartialEq<i16> for Key {
+    fn eq(&self, other: &i16) -> bool {
+        match self.as_int() {
+            None => false,
+            Some(v) => v as i16 == *other,
+        }
+    }
+}
+
 // u8
 impl TryInto<u8> for Key {
     type Error = DataConvertError;
@@ -248,6 +302,15 @@ impl TryInto<u8> for Key {
             },
 
             _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
+impl PartialEq<u8> for Key {
+    fn eq(&self, other: &u8) -> bool {
+        match self.as_int() {
+            None => false,
+            Some(v) => v as u8 == *other,
         }
     }
 }
@@ -271,6 +334,15 @@ impl TryInto<i8> for Key {
     }
 }
 
+impl PartialEq<i8> for Key {
+    fn eq(&self, other: &i8) -> bool {
+        match self.as_int() {
+            None => false,
+            Some(v) => v as i8 == *other,
+        }
+    }
+}
+
 impl Display for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -286,6 +358,15 @@ impl Display for Key {
     }
 }
 
+impl PartialEq<str> for Key {
+    fn eq(&self, other: &str) -> bool {
+        match self {
+            Key::String(v) => v == other,
+            _ => false,
+        }
+    }
+}
+
 impl TryInto<Entity> for Key {
     type Error = DataConvertError;
 
@@ -297,6 +378,15 @@ impl TryInto<Entity> for Key {
     }
 }
 
+impl PartialEq<Entity> for Key {
+    fn eq(&self, other: &Entity) -> bool {
+        match self {
+            Key::Entity(e) => e == other,
+            _ => false,
+        }
+    }
+}
+
 impl TryInto<Point> for Key {
     type Error = DataConvertError;
 
@@ -304,6 +394,15 @@ impl TryInto<Point> for Key {
         match self {
             Key::Point(x, y) => Ok(Point::new(x, y)),
             _ => Err(DataConvertError::WrongType),
+        }
+    }
+}
+
+impl PartialEq<Point> for Key {
+    fn eq(&self, other: &Point) -> bool {
+        match self {
+            Key::Point(x, y) => other.x == *x && other.y == *y,
+            _ => false,
         }
     }
 }
