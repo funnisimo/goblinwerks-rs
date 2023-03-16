@@ -121,7 +121,6 @@ pub struct Viewport {
     id: String,
     last_mouse: Point,
     needs_draw: bool,
-    wrap: Wrap,
     lock: Lock,
 }
 
@@ -139,7 +138,6 @@ impl Viewport {
             id: builder.id,
             last_mouse: Point::new(-1, -1),
             needs_draw: true,
-            wrap: builder.wrap,
             lock: builder.lock,
         }
     }
@@ -158,46 +156,41 @@ impl Viewport {
             None => return None,
             Some(pt) => pt,
         };
+        let lock_strategy = self.lock;
 
-        let (map_size, offset) = match ecs.resources.get::<Levels>() {
+        let calc_cell = move |map: &Map, camera: &Camera| {
+            let map_size = map.get_size();
+            let base_offset = camera.offset();
+            let offset: Point = lock_strategy
+                .lock(base_offset, *camera.size(), map_size)
+                .into();
+
+            let map_point: Point = view_point + offset;
+            match map
+                .wrap
+                .try_wrap(map_point.x, map_point.y, map_size.0, map_size.1)
+            {
+                None => None,
+                Some((x, y)) => Some(Point::new(x, y)),
+            }
+        };
+
+        match ecs.resources.get::<Levels>() {
             Some(levels) => {
                 let level = levels.current();
-                let map_size = level.resources.get::<Map>().unwrap().get_size();
-                let camera = level.resources.get::<Camera>().unwrap();
-                let base_offset = camera.offset();
-                let offset: Point = self.lock.lock(base_offset, *camera.size(), map_size).into();
-                (map_size, offset)
+                let (map, camera) = <(Read<Map>, Read<Camera>)>::fetch(&level.resources);
+                calc_cell(&*map, &*camera)
             }
             None => match ecs.resources.get::<Level>() {
                 Some(level) => {
-                    let map_size = level.resources.get::<Map>().unwrap().get_size();
-                    let camera = level.resources.get::<Camera>().unwrap();
-                    let base_offset = camera.offset();
-                    let offset: Point =
-                        self.lock.lock(base_offset, *camera.size(), map_size).into();
-                    (map_size, offset)
+                    let (map, camera) = <(Read<Map>, Read<Camera>)>::fetch(&level.resources);
+                    calc_cell(&*map, &*camera)
                 }
                 None => {
-                    let map_size = match ecs.resources.get::<Map>() {
-                        Some(map) => map.get_size(),
-                        None => return None,
-                    };
-                    let camera = ecs.resources.get::<Camera>().unwrap();
-                    let base_offset = camera.offset();
-                    let offset: Point =
-                        self.lock.lock(base_offset, *camera.size(), map_size).into();
-                    (map_size, offset)
+                    let (map, camera) = <(Read<Map>, Read<Camera>)>::fetch(&ecs.resources);
+                    calc_cell(&*map, &*camera)
                 }
             },
-        };
-
-        let map_point: Point = view_point + offset;
-        match self
-            .wrap
-            .try_wrap(map_point.x, map_point.y, map_size.0, map_size.1)
-        {
-            None => None,
-            Some((x, y)) => Some(Point::new(x, y)),
         }
     }
 
@@ -358,7 +351,7 @@ fn draw_map(
     let vis = AlwaysVisible::new();
     // let fov = global_world().get_fov(world.hero_entity()).unwrap().borrow();
 
-    let wrap = viewport.wrap;
+    let wrap = map.wrap;
     let map_size = map.get_size();
     let size = viewport.con.size();
     // TODO - let offset = viewport.offset;
@@ -492,7 +485,7 @@ fn draw_map(
 fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
     let (map, camera) = <(Read<Map>, Read<Camera>)>::fetch(&ecs.resources);
 
-    let wrap = viewport.wrap;
+    let wrap = map.wrap;
     let map_size = map.get_size();
     let size = viewport.con.size();
     // TODO - let offset = viewport.offset;

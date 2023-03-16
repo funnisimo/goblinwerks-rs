@@ -1,4 +1,4 @@
-use super::{Cell, CellMut, CellRef, PortalInfo};
+use super::{Cell, CellMut, CellRef, PortalInfo, Wrap};
 use super::{CellFlags, MapFlags};
 // use crate::fov::FovSource;
 use crate::tile::Tile;
@@ -33,6 +33,7 @@ pub struct Map {
     pub id: u32,
     pub width: u32,
     pub height: u32,
+    pub wrap: Wrap,
     flags: MapFlags,
 
     any_entity_change: bool, // TODO - MapFlags
@@ -64,6 +65,7 @@ impl Map {
             id: 0,
             width: width,
             height: height,
+            wrap: Wrap::None,
             flags: MapFlags::empty(),
 
             any_entity_change: true,
@@ -99,10 +101,10 @@ impl Map {
     }
 
     pub fn to_idx(&self, x: i32, y: i32) -> Option<usize> {
-        if x < 0 || y < 0 || x >= self.width as i32 || y >= self.height as i32 {
-            return None;
+        match self.wrap.try_wrap(x, y, self.width, self.height) {
+            None => None,
+            Some((x, y)) => Some((y as usize * self.width as usize) + x as usize),
         }
-        Some((y as usize * self.width as usize) + x as usize)
     }
 
     pub fn to_point(&self, idx: usize) -> Point {
@@ -110,9 +112,13 @@ impl Map {
         Point::new(idx as i32 % w, idx as i32 / w)
     }
 
-    pub fn has_xy(&self, x: i32, y: i32) -> bool {
-        x >= 0 && x < self.width as i32 && y >= 0 && y < self.height as i32
+    pub fn try_wrap(&self, x: i32, y: i32) -> Option<(i32, i32)> {
+        self.wrap.try_wrap(x, y, self.width, self.height)
     }
+
+    // pub fn has_xy(&self, x: i32, y: i32) -> bool {
+    //     x >= 0 && x < self.width as i32 && y >= 0 && y < self.height as i32
+    // }
 
     fn has_idx(&self, idx: usize) -> bool {
         idx < self.ground.len()
@@ -798,8 +804,8 @@ where
     F: Fn(i32, i32, CellRef) -> bool,
 {
     for _ in 0..200 {
-        let x = rng.range(0i32, map.width as i32 - 1);
-        let y = rng.range(0i32, map.height as i32 - 1);
+        let x = rng.range(0i32, map.width as i32);
+        let y = rng.range(0i32, map.height as i32);
         if let Some(cell) = map.get_cell(x, y) {
             if func(x, y, cell) {
                 return Some(Point::new(x, y));
@@ -821,18 +827,19 @@ where
     for dist in 0..200 {
         for x1 in (x - dist)..(x + dist + 1) {
             for y1 in (y - dist)..(y + dist + 1) {
-                if !map.has_xy(x1, y1) {
-                    continue;
-                }
-                current.x = x1;
-                current.y = y1;
+                let (x2, y2) = match map.wrap.try_wrap(x1, y1, map.width, map.height) {
+                    None => continue,
+                    Some((x, y)) => (x, y),
+                };
+                current.x = x2;
+                current.y = y2;
                 if distance::manhattan(&start, &current).round() as i32 != dist {
                     continue;
                 }
 
-                if let Some(cell) = map.get_cell(x1, y1) {
-                    if func(x1, y1, cell) {
-                        points.push(Point::new(x1, y1));
+                if let Some(cell) = map.get_cell(x2, y2) {
+                    if func(x2, y2, cell) {
+                        points.push(Point::new(x2, y2));
                     }
                 }
             }

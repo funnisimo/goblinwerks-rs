@@ -44,7 +44,7 @@ impl RandomNumberGenerator {
         if max <= min {
             return min;
         }
-        let range = max - min + 1;
+        let range = max - min;
         let rng = self.source.next_u32() % (range as u32);
         rng as i32 + min
     }

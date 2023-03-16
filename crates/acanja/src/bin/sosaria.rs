@@ -218,7 +218,7 @@ fn load_map(path: &str, json_file: &str, tiles: &mut Tiles) -> Map {
         .as_int()
         .unwrap() as u32;
 
-    let _wrap: bool = map_info
+    let wrap: bool = map_info
         .get(&"wrap".into())
         .unwrap_or(&false.into())
         .as_bool()
@@ -246,6 +246,9 @@ fn load_map(path: &str, json_file: &str, tiles: &mut Tiles) -> Map {
 
     let mut map = Map::new(width, height);
     map.fill(def_tile);
+    if wrap {
+        map.wrap = Wrap::XY;
+    }
 
     for (y, line) in data.iter().enumerate() {
         let y = y as i32;
@@ -301,7 +304,7 @@ impl MainScreen {
             // .size(11, 11)
             .font("assets/font_32x58.png")
             // .extents(0.0, 0.0, 0.85, 0.85)
-            .wrap(Wrap::XY)
+            // .wrap(Wrap::XY)
             .build();
 
         Box::new(MainScreen { viewport })

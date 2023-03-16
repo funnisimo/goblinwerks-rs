@@ -8,6 +8,7 @@ use crate::map::Map;
 use crate::position::Position;
 use gw_app::ecs::systems::ResourceSet;
 use gw_app::ecs::{Entity, EntityStore, Read};
+use gw_app::log;
 
 #[derive(Copy, Clone, Debug)]
 pub struct MoveStepAction {
@@ -48,15 +49,17 @@ impl MoveStepAction {
         };
 
         let orig_pt = pos.point();
-        let new_x = orig_pt.x + self.dx;
-        let new_y = orig_pt.y + self.dy;
 
-        if !map.has_xy(new_x, new_y) {
-            return Some(ActionResult::Replace(Box::new(IdleAction::new(
-                self.entity,
-                actor.act_time,
-            ))));
-        }
+        let (new_x, new_y) = match map.try_wrap(orig_pt.x + self.dx, orig_pt.y + self.dy) {
+            None => {
+                log("Bump edge of world");
+                return Some(ActionResult::Replace(Box::new(IdleAction::new(
+                    self.entity,
+                    actor.act_time,
+                ))));
+            }
+            Some((x, y)) => (x, y),
+        };
 
         // bump
         // let new_idx = match map.to_idx(new_x, new_y) {
@@ -105,7 +108,8 @@ impl MoveStepAction {
         map.remove_actor(old_idx, self.entity);
         // println!("changed : {}", old_idx);
 
-        pos.set(pos.x + self.dx, pos.y + self.dy);
+        let (new_x, new_y) = map.try_wrap(pos.x + self.dx, pos.y + self.dy).unwrap();
+        pos.set(new_x, new_y);
 
         let new_idx = map.to_idx(pos.x, pos.y).unwrap();
         map.add_actor(new_idx, self.entity, pos.blocks_move);
