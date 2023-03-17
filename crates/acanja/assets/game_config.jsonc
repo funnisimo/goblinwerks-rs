@@ -1,0 +1,8 @@
+{
+  "tiles": "./assets/maps/tiles.jsonc",
+  "levels": {
+    "dir": "./assets/maps",
+    "files": ["sosaria.jsonc", "british.jsonc"]
+  },
+  "start": "SOSARIA"
+}

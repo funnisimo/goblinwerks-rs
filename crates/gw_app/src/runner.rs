@@ -6,7 +6,7 @@ use crate::ecs::{systems::ResourceSet, Read, Write};
 use crate::font::{default_from_glyph, default_to_glyph};
 use crate::fps::Fps;
 use crate::load_screen::LoadingScreen;
-use crate::loader::Loader;
+use crate::loader::{load_files, Loader};
 use crate::messages::Messages;
 use crate::screen::BoxedScreen;
 use crate::{log, App, AppBuilder, AppConfig, AppEvent, Screen, ScreenResult, RGBA};
@@ -291,9 +291,7 @@ impl Runner {
             }
             Some(mut ctx) => {
                 if called {
-                    scoped_resource(&mut ctx, |ecs: &mut Ecs, loader: &mut Loader| {
-                        loader.load_files(ecs);
-                    });
+                    load_files(&mut ctx);
                 }
                 self.do_frame(&mut ctx, app, &mut last_frame_time, &mut next_frame);
                 self.ecs = Some(ctx);

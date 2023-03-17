@@ -90,15 +90,12 @@ impl MainScreen {
     fn build_new_levels(&mut self, ecs: &mut Ecs) {
         let mut levels = Levels::new();
 
-        let index = levels.push(self.build_new_world(ecs));
-        levels.set_current_index(index);
+        levels.insert(self.build_new_world(ecs));
 
-        log(format!("Built world map - {}/{}", index, levels.len()));
-
-        levels.push(self.build_new_town(ecs, 1));
-        levels.push(self.build_new_town(ecs, 2));
-        levels.push(self.build_new_town(ecs, 3));
-        levels.push(self.build_new_town(ecs, 4));
+        levels.insert(self.build_new_town(ecs, 1));
+        levels.insert(self.build_new_town(ecs, 2));
+        levels.insert(self.build_new_town(ecs, 3));
+        levels.insert(self.build_new_town(ecs, 4));
 
         log(format!(
             "Built 4 town maps - total levels = {}",
@@ -172,12 +169,6 @@ impl Screen for MainScreen {
                         .resize((size.0 + 8).min(map_size.0), (size.1 + 5).min(map_size.1));
                     log(format!("Viewport size={:?}", self.viewport.size()));
                     drop(level);
-                }
-                VirtualKeyCode::Return => {
-                    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-                    let idx = levels.current_index();
-                    let next_idx = (idx + 1) % levels.len();
-                    levels.set_current_index(next_idx);
                 }
                 VirtualKeyCode::Period if key_down.shift => {
                     // '>'
@@ -353,11 +344,6 @@ fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
     drop(map);
     drop(level);
 
-    let new_map = match levels.index_of(&new_map_id) {
-        None => return false,
-        Some(id) => id,
-    };
-
     let level = levels.current_mut();
     let mut map = level.resources.get_mut::<Map>().unwrap();
 
@@ -367,9 +353,9 @@ fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
     drop(level);
 
     log("Moving hero to new world");
-    let new_entity = levels.move_current_entity(hero_entity, new_map);
+    let new_entity = levels.move_current_entity(hero_entity, &new_map_id);
     log("Changing current world");
-    levels.set_current_index(new_map);
+    levels.set_current(&new_map_id);
 
     let level = levels.current_mut();
     level.resources.insert(Hero::new(hero_entity));

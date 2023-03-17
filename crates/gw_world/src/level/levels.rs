@@ -18,10 +18,11 @@ where
 
 // TODO - Make this id:&str based instead of index:usize based
 //      - allows for replace/remove semantics
-
+#[derive(Default)]
 pub struct Levels {
     cache: Vec<Level>,
     current: usize,
+    start_map: Option<String>,
 }
 
 impl Levels {
@@ -29,6 +30,7 @@ impl Levels {
         Levels {
             cache: Vec::new(),
             current: 0,
+            start_map: None,
         }
     }
 
@@ -40,40 +42,57 @@ impl Levels {
         self.cache.len()
     }
 
-    pub fn push(&mut self, level: Level) -> usize {
+    pub fn get_start_map(&self) -> Option<&String> {
+        self.start_map.as_ref()
+    }
+
+    pub fn set_start_map(&mut self, id: &str) {
+        self.start_map = Some(id.to_string());
+    }
+
+    pub fn insert(&mut self, level: Level) {
+        if self.start_map.is_none() {
+            self.start_map = Some(level.id.clone());
+        }
         self.cache.push(level);
-        self.cache.len() - 1
     }
 
     /// puts the given level into the given index, returns the old level
     /// panics if index is out of bounds
-    pub fn replace(&mut self, index: usize, level: Level) -> Level {
-        std::mem::replace(&mut self.cache[index], level)
-    }
-
-    pub fn get(&self, index: usize) -> Option<&Level> {
-        self.cache.get(index)
-    }
-
-    pub fn get_mut(&mut self, index: usize) -> Option<&mut Level> {
-        self.cache.get_mut(index)
-    }
-
-    pub fn current_index(&self) -> usize {
-        self.current
-    }
-
-    pub fn set_current_index(&mut self, id: usize) {
-        if id >= self.cache.len() {
-            panic!(
-                "Trying to activate invalid level - {} (out of {})",
-                id,
-                self.cache.len()
-            );
+    pub fn replace(&mut self, level: Level) -> Option<Level> {
+        if let Some(index) = self.index_of(&level.id) {
+            Some(std::mem::replace(&mut self.cache[index], level))
+        } else {
+            None
         }
+    }
 
-        self.current = id;
-        self.current_mut().set_needs_draw()
+    pub fn get(&self, id: &str) -> Option<&Level> {
+        match self.index_of(id) {
+            None => None,
+            Some(index) => self.cache.get(index),
+        }
+    }
+
+    pub fn get_mut(&mut self, id: &str) -> Option<&mut Level> {
+        match self.index_of(id) {
+            None => None,
+            Some(index) => self.cache.get_mut(index),
+        }
+    }
+
+    pub fn current_id(&self) -> &str {
+        &self.cache[self.current].id
+    }
+
+    pub fn set_current(&mut self, id: &str) {
+        match self.index_of(id) {
+            None => panic!("Trying to activate invalid level - {}", id),
+            Some(index) => {
+                self.current = index;
+                self.current_mut().set_needs_draw()
+            }
+        }
     }
 
     pub fn current(&self) -> &Level {
@@ -92,15 +111,25 @@ impl Levels {
         self.cache.iter_mut()
     }
 
-    pub fn index_of(&self, id: &str) -> Option<usize> {
+    fn index_of(&self, id: &str) -> Option<usize> {
         self.cache.iter().position(|level| level.id == id)
     }
 
-    pub fn move_current_entity(&mut self, entity: Entity, to_index: usize) -> Entity {
-        self.move_entity(entity, self.current, to_index)
+    pub fn move_current_entity(&mut self, entity: Entity, to_id: &str) -> Entity {
+        let to_index = match self.index_of(to_id) {
+            None => panic!("Trying to move entity to unknown level - {}", to_id),
+            Some(v) => v,
+        };
+
+        self.move_entity_from_to(entity, self.current, to_index)
     }
 
-    pub fn move_entity(&mut self, entity: Entity, from_index: usize, to_index: usize) -> Entity {
+    fn move_entity_from_to(
+        &mut self,
+        entity: Entity,
+        from_index: usize,
+        to_index: usize,
+    ) -> Entity {
         if from_index == to_index {
             return entity;
         }

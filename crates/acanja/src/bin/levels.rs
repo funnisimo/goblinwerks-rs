@@ -66,15 +66,12 @@ impl MainScreen {
     fn build_new_levels(&mut self, ecs: &mut Ecs) {
         let mut levels = Levels::new();
 
-        let index = levels.push(self.build_new_world(ecs));
-        levels.set_current_index(index);
+        levels.insert(self.build_new_world(ecs));
 
-        log(format!("Built world map - {}/{}", index, levels.len()));
-
-        levels.push(self.build_new_town(ecs, 1));
-        levels.push(self.build_new_town(ecs, 2));
-        levels.push(self.build_new_town(ecs, 3));
-        levels.push(self.build_new_town(ecs, 4));
+        levels.insert(self.build_new_town(ecs, 1));
+        levels.insert(self.build_new_town(ecs, 2));
+        levels.insert(self.build_new_town(ecs, 3));
+        levels.insert(self.build_new_town(ecs, 4));
 
         log(format!(
             "Built 4 town maps - total levels = {}",
@@ -151,9 +148,14 @@ impl Screen for MainScreen {
                 }
                 VirtualKeyCode::Return => {
                     let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-                    let idx = levels.current_index();
-                    let next_idx = (idx + 1) % levels.len();
-                    levels.set_current_index(next_idx);
+                    let idx = levels.current_id();
+                    let current_idx = levels.iter().position(|level| level.id == idx).unwrap();
+
+                    let next_id = match levels.iter().skip(current_idx + 1).next() {
+                        None => levels.iter().next().unwrap().id.clone(),
+                        Some(level) => level.id.clone(),
+                    };
+                    levels.set_current(&next_id);
                 }
                 _ => {}
             },
@@ -191,27 +193,17 @@ impl Screen for MainScreen {
                 let map = level.resources.get::<Map>().unwrap();
 
                 if let Some(portal) = map.get_portal(&pt) {
-                    if let Some(map_index) = levels.index_of(portal.map_id()) {
-                        log(format!(
-                            "Enter Portal = {} - {}::{}",
-                            portal.flavor().as_ref().unwrap(),
-                            portal.map_id(),
-                            portal.location()
-                        ));
+                    log(format!(
+                        "Enter Portal = {} - {}::{}",
+                        portal.flavor().as_ref().unwrap(),
+                        portal.map_id(),
+                        portal.location()
+                    ));
 
-                        drop(map);
-                        drop(level);
-                        drop(levels);
+                    drop(level);
 
-                        let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-                        levels.set_current_index(map_index);
-                    } else {
-                        log(format!(
-                            "Enter Portal with UNKNOWN map = {} - {}",
-                            portal.flavor().as_ref().unwrap(),
-                            portal.map_id()
-                        ));
-                    }
+                    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+                    levels.set_current(portal.map_id());
                 }
             }
             _ => {}

@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use crate::app::File;
 use crate::ecs::Ecs;
 use crate::font::{FontFileLoader, FromGlyphFn, ToGlyphFn};
@@ -44,14 +46,14 @@ impl LoadInfo {
 }
 
 pub struct Loader {
-    files_to_load: Vec<LoadInfo>,
+    files_to_load: VecDeque<LoadInfo>,
     ready: bool,
 }
 
 impl Loader {
     pub fn new() -> Self {
         Loader {
-            files_to_load: Vec::new(),
+            files_to_load: VecDeque::new(),
             ready: true,
         }
     }
@@ -60,41 +62,12 @@ impl Loader {
         !self.files_to_load.is_empty()
     }
 
-    pub fn load_files(&mut self, ecs: &mut Ecs) -> bool {
-        if self.ready {
-            return true;
-        }
-        while self.has_files_to_load() {
-            let file = &mut self.files_to_load.get_mut(0).unwrap().file;
-            if file.is_ready() {
-                match file.read_binary() {
-                    Err(e) => {
-                        println!("Failed to read file - {:?}", e);
-                    }
-                    Ok(data) => {
-                        let mut info = self.files_to_load.remove(0);
-                        let mut cb = info.cb.take().unwrap();
-                        match cb.file_loaded(&info.path, data, ecs) {
-                            Err(e) => {
-                                println!("Error processing file({}) - {:?}", &info.path, e);
-                            }
-                            Ok(_) => {
-                                println!("Processed file({})", &info.path);
-                            }
-                        }
-                    }
-                }
-            } else {
-                break;
-            }
-        }
-        if self.has_files_to_load() {
-            return false;
-        }
+    fn pop(&mut self) -> Option<LoadInfo> {
+        self.files_to_load.pop_front()
+    }
 
-        self.ready = true;
-        log("All files loaded - ready");
-        true
+    fn unpop(&mut self, info: LoadInfo) {
+        self.files_to_load.push_front(info)
     }
 
     pub fn load_file(&mut self, path: &str, cb: BoxedLoadHandler) -> Result<(), LoadError> {
@@ -105,7 +78,7 @@ impl Loader {
             Ok(f) => {
                 log(format!("file open - {}", path));
                 log(format!("loading async file {}", path));
-                self.files_to_load.push(LoadInfo::new(path, f, cb));
+                self.files_to_load.push_back(LoadInfo::new(path, f, cb));
                 self.ready = false;
                 Ok(())
             }
@@ -116,6 +89,7 @@ impl Loader {
     pub fn load_font(&mut self, font_path: &str) -> Result<(), LoadError> {
         self.load_file(font_path, Box::new(FontFileLoader::new()))
     }
+
     pub fn load_font_with_transform(
         &mut self,
         font_path: &str,
@@ -131,4 +105,48 @@ impl Loader {
     pub fn load_image(&mut self, image_path: &str) -> Result<(), LoadError> {
         self.load_file(image_path, Box::new(ImageFileLoader::new()))
     }
+}
+
+/// returns true when no more files to process
+pub(crate) fn load_files(ecs: &mut Ecs) -> bool {
+    // get the next file to load
+    let mut load_info = match ecs.resources.get_mut::<Loader>() {
+        None => return true,
+        Some(mut loader) => loader.pop(),
+    };
+
+    while load_info.is_some() {
+        let mut info = load_info.unwrap();
+        if info.file.is_ready() {
+            match info.file.read_binary() {
+                Err(e) => {
+                    println!("Failed to read file - {:?}", e);
+                }
+                Ok(data) => {
+                    let mut cb = info.cb.take().unwrap();
+                    match cb.file_loaded(&info.path, data, ecs) {
+                        Err(e) => {
+                            println!("Error processing file({}) - {:?}", &info.path, e);
+                        }
+                        Ok(_) => {
+                            println!("Processed file({})", &info.path);
+                        }
+                    }
+                }
+            }
+
+            // finished that one, get the next one
+            load_info = match ecs.resources.get_mut::<Loader>() {
+                None => return true,
+                Some(mut loader) => loader.pop(),
+            };
+        } else {
+            // File not ready, push back on queue
+            let mut loader = ecs.resources.get_mut::<Loader>().unwrap();
+            loader.unpop(info);
+            return false;
+        }
+    }
+
+    true
 }
