@@ -1,0 +1,68 @@
+{
+  "id": "DAWN",
+  "map": { "filename": "dawn.txt", "width": 64, "height": 64, "wrap": false },
+  "config": { "welcome": "Welcome to Dawn!" },
+  "tiles": {
+    ".": {
+      "id": "PLAINS",
+      "default": true
+    },
+    "~": "WATER",
+    "#": "WALL",
+    "-": "FLOOR",
+    ":": "TREES",
+    "%": "FOREST",
+    "*": "FORCEFIELD",
+    "!": "LAVA",
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ": {
+      "id": "COUNTER_{}"
+    },
+    " ": "COUNTER_SPACE"
+  },
+  "fixtures": {
+    "|": { "id": "Door_locked", "tile": "-" },
+    "$": { "id": "Chest_locked", "tile": "-" },
+    "<": { "id": "EXIT_LEFT", "tile": "." }
+  },
+  "actors": {
+    "t": { "id": "Wizard", "talk": "<DIG> up exotics", "tile": "%" },
+    "u": { "id": "Wizard", "talk": "<DIG> on isles.", "tile": "%" },
+    "v": { "id": "Wizard", "talk": "<DIG> carefully.", "tile": "%" },
+
+    "w": { "id": "Wizard", "talk": "Welcome to Dawn.", "tile": "." },
+    "x": {
+      "id": "Wizard",
+      "talk": "Dawn last but a brief moment.",
+      "tile": ".",
+      "ai": "RandomWalk"
+    },
+    "y": { "id": "Wizard", "talk": "Ambrosia awaits.", "tile": "-" },
+    "z": { "id": "Wizard", "talk": "Seek ye thy fortune.", "tile": "-" },
+    "k": {
+      "id": "Fighter",
+      "talk": "Jolly good day.",
+      "tile": "-",
+      "ai": "RandomWalk"
+    },
+
+    "a": { "id": "Armorer", "tile": "-" },
+    "b": { "id": "Bartender", "tile": "-" },
+    "c": { "id": "Weaponer", "tile": "-" },
+    "d": { "id": "Grocer", "tile": "-" },
+    "e": { "id": "Healer", "tile": "-" },
+    "f": { "id": "Guildmaster", "tile": "-" },
+
+    "g": { "id": "Guard", "talk": "Good day!", "tile": "." },
+    "h": { "id": "Guard", "talk": "Good day!", "tile": "%" },
+    "i": { "id": "Guard", "talk": "Good day!", "tile": "-" },
+
+    "o": { "id": "Oracle", "tile": "-" }
+  },
+  "locations": {
+    "@": { "name": "START", "tile": "." }
+  },
+  "portals": {
+    "<": { "map": "SOSARIA", "location": "DAWN", "tile": "<" }
+  },
+  "objects": []
+}

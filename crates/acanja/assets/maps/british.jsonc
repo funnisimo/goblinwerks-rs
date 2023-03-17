@@ -24,7 +24,8 @@
   },
   "fixtures": {
     "|": "DOOR_LOCKED",
-    "$": "CHEST_LOCKED"
+    "$": "CHEST_LOCKED",
+    "<": { "id": "EXIT_LEFT", "tile": "=" }
   },
   "actors": {
     "t": {
@@ -78,6 +79,14 @@
   },
   "locations": {
     "@": { "name": "START", "tile": "=" }
+  },
+  "portals": {
+    "<": {
+      "map": "SOSARIA",
+      "location": "BRITISH",
+      // "type": "CLIMB",
+      "tile": "<"
+    }
   },
   "objects": [{ "x": 10, "y": 24, "entity": "Ship" }]
 }

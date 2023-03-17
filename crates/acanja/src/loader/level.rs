@@ -7,18 +7,10 @@ use gw_app::{
 use gw_util::{point::Point, value::Value};
 use gw_world::{
     level::{Level, Levels},
-    map::{Map, Wrap},
+    map::{Map, PortalInfo, Wrap},
     tile::Tiles,
 };
 use std::collections::HashMap;
-
-#[derive(Debug, Clone)]
-pub enum Place {
-    Tile(String),                             // ground tile
-    Fixture(String, String),                  // ground, fixture id
-    Actor(String, String),                    // ground, actor kind id
-    Location(String, Option<String>, String), // ground, fixture, location name
-}
 
 pub enum MapData {
     Data(Vec<String>),
@@ -122,6 +114,17 @@ impl LoadHandler for LevelLoader {
     }
 }
 
+////////////////////////////////////////////////////////////
+
+#[derive(Debug, Clone)]
+pub enum Place {
+    Tile(String),                             // ground tile
+    Fixture(String, String),                  // ground, fixture id
+    Actor(String, String),                    // ground, actor kind id
+    Location(String, Option<String>, String), // ground, fixture, location name
+    Portal(String, Option<String>, PortalInfo),
+}
+
 pub fn load_level_data(json: Value) -> LevelData {
     // let path = "./assets/maps/";
     // let json_file = "sosaria.jsonc";
@@ -134,7 +137,7 @@ pub fn load_level_data(json: Value) -> LevelData {
     let mut tile_lookup: HashMap<String, Place> = HashMap::new(); // char -> id
     let mut default_tile = "NONE".to_string();
 
-    let id = root.get(&"id".into()).unwrap().to_string();
+    let id = root.get(&"id".into()).unwrap().to_string().to_uppercase();
 
     let tile_info = root.get(&"tiles".into()).unwrap().as_map().unwrap();
     for (ch, info) in tile_info.iter() {
@@ -186,43 +189,46 @@ pub fn load_level_data(json: Value) -> LevelData {
 
     // Setup Fixtures
 
-    let fixture_info = root.get(&"fixtures".into()).unwrap().as_map().unwrap();
-    for (id, info) in fixture_info.iter() {
-        if info.is_string() {
-            tile_lookup.insert(
-                id.to_string(),
-                Place::Fixture(default_tile.clone(), info.to_string().to_uppercase()),
-            );
-        } else if info.is_map() {
-            let info = info.as_map().unwrap();
+    if let Some(fixture_value) = root.get(&"fixtures".into()) {
+        let fixture_info = fixture_value.as_map().unwrap();
 
-            let fix_id = info.get(&"id".into()).expect(&format!(
-                "Fixture entry is missing 'id' field - {}",
-                id.to_string()
-            ));
-            let tile_id = match info.get(&"tile".into()) {
-                None => default_tile.clone(),
-                Some(field) => match tile_lookup.get(&field.to_string()) {
-                    None => panic!(
-                        "Fixture entry references unknown tile - {}",
-                        field.to_string()
-                    ),
-                    Some(t) => match t {
-                        Place::Tile(v) => v.clone(),
-                        x => panic!("Fixture entry references wrong type = {:?}", x),
+        for (id, info) in fixture_info.iter() {
+            if info.is_string() {
+                tile_lookup.insert(
+                    id.to_string(),
+                    Place::Fixture(default_tile.clone(), info.to_string().to_uppercase()),
+                );
+            } else if info.is_map() {
+                let info = info.as_map().unwrap();
+
+                let fix_id = info.get(&"id".into()).expect(&format!(
+                    "Fixture entry is missing 'id' field - {}",
+                    id.to_string()
+                ));
+                let tile_id = match info.get(&"tile".into()) {
+                    None => default_tile.clone(),
+                    Some(field) => match tile_lookup.get(&field.to_string()) {
+                        None => panic!(
+                            "Fixture entry references unknown tile - {}",
+                            field.to_string()
+                        ),
+                        Some(t) => match t {
+                            Place::Tile(v) => v.clone(),
+                            x => panic!("Fixture entry references wrong type = {:?}", x),
+                        },
                     },
-                },
-            };
-            tile_lookup.insert(
-                id.to_string(),
-                Place::Fixture(tile_id, fix_id.to_string().to_uppercase()),
-            );
-        } else {
-            panic!(
-                "Found unexpected fixtures entry - {}: {:?}",
-                id.to_string(),
-                info
-            );
+                };
+                tile_lookup.insert(
+                    id.to_string(),
+                    Place::Fixture(tile_id, fix_id.to_string().to_uppercase()),
+                );
+            } else {
+                panic!(
+                    "Found unexpected fixtures entry - {}: {:?}",
+                    id.to_string(),
+                    info
+                );
+            }
         }
     }
 
@@ -232,91 +238,161 @@ pub fn load_level_data(json: Value) -> LevelData {
 
     // Setup Actors
 
-    let actor_info = root.get(&"actors".into()).unwrap().as_map().unwrap();
-    for (id, info) in actor_info.iter() {
-        let glyph = id.to_string();
-        // println!("TILE {} = {:?}", glyph, info);
+    if let Some(actor_value) = root.get(&"actors".into()) {
+        let actor_info = actor_value.as_map().unwrap();
 
-        let info = info.as_map().unwrap();
+        for (id, info) in actor_info.iter() {
+            let glyph = id.to_string();
+            // println!("TILE {} = {:?}", glyph, info);
 
-        let id = info.get(&"id".into()).unwrap().to_string().to_uppercase();
-        match info.get(&"tile".into()) {
-            None => {
-                tile_lookup.insert(
-                    glyph.clone(),
-                    Place::Actor(default_tile.clone(), id.clone()),
-                );
-            }
-            Some(t) => match tile_lookup.get(&t.to_string()) {
-                None => panic!("Actor has unknown tile! - {}", t.to_string()),
-                Some(place) => match place {
-                    Place::Tile(ground) => {
-                        tile_lookup.insert(glyph.clone(), Place::Actor(ground.clone(), id.clone()));
-                    }
-                    _ => panic!("Actor tile field did not reference a tile"),
+            let info = info.as_map().unwrap();
+
+            let id = info.get(&"id".into()).unwrap().to_string().to_uppercase();
+            match info.get(&"tile".into()) {
+                None => {
+                    tile_lookup.insert(
+                        glyph.clone(),
+                        Place::Actor(default_tile.clone(), id.clone()),
+                    );
+                }
+                Some(t) => match tile_lookup.get(&t.to_string()) {
+                    None => panic!("Actor has unknown tile! - {}", t.to_string()),
+                    Some(place) => match place {
+                        Place::Tile(ground) => {
+                            tile_lookup
+                                .insert(glyph.clone(), Place::Actor(ground.clone(), id.clone()));
+                        }
+                        _ => panic!("Actor tile field did not reference a tile"),
+                    },
                 },
-            },
-        };
+            };
+        }
     }
 
     println!("Tile Lookup = {:?}", tile_lookup);
 
     // Locations
 
-    let location_info = root.get(&"locations".into()).unwrap().as_map().unwrap();
-    for (id, info) in location_info.iter() {
-        let (ground, fixture, location) = if info.is_string() {
-            (default_tile.clone(), None, info.to_string())
-        } else if info.is_map() {
-            let map = info.as_map().unwrap();
+    if let Some(location_value) = root.get(&"locations".into()) {
+        let location_info = location_value.as_map().unwrap();
+        for (id, info) in location_info.iter() {
+            let (ground, fixture, location) = if info.is_string() {
+                (default_tile.clone(), None, info.to_string())
+            } else if info.is_map() {
+                let map = info.as_map().unwrap();
 
-            let name = map
-                .get(&"name".into())
-                .expect("Location is missing name field.")
-                .to_string();
+                let name = map
+                    .get(&"name".into())
+                    .expect("Location is missing name field.")
+                    .to_string();
 
-            let (mut tile, fixture) = match map.get(&"fixture".into()) {
-                None => (default_tile.clone(), None),
-                Some(fix) => match tile_lookup.get(&fix.to_string()) {
-                    None => panic!("Tile location has unknown fixture - {}", fix.to_string()),
-                    Some(p) => match p {
-                        Place::Fixture(ground, fixture) => (ground.clone(), Some(fixture.clone())),
-                        x => panic!("Tile location has fixture with wrong type - {:?}", x),
+                let (mut tile, fixture) = match map.get(&"fixture".into()) {
+                    None => (default_tile.clone(), None),
+                    Some(fix) => match tile_lookup.get(&fix.to_string()) {
+                        None => panic!("Tile location has unknown fixture - {}", fix.to_string()),
+                        Some(p) => match p {
+                            Place::Fixture(ground, fixture) => {
+                                (ground.clone(), Some(fixture.clone()))
+                            }
+                            x => panic!("Tile location has fixture with wrong type - {:?}", x),
+                        },
                     },
-                },
+                };
+
+                tile = match map.get(&"tile".into()) {
+                    None => tile,
+                    Some(t) => match tile_lookup.get(&t.to_string()) {
+                        None => panic!("Tile location has unknown tile - {}", t.to_string()),
+                        Some(p) => match p {
+                            Place::Tile(t) => t.clone(),
+                            x => panic!("Tile location has tile with wrong type - {:?}", x),
+                        },
+                    },
+                };
+
+                (tile, fixture, name)
+            } else {
+                panic!(
+                    "Found unexpected locations entry - {}: {:?}",
+                    id.to_string(),
+                    info
+                );
             };
 
-            tile = match map.get(&"tile".into()) {
-                None => tile,
-                Some(t) => match tile_lookup.get(&t.to_string()) {
-                    None => panic!("Tile location has unknown tile - {}", t.to_string()),
-                    Some(p) => match p {
-                        Place::Tile(t) => t.clone(),
-                        x => panic!("Tile location has tile with wrong type - {:?}", x),
-                    },
-                },
-            };
-
-            (tile, fixture, name)
-        } else {
-            panic!(
-                "Found unexpected locations entry - {}: {:?}",
-                id.to_string(),
-                info
-            );
-        };
-
-        println!("LOCATION - {}", location);
-        tile_lookup.insert(id.to_string(), Place::Location(ground, fixture, location));
+            println!("LOCATION - {}", location);
+            tile_lookup.insert(id.to_string(), Place::Location(ground, fixture, location));
+        }
     }
-
-    println!("Tile Lookup = {:?}", tile_lookup);
 
     // setup portals
 
-    let mut level_data = LevelData::new(id, tile_lookup, default_tile);
+    if let Some(portal_value) = root.get(&"portals".into()) {
+        let portal_info = portal_value.as_map().unwrap();
+        for (id, info) in portal_info.iter() {
+            let (ground, fixture, portal) = if info.is_string() {
+                (
+                    default_tile.clone(),
+                    None,
+                    PortalInfo::new(&info.to_string(), "START"),
+                )
+            } else if info.is_map() {
+                let map = info.as_map().unwrap();
+
+                let map_id = map
+                    .get(&"map".into())
+                    .expect("Location is missing map field.")
+                    .to_string()
+                    .to_uppercase();
+
+                let location = map
+                    .get(&"location".into())
+                    .unwrap_or(&"START".into())
+                    .to_string()
+                    .to_uppercase();
+
+                let (tile, fixture) = match map.get(&"fixture".into()) {
+                    None => (default_tile.clone(), None),
+                    Some(fix) => match tile_lookup.get(&fix.to_string()) {
+                        None => panic!("Tile location has unknown fixture - {}", fix.to_string()),
+                        Some(p) => match p {
+                            Place::Fixture(ground, fixture) => {
+                                (ground.clone(), Some(fixture.clone()))
+                            }
+                            x => panic!("Tile location has fixture with wrong type - {:?}", x),
+                        },
+                    },
+                };
+
+                let (tile, fixture) = match map.get(&"tile".into()) {
+                    None => (tile, fixture),
+                    Some(t) => match tile_lookup.get(&t.to_string()) {
+                        None => panic!("Tile location has unknown tile - {}", t.to_string()),
+                        Some(p) => match p {
+                            Place::Tile(t) => (t.clone(), fixture),
+                            Place::Fixture(t, f) => (t.clone(), Some(f.clone())),
+                            x => panic!("Tile location has tile with wrong type - {:?}", x),
+                        },
+                    },
+                };
+
+                (tile, fixture, PortalInfo::new(&map_id, &location))
+            } else {
+                panic!(
+                    "Found unexpected locations entry - {}: {:?}",
+                    id.to_string(),
+                    info
+                );
+            };
+
+            println!("PORTAL - {:?}", portal);
+            tile_lookup.insert(id.to_string(), Place::Portal(ground, fixture, portal));
+        }
+    }
 
     // Map
+
+    println!("Tile Lookup = {:?}", tile_lookup);
+    let mut level_data = LevelData::new(id, tile_lookup, default_tile);
 
     let map_info = root.get(&"map".into()).unwrap().as_map().unwrap();
 
@@ -417,6 +493,17 @@ pub fn make_level(level_data: LevelData, tiles: &Tiles) -> Level {
                             map.place_feature(x, y, f);
                         }
                         map.set_location(name, Point::new(x, y));
+                    }
+                    Place::Portal(tile, fix, portal) => {
+                        let t = tiles
+                            .get(tile)
+                            .expect(&format!("Failed to find tile in tiles - {}", tile));
+                        map.reset_tiles(x, y, t);
+                        if let Some(fix) = fix {
+                            let f = tiles.get(fix).expect("Failed to find fixture in tiles.");
+                            map.place_feature(x, y, f);
+                        }
+                        map.set_portal(Point::new(x, y), portal.clone());
                     }
                 },
             }

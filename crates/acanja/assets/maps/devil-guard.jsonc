@@ -1,0 +1,88 @@
+{
+  "id": "DEVIL GUARD",
+  "map": {
+    "filename": "devil-guard.txt",
+    "width": 64,
+    "height": 64,
+    "wrap": false,
+    "lock": true
+  },
+  "config": { "welcome": "Welcome to Devil Guard!" },
+  "tiles": {
+    ".": {
+      "id": "Plains",
+      "default": true
+    },
+    "~": "WATER",
+    "%": "FOREST",
+    "#": "WALL",
+    "-": "FLOOR",
+    ":": "TREES",
+    "*": "FORCEFIELD",
+    "!": "LAVA",
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ": {
+      "id": "COUNTER_{}"
+    },
+    " ": "COUNTER_SPACE"
+  },
+  "fixtures": {
+    "|": { "id": "Door_locked", "tile": "-" },
+    "$": { "id": "Chest_locked", "tile": "-" },
+    "<": { "id": "EXIT_LEFT", "tile": "." }
+  },
+  "actors": {
+    "a": { "id": "Armorer", "tile": "-" },
+    "b": { "id": "Bartender", "tile": "-" },
+    "c": { "id": "Weaponer", "tile": "-" },
+    "d": { "id": "Grocer", "tile": "-" },
+    "e": { "id": "Healer", "tile": "-" },
+    "k": { "id": "Guildmaster", "tile": "-" },
+
+    "g": {
+      "id": "Guard",
+      "talk": "Good day!",
+      "tile": ".",
+      "ai": "RandomWalk"
+    },
+    "h": { "id": "Guard", "talk": "Good day!", "tile": "%" },
+    "i": { "id": "Guard", "talk": "Good day!", "tile": "-" },
+
+    "f": { "id": "Fighter", "tile": ":", "ai": "RandomWalk" },
+    "j": { "id": "Jester", "tile": ".", "ai": "RandomWalk" },
+
+    "s": {
+      "id": "Fighter",
+      "tile": ".",
+      "talk": "'Marks' gained in dungeons!"
+    },
+    "t": {
+      "id": "Fighter",
+      "tile": ".",
+      "talk": "Hot metal leaves a 'Mark'!"
+    },
+    "u": {
+      "id": "Fighter",
+      "tile": ":",
+      "talk": "The King favors a 'Mark'!"
+    },
+    "v": {
+      "id": "Fighter",
+      "tile": ":",
+      "talk": "A 'Mark' helps invoke the Snake"
+    },
+    "w": { "id": "Fighter", "tile": ".", "talk": "4 'Marks', 4 uses!" },
+    "x": {
+      "id": "Fighter",
+      "tile": ":",
+      "talk": "Seek ye the dungeon of fire!"
+    },
+    "y": { "id": "Fighter", "tile": ":", "talk": "Mark thee well!" }
+  },
+  "locations": {
+    "@": { "name": "START", "tile": "." }
+  },
+  "portals": {
+    "<": { "map": "SOSARIA", "location": "DEVIL GUARD", "tile": "<" }
+  },
+  "objects": []
+}

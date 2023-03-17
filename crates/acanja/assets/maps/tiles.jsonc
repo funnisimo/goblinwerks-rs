@@ -148,7 +148,12 @@
     "kind": "FIXTURE",
     "flavor": "a locked chest"
   },
-
+  "EXIT_LEFT": {
+    "kind": "FIXTURE",
+    "sprite": "<|YELLOW",
+    "flavor": "an exit",
+    "move": "PORTAL_UP"
+  },
   "FORCEFIELD": {
     "ch": 321,
     "fg": "teal",

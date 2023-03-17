@@ -50,6 +50,15 @@ impl Levels {
         self.start_map = Some(id.to_string());
     }
 
+    pub fn setup(&mut self) {
+        if let Some(ref start_map) = self.start_map {
+            match self.index_of(start_map) {
+                None => panic!("Missing start map = {}", start_map),
+                Some(idx) => self.current = idx,
+            }
+        }
+    }
+
     pub fn insert(&mut self, level: Level) {
         if self.start_map.is_none() {
             self.start_map = Some(level.id.clone());

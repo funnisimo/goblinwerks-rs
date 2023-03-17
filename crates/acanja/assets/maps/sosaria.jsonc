@@ -28,29 +28,30 @@
     "4": "MOON_4",
     "5": "MOON_5",
     "6": "MOON_6",
-    "7": { "name": "MOON_7", "tile": "." },
-
-    "w": { "name": "Montor West", "fixture": "T" },
+    "7": { "name": "MOON_7", "tile": "." }
+  },
+  "portals": {
+    "w": { "map": "Montor West", "fixture": "T" },
     "e": {
-      "name": "Montor East",
+      "map": "Montor East",
       "fixture": "T"
     },
-    "d": { "name": "Dawn", "tile": "%", "fixture": "T" },
-    "g": { "name": "Grey", "fixture": "T" },
-    "u": { "name": "Death Gultch", "fixture": "T" },
-    "v": { "name": "Devil Guard", "fixture": "T" },
-    "b": { "name": "British", "fixture": "T" },
-    "y": { "name": "Yew", "fixture": "T" },
-    "m": { "name": "Moon", "fixture": "T" },
-    "f": { "name": "Fawn", "fixture": "T" },
-    "E": { "name": "Castle Exodus", "fixture": "C" },
-    "K": { "name": "Castle British", "fixture": "C" },
-    "M": { "name": "Doom", "fixture": "D" },
-    "L": { "name": "Clues", "fixture": "D" },
-    "R": { "name": "Mines of Morina", "fixture": "D" },
-    "H": { "name": "Fires of Hell", "fixture": "D" },
-    "A": { "name": "Time Awaits", "fixture": "D" },
-    "I": { "name": "Dardins Pit", "fixture": "D" },
-    "P": { "name": "Perinian Depths", "fixture": "D" }
+    "d": { "map": "Dawn", "tile": "%", "fixture": "T" },
+    "g": { "map": "Grey", "fixture": "T" },
+    "u": { "map": "Death Gultch", "fixture": "T" },
+    "v": { "map": "Devil Guard", "fixture": "T" },
+    "b": { "map": "British", "fixture": "T" },
+    "y": { "map": "Yew", "fixture": "T" },
+    "m": { "map": "Moon", "fixture": "T" },
+    "f": { "map": "Fawn", "fixture": "T" },
+    "E": { "map": "Castle Exodus", "fixture": "C" },
+    "K": { "map": "Castle British", "fixture": "C" },
+    "M": { "map": "Doom", "fixture": "D" },
+    "L": { "map": "Clues", "fixture": "D" },
+    "R": { "map": "Mines of Morina", "fixture": "D" },
+    "H": { "map": "Fires of Hell", "fixture": "D" },
+    "A": { "map": "Time Awaits", "fixture": "D" },
+    "I": { "map": "Dardins Pit", "fixture": "D" },
+    "P": { "map": "Perinian Depths", "fixture": "D" }
   }
 }

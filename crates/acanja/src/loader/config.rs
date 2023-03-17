@@ -2,6 +2,7 @@ use super::LevelLoader;
 use gw_app::{
     ecs::{ResourceSet, Write},
     loader::{LoadError, LoadHandler, Loader},
+    log,
 };
 use gw_world::level::Levels;
 
@@ -61,7 +62,7 @@ impl LoadHandler for GameConfigLoader {
             let full_path = format!("{}/{}", dir, name);
             loader
                 .load_file(&full_path, Box::new(LevelLoader::new()))
-                .expect("Failed to load file listed in config file.");
+                .expect("Failed to load map listed in config file.");
         }
 
         Ok(())

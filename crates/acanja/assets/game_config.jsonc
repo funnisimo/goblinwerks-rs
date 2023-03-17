@@ -2,7 +2,13 @@
   "tiles": "./assets/maps/tiles.jsonc",
   "levels": {
     "dir": "./assets/maps",
-    "files": ["sosaria.jsonc", "british.jsonc"]
+    "files": [
+      "sosaria.jsonc",
+      "british.jsonc",
+      "dawn.jsonc",
+      "devil-guard.jsonc",
+      "fawn.jsonc"
+    ]
   },
-  "start": "SOSARIA"
+  "start": "FAWN"
 }

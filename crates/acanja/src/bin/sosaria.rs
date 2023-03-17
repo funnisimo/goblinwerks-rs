@@ -56,6 +56,8 @@ impl Screen for MainScreen {
         // resources.get_or_insert_with(|| Prefabs::default());
 
         let mut levels = resources.get_mut::<Levels>().unwrap();
+        log(format!("START MAP = {}", levels.current_id()));
+        levels.setup();
         let level = levels.current_mut();
 
         let start_pos = {
