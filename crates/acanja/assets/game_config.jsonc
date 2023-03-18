@@ -7,8 +7,9 @@
       "british.jsonc",
       "dawn.jsonc",
       "devil-guard.jsonc",
-      "fawn.jsonc"
+      "fawn.jsonc",
+      "grey.jsonc"
     ]
   },
-  "start": "FAWN"
+  "start": "GRAY"
 }

@@ -1,0 +1,78 @@
+{
+  "id": "GREY",
+  "map": { "filename": "grey.txt", "width": 64, "height": 64, "wrap": false },
+  "tiles": {
+    ".": {
+      "id": "PLAINS",
+      "default": true
+    },
+    "~": "WATER",
+    "#": "WALL",
+    "-": "FLOOR",
+    ":": "TREES",
+    "%": "FOREST",
+    "*": "FORCEFIELD",
+    "!": "LAVA",
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ": {
+      "id": "COUNTER_{}"
+    },
+    " ": "COUNTER_SPACE"
+  },
+  "fixtures": {
+    "|": { "id": "Door_locked", "tile": "-" },
+    "$": { "id": "Chest_locked", "tile": "-" },
+    "<": { "id": "EXIT_LEFT", "tile": "." }
+  },
+  "actors": {
+    "a": { "id": "Bartender", "tile": "-" },
+    "b": { "id": "Armorer", "tile": "-" },
+    "c": { "id": "Weaponer", "tile": "-" },
+    "d": { "id": "Grocer", "tile": "-" },
+    "e": { "id": "Guildmaster", "tile": "-" },
+
+    "g": {
+      "id": "Guard",
+      "ai": null,
+      "tile": "-",
+      "text": "Watch it bub!"
+    },
+
+    "m": {
+      "id": "Fighter",
+      "talk": "Exotic clues found at Dawn!",
+      "tile": ":"
+    },
+    "j": {
+      "id": "Jester",
+      "talk": "Don't you wish you were a Jester!",
+      "ai": "RandomWalk",
+      "tile": "-"
+    },
+
+    "t": {
+      "id": "Thief",
+      "talk": "Yo! ho! ho! and a bottle of rum!!!",
+      "tile": "-",
+      "ai": "RandomWalk"
+    },
+    "u": {
+      "id": "Thief",
+      "talk": "Ever seen Exotic arms?",
+      "tile": "-",
+      "ai": "RandomWalk"
+    },
+
+    "w": {
+      "id": "Wizard",
+      "talk": "Only Exotics will protect from Great Evil!",
+      "tile": "%"
+    }
+  },
+  "locations": {
+    "@": { "name": "START", "tile": "." }
+  },
+  "portals": {
+    "<": { "map": "SOSARIA", "location": "GREY", "tile": "<" }
+  },
+  "objects": []
+}
