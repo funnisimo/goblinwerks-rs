@@ -27,10 +27,10 @@
     "6": { "location": "MOON_6" },
     "7": { "location": "MOON_7", "tile": "." },
 
-    "w": { "portal": "Montor West", "location": "Montor West", "fixture": "T" },
+    "w": { "portal": "West", "location": "West", "fixture": "T" },
     "e": {
-      "portal": "Montor East",
-      "location": "Montor East",
+      "portal": "East",
+      "location": "East",
       "fixture": "T"
     },
     "d": { "portal": "Dawn", "location": "Dawn", "tile": "%", "fixture": "T" },

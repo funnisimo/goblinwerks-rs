@@ -155,7 +155,10 @@ pub fn load_level_data(tiles: &Tiles, json: Value) -> LevelData {
     let mut cell_lookup: HashMap<String, Cell> = HashMap::new(); // char -> cell
     let mut default_entry: Option<String> = None;
 
-    let map_id = root.get(&"id".into()).unwrap().to_string().to_uppercase();
+    let map_id = match root.get(&"id".into()) {
+        None => panic!("Map file does not have id field."),
+        Some(val) => val.to_string().to_uppercase(),
+    };
 
     let tile_info = root.get(&"tiles".into()).unwrap().as_map().unwrap();
     for (ch, info) in tile_info.iter() {

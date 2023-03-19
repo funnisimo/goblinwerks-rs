@@ -1,0 +1,99 @@
+{
+  "id": "YEW",
+  "map": { "filename": "yew.txt", "width": 64, "height": 64, "wrap": false },
+  "tiles": {
+    ".": "PLAINS",
+    "~": "WATER",
+    "#": "WALL",
+    "%": "FOREST",
+    "-": { "tile": "FLOOR", "default": true },
+    ":": "TREES",
+    "*": "FORCEFIELD",
+    "!": "LAVA",
+
+    "|": { "fixture": "Door_locked" },
+    "$": { "fixture": "Chest_locked" },
+
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ": {
+      "tile": "COUNTER_{}"
+    },
+    " ": "COUNTER_SPACE",
+
+    "@": { "location": "START", "tile": "." },
+    "<": {
+      "fixture": "EXIT_LEFT",
+      "tile": ".",
+      "portal": { "map": "SOSARIA", "location": "YEW", "type": "UP" }
+    },
+
+    "a": {
+      "actor": {
+        "id": "Cleric",
+        "ai": null,
+        "talk": "Search and ye shall find!"
+      },
+      "tile": "."
+    },
+    "b": {
+      "actor": {
+        "id": "Cleric",
+        "ai": "RandomWalk",
+        "talk": "Know ye well thy foes!!"
+      },
+      "tile": "%"
+    },
+    "c": {
+      "actor": {
+        "id": "Cleric",
+        "ai": "RandomWalk",
+        "talk": "Peace be with you"
+      },
+      "tile": "%"
+    },
+    "d": {
+      "actor": {
+        "id": "Cleric",
+        "ai": "RandomWalk",
+        "talk": "I've been beyond the whirlpool!"
+      },
+      "tile": "%"
+    },
+    "e": {
+      "actor": { "id": "Cleric", "ai": "RandomWalk", "talk": null },
+      "tile": "%"
+    },
+    "f": {
+      "actor": { "id": "Cleric", "ai": "RandomWalk", "talk": null },
+      "tile": "%"
+    },
+
+    "g": {
+      "actor": {
+        "id": "Cleric",
+        "ai": null,
+        "talk": "Bonim Anima Teuri, Amen!"
+      },
+      "tile": "."
+    },
+    "h": {
+      "actor": {
+        "id": "Cleric",
+        "ai": null,
+        "talk": "Bonim Anima Teuri, Amen!"
+      },
+      "tile": "-"
+    },
+    "i": {
+      "actor": {
+        "id": "Cleric",
+        "ai": null,
+        "talk": "Welcome to the Circle of Light!"
+      },
+      "tile": "."
+    },
+
+    "j": { "actor": "Grocer", "tile": "." },
+    "k": { "actor": "Healer", "tile": "-" }
+  },
+  "objects": []
+}

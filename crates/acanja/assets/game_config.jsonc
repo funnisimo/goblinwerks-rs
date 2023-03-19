@@ -8,8 +8,13 @@
       "dawn.jsonc",
       "devil-guard.jsonc",
       "fawn.jsonc",
-      "grey.jsonc"
+      "grey.jsonc",
+      "montor-east.jsonc",
+      "montor-west.jsonc",
+      "moon.jsonc",
+      "tlb.jsonc",
+      "yew.jsonc"
     ]
   },
-  "start": "GREY"
+  "start": "YEW"
 }

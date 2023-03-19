@@ -1,0 +1,99 @@
+{
+  "id": "MOON",
+  "map": { "filename": "moon.txt", "width": 64, "height": 64, "wrap": false },
+  "tiles": {
+    ".": "PLAINS",
+    "~": "WATER",
+    "#": "WALL",
+    "%": "FOREST",
+    "-": { "tile": "FLOOR", "default": true },
+    ":": "TREES",
+    "*": "FORCEFIELD",
+    "!": "LAVA",
+
+    "|": { "fixture": "Door_locked" },
+    "$": { "fixture": "Chest_locked" },
+
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ": {
+      "tile": "COUNTER_{}"
+    },
+    " ": "COUNTER_SPACE",
+
+    "@": { "location": "START", "tile": "." },
+    "<": {
+      "fixture": "EXIT_LEFT",
+      "tile": ".",
+      "portal": { "map": "SOSARIA", "location": "MOON", "type": "UP" }
+    },
+
+    "p": {
+      "actor": { "id": "Peasant", "talk": "We are honored!", "ai": null }
+    },
+    "b": {
+      "actor": {
+        "id": "Cleric",
+        "talk": "Seek ye the Shrines of Truth",
+        "ai": null
+      },
+      "tile": "."
+    },
+    "e": {
+      "actor": {
+        "id": "Fighter",
+        "talk": "<Bribe> guards! They will leave!",
+        "ai": "RandomWalk"
+      }
+    },
+    "f": {
+      "actor": {
+        "id": "Fighter",
+        "talk": "To arms! and To battle!",
+        "ai": "RandomWalk"
+      }
+    },
+    "d": {
+      "actor": {
+        "id": "Cleric",
+        "talk": "Peace be with you",
+        "ai": "RandomWalk"
+      }
+    },
+    "c": {
+      "actor": {
+        "id": "Cleric",
+        "talk": "I've been beyond the whirlpool!",
+        "ai": null
+      },
+      "tile": "%"
+    },
+    "w": {
+      "actor": {
+        "id": "Wizard",
+        "talk": "Dawn rises in the Dark Forest.",
+        "ai": null
+      },
+      "tile": "%"
+    },
+    "m": {
+      "actor": {
+        "id": "Monster",
+        "type": "Demon",
+        "ai": null,
+        "talk": "Depart or Die!"
+      },
+      "tile": "%"
+    },
+
+    "x": { "actor": "Guard", "tile": "." },
+    "v": { "actor": "Guard", "tile": "-" },
+    "y": { "actor": "Guard", "tile": ":" },
+
+    "z": { "actor": { "id": "Wizard", "ai": "RandomWalk" } },
+    "j": { "actor": { "id": "Jester", "ai": "RandomWalk" } },
+
+    "r": { "actor": "Healer" },
+    "s": { "actor": "Bartender" },
+    "u": { "actor": "Grocer" }
+  },
+  "objects": []
+}

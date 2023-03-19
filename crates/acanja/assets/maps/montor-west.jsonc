@@ -1,0 +1,85 @@
+{
+  "id": "WEST",
+  "map": {
+    "filename": "montor-west.txt",
+    "width": 64,
+    "height": 64,
+    "wrap": false
+  },
+  "tiles": {
+    ".": { "tile": "PLAINS", "default": true },
+    "~": "WATER",
+    "#": "WALL",
+    "%": "FOREST",
+    "-": "FLOOR",
+    ":": "TREES",
+    "*": "FORCEFIELD",
+    "!": "LAVA",
+
+    "|": { "fixture": "Door_locked", "tile": "-" },
+    "$": { "fixture": "Chest_locked", "tile": "-" },
+
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ": {
+      "tile": "COUNTER_{}"
+    },
+    " ": "COUNTER_SPACE",
+
+    "@": { "location": "START", "tile": "-" },
+    "<": {
+      "fixture": "EXIT_LEFT",
+      "tile": ".",
+      "portal": { "map": "SOSARIA", "location": "WEST", "type": "UP" }
+    },
+
+    "a": { "actor": "Bartender", "tile": "-" },
+    "b": { "actor": "Armorer", "tile": "-" },
+    "c": { "actor": "Weaponer", "tile": "-" },
+    "d": { "actor": "Grocer", "tile": "-" },
+
+    "g": { "actor": { "id": "Guard", "ai": null }, "tile": "-" },
+    "h": { "actor": { "id": "Guard", "ai": "RandomWalk" }, "tile": "-" },
+    "i": {
+      "actor": { "id": "Guard", "ai": null, "talk": "None shall pass!" },
+      "tile": "-"
+    },
+
+    "m": {
+      "actor": {
+        "id": "Fighter",
+        "talk": "Seek the Jester in castle Fire!",
+        "ai": "RandomWalk"
+      },
+      "tile": "-"
+    },
+    "n": {
+      "actor": {
+        "id": "Fighter",
+        "talk": "Sentri: Good grog!",
+        "ai": "RandomWalk"
+      },
+      "tile": "-"
+    },
+    "o": {
+      "actor": {
+        "id": "Fighter",
+        "talk": "Shamino: Good food!",
+        "ai": "RandomWalk"
+      },
+      "tile": "-"
+    },
+
+    "t": {
+      "actor": { "id": "Thief", "talk": "<Search> the Shrines!", "ai": null },
+      "tile": "-"
+    },
+    "u": {
+      "actor": { "id": "Thief", "talk": "<Search> for cards!", "ai": null },
+      "tile": "-"
+    },
+    "v": {
+      "actor": { "id": "Thief", "talk": "Good stuff, eh?", "ai": null },
+      "tile": "-"
+    }
+  },
+  "objects": []
+}

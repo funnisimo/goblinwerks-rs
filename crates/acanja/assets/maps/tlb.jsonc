@@ -1,0 +1,165 @@
+{
+  "id": "TLB",
+  "map": {
+    "filename": "tlb.txt",
+    "width": 64,
+    "height": 64,
+    "wrap": false,
+    "spawnHordes": false
+  },
+  "tiles": {
+    ".": "PLAINS",
+    "~": "WATER",
+    "#": "WALL",
+    "%": "FOREST",
+    "-": { "tile": "FLOOR", "default": true },
+    ":": "TREES",
+    "*": "FORCEFIELD",
+    "!": "LAVA",
+
+    "|": { "fixture": "Door_locked" },
+    "$": { "fixture": "Chest_locked" },
+
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ": {
+      "tile": "COUNTER_{}"
+    },
+    " ": "COUNTER_SPACE",
+
+    "@": { "location": "START", "tile": "-" },
+    "<": {
+      "fixture": "EXIT_LEFT",
+      "tile": ".",
+      "portal": { "map": "SOSARIA", "location": "MOON", "type": "UP" }
+    },
+
+    "m": {
+      "actor": { "id": "Cleric", "talk": "Is it not lovely?" },
+      "tile": ":"
+    },
+    "n": {
+      "actor": { "id": "Wizard", "talk": "Quest ye unto Lost Ambrosia!" },
+      "tile": "%"
+    },
+    "o": {
+      "actor": {
+        "id": "Fighter",
+        "talk": "Only with Exotic arms can you win."
+      },
+      "tile": "."
+    },
+    "p": {
+      "actor": {
+        "id": "Thief",
+        "talk": "Exodus lies beyond the Silver Snake!"
+      },
+      "tile": "."
+    },
+    "q": {
+      "actor": { "id": "Peasant", "talk": "'Dawn' comes each new pair!" },
+      "tile": "."
+    },
+    "r": {
+      "actor": { "id": "Peasant", "talk": "Dupre laughs: Drink up!" }
+    },
+    "s": {
+      "actor": { "id": "Fighter", "talk": "Round back!" }
+    },
+    "t": {
+      "actor": { "id": "Jester", "talk": "Ho! Ho!" },
+      "tile": "-"
+    },
+    "x": {
+      "actor": { "id": "Jester", "talk": "Ho! Ho!" },
+      "tile": "."
+    },
+
+    "u": {
+      "actor": "Wizard",
+      "tile": "."
+    },
+    "v": {
+      "actor": "Cleric", // NPC
+      "tile": ":"
+    },
+    "w": { "actor": "Peasant" }, // NPC
+    "a": { "actor": { "id": "Grocer", "welcome": "Welcome to De Grocer" } },
+    "b": {
+      "actor": "Armorer"
+    },
+    "c": { "actor": "Weaponer" },
+
+    "d": { "actor": { "id": "Guard", "ai": "RandomWalk" }, "tile": "-" },
+    "e": { "actor": { "id": "Guard", "ai": "RandomWalk" }, "tile": "." },
+    "f": { "actor": { "id": "Guard", "talk": "Good day!" }, "tile": "." },
+    "g": { "actor": { "id": "Guard", "talk": "Good day!" } },
+    "k": { "actor": { "id": "Bartender", "name": "Coach" } },
+    "l": { "actor": { "id": "Bartender", "name": "Woody", "ai": null } }
+  },
+  "stores": {
+    "ARMORY": {
+      "category": "ANY_ARMOR",
+      "level": 3,
+      "count": 20,
+      "hasFlags": 0,
+      "avoidFlags": 0
+    }
+  },
+  "objects": [],
+  "kinds": {
+    "NPC": {
+      "flags": "B_CANNOT_BE_ATTACKED",
+      "behaviors": ["BB_CANNOT_ATTACK", "BB_TALKS"],
+      "ai": "NPC",
+      "speed": 1500
+    },
+    "STILL_NPC": {
+      "flags": "B_CANNOT_BE_ATTACKED",
+      "behaviors": ["BB_CANNOT_ATTACK", "BB_TALKS", "BB_IMMOBILE"],
+      "ai": "NPC",
+      "speed": 1500
+    },
+    "SHOPKEEP": {
+      "flags": "B_CANNOT_BE_ATTACKED",
+      "behaviors": ["BB_CANNOT_ATTACK", "BB_ACTIVATE_ON_TALK", "BB_TALKS"],
+      "ai": "FollowPlayer",
+      "speed": 1500,
+      "feature": "SHOW_STORE"
+    },
+    "CLERIC": {
+      "ch": "C",
+      "fg": "purple",
+      "kind": "STILL_NPC"
+    },
+    "WIZARD": {
+      "ch": "W",
+      "fg": "blue",
+      "kind": "STILL_NPC"
+    },
+    "FIGHTER": {
+      "ch": "F",
+      "fg": "grey",
+      "kind": "STILL_NPC"
+    },
+    "THIEF": {
+      "ch": "T",
+      "fg": "teal",
+      "kind": "STILL_NPC"
+    },
+    "PEASANT": {
+      "ch": "P",
+      "fg": "brown",
+      "kind": "STILL_NPC"
+    },
+    "JESTER": {
+      "ch": "J",
+      "fg": "pink",
+      "kind": "NPC"
+    },
+    "ARMORER": {
+      "ch": "A",
+      "fg": "light_grey",
+      "kind": "SHOPKEEP",
+      "store": "ARMORY"
+    }
+  }
+}

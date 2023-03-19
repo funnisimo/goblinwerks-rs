@@ -1,0 +1,96 @@
+{
+  "id": "EAST",
+  "map": {
+    "filename": "montor-east.txt",
+    "width": 64,
+    "height": 64,
+    "wrap": false
+  },
+  "tiles": {
+    ".": { "tile": "PLAINS", "default": true },
+    "~": "WATER",
+    "#": "WALL",
+    "%": "FOREST",
+    "-": "FLOOR",
+    ":": "TREES",
+    "*": "FORCEFIELD",
+    "!": "LAVA",
+
+    "|": { "fixture": "Door_locked", "tile": "-" },
+    "$": { "fixture": "Chest_locked", "tile": "-" },
+
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ": {
+      "tile": "COUNTER_{}"
+    },
+    " ": "COUNTER_SPACE",
+
+    "@": { "location": "START", "tile": "-" },
+    "<": {
+      "fixture": "EXIT_LEFT",
+      "tile": ".",
+      "portal": { "map": "SOSARIA", "location": "EAST", "type": "UP" }
+    },
+
+    "a": { "actor": { "id": "Bartender", "name": "Sam" } },
+    "b": { "actor": { "id": "Armorer", "ai": "RandomWalk" } },
+    "c": { "actor": { "id": "Weaponer", "ai": "RandomWalk" } },
+
+    "g": { "actor": { "id": "Guard", "ai": null }, "tile": "-" },
+    "h": { "actor": { "id": "Guard", "ai": "RandomWalk" }, "tile": "-" },
+    "j": {
+      "actor": {
+        "id": "Jester",
+        "talk": "Jolly Joe: Ho Ho Ho!",
+        "ai": "RandomWalk"
+      },
+      "tile": "-"
+    },
+
+    "l": {
+      "actor": {
+        "id": "Fighter",
+        "talk": "Baby Bob: Bring me bucks!",
+        "ai": "RandomWalk"
+      },
+      "tile": "-"
+    },
+    "m": {
+      "actor": {
+        "id": "Fighter",
+        "talk": "'Cards' are useful!",
+        "ai": "RandomWalk"
+      },
+      "tile": "-"
+    },
+    "n": {
+      "actor": {
+        "id": "Fighter",
+        "talk": "'Marks' are useful!",
+        "ai": "RandomWalk"
+      },
+      "tile": "-"
+    },
+    "o": {
+      "actor": {
+        "id": "Fighter",
+        "talk": "'Exotics' are useful!",
+        "ai": "RandomWalk"
+      },
+      "tile": "-"
+    },
+
+    "t": {
+      "actor": { "id": "Thief", "talk": "4 cards, 4 pannels", "ai": null },
+      "tile": "%"
+    },
+    "u": {
+      "actor": {
+        "id": "Thief",
+        "talk": "<Insert> cards into pannels!",
+        "ai": null
+      },
+      "tile": "%"
+    }
+  },
+  "objects": []
+}

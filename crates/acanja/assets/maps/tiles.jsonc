@@ -82,7 +82,8 @@
     "ch": 164, // "#",
     "fg": "gray",
     "bg": "darker_gray",
-    "flavor": "a stone wall"
+    "flavor": "a stone wall",
+    "blocks": true
   },
   "BRIDGE": {
     "ch": "=",
