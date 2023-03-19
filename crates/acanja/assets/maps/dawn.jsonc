@@ -4,7 +4,7 @@
   "config": { "welcome": "Welcome to Dawn!" },
   "tiles": {
     ".": {
-      "id": "PLAINS",
+      "tile": "PLAINS",
       "default": true
     },
     "~": "WATER",
@@ -15,54 +15,70 @@
     "*": "FORCEFIELD",
     "!": "LAVA",
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ": {
-      "id": "COUNTER_{}"
+      "tile": "COUNTER_{}"
     },
-    " ": "COUNTER_SPACE"
-  },
-  "fixtures": {
-    "|": { "id": "Door_locked", "tile": "-" },
-    "$": { "id": "Chest_locked", "tile": "-" },
-    "<": { "id": "EXIT_LEFT", "tile": "." }
-  },
-  "actors": {
-    "t": { "id": "Wizard", "talk": "<DIG> up exotics", "tile": "%" },
-    "u": { "id": "Wizard", "talk": "<DIG> on isles.", "tile": "%" },
-    "v": { "id": "Wizard", "talk": "<DIG> carefully.", "tile": "%" },
-
-    "w": { "id": "Wizard", "talk": "Welcome to Dawn.", "tile": "." },
-    "x": {
-      "id": "Wizard",
-      "talk": "Dawn last but a brief moment.",
+    " ": "COUNTER_SPACE",
+    "|": { "fixture": "Door_locked", "tile": "-" },
+    "$": { "fixture": "Chest_locked", "tile": "-" },
+    "<": {
+      "fixture": "EXIT_LEFT",
       "tile": ".",
-      "ai": "RandomWalk"
+      "portal": { "map": "SOSARIA", "location": "DAWN" }
     },
-    "y": { "id": "Wizard", "talk": "Ambrosia awaits.", "tile": "-" },
-    "z": { "id": "Wizard", "talk": "Seek ye thy fortune.", "tile": "-" },
+
+    "t": {
+      "actor": { "id": "Wizard", "talk": "<DIG> up exotics" },
+      "tile": "%"
+    },
+    "u": {
+      "actor": { "id": "Wizard", "talk": "<DIG> on isles." },
+      "tile": "%"
+    },
+    "v": {
+      "actor": { "id": "Wizard", "talk": "<DIG> carefully." },
+      "tile": "%"
+    },
+
+    "w": {
+      "actor": { "id": "Wizard", "talk": "Welcome to Dawn." },
+      "tile": "."
+    },
+    "x": {
+      "actor": {
+        "id": "Wizard",
+        "talk": "Dawn last but a brief moment.",
+        "ai": "RandomWalk"
+      },
+      "tile": "."
+    },
+    "y": {
+      "actor": { "id": "Wizard", "talk": "Ambrosia awaits." },
+      "tile": "-"
+    },
+    "z": {
+      "actor": { "id": "Wizard", "talk": "Seek ye thy fortune." },
+      "tile": "-"
+    },
     "k": {
-      "id": "Fighter",
-      "talk": "Jolly good day.",
-      "tile": "-",
-      "ai": "RandomWalk"
+      "actor": {
+        "id": "Fighter",
+        "talk": "Jolly good day.",
+        "ai": "RandomWalk"
+      },
+      "tile": "-"
     },
+    "a": { "actor": { "id": "Armorer" }, "tile": "-" },
+    "b": { "actor": "Bartender", "tile": "-" },
+    "c": { "actor": "Weaponer", "tile": "-" },
+    "d": { "actor": "Grocer", "tile": "-" },
+    "e": { "actor": "Healer", "tile": "-" },
+    "f": { "actor": "Guildmaster", "tile": "-" },
 
-    "a": { "id": "Armorer", "tile": "-" },
-    "b": { "id": "Bartender", "tile": "-" },
-    "c": { "id": "Weaponer", "tile": "-" },
-    "d": { "id": "Grocer", "tile": "-" },
-    "e": { "id": "Healer", "tile": "-" },
-    "f": { "id": "Guildmaster", "tile": "-" },
+    "g": { "actor": { "id": "Guard", "talk": "Good day!" }, "tile": "." },
+    "h": { "actor": { "id": "Guard", "talk": "Good day!" }, "tile": "%" },
+    "i": { "actor": { "id": "Guard", "talk": "Good day!" }, "tile": "-" },
 
-    "g": { "id": "Guard", "talk": "Good day!", "tile": "." },
-    "h": { "id": "Guard", "talk": "Good day!", "tile": "%" },
-    "i": { "id": "Guard", "talk": "Good day!", "tile": "-" },
-
-    "o": { "id": "Oracle", "tile": "-" }
-  },
-  "locations": {
-    "@": { "name": "START", "tile": "." }
-  },
-  "portals": {
-    "<": { "map": "SOSARIA", "location": "DAWN", "tile": "<" }
-  },
-  "objects": []
+    "o": { "actor": "Oracle", "tile": "-" },
+    "@": { "location": "START", "tile": "." }
+  }
 }

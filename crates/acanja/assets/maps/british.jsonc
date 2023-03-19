@@ -9,84 +9,95 @@
   },
   "config": { "welcome": "Lord British welcomes you." },
   "tiles": {
+    "-": { "tile": "FLOOR", "default": true },
     ".": "PLAINS",
     "=": "BRIDGE",
     "~": "WATER",
     "#": "WALL",
-    "-": { "id": "FLOOR", "default": true },
     ":": "TREES",
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ": {
-      "id": "COUNTER_{}"
+      "tile": "COUNTER_{}"
     },
     " ": "COUNTER_SPACE",
     "*": "FORCEFIELD",
-    "!": "LAVA"
-  },
-  "fixtures": {
-    "|": "DOOR_LOCKED",
-    "$": "CHEST_LOCKED",
-    "<": { "id": "EXIT_LEFT", "tile": "=" }
-  },
-  "actors": {
+    "!": "LAVA",
+
+    "|": { "fixture": "DOOR_LOCKED" },
+    "$": { "fixture": "CHEST_LOCKED" },
+    "<": {
+      "fixture": "EXIT_LEFT",
+      "tile": "=",
+      "portal": { "map": "SOSARIA", "location": "BRITISH" }
+    },
+
     "t": {
-      "id": "Thief",
-      "talk": "West 8, South 35 and await the Dawn!",
+      "actor": {
+        "id": "Thief",
+        "talk": "West 8, South 35 and await the Dawn!"
+      },
       "tile": "."
     },
     "o": {
-      "id": "Peasant",
-      "name": "Cookie",
-      "talk": "Cookie: Like the food?",
-      "_ai": "StandStill"
+      "actor": {
+        "id": "Peasant",
+        "name": "Cookie",
+        "talk": "Cookie: Like the food?",
+        "_ai": "StandStill"
+      }
     },
     "k": {
-      "id": "Jester",
-      "name": "Iolo",
-      "talk": "Iolo sings: Ho Eyo He Hum!"
+      "actor": {
+        "id": "Jester",
+        "name": "Iolo",
+        "talk": "Iolo sings: Ho Eyo He Hum!"
+      }
     },
     "l": {
-      "id": "Jester",
-      "name": "Gwino",
-      "talk": "Gwino sings: Muh Eh Oye Oh!"
+      "actor": {
+        "id": "Jester",
+        "name": "Gwino",
+        "talk": "Gwino sings: Muh Eh Oye Oh!"
+      }
     },
     "m": {
-      "id": "Peasant",
-      "name": "Phantom Fighter",
-      "talk": "Phantom Fighter: The food sucks!",
-      "_ai": "StandStill"
+      "actor": {
+        "id": "Peasant",
+        "name": "Phantom Fighter",
+        "talk": "Phantom Fighter: The food sucks!",
+        "_ai": "StandStill"
+      }
     },
     "c": {
-      "id": "Cleric",
-      "name": "Wise Cleric",
-      "talk": "The Wise Cleric: 4 cards, 4 slots",
-      "ai": "RandomWalk",
-      "walk_delay": "5"
+      "actor": {
+        "id": "Cleric",
+        "name": "Wise Cleric",
+        "talk": "The Wise Cleric: 4 cards, 4 slots",
+        "ai": "RandomWalk",
+        "walk_delay": "5"
+      }
     },
-    "h": { "id": "Guard", "talk": "Enter if you dare!" },
+    "h": { "actor": { "id": "Guard", "talk": "Enter if you dare!" } },
     "j": {
-      "id": "Jester",
-      "name": "Chuckles",
-      "talk": "Chuckles: Welcome All!"
+      "actor": {
+        "id": "Jester",
+        "name": "Chuckles",
+        "talk": "Chuckles: Welcome All!"
+      }
     },
 
-    "b": { "id": "British", "tile": " " },
-    "f": { "id": "Guard", "talk": "Good day!", "tile": "." },
-    "g": { "id": "Guard", "talk": "Good day!" },
-    "i": { "id": "Guard", "talk": "Good day!", "ai": "RandomWalk" },
-    "n": { "id": "Cleric", "ai": "RandomWalk", "talk": "Howdy stranger!" },
-    "p": { "id": "Healer", "ai": "FollowParty" },
-    "r": { "id": "Oracle" }
-  },
-  "locations": {
-    "@": { "name": "START", "tile": "=" }
-  },
-  "portals": {
-    "<": {
-      "map": "SOSARIA",
-      "location": "BRITISH",
-      // "type": "CLIMB",
-      "tile": "<"
-    }
+    "b": { "actor": "British", "tile": " " },
+    "f": { "actor": { "id": "Guard", "talk": "Good day!" }, "tile": "." },
+    "g": { "actor": { "id": "Guard", "talk": "Good day!" } },
+    "i": {
+      "actor": { "id": "Guard", "talk": "Good day!", "ai": "RandomWalk" }
+    },
+    "n": {
+      "actor": { "id": "Cleric", "ai": "RandomWalk", "talk": "Howdy stranger!" }
+    },
+    "p": { "actor": { "id": "Healer", "ai": "FollowParty" } },
+    "r": { "actor": "Oracle" },
+
+    "@": { "location": "START", "tile": "=" }
   },
   "objects": [{ "x": 10, "y": 24, "entity": "Ship" }]
 }

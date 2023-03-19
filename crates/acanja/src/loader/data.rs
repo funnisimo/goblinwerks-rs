@@ -40,9 +40,9 @@ impl LoadHandler for LevelDataLoader {
 
         self.level_data.as_mut().unwrap().map_data = Some(MapData::Data(lines));
 
-        let (tiles, mut levels) = <(Read<Tiles>, Write<Levels>)>::fetch_mut(&mut ecs.resources);
+        let (mut levels,) = <(Write<Levels>,)>::fetch_mut(&mut ecs.resources);
 
-        let level = make_level(self.level_data.take().unwrap(), &tiles);
+        let level = make_level(self.level_data.take().unwrap());
         log(format!("Adding Level - {}", level.id));
 
         levels.insert(level);

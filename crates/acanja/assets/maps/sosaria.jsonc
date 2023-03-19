@@ -3,55 +3,60 @@
   "map": { "filename": "sosaria.txt", "width": 64, "height": 64, "wrap": true },
   "font": "DEFAULT",
   "tiles": {
-    ".": { "id": "PLAINS", "default": true },
+    ".": { "tile": "PLAINS", "default": true },
     ":": "TREES",
     "%": "FOREST",
     "^": "MOUNTAINS",
     "!": "LAVA",
-    "~": "WATER"
-  },
-  "fixtures": {
-    "T": "TOWN",
-    "C": "CASTLE",
-    "D": "DUNGEON",
-    "S": { "id": "Serpent", "tile": "~" }
-  },
-  "actors": {
-    "*": { "id": "Whirlpool", "tile": "~" }
-  },
-  "locations": {
-    "@": "START",
-    "0": "MOON_0",
-    "1": "MOON_1",
-    "2": "MOON_2",
-    "3": "MOON_3",
-    "4": "MOON_4",
-    "5": "MOON_5",
-    "6": "MOON_6",
-    "7": { "name": "MOON_7", "tile": "." }
-  },
-  "portals": {
-    "w": { "map": "Montor West", "fixture": "T" },
+    "~": "WATER",
+
+    "T": { "fixture": "TOWN" },
+    "C": { "fixture": "CASTLE" },
+    "D": { "fixture": "DUNGEON" },
+    "S": { "fixture": "Serpent", "tile": "~" },
+
+    "*": { "actor": "Whirlpool", "tile": "~" },
+
+    "@": { "location": "START" },
+    "0": { "location": "MOON_0" },
+    "1": { "location": "MOON_1" },
+    "2": { "location": "MOON_2" },
+    "3": { "location": "MOON_3" },
+    "4": { "location": "MOON_4" },
+    "5": { "location": "MOON_5" },
+    "6": { "location": "MOON_6" },
+    "7": { "location": "MOON_7", "tile": "." },
+
+    "w": { "portal": "Montor West", "location": "Montor West", "fixture": "T" },
     "e": {
-      "map": "Montor East",
+      "portal": "Montor East",
+      "location": "Montor East",
       "fixture": "T"
     },
-    "d": { "map": "Dawn", "tile": "%", "fixture": "T" },
-    "g": { "map": "Grey", "fixture": "T" },
-    "u": { "map": "Death Gultch", "fixture": "T" },
-    "v": { "map": "Devil Guard", "fixture": "T" },
-    "b": { "map": "British", "fixture": "T" },
-    "y": { "map": "Yew", "fixture": "T" },
-    "m": { "map": "Moon", "fixture": "T" },
-    "f": { "map": "Fawn", "fixture": "T" },
-    "E": { "map": "Castle Exodus", "fixture": "C" },
-    "K": { "map": "Castle British", "fixture": "C" },
-    "M": { "map": "Doom", "fixture": "D" },
-    "L": { "map": "Clues", "fixture": "D" },
-    "R": { "map": "Mines of Morina", "fixture": "D" },
-    "H": { "map": "Fires of Hell", "fixture": "D" },
-    "A": { "map": "Time Awaits", "fixture": "D" },
-    "I": { "map": "Dardins Pit", "fixture": "D" },
-    "P": { "map": "Perinian Depths", "fixture": "D" }
+    "d": { "portal": "Dawn", "location": "Dawn", "tile": "%", "fixture": "T" },
+    "g": { "portal": "Grey", "location": "Grey", "fixture": "T" },
+    "u": {
+      "portal": "Death Gultch",
+      "location": "Death Gultch",
+      "fixture": "T"
+    },
+    "v": { "portal": "Devil Guard", "location": "Devil Guard", "fixture": "T" },
+    "b": { "portal": "British", "location": "British", "fixture": "T" },
+    "y": { "portal": "Yew", "location": "Yew", "fixture": "T" },
+    "m": { "portal": "Moon", "location": "Moon", "fixture": "T" },
+    "f": { "portal": "Fawn", "location": "Fawn", "fixture": "T" },
+    "E": { "portal": "Exodus", "location": "Exodus", "fixture": "C" },
+    "K": {
+      "portal": "British",
+      "location": "British",
+      "fixture": "C"
+    },
+    "M": { "portal": "Doom", "location": "Doom", "fixture": "D" },
+    "L": { "portal": "Clues", "location": "Clues", "fixture": "D" },
+    "R": { "portal": "Morina", "location": "Morina", "fixture": "D" },
+    "H": { "portal": "Hell", "location": "Hell", "fixture": "D" },
+    "A": { "portal": "Time", "location": "Time", "fixture": "D" },
+    "I": { "portal": "Dardins", "location": "Dardins", "fixture": "D" },
+    "P": { "portal": "Depths", "location": "Depths", "fixture": "D" }
   }
 }

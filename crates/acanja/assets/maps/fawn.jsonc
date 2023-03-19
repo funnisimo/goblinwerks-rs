@@ -10,7 +10,7 @@
   "config": { "welcome": "Welcome to Devil Guard!" },
   "tiles": {
     ".": {
-      "id": "PLAINS",
+      "tile": "PLAINS",
       "default": true
     },
     "~": "WATER",
@@ -21,66 +21,73 @@
     "*": "FORCEFIELD",
     "!": "LAVA",
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ": {
-      "id": "COUNTER_{}"
+      "tile": "COUNTER_{}"
     },
-    " ": "COUNTER_SPACE"
-  },
-  "fixtures": {
-    "|": { "id": "Door_locked", "tile": "-" },
-    "$": { "id": "Chest_locked", "tile": "-" },
-    "<": { "id": "EXIT_LEFT", "tile": "." }
-  },
-  "actors": {
-    "a": { "id": "Armorer", "tile": "-" },
-    "b": { "id": "Bartender", "tile": "-" },
-    "c": { "id": "Weaponer", "tile": "-" },
-    "d": { "id": "Grocer", "tile": "-" },
-    "e": { "id": "Healer", "tile": "-" },
-    "k": { "id": "Guildmaster", "tile": "-" },
+    " ": "COUNTER_SPACE",
+
+    "|": { "fixture": "Door_locked", "tile": "-" },
+    "$": { "fixture": "Chest_locked", "tile": "-" },
+    "<": {
+      "fixture": "EXIT_LEFT",
+      "tile": ".",
+      "portal": { "map": "SOSARIA", "locaiton": "FAWN" }
+    },
+
+    "a": { "actor": "Armorer", "tile": "-" },
+    "b": { "actor": "Bartender", "tile": "-" },
+    "c": { "actor": "Weaponer", "tile": "-" },
+    "d": { "actor": "Grocer", "tile": "-" },
+    "e": { "actor": "Healer", "tile": "-" },
+    "k": { "actor": "Guildmaster", "tile": "-" },
 
     "g": {
-      "id": "Guard",
-      "talk": "Good day!",
       "tile": ".",
-      "ai": "RandomWalk"
+      "actor": { "id": "Guard", "talk": "Good day!", "ai": "RandomWalk" }
     },
-    "h": { "id": "Guard", "talk": "Good day!", "tile": "." },
-    "i": { "id": "Guard", "talk": "Good day!", "tile": "-" },
+    "h": { "id": "Guard", "actor": { "talk": "Good day!", "tile": "." } },
+    "i": { "id": "Guard", "actor": { "talk": "Good day!", "tile": "-" } },
 
-    "f": { "id": "Fighter", "tile": "-", "ai": "RandomWalk" },
+    "f": { "tile": "-", "actor": { "id": "Fighter", "ai": "RandomWalk" } },
     "j": {
-      "id": "Wizard",
       "tile": ".",
-      "talk": "Welocome to Fawn: City of the sea!"
+      "actor": { "id": "Wizard", "talk": "Welocome to Fawn: City of the sea!" }
     },
 
-    "s": { "id": "Fighter", "tile": ".", "talk": "Fawn is a nice place!" },
-    "t": { "id": "Wizard", "tile": ".", "talk": "Fawn is a nice place!" },
-    "u": { "id": "Cleric", "tile": ".", "talk": "Fawn is a nice place!" },
-    "v": { "id": "Thief", "tile": ".", "talk": "Fawn is a nice place!" },
+    "s": {
+      "tile": ".",
+      "actor": { "id": "Fighter", "talk": "Fawn is a nice place!" }
+    },
+    "t": {
+      "tile": ".",
+      "actor": { "id": "Wizard", "talk": "Fawn is a nice place!" }
+    },
+    "u": {
+      "tile": ".",
+      "actor": { "id": "Cleric", "talk": "Fawn is a nice place!" }
+    },
+    "v": {
+      "tile": ".",
+      "actor": { "id": "Thief", "talk": "Fawn is a nice place!" }
+    },
 
     "w": {
-      "id": "Cleric",
       "tile": ":",
-      "talk": "<Pray> for the invocation!"
+      "actor": { "id": "Cleric", "talk": "<Pray> for the invocation!" }
     },
     "x": {
-      "id": "Cleric",
       "tile": ":",
-      "talk": "<Pray> in the Circle of Light!"
+      "actor": { "id": "Cleric", "talk": "<Pray> in the Circle of Light!" }
     },
     "y": {
-      "id": "Cleric",
       "tile": ":",
-      "talk": "'Invoke' the Silver Snake!"
+      "actor": { "id": "Cleric", "talk": "'Invoke' the Silver Snake!" }
     },
-    "z": { "id": "Cleric", "tile": ":", "talk": "To pass you need a Mark!" }
-  },
-  "locations": {
-    "@": { "name": "START", "tile": "." }
-  },
-  "portals": {
-    "<": { "map": "SOSARIA", "location": "FAWN", "tile": "<" }
+    "z": {
+      "tile": ":",
+      "actor": { "id": "Cleric", "talk": "To pass you need a Mark!" }
+    },
+
+    "@": { "location": "START", "tile": "." }
   },
   "objects": []
 }

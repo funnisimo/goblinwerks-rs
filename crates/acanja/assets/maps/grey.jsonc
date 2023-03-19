@@ -3,7 +3,7 @@
   "map": { "filename": "grey.txt", "width": 64, "height": 64, "wrap": false },
   "tiles": {
     ".": {
-      "id": "PLAINS",
+      "tile": "PLAINS",
       "default": true
     },
     "~": "WATER",
@@ -14,65 +14,69 @@
     "*": "FORCEFIELD",
     "!": "LAVA",
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ": {
-      "id": "COUNTER_{}"
+      "tile": "COUNTER_{}"
     },
-    " ": "COUNTER_SPACE"
-  },
-  "fixtures": {
-    "|": { "id": "Door_locked", "tile": "-" },
-    "$": { "id": "Chest_locked", "tile": "-" },
-    "<": { "id": "EXIT_LEFT", "tile": "." }
-  },
-  "actors": {
-    "a": { "id": "Bartender", "tile": "-" },
-    "b": { "id": "Armorer", "tile": "-" },
-    "c": { "id": "Weaponer", "tile": "-" },
-    "d": { "id": "Grocer", "tile": "-" },
-    "e": { "id": "Guildmaster", "tile": "-" },
+    " ": "COUNTER_SPACE",
+
+    "|": { "fixture": "Door_locked", "tile": "-" },
+    "$": { "fixture": "Chest_locked", "tile": "-" },
+    "<": {
+      "fixture": "EXIT_LEFT",
+      "tile": ".",
+      "portal": { "map": "SOSARIA", "location": "GREY" }
+    },
+
+    "a": { "actor": "Bartender", "tile": "-" },
+    "b": { "actor": "Armorer", "tile": "-" },
+    "c": { "actor": "Weaponer", "tile": "-" },
+    "d": { "actor": "Grocer", "tile": "-" },
+    "e": { "actor": "Guildmaster", "tile": "-" },
 
     "g": {
-      "id": "Guard",
-      "ai": null,
       "tile": "-",
-      "text": "Watch it bub!"
+      "actor": { "id": "Guard", "ai": null, "text": "Watch it bub!" }
     },
 
     "m": {
-      "id": "Fighter",
-      "talk": "Exotic clues found at Dawn!",
+      "actor": { "id": "Fighter", "talk": "Exotic clues found at Dawn!" },
       "tile": ":"
     },
     "j": {
-      "id": "Jester",
-      "talk": "Don't you wish you were a Jester!",
-      "ai": "RandomWalk",
+      "actor": {
+        "id": "Jester",
+        "talk": "Don't you wish you were a Jester!",
+        "ai": "RandomWalk"
+      },
       "tile": "-"
     },
 
     "t": {
-      "id": "Thief",
-      "talk": "Yo! ho! ho! and a bottle of rum!!!",
       "tile": "-",
-      "ai": "RandomWalk"
+
+      "actor": {
+        "id": "Thief",
+        "talk": "Yo! ho! ho! and a bottle of rum!!!",
+        "ai": "RandomWalk"
+      }
     },
     "u": {
-      "id": "Thief",
-      "talk": "Ever seen Exotic arms?",
       "tile": "-",
-      "ai": "RandomWalk"
+      "actor": {
+        "id": "Thief",
+        "talk": "Ever seen Exotic arms?",
+        "ai": "RandomWalk"
+      }
     },
 
     "w": {
-      "id": "Wizard",
-      "talk": "Only Exotics will protect from Great Evil!",
+      "actor": {
+        "id": "Wizard",
+        "talk": "Only Exotics will protect from Great Evil!"
+      },
       "tile": "%"
-    }
-  },
-  "locations": {
-    "@": { "name": "START", "tile": "." }
-  },
-  "portals": {
-    "<": { "map": "SOSARIA", "location": "GREY", "tile": "<" }
+    },
+
+    "@": { "location": "START", "tile": "." }
   },
   "objects": []
 }
