@@ -229,25 +229,28 @@ pub fn load_level_data(tiles: &Tiles, json: Value) -> LevelData {
                 // item
 
                 if let Some(location_value) = info.get(&"location".into()) {
-                    let location = location_value.to_string();
+                    let location = location_value.to_string().to_uppercase();
                     cell.location = Some(location);
                 }
 
                 if let Some(portal_value) = info.get(&"portal".into()) {
                     if portal_value.is_string() {
-                        cell.portal = Some(PortalInfo::new(&portal_value.to_string(), "START"));
+                        cell.portal = Some(PortalInfo::new(
+                            &portal_value.to_string().to_uppercase(),
+                            "START",
+                        ));
                     } else if portal_value.is_map() {
                         // need my map id
                         let portal_map = portal_value.as_map().unwrap();
 
                         let map = match portal_map.get(&"map".into()) {
                             None => map_id.clone(),
-                            Some(val) => val.to_string(),
+                            Some(val) => val.to_string().to_uppercase(),
                         };
 
                         let location = match portal_map.get(&"location".into()) {
                             None => "START".to_string(),
-                            Some(val) => val.to_string(),
+                            Some(val) => val.to_string().to_uppercase(),
                         };
 
                         cell.portal = Some(PortalInfo::new(&map, &location));

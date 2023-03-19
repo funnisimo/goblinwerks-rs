@@ -71,6 +71,12 @@ impl Screen for MainScreen {
             Actor::new("USER_CONTROL"),
         ));
 
+        {
+            let map = level.resources.get::<Map>().unwrap();
+            log(format!("MAP LOCATIONS - {:?}", &map.locations));
+            log(format!("MAP PORTALS - {:?}", &map.portals));
+        }
+
         let mut camera = Camera::new(CAMERA_WIDTH, CAMERA_HEIGHT);
         camera.set_follows(entity);
         level.resources.insert(camera);
