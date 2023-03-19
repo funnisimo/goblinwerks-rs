@@ -4,8 +4,7 @@
     "filename": "fawn.txt",
     "width": 64,
     "height": 64,
-    "wrap": false,
-    "lock": true
+    "wrap": false
   },
   "config": { "welcome": "Welcome to Devil Guard!" },
   "tiles": {

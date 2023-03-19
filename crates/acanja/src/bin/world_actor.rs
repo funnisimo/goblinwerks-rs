@@ -28,10 +28,7 @@ struct MainScreen {
 
 impl MainScreen {
     pub fn new() -> Box<Self> {
-        let viewport = Viewport::builder("VIEWPORT")
-            .size(80, 50)
-            .lock(Lock::XY)
-            .build();
+        let viewport = Viewport::builder("VIEWPORT").size(80, 50).build();
 
         Box::new(MainScreen {
             viewport,
@@ -50,6 +47,7 @@ impl MainScreen {
 
         map.reveal_all();
         map.make_fully_visible();
+        map.lock = Lock::XY;
 
         let mut level = Level::new("WORLD");
 

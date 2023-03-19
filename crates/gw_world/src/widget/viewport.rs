@@ -1,7 +1,7 @@
 use crate::camera::Camera;
 use crate::level::{Level, Levels};
 use crate::map::Cell;
-use crate::map::Wrap;
+// use crate::map::Wrap;
 use crate::map::{CellFlags, Map};
 use crate::memory::MapMemory;
 use crate::position::Position;
@@ -121,7 +121,7 @@ pub struct Viewport {
     id: String,
     last_mouse: Point,
     needs_draw: bool,
-    lock: Lock,
+    // lock: Lock,
 }
 
 impl Viewport {
@@ -138,7 +138,7 @@ impl Viewport {
             id: builder.id,
             last_mouse: Point::new(-1, -1),
             needs_draw: true,
-            lock: builder.lock,
+            // lock: builder.lock,
         }
     }
 
@@ -156,14 +156,11 @@ impl Viewport {
             None => return None,
             Some(pt) => pt,
         };
-        let lock_strategy = self.lock;
 
         let calc_cell = move |map: &Map, camera: &Camera| {
             let map_size = map.get_size();
             let base_offset = camera.offset();
-            let offset: Point = lock_strategy
-                .lock(base_offset, *camera.size(), map_size)
-                .into();
+            let offset: Point = map.lock.lock(base_offset, *camera.size(), map_size).into();
 
             let map_point: Point = view_point + offset;
             match map
@@ -242,7 +239,7 @@ impl Viewport {
                 self.resize(camera.size().0, camera.size().1);
             }
             let base_offset = camera.offset();
-            self.lock
+            map.lock
                 .lock(base_offset, *camera.size(), map.get_size())
                 .into()
         };
@@ -295,8 +292,8 @@ pub struct ViewPortBuilder {
     extents: (f32, f32, f32, f32),
     id: String,
     font: String,
-    wrap: Wrap,
-    lock: Lock,
+    // wrap: Wrap,
+    // lock: Lock,
 }
 
 impl ViewPortBuilder {
@@ -306,8 +303,8 @@ impl ViewPortBuilder {
             extents: (0.0, 0.0, 1.0, 1.0),
             id: id.to_string(),
             font: "DEFAULT".to_string(),
-            wrap: Wrap::None,
-            lock: Lock::None,
+            // wrap: Wrap::None,
+            // lock: Lock::None,
         }
     }
 
@@ -326,15 +323,15 @@ impl ViewPortBuilder {
         self
     }
 
-    pub fn wrap(mut self, wrap: Wrap) -> Self {
-        self.wrap = wrap;
-        self
-    }
+    // pub fn wrap(mut self, wrap: Wrap) -> Self {
+    //     self.wrap = wrap;
+    //     self
+    // }
 
-    pub fn lock(mut self, lock: Lock) -> Self {
-        self.lock = lock;
-        self
-    }
+    // pub fn lock(mut self, lock: Lock) -> Self {
+    //     self.lock = lock;
+    //     self
+    // }
 
     pub fn build(self) -> Viewport {
         Viewport::new(self)
@@ -493,10 +490,10 @@ fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
     let buf = viewport.con.buffer_mut();
     // DO NOT CLEAR BUFFER!!!
 
-    let base_left = viewport
+    let base_left = map
         .lock
         .lock_x(camera.center().x - size.0 as i32 / 2, size.0, map_size.0);
-    let base_top = viewport
+    let base_top = map
         .lock
         .lock_y(camera.center().y - size.1 as i32 / 2, size.1, map_size.1);
 

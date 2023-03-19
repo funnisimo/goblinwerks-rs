@@ -9,6 +9,7 @@ use gw_world::{
     level::{Level, Levels},
     map::{Map, PortalInfo, Wrap},
     tile::{Tile, Tiles},
+    widget::Lock,
 };
 use std::{collections::HashMap, sync::Arc};
 
@@ -356,6 +357,8 @@ pub fn make_level(level_data: LevelData) -> Level {
     map.fill(def_tile.clone());
     if wrap {
         map.wrap = Wrap::XY;
+    } else {
+        map.lock = Lock::XY;
     }
 
     for (y, line) in data.iter().enumerate() {

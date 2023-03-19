@@ -4,6 +4,7 @@ use super::{CellFlags, MapFlags};
 use crate::tile::Tile;
 use crate::tile::TileLayer;
 use crate::tile::NO_TILE;
+use crate::widget::Lock;
 use gw_app::ecs::Entity;
 use gw_util::point::distance;
 use gw_util::point::Point;
@@ -34,6 +35,7 @@ pub struct Map {
     pub width: u32,
     pub height: u32,
     pub wrap: Wrap,
+    pub lock: Lock,
     flags: MapFlags,
     pub welcome: Option<String>,
 
@@ -67,6 +69,7 @@ impl Map {
             width: width,
             height: height,
             wrap: Wrap::None,
+            lock: Lock::None,
             flags: MapFlags::empty(),
             welcome: None,
 
