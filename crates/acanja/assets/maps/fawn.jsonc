@@ -29,7 +29,7 @@
     "<": {
       "fixture": "EXIT_LEFT",
       "tile": ".",
-      "portal": { "map": "SOSARIA", "locaiton": "FAWN" }
+      "portal": { "map": "SOSARIA", "locaiton": "FAWN", "type": "UP" }
     },
 
     "a": { "actor": "Armorer", "tile": "-" },

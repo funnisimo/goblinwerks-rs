@@ -30,7 +30,7 @@
     "<": {
       "fixture": "EXIT_LEFT",
       "tile": ".",
-      "portal": { "map": "SOSARIA", "location": "DEVIL GUARD" }
+      "portal": { "map": "SOSARIA", "location": "DEVIL GUARD", "type": "UP" }
     },
 
     "a": { "actor": "Armorer", "tile": "-" },

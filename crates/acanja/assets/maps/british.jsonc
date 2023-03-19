@@ -27,7 +27,7 @@
     "<": {
       "fixture": "EXIT_LEFT",
       "tile": "=",
-      "portal": { "map": "SOSARIA", "location": "BRITISH" }
+      "portal": { "map": "SOSARIA", "location": "BRITISH", "type": "UP" }
     },
 
     "t": {

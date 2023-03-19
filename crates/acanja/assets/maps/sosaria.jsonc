@@ -41,7 +41,7 @@
       "fixture": "T"
     },
     "v": { "portal": "Devil Guard", "location": "Devil Guard", "fixture": "T" },
-    "b": { "portal": "British", "location": "British", "fixture": "T" },
+    "b": { "portal": "TLB", "location": "TLB", "fixture": "T" },
     "y": { "portal": "Yew", "location": "Yew", "fixture": "T" },
     "m": { "portal": "Moon", "location": "Moon", "fixture": "T" },
     "f": { "portal": "Fawn", "location": "Fawn", "fixture": "T" },

@@ -23,7 +23,7 @@
     "<": {
       "fixture": "EXIT_LEFT",
       "tile": ".",
-      "portal": { "map": "SOSARIA", "location": "GREY" }
+      "portal": { "map": "SOSARIA", "location": "GREY", "type": "UP" }
     },
 
     "a": { "actor": "Bartender", "tile": "-" },

@@ -10,7 +10,7 @@ use gw_world::action::move_step::MoveStepAction;
 use gw_world::actor::Actor;
 use gw_world::hero::Hero;
 use gw_world::level::{Level, Levels};
-use gw_world::map::Map;
+use gw_world::map::{Map, PortalFlags};
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
 use gw_world::task::DoNextActionResult;
@@ -20,8 +20,10 @@ use gw_world::map::Wrap;
 use gw_world::tile::TileJsonFileLoader;
 use gw_world::tile::Tiles;
 use gw_world::widget::Viewport;
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs::read_to_string};
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct UserControl;
 
 const CAMERA_WIDTH: u32 = 1024 / 32;
@@ -34,7 +36,7 @@ struct MainScreen {
 impl MainScreen {
     pub fn new() -> Box<Self> {
         let viewport = Viewport::builder("VIEWPORT")
-            .size(11, 11)
+            // .size(11, 11)
             .font("assets/font_32x58.png")
             // .extents(0.0, 0.0, 0.85, 0.85)
             // .wrap(Wrap::XY)
@@ -90,25 +92,32 @@ impl Screen for MainScreen {
             return result;
         }
 
-        let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-        let level = levels.current_mut();
-
         match ev {
             AppEvent::KeyDown(key_down) => match key_down.key_code {
                 VirtualKeyCode::Escape => {
                     return ScreenResult::Quit;
                 }
                 VirtualKeyCode::Down => {
-                    move_hero(&mut *level, 0, 1);
+                    move_hero(ecs, 0, 1);
                 }
                 VirtualKeyCode::Left => {
-                    move_hero(&mut *level, -1, 0);
+                    move_hero(ecs, -1, 0);
                 }
                 VirtualKeyCode::Up => {
-                    move_hero(&mut *level, 0, -1);
+                    move_hero(ecs, 0, -1);
                 }
                 VirtualKeyCode::Right => {
-                    move_hero(&mut *level, 1, 0);
+                    move_hero(ecs, 1, 0);
+                }
+                VirtualKeyCode::Period if key_down.shift => {
+                    // Down
+                    let hero_point = get_hero_point(ecs);
+                    try_move_hero_world(ecs, &hero_point, PortalFlags::ON_DESCEND);
+                }
+                VirtualKeyCode::Comma if key_down.shift => {
+                    // Up
+                    let hero_point = get_hero_point(ecs);
+                    try_move_hero_world(ecs, &hero_point, PortalFlags::ON_CLIMB);
                 }
                 _ => {}
             },
@@ -179,6 +188,12 @@ fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Acanja - World Viewer")
         .font("assets/font_32x58.png")
+        .register_components(|registry| {
+            registry.register::<gw_world::position::Position>("Position".to_string());
+            registry.register::<gw_world::sprite::Sprite>("Sprite".to_string());
+            registry.register::<gw_world::actor::Actor>("Actor".to_string());
+            registry.register::<UserControl>("UserControl".to_string());
+        })
         .file(
             "assets/maps/tiles.jsonc",
             Box::new(TileJsonFileLoader::new().with_dump()),
@@ -194,10 +209,102 @@ fn main() {
     app.run(MainScreen::new());
 }
 
-fn move_hero(level: &mut Level, dx: i32, dy: i32) {
+fn move_hero(ecs: &mut Ecs, dx: i32, dy: i32) {
+    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+    let level = levels.current_mut();
+
     let hero_entity = level.resources.get::<Hero>().unwrap().entity;
 
     let mut entry = level.world.entry(hero_entity).unwrap();
     let actor = entry.get_component_mut::<Actor>().unwrap();
     actor.next_action = Some(Box::new(MoveStepAction::new(hero_entity, dx, dy)));
+}
+
+fn get_hero_point(ecs: &mut Ecs) -> Point {
+    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+    let level = levels.current_mut();
+    let hero_entity = level.resources.get::<Hero>().unwrap().entity;
+
+    level
+        .world
+        .entry(hero_entity)
+        .unwrap()
+        .get_component::<Position>()
+        .unwrap()
+        .point()
+}
+
+fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
+    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+    let level = levels.current_mut();
+
+    let hero_entity = level.resources.get::<Hero>().unwrap().entity;
+
+    let map = level.resources.get_mut::<Map>().unwrap();
+
+    log(format!("CLICK = {:?}", pt));
+
+    let (new_map_id, location) = {
+        match map.get_portal(&pt) {
+            None => return false,
+            Some(info) => {
+                if !info.flags().contains(flag) {
+                    return false;
+                }
+
+                log(format!(
+                    "Enter Portal = {} - {}::{}",
+                    info.flavor().as_ref().unwrap_or(&"UNKNOWN".to_string()),
+                    info.map_id(),
+                    info.location()
+                ));
+
+                (info.map_id().to_string(), info.location().to_string())
+            }
+        }
+    };
+
+    let current_pt = level
+        .world
+        .entry(hero_entity)
+        .unwrap()
+        .get_component::<Position>()
+        .unwrap()
+        .point();
+
+    drop(map);
+    drop(level);
+
+    let level = levels.current_mut();
+    let mut map = level.resources.get_mut::<Map>().unwrap();
+
+    map.remove_actor_at_xy(current_pt.x, current_pt.y, hero_entity);
+
+    drop(map);
+    drop(level);
+
+    log("Moving hero to new world");
+    let new_entity = levels.move_current_entity(hero_entity, &new_map_id);
+    log("Changing current world");
+    levels.set_current(&new_map_id);
+
+    let level = levels.current_mut();
+    level.resources.insert(Hero::new(hero_entity));
+
+    let mut camera = Camera::new(CAMERA_WIDTH, CAMERA_HEIGHT);
+    camera.set_follows(new_entity);
+    level.resources.insert(camera);
+
+    let new_pt = {
+        let mut map = level.resources.get_mut::<Map>().unwrap();
+        let pt = map.locations.get(&location).unwrap().clone();
+        map.add_actor_at_xy(pt.x, pt.y, new_entity, true);
+        pt
+    };
+    {
+        let mut entry = level.world.entry(new_entity).unwrap();
+        let pos = entry.get_component_mut::<Position>().unwrap();
+        pos.set(new_pt.x, new_pt.y);
+    }
+    true
 }

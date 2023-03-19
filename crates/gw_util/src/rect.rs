@@ -66,11 +66,11 @@ impl Rect {
     /// Returns true if a point is inside the rectangle
     #[must_use]
     pub fn contains_point(&self, point: &Point) -> bool {
-        point.x >= self.x1 && point.x < self.x2 && point.y >= self.y1 && point.y < self.y2
+        point.x >= self.x1 && point.x <= self.x2 && point.y >= self.y1 && point.y <= self.y2
     }
 
     pub fn contains(&self, x: i32, y: i32) -> bool {
-        self.x1 <= x && self.x2 > x && self.y1 <= y && self.y2 > y
+        self.x1 <= x && self.x2 >= x && self.y1 <= y && self.y2 >= y
     }
 
     /// Calls a function for each x/y point in the rectangle

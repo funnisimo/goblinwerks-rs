@@ -7,7 +7,7 @@ use gw_app::{
 use gw_util::{point::Point, value::Value};
 use gw_world::{
     level::{Level, Levels},
-    map::{Map, PortalInfo, Wrap},
+    map::{Map, PortalFlags, PortalInfo, Wrap},
     tile::{Tile, Tiles},
     widget::Lock,
 };
@@ -254,7 +254,20 @@ pub fn load_level_data(tiles: &Tiles, json: Value) -> LevelData {
                             Some(val) => val.to_string().to_uppercase(),
                         };
 
-                        cell.portal = Some(PortalInfo::new(&map, &location));
+                        let flags = match portal_map.get(&"type".into()) {
+                            None => PortalFlags::ON_DESCEND,
+                            Some(val) => match val.to_string().to_uppercase().as_str() {
+                                "UP" => PortalFlags::ON_CLIMB,
+                                "DOWN" => PortalFlags::ON_DESCEND,
+                                "ENTER" => PortalFlags::ON_ENTER,
+                                _ => PortalFlags::ON_DESCEND, // Is this an error?
+                            },
+                        };
+
+                        let mut portal = PortalInfo::new(&map, &location);
+                        portal.set_flags(flags);
+
+                        cell.portal = Some(portal);
                     } else {
                         panic!("Invalid portal in entry - {}", text);
                     }
