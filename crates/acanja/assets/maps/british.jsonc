@@ -7,7 +7,7 @@
     "wrap": false,
     "lock": true
   },
-  "config": { "welcome": "Lord British welcomes you." },
+  "welcome": "Lord British welcomes you.",
   "tiles": {
     "-": { "tile": "FLOOR", "default": true },
     ".": "PLAINS",

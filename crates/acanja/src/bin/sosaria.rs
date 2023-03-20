@@ -306,5 +306,11 @@ fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
         let pos = entry.get_component_mut::<Position>().unwrap();
         pos.set(new_pt.x, new_pt.y);
     }
+    {
+        let map = level.resources.get::<Map>().unwrap();
+        if let Some(ref welcome) = map.welcome {
+            level.logger.log(welcome);
+        }
+    }
     true
 }

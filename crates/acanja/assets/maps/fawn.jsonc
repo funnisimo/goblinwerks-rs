@@ -6,7 +6,7 @@
     "height": 64,
     "wrap": false
   },
-  "config": { "welcome": "Welcome to Devil Guard!" },
+  "welcome": "Welcome to Devil Guard!",
   "tiles": {
     ".": {
       "tile": "PLAINS",

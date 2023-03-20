@@ -7,7 +7,7 @@
     "wrap": false,
     "lock": true
   },
-  "config": { "welcome": "Welcome to Devil Guard!" },
+  "welcome": "Welcome to Devil Guard!",
   "tiles": {
     ".": {
       "tile": "Plains",

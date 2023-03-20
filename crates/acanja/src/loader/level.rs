@@ -51,6 +51,7 @@ pub struct LevelData {
     pub map_data: Option<MapData>,
     pub map_size: (u32, u32),
     pub map_wrap: bool,
+    pub welcome: Option<String>,
 }
 
 impl LevelData {
@@ -62,6 +63,7 @@ impl LevelData {
             map_data: None,
             map_size: (0, 0),
             map_wrap: false,
+            welcome: None,
         }
     }
 }
@@ -323,6 +325,7 @@ pub fn load_level_data(tiles: &Tiles, json: Value) -> LevelData {
 
     level_data.map_size = (width, height);
     level_data.map_wrap = wrap;
+    level_data.welcome = root.get(&"welcome".into()).map(|v| v.to_string());
 
     if let Some(filename) = map_info.get(&"filename".into()) {
         level_data.map_data = Some(MapData::FileName(filename.to_string()));
@@ -347,7 +350,7 @@ pub fn load_level_data(tiles: &Tiles, json: Value) -> LevelData {
     level_data
 }
 
-pub fn make_level(level_data: LevelData) -> Level {
+pub fn make_level(mut level_data: LevelData) -> Level {
     let cell_lookup = level_data.cell_lookup;
     let (width, height) = level_data.map_size;
     let wrap = level_data.map_wrap;
@@ -370,6 +373,7 @@ pub fn make_level(level_data: LevelData) -> Level {
     };
 
     let mut map = Map::new(width, height);
+    map.welcome = level_data.welcome.take();
     map.fill(def_tile.clone());
     if wrap {
         map.wrap = Wrap::XY;
@@ -379,8 +383,14 @@ pub fn make_level(level_data: LevelData) -> Level {
 
     for (y, line) in data.iter().enumerate() {
         let y = y as i32;
+        if y >= height as i32 {
+            break;
+        }
         for (x, ch) in line.char_indices() {
             let x = x as i32;
+            if x >= width as i32 {
+                break;
+            }
             let char = format!("{}", ch);
             match cell_lookup.get(&char) {
                 None => panic!("Unknown tile in map data - {}", char),

@@ -1,7 +1,7 @@
 {
   "id": "DAWN",
   "map": { "filename": "dawn.txt", "width": 64, "height": 64, "wrap": false },
-  "config": { "welcome": "Welcome to Dawn!" },
+  "welcome": "Welcome to Dawn!",
   "tiles": {
     ".": {
       "tile": "PLAINS",
