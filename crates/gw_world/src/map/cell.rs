@@ -28,7 +28,7 @@ pub trait Cell {
     }
 
     fn has_cell_flag(&self, flag: CellFlags) -> bool {
-        self.map().has_flag_idx(self.index(), flag)
+        self.map().has_flag(self.index(), flag)
     }
 
     fn has_any_cell_flag(&self, flag: CellFlags) -> bool {
@@ -57,6 +57,11 @@ pub trait Cell {
         self.has_move_flag(TileMove::BLOCKS_DIAGONAL)
     }
 
+    fn is_opaque(&self) -> bool {
+        let tile = self.ground();
+        tile.blocks_vision() || self.blocks_vision()
+    }
+
     // Sprite
     fn sprite(&self) -> Sprite {
         let mut sprite = Sprite::default();
@@ -79,7 +84,7 @@ pub trait Cell {
 
     fn flavor(&self) -> String {
         if self.has_cell_flag(CellFlags::IS_PORTAL) {
-            if let Some(ref info) = self.map().get_portal_idx(self.index()) {
+            if let Some(ref info) = self.map().get_portal(self.index()) {
                 if let Some(ref flavor) = info.flavor() {
                     return flavor.clone();
                 }

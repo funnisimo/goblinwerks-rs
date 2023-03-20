@@ -242,7 +242,7 @@ impl TileBuilder {
                 self.tile.layer = value.to_string().parse().unwrap();
                 self.layer_set = true;
             }
-            _ => return Err(format!("Unknown tile field - {}", field)),
+            _ => log(format!("Ignoring tile field - {}", field)),
         }
         Ok(())
     }

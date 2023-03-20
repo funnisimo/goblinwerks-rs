@@ -8,27 +8,10 @@ use crate::widget::Lock;
 use gw_app::ecs::Entity;
 use gw_util::point::distance;
 use gw_util::point::Point;
+use gw_util::rect::Rect;
 use gw_util::rng::RandomNumberGenerator;
 use std::collections::HashMap;
 use std::sync::Arc; // For FOV Calc
-
-// #[derive(PartialEq, Copy, Clone)]
-// pub enum TileId {
-//     None,
-//     Wall,
-//     Floor,
-//     Hall,
-// }
-
-// impl TileId {
-//     pub fn blocks(&self) -> bool {
-//         *self == TileId::Wall
-//     }
-
-//     pub fn blocks_vision(&self) -> bool {
-//         *self == TileId::Wall
-//     }
-// }
 
 pub struct Map {
     pub id: u32,
@@ -38,12 +21,13 @@ pub struct Map {
     pub lock: Lock,
     flags: MapFlags,
     pub welcome: Option<String>,
+    region: Rect,
 
     any_entity_change: bool, // TODO - MapFlags
     any_tile_change: bool,   // TODO - MapFlags
 
-    pub locations: HashMap<String, Point>,
-    pub portals: HashMap<Point, PortalInfo>,
+    pub locations: HashMap<String, usize>,
+    pub portals: HashMap<usize, PortalInfo>,
 
     // per cell information
     pub ground: Vec<Arc<Tile>>,
@@ -72,6 +56,7 @@ impl Map {
             lock: Lock::None,
             flags: MapFlags::empty(),
             welcome: None,
+            region: Rect::with_size(0, 0, width as i32, height as i32),
 
             any_entity_change: true,
             any_tile_change: true,
@@ -93,8 +78,30 @@ impl Map {
         }
     }
 
+    pub fn region(&self) -> &Rect {
+        &self.region
+    }
+
+    pub fn select_region(&mut self, left: i32, top: i32, width: u32, height: u32) {
+        self.region = Rect::with_size(left, top, width as i32, height as i32);
+    }
+
+    pub fn set_region_pos(&mut self, left: i32, top: i32) {
+        let cur = &self.region;
+        self.region = Rect::with_size(left, top, cur.width() as i32, cur.height() as i32);
+    }
+
+    pub fn move_region_pos(&mut self, dx: i32, dy: i32) {
+        let cur = &self.region;
+        self.region = Rect::with_bounds(cur.x1 + dx, cur.y1 + dy, cur.x2 + dx, cur.y2 + dy);
+    }
+
+    pub fn clear_region(&mut self) {
+        self.region = Rect::with_size(0, 0, self.width as i32, self.height as i32);
+    }
+
     pub fn get_size(&self) -> (u32, u32) {
-        (self.width, self.height)
+        self.region.size()
     }
 
     pub fn set_id(&mut self, id: u32) {
@@ -105,11 +112,16 @@ impl Map {
         self.id
     }
 
-    pub fn to_idx(&self, x: i32, y: i32) -> Option<usize> {
-        match self.wrap.try_wrap(x, y, self.width, self.height) {
+    pub fn get_index(&self, x: i32, y: i32) -> Option<usize> {
+        match self.try_wrap_xy(x, y) {
             None => None,
-            Some((x, y)) => Some((y as usize * self.width as usize) + x as usize),
+            Some((x, y)) => Some((x + y * self.width as i32) as usize),
         }
+    }
+
+    pub fn to_xy(&self, idx: usize) -> (i32, i32) {
+        let w = self.width as i32;
+        (idx as i32 % w, idx as i32 / w)
     }
 
     pub fn to_point(&self, idx: usize) -> Point {
@@ -117,116 +129,44 @@ impl Map {
         Point::new(idx as i32 % w, idx as i32 / w)
     }
 
-    pub fn try_wrap(&self, x: i32, y: i32) -> Option<(i32, i32)> {
-        self.wrap.try_wrap(x, y, self.width, self.height)
+    pub fn try_wrap_xy(&self, x: i32, y: i32) -> Option<(i32, i32)> {
+        self.wrap.try_wrap(x, y, &self.region)
     }
 
     // pub fn has_xy(&self, x: i32, y: i32) -> bool {
-    //     x >= 0 && x < self.width as i32 && y >= 0 && y < self.height as i32
+    //     self.get_index(x, y).is_some()
     // }
 
-    fn has_idx(&self, idx: usize) -> bool {
+    fn has_index(&self, idx: usize) -> bool {
         idx < self.ground.len()
     }
 
-    pub fn has_point(&self, point: &Point) -> bool {
-        point.x >= 0 && point.x < self.width as i32 && point.y >= 0 && point.y < self.height as i32
-    }
-
-    pub fn get_portal_xy(&self, x: i32, y: i32) -> Option<&PortalInfo> {
-        self.portals.get(&Point::new(x, y))
-    }
-
-    pub fn get_portal(&self, point: &Point) -> Option<&PortalInfo> {
-        self.portals.get(&point)
-    }
-
-    pub(super) fn get_portal_idx(&self, idx: usize) -> Option<&PortalInfo> {
-        let point = self.to_point(idx);
-        self.portals.get(&point)
-    }
-
-    pub fn set_portal(&mut self, point: Point, info: PortalInfo) {
-        self.portals.insert(point, info);
-        if let Some(idx) = self.to_idx(point.x, point.y) {
-            self.cell_flags[idx].insert(CellFlags::IS_PORTAL);
-        }
-    }
-
-    pub fn get_location(&self, id: &str) -> Option<Point> {
-        match self.locations.get(id) {
-            None => None,
-            Some(pt) => Some(pt.clone()),
-        }
-    }
-
-    pub fn set_location(&mut self, id: &str, point: Point) {
-        self.locations.insert(id.to_string(), point);
-    }
-
-    // pub fn revealed_xy(&self, x: i32, y: i32) -> bool {
-    //     let idx = self.to_idx(x, y);
-    //     self.revealed_idx(idx)
+    // fn has_point(&self, point: &Point) -> bool {
+    //     self.has_xy(point.x, point.y)
     // }
 
-    // pub fn revealed_idx(&self, idx: usize) -> bool {
-    //     if !self.has_idx(idx) {
-    //         return false;
-    //     }
-    //     self.flags[idx].contains(CellFlags::REVEALED)
-    // }
+    ///// Everything from here on should use index...
 
-    // pub fn set_revealed_xy(&mut self, x: i32, y: i32) {
-    //     let idx = self.to_idx(x, y);
-    //     self.set_revealed_idx(idx)
-    // }
+    pub fn get_portal(&self, index: usize) -> Option<&PortalInfo> {
+        self.portals.get(&index)
+    }
 
-    // pub fn set_revealed_idx(&mut self, idx: usize) {
-    //     if !self.has_idx(idx) {
-    //         return;
-    //     }
-    //     self.flags[idx].insert(CellFlags::REVEALED)
-    // }
+    pub fn set_portal(&mut self, index: usize, info: PortalInfo) {
+        self.portals.insert(index, info);
+        self.cell_flags[index].insert(CellFlags::IS_PORTAL);
+    }
+
+    pub fn get_location(&self, id: &str) -> Option<&usize> {
+        self.locations.get(id)
+    }
+
+    pub fn set_location(&mut self, id: &str, index: usize) {
+        self.locations.insert(id.to_string(), index);
+    }
 
     pub fn reveal_all(&mut self) {
         self.flags.insert(MapFlags::ALL_REVEALED);
     }
-
-    // pub fn visible_xy(&self, x: i32, y: i32) -> bool {
-    //     let idx = self.to_idx(x, y);
-    //     self.visible_idx(idx)
-    // }
-
-    // pub fn visible_idx(&self, idx: usize) -> bool {
-    //     if !self.has_idx(idx) {
-    //         return false;
-    //     }
-    //     self.flags[idx].contains(CellFlags::VISIBLE)
-    // }
-
-    // pub fn set_visible_xy(&mut self, x: i32, y: i32) {
-    //     let idx = self.to_idx(x, y);
-    //     self.set_visible_idx(idx)
-    // }
-
-    // pub fn set_visible_idx(&mut self, idx: usize) {
-    //     if !self.has_idx(idx) {
-    //         return;
-    //     }
-    //     self.flags[idx].insert(CellFlags::VISIBLE)
-    // }
-
-    // pub fn clear_visible_xy(&mut self, x: i32, y: i32) {
-    //     let idx = self.to_idx(x, y);
-    //     self.clear_visible_idx(idx)
-    // }
-
-    // pub fn clear_visible_idx(&mut self, idx: usize) {
-    //     if !self.has_idx(idx) {
-    //         return;
-    //     }
-    //     self.flags[idx].remove(CellFlags::VISIBLE)
-    // }
 
     pub fn make_fully_visible(&mut self) {
         self.flags.insert(MapFlags::ALL_VISIBLE);
@@ -240,39 +180,24 @@ impl Map {
         self.any_tile_change = true;
     }
 
-    pub fn get_cell(&self, x: i32, y: i32) -> Option<CellRef> {
-        match self.to_idx(x, y) {
-            None => None,
-            Some(idx) => Some(CellRef::new(self, idx)),
-        }
-    }
-
-    pub(crate) fn get_cell_at_idx(&self, idx: usize) -> Option<CellRef> {
-        match idx < self.ground.len() {
+    pub fn get_cell(&self, index: usize) -> Option<CellRef> {
+        match self.has_index(index) {
             false => None,
-            true => Some(CellRef::new(self, idx)),
+            true => Some(CellRef::new(self, index)),
         }
     }
 
-    pub fn get_cell_mut(&mut self, x: i32, y: i32) -> Option<CellMut> {
-        match self.to_idx(x, y) {
-            None => None,
-            Some(idx) => Some(CellMut::new(self, idx)),
-        }
-    }
-
-    pub(crate) fn get_cell_mut_at_idx(&mut self, idx: usize) -> Option<CellMut> {
-        match idx < self.ground.len() {
+    pub fn get_cell_mut(&mut self, idx: usize) -> Option<CellMut> {
+        match self.has_index(idx) {
             false => None,
             true => Some(CellMut::new(self, idx)),
         }
     }
 
-    pub fn reset_tiles(&mut self, x: i32, y: i32, ground: Arc<Tile>) {
-        let idx = match self.to_idx(x, y) {
-            None => return,
-            Some(idx) => idx,
-        };
+    pub fn reset_tiles(&mut self, idx: usize, ground: Arc<Tile>) {
+        if !self.has_index(idx) {
+            return;
+        }
         self.ground[idx] = ground;
         self.feature[idx] = NO_TILE.clone();
 
@@ -281,104 +206,69 @@ impl Map {
         self.any_tile_change = true;
     }
 
-    // pub fn get_tiles(&self, x: i32, y: i32) -> TileSet {
-    //     match self.to_idx(x, y) {
-    //         None => TileSet::new(NO_TILE.clone(), NO_TILE.clone()),
-    //         Some(idx) => TileSet::new(self.ground[idx].clone(), self.feature[idx].clone()),
-    //     }
-    // }
-
-    // pub(crate) fn get_tiles_at_idx(&self, idx: usize) -> TileSet {
-    //     match self.ground.get(idx) {
-    //         Some(tile) => TileSet::new(tile.clone(), self.feature[idx].clone()),
-    //         None => TileSet::new(NO_TILE.clone(), NO_TILE.clone()),
-    //     }
-    // }
-
-    pub fn place_tile(&mut self, x: i32, y: i32, tile: Arc<Tile>) -> bool {
+    pub fn place_tile(&mut self, index: usize, tile: Arc<Tile>) -> bool {
         match tile.layer {
-            TileLayer::GROUND => self.place_ground(x, y, tile),
-            TileLayer::FIXTURE => self.place_feature(x, y, tile),
+            TileLayer::GROUND => self.place_ground(index, tile),
+            TileLayer::FIXTURE => self.place_feature(index, tile),
             _ => false,
         }
     }
 
-    pub fn force_tile(&mut self, x: i32, y: i32, tile: Arc<Tile>) {
+    pub fn force_tile(&mut self, index: usize, tile: Arc<Tile>) {
         match tile.layer {
-            TileLayer::GROUND => self.force_ground(x, y, tile),
-            TileLayer::FIXTURE => self.force_feature(x, y, tile),
+            TileLayer::GROUND => self.force_ground(index, tile),
+            TileLayer::FIXTURE => self.force_feature(index, tile),
             _ => {}
         }
     }
 
-    pub fn place_ground(&mut self, x: i32, y: i32, ground: Arc<Tile>) -> bool {
-        // let idx = match self.to_idx(x, y) {
-        //     None => return false,
-        //     Some(idx) => idx,
-        // };
-
+    pub fn place_ground(&mut self, index: usize, ground: Arc<Tile>) -> bool {
         // TODO - Check priority vs existing tile (if any)
         // TODO - Check feature required tile (+priority)
 
-        self.force_ground(x, y, ground);
+        self.force_ground(index, ground);
         true
     }
 
-    pub fn force_ground(&mut self, x: i32, y: i32, ground: Arc<Tile>) {
-        let idx = match self.to_idx(x, y) {
-            None => return,
-            Some(idx) => idx,
-        };
+    pub fn force_ground(&mut self, index: usize, ground: Arc<Tile>) {
+        if !self.has_index(index) {
+            return;
+        }
 
-        self.ground[idx] = ground;
-        self.cell_flags[idx]
+        self.ground[index] = ground;
+        self.cell_flags[index]
             .insert(CellFlags::NEEDS_DRAW | CellFlags::TILE_CHANGED | CellFlags::NEEDS_SNAPSHOT);
         self.any_tile_change = true;
     }
 
-    pub fn place_feature(&mut self, x: i32, y: i32, feature: Arc<Tile>) -> bool {
-        // let idx = match self.to_idx(x, y) {
-        //     None => return false,
-        //     Some(idx) => idx,
-        // };
-
+    pub fn place_feature(&mut self, index: usize, feature: Arc<Tile>) -> bool {
         // TODO - Check priority vs existing tile (if any)
         // TODO - Check feature required tile (+priority)
 
-        self.force_feature(x, y, feature);
+        self.force_feature(index, feature);
         true
     }
 
-    pub fn force_feature(&mut self, x: i32, y: i32, feature: Arc<Tile>) {
-        let idx = match self.to_idx(x, y) {
-            None => return,
-            Some(idx) => idx,
-        };
+    pub fn force_feature(&mut self, index: usize, feature: Arc<Tile>) {
+        if !self.has_index(index) {
+            return;
+        }
 
-        self.feature[idx] = feature;
-        self.cell_flags[idx]
+        self.feature[index] = feature;
+        self.cell_flags[index]
             .insert(CellFlags::NEEDS_DRAW | CellFlags::TILE_CHANGED | CellFlags::NEEDS_SNAPSHOT);
         self.any_tile_change = true;
     }
 
-    pub fn has_blocker_xy(&self, x: i32, y: i32) -> bool {
-        let idx = match self.to_idx(x, y) {
-            None => return true,
-            Some(idx) => idx,
-        };
-        self.blocked[idx]
+    pub fn has_blocker(&self, index: usize) -> bool {
+        match self.blocked.get(index) {
+            None => true,
+            Some(val) => *val,
+        }
     }
 
-    pub fn blocked_xy(&self, x: i32, y: i32) -> bool {
-        let idx = match self.to_idx(x, y) {
-            None => return true,
-            Some(idx) => idx,
-        };
-        self.blocked_idx(idx)
-    }
-
-    fn blocked_idx(&self, idx: usize) -> bool {
-        if !self.has_idx(idx) {
+    pub fn is_blocked(&self, idx: usize) -> bool {
+        if !self.has_index(idx) {
             return true;
         }
         if self.blocked[idx] {
@@ -387,35 +277,19 @@ impl Map {
         self.ground[idx].blocks()
     }
 
-    pub fn actors_at_xy(&self, x: i32, y: i32) -> impl Iterator<Item = Entity> + '_ {
-        let idx = match self.to_idx(x, y) {
-            None => panic!("asked for actors at invalid xy: {},{}", x, y),
-            Some(idx) => idx,
-        };
-        self.actors[idx].iter().map(|(a, _)| *a)
-    }
-
-    #[allow(dead_code)]
-    fn actors_at_idx(&self, idx: usize) -> impl Iterator<Item = Entity> + '_ {
-        if !self.has_idx(idx) {
+    pub fn iter_actors(&self, idx: usize) -> impl Iterator<Item = Entity> + '_ {
+        if !self.has_index(idx) {
             panic!("asked for actors at invalid index: {}", idx);
         }
         self.actors[idx].iter().map(|(a, _)| *a)
     }
 
-    pub fn remove_actor_at_xy(&mut self, x: i32, y: i32, entity: Entity) {
-        match self.to_idx(x, y) {
-            None => {}
-            Some(idx) => self.remove_actor(idx, entity),
-        }
-    }
-
     pub fn remove_actor(&mut self, idx: usize, entity: Entity) {
-        if !self.has_idx(idx) {
+        if !self.has_index(idx) {
             return;
         }
 
-        self.mark_entity_changed_idx(idx);
+        self.mark_entity_changed(idx);
         match self.actors[idx].iter().position(|e| e.0 == entity) {
             None => {}
             Some(found_idx) => {
@@ -427,22 +301,16 @@ impl Map {
             }
         }
     }
-    pub fn add_actor_at_xy(&mut self, x: i32, y: i32, entity: Entity, blocks: bool) {
-        match self.to_idx(x, y) {
-            None => {}
-            Some(idx) => self.add_actor(idx, entity, blocks),
-        }
-    }
 
     pub fn add_actor(&mut self, idx: usize, entity: Entity, blocks: bool) {
-        if !self.has_idx(idx) {
+        if !self.has_index(idx) {
             return;
         }
 
         match self.actors[idx].iter().position(|e| e.0 == entity) {
             None => {
                 self.actors[idx].push((entity, blocks));
-                self.mark_entity_changed_idx(idx);
+                self.mark_entity_changed(idx);
                 if blocks {
                     self.blocked[idx] = true;
                 }
@@ -451,38 +319,22 @@ impl Map {
         }
     }
 
-    pub fn items_at_xy(&self, x: i32, y: i32) -> impl Iterator<Item = Entity> + '_ {
-        let idx = match self.to_idx(x, y) {
-            None => panic!("asked for actors at invalid x,y {},{}", x, y),
-            Some(idx) => idx,
-        };
-        self.items[idx].iter().map(|(a, _)| *a)
-    }
-
-    pub fn items_at_idx(&self, idx: usize) -> impl Iterator<Item = Entity> + '_ {
-        if !self.has_idx(idx) {
+    pub fn iter_items(&self, idx: usize) -> impl Iterator<Item = Entity> + '_ {
+        if !self.has_index(idx) {
             panic!("asked for items at invalid index: {}", idx);
         }
         self.items[idx].iter().map(|(a, _)| *a)
     }
 
-    pub fn remove_item_at_xy(&mut self, x: i32, y: i32, entity: Entity) {
-        let idx = match self.to_idx(x, y) {
-            None => panic!("asked for item at invalid x,y {},{}", x, y),
-            Some(idx) => idx,
-        };
-        self.remove_item(idx, entity)
-    }
-
     pub fn remove_item(&mut self, idx: usize, entity: Entity) {
-        if !self.has_idx(idx) {
+        if !self.has_index(idx) {
             return;
         }
 
         match self.items[idx].iter().position(|e| e.0 == entity) {
             None => {}
             Some(found_idx) => {
-                self.mark_entity_changed_idx(idx);
+                self.mark_entity_changed(idx);
                 self.items[idx].remove(found_idx);
                 self.blocked[idx] = self.actors[idx]
                     .iter()
@@ -492,24 +344,15 @@ impl Map {
         }
     }
 
-    pub fn add_item_at_xy(&mut self, x: i32, y: i32, entity: Entity, blocks: bool) {
-        let idx = match self.to_idx(x, y) {
-            None => panic!("asked for item at invalid x,y {},{}", x, y),
-            Some(idx) => idx,
-        };
-
-        self.add_item(idx, entity, blocks)
-    }
-
     pub fn add_item(&mut self, idx: usize, entity: Entity, blocks: bool) {
-        if !self.has_idx(idx) {
+        if !self.has_index(idx) {
             panic!("Invalid map index for add_item: {}", idx);
         }
 
         match self.items[idx].iter().position(|e| e.0 == entity) {
             None => {
                 self.items[idx].push((entity, blocks));
-                self.mark_entity_changed_idx(idx);
+                self.mark_entity_changed(idx);
                 if blocks {
                     self.blocked[idx] = true;
                 }
@@ -518,116 +361,66 @@ impl Map {
         }
     }
 
-    pub fn opaque_xy(&self, x: i32, y: i32) -> bool {
-        let idx = match self.to_idx(x, y) {
-            None => panic!("asked for tile at invalid x,y {},{}", x, y),
-            Some(idx) => idx,
-        };
-
-        self.opaque_idx(idx)
-    }
-
-    fn opaque_idx(&self, idx: usize) -> bool {
-        if !self.has_idx(idx) {
+    pub fn is_opaque(&self, idx: usize) -> bool {
+        if !self.has_index(idx) {
             return false;
         }
-        let tile = &self.ground[idx];
-        tile.blocks_vision()
+        let cell = self.get_cell(idx).unwrap();
+        cell.is_opaque()
     }
 
-    pub fn needs_draw_xy(&self, x: i32, y: i32) -> bool {
-        let idx = match self.to_idx(x, y) {
-            None => panic!("asked for tile at invalid x,y {},{}", x, y),
-            Some(idx) => idx,
-        };
-
-        self.needs_draw_idx(idx)
-    }
-
-    pub fn needs_draw_idx(&self, idx: usize) -> bool {
-        if !self.has_idx(idx) {
+    pub fn needs_draw(&self, idx: usize) -> bool {
+        if !self.has_index(idx) {
             return true;
         }
         self.cell_flags[idx].contains(CellFlags::NEEDS_DRAW)
     }
 
-    pub fn clear_needs_draw_idx(&mut self, idx: usize) {
-        if !self.has_idx(idx) {
+    pub fn clear_needs_draw(&mut self, idx: usize) {
+        if !self.has_index(idx) {
             return;
         }
         self.cell_flags[idx].remove(CellFlags::NEEDS_DRAW);
     }
 
-    pub fn set_needs_draw_xy(&mut self, x: i32, y: i32) {
-        let idx = match self.to_idx(x, y) {
-            None => panic!("asked for tile at invalid x,y {},{}", x, y),
-            Some(idx) => idx,
-        };
-
-        self.set_needs_draw_idx(idx)
-    }
-
-    pub fn set_needs_draw_idx(&mut self, idx: usize) {
-        if self.has_idx(idx) {
+    pub fn set_needs_draw(&mut self, idx: usize) {
+        if self.has_index(idx) {
             self.cell_flags[idx].insert(CellFlags::NEEDS_DRAW);
         }
     }
 
-    pub fn needs_snapshot_xy(&self, x: i32, y: i32) -> bool {
-        let idx = match self.to_idx(x, y) {
-            None => panic!("asked for tile at invalid x,y {},{}", x, y),
-            Some(idx) => idx,
-        };
-
-        self.needs_snapshot_idx(idx)
-    }
-
-    pub fn needs_snapshot_idx(&self, idx: usize) -> bool {
-        if !self.has_idx(idx) {
+    pub fn needs_snapshot(&self, idx: usize) -> bool {
+        if !self.has_index(idx) {
             return true;
         }
         self.cell_flags[idx].contains(CellFlags::NEEDS_SNAPSHOT)
     }
 
-    pub fn set_needs_snapshot_xy(&mut self, x: i32, y: i32) {
-        let idx = match self.to_idx(x, y) {
-            None => panic!("asked for actors at invalid x,y {},{}", x, y),
-            Some(idx) => idx,
-        };
-        self.set_needs_snapshot_idx(idx);
-    }
-
-    pub fn set_needs_snapshot_idx(&mut self, idx: usize) {
-        if self.has_idx(idx) {
+    pub fn set_needs_snapshot(&mut self, idx: usize) {
+        if self.has_index(idx) {
             self.cell_flags[idx].insert(CellFlags::NEEDS_SNAPSHOT);
         }
     }
 
-    pub fn clear_needs_snapshot_idx(&mut self, idx: usize) {
-        if !self.has_idx(idx) {
+    pub fn clear_needs_snapshot(&mut self, idx: usize) {
+        if !self.has_index(idx) {
             return;
         }
         self.cell_flags[idx].remove(CellFlags::NEEDS_SNAPSHOT);
     }
 
-    pub fn set_entity_changed_xy(&mut self, x: i32, y: i32) {
-        let idx = match self.to_idx(x, y) {
-            None => panic!("asked for tile at invalid x,y {},{}", x, y),
-            Some(idx) => idx,
-        };
-
-        self.set_entity_changed_idx(idx);
-    }
-
-    pub fn set_entity_changed_idx(&mut self, idx: usize) {
-        if !self.has_idx(idx) {
+    pub fn set_entity_changed(&mut self, idx: usize) {
+        if !self.has_index(idx) {
             return;
         }
-        self.mark_entity_changed_idx(idx);
+        self.mark_entity_changed(idx);
         // println!(" - changed: {}", idx);
     }
 
-    fn mark_entity_changed_idx(&mut self, idx: usize) {
+    pub fn mark_entity_changed(&mut self, idx: usize) {
+        if !self.has_index(idx) {
+            return;
+        }
         self.cell_flags[idx].insert(CellFlags::ENTITY_CHANGED | CellFlags::NEEDS_DRAW);
         self.any_entity_change = true;
     }
@@ -644,15 +437,15 @@ impl Map {
         self.any_entity_change
     }
 
-    pub fn tile_changed_idx(&self, idx: usize) -> bool {
-        if !self.has_idx(idx) {
+    pub fn has_tile_changed(&self, idx: usize) -> bool {
+        if !self.has_index(idx) {
             return true;
         }
         self.cell_flags[idx].contains(CellFlags::TILE_CHANGED)
     }
 
-    pub fn clear_tile_changed_idx(&mut self, idx: usize) {
-        if !self.has_idx(idx) {
+    pub fn clear_tile_changed(&mut self, idx: usize) {
+        if !self.has_index(idx) {
             return;
         }
         self.cell_flags[idx].remove(CellFlags::TILE_CHANGED)
@@ -680,62 +473,50 @@ impl Map {
         }
     }
 
-    pub fn set_flag_xy(&mut self, x: i32, y: i32, flag: CellFlags) {
-        let idx = match self.to_idx(x, y) {
-            None => panic!("asked for tile at invalid x,y {},{}", x, y),
-            Some(idx) => idx,
-        };
-        self.cell_flags[idx].insert(flag);
+    pub fn set_flag(&mut self, index: usize, flag: CellFlags) {
+        if !self.has_index(index) {
+            return;
+        }
+        self.cell_flags[index].insert(flag);
     }
 
-    pub fn has_flag_xy(&self, x: i32, y: i32, flag: CellFlags) -> bool {
-        let idx = match self.to_idx(x, y) {
-            None => panic!("asked for tile at invalid x,y {},{}", x, y),
-            Some(idx) => idx,
-        };
+    pub fn has_flag(&self, idx: usize, flag: CellFlags) -> bool {
+        if !self.has_index(idx) {
+            return false;
+        }
         self.cell_flags[idx].contains(flag)
     }
 
-    pub(super) fn has_flag_idx(&self, idx: usize, flag: CellFlags) -> bool {
-        self.cell_flags[idx].contains(flag)
-    }
-
-    pub fn has_any_flag_xy(&self, x: i32, y: i32, flag: CellFlags) -> bool {
-        let idx = match self.to_idx(x, y) {
-            None => panic!("asked for tile at invalid x,y {},{}", x, y),
-            Some(idx) => idx,
-        };
+    pub fn has_any_flag_idx(&self, idx: usize, flag: CellFlags) -> bool {
+        if !self.has_index(idx) {
+            return false;
+        }
         self.cell_flags[idx].intersects(flag)
     }
 
-    pub(super) fn has_any_flag_idx(&self, idx: usize, flag: CellFlags) -> bool {
-        self.cell_flags[idx].intersects(flag)
-    }
-
-    pub fn set_flag(&mut self, flag: CellFlags) {
+    pub fn set_flag_everywhere(&mut self, flag: CellFlags) {
         for cell in self.cell_flags.iter_mut() {
             cell.insert(flag);
         }
     }
 
-    pub fn clear_flag(&mut self, flag: CellFlags) {
+    pub fn clear_flag_everywhere(&mut self, flag: CellFlags) {
         for cell in self.cell_flags.iter_mut() {
             cell.remove(flag);
         }
     }
 
-    pub fn clear_flag_xy(&mut self, x: i32, y: i32, flag: CellFlags) {
-        let idx = match self.to_idx(x, y) {
-            None => panic!("asked for tile at invalid x,y {},{}", x, y),
-            Some(idx) => idx,
-        };
-        let flags = &mut self.cell_flags[idx];
+    pub fn clear_flag(&mut self, index: usize, flag: CellFlags) {
+        if !self.has_index(index) {
+            return;
+        }
+        let flags = &mut self.cell_flags[index];
         if flags.intersects(flag) {
             flags.remove(flag);
         }
     }
 
-    pub fn clear_flag_with_redraw(&mut self, flag: CellFlags) {
+    pub fn clear_flag_everywhere_with_redraw(&mut self, flag: CellFlags) {
         for cell in self.cell_flags.iter_mut() {
             if cell.intersects(flag) {
                 cell.remove(flag);
@@ -744,12 +525,11 @@ impl Map {
         }
     }
 
-    pub fn clear_flag_with_redraw_xy(&mut self, x: i32, y: i32, flag: CellFlags) {
-        let idx = match self.to_idx(x, y) {
-            None => panic!("asked for tile at invalid x,y {},{}", x, y),
-            Some(idx) => idx,
-        };
-        let flags = &mut self.cell_flags[idx];
+    pub fn clear_flag_with_redraw(&mut self, index: usize, flag: CellFlags) {
+        if !self.has_index(index) {
+            return;
+        }
+        let flags = &mut self.cell_flags[index];
         if flags.intersects(flag) {
             flags.remove(flag);
             flags.insert(CellFlags::NEEDS_DRAW);
@@ -808,12 +588,17 @@ pub fn find_random_point<F>(map: &Map, rng: &mut RandomNumberGenerator, func: F)
 where
     F: Fn(i32, i32, CellRef) -> bool,
 {
+    let region = map.region();
+
     for _ in 0..200 {
-        let x = rng.range(0i32, map.width as i32);
-        let y = rng.range(0i32, map.height as i32);
-        if let Some(cell) = map.get_cell(x, y) {
-            if func(x, y, cell) {
-                return Some(Point::new(x, y));
+        let x = rng.range(region.left(), region.right() + 1);
+        let y = rng.range(region.top(), region.bottom() + 1);
+
+        if let Some(idx) = map.get_index(x, y) {
+            if let Some(cell) = map.get_cell(idx) {
+                if func(x, y, cell) {
+                    return Some(Point::new(x, y));
+                }
             }
         }
     }
@@ -832,7 +617,7 @@ where
     for dist in 0..200 {
         for x1 in (x - dist)..(x + dist + 1) {
             for y1 in (y - dist)..(y + dist + 1) {
-                let (x2, y2) = match map.wrap.try_wrap(x1, y1, map.width, map.height) {
+                let (x2, y2) = match map.try_wrap_xy(x1, y1) {
                     None => continue,
                     Some((x, y)) => (x, y),
                 };
@@ -841,10 +626,11 @@ where
                 if distance::manhattan(&start, &current).round() as i32 != dist {
                     continue;
                 }
-
-                if let Some(cell) = map.get_cell(x2, y2) {
-                    if func(x2, y2, cell) {
-                        points.push(Point::new(x2, y2));
+                if let Some(index) = map.get_index(x2, y2) {
+                    if let Some(cell) = map.get_cell(index) {
+                        if func(x2, y2, cell) {
+                            points.push(Point::new(x2, y2));
+                        }
                     }
                 }
             }
@@ -869,7 +655,8 @@ pub fn dump_map(map: &Map) {
     for y in 0..map.height as i32 {
         let mut line = format!("{:2} |", y);
         for x in 0..map.width as i32 {
-            let cell = map.get_cell(x, y).unwrap();
+            let index = map.get_index(x, y).unwrap();
+            let cell = map.get_cell(index).unwrap();
             let sprite = cell.sprite();
             let ch = match sprite.glyph {
                 0 => ' ',
@@ -922,4 +709,92 @@ where
     }
     header.push('|');
     println!("{}", header);
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    #[test]
+    fn default_no_region() {
+        let map = Map::new(100, 100);
+        assert_eq!(map.get_size(), (100, 100));
+
+        assert_eq!(map.get_index(5, 5).unwrap(), 505);
+        assert_eq!(map.try_wrap_xy(5, 5).unwrap(), (5, 5));
+        assert_eq!(map.get_index(15, 15).unwrap(), 1515);
+        assert_eq!(map.try_wrap_xy(15, 15).unwrap(), (15, 15));
+
+        let region = map.region();
+        assert_eq!(region.left(), 0);
+        assert_eq!(region.top(), 0);
+        assert_eq!(region.right(), 99);
+        assert_eq!(region.bottom(), 99);
+        assert_eq!(region.width(), 100);
+        assert_eq!(region.height(), 100);
+
+        assert_eq!(map.get_size(), (100, 100));
+    }
+
+    #[test]
+    fn region() {
+        let mut map = Map::new(100, 100);
+        map.select_region(0, 0, 10, 10);
+        {
+            let region = map.region();
+            assert_eq!(region.left(), 0);
+            assert_eq!(region.top(), 0);
+            assert_eq!(region.right(), 9);
+            assert_eq!(region.bottom(), 9);
+            assert_eq!(region.width(), 10);
+            assert_eq!(region.height(), 10);
+        }
+        assert_eq!(map.get_size(), (10, 10));
+
+        assert_eq!(map.get_index(5, 5).unwrap(), 505);
+        assert_eq!(map.try_wrap_xy(5, 5).unwrap(), (5, 5));
+        assert_eq!(map.get_index(15, 15), None);
+        assert_eq!(map.try_wrap_xy(15, 15), None);
+
+        map.set_region_pos(10, 10);
+        {
+            let region = map.region();
+            assert_eq!(region.left(), 10);
+            assert_eq!(region.top(), 10);
+            assert_eq!(region.right(), 19);
+            assert_eq!(region.bottom(), 19);
+            assert_eq!(region.width(), 10);
+            assert_eq!(region.height(), 10);
+        }
+        assert_eq!(map.try_wrap_xy(5, 5), None);
+        assert_eq!(map.try_wrap_xy(15, 15).unwrap(), (15, 15));
+
+        map.move_region_pos(0, 10);
+        {
+            let region = map.region();
+            assert_eq!(region.left(), 10);
+            assert_eq!(region.top(), 20);
+            assert_eq!(region.right(), 19);
+            assert_eq!(region.bottom(), 29);
+            assert_eq!(region.width(), 10);
+            assert_eq!(region.height(), 10);
+        }
+        assert_eq!(map.try_wrap_xy(15, 15), None);
+        assert_eq!(map.try_wrap_xy(15, 25).unwrap(), (15, 25));
+    }
+
+    #[test]
+    fn region_wrap() {
+        let mut map = Map::new(100, 100);
+        map.select_region(0, 0, 10, 10);
+        map.wrap = Wrap::XY;
+
+        assert_eq!(map.get_size(), (10, 10));
+
+        assert_eq!(map.get_index(5, 5).unwrap(), 505);
+        assert_eq!(map.try_wrap_xy(5, 5).unwrap(), (5, 5));
+        assert_eq!(map.get_index(15, 15).unwrap(), 1515);
+        assert_eq!(map.try_wrap_xy(15, 15).unwrap(), (5, 5));
+    }
 }

@@ -140,12 +140,23 @@
     "fg": "brown",
     "bg": "darkest_brown",
     "kind": "WALL",
+    "flags": "LOCKED",
+    "blocks": true,
     "flavor": "a locked door"
+  },
+  "DOOR": {
+    "ch": 262,
+    "fg": "brown",
+    "bg": "darkest_brown",
+    "kind": "WALL",
+    "blocks": true,
+    "flavor": "an open door"
   },
   "CHEST_LOCKED": {
     "ch": 366,
     "fg": "gold",
     "bg": "darkest_gold",
+    "flags": "LOCKED",
     "kind": "FIXTURE",
     "flavor": "a locked chest"
   },
@@ -204,5 +215,93 @@
     "blocks": "move",
     "layer": "FIXTURE",
     "flavor": "a countertop"
+  },
+
+  /* GROUND - DUNGEON */
+
+  "DUNGEON_FLOOR": {
+    "ch": 165, // ".",
+    "fg": "dark_gray",
+    "bg": "black",
+    "flavor": "a stone floor"
+  },
+  "DUNGEON_WALL": {
+    "ch": 164, // "#",
+    "fg": "darker_gray",
+    "bg": "black",
+    "flavor": "a stone wall",
+    "blocks": true
+  },
+  "FAKE_WALL": {
+    "ch": 164, // "#",
+    "fg": "darker_gray",
+    "bg": "black",
+    "flavor": "a stone wall",
+    "blocks": "vision"
+  },
+
+  /* FIXTURES - DUNGEON */
+
+  "DUNGEON_EXIT": {
+    "ch": 335,
+    "fg": "gold",
+    "flavor": "an exit"
+  },
+  "CURE_FOUNTAIN": {
+    "ch": "^",
+    "fg": "blue",
+    "use": { "message": "Bubbly, effervescent.", "cure": true },
+    "flavor": "a fountain"
+  },
+  "HEAL_FOUNTAIN": {
+    "ch": "^",
+    "fg": "blue",
+    "use": { "message": "Soothing.", "heal": true },
+    "flavor": "a fountain"
+  },
+  "POISON_FOUNTAIN": {
+    "ch": "^",
+    "fg": "blue",
+    "use": { "message": "Tastes foul.", "poison": true },
+    "flavor": "a fountain"
+  },
+  "DAMAGE_FOUNTAIN": {
+    "ch": "^",
+    "fg": "blue",
+    "use": { "message": "Burns your throat.", "damage": 10 },
+    "flavor": "a fountain"
+  },
+  "WINDS": {
+    "enter": { "winds": true }
+  },
+  "GREMLINS": {
+    "enter": { "gremlins": true }
+  },
+  "DAMAGE_TRAP": {
+    "enter": { "damage": 10, "message": "A trap!" }
+  },
+  "MARK_FORCE": {
+    "ch": 383,
+    "fg": "blue",
+    "flavor": "an altar",
+    "use": { "mark": "FORCE", "message": "You receive the mark of Force!" }
+  },
+  "MARK_FIRE": {
+    "ch": 383,
+    "fg": "blue",
+    "flavor": "an altar",
+    "use": { "mark": "FIRE", "message": "You receive the mark of Fire!" }
+  },
+  "MARK_SNAKE": {
+    "ch": 383,
+    "fg": "blue",
+    "flavor": "an altar",
+    "use": { "mark": "SNAKE", "message": "You receive the mark of the Snake!" }
+  },
+  "MARK_KINGS": {
+    "ch": 383,
+    "fg": "blue",
+    "flavor": "an altar",
+    "use": { "mark": "Kings", "message": "You receive the mark of Kings!" }
   }
 }

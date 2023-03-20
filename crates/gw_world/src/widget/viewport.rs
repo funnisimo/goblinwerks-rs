@@ -163,10 +163,7 @@ impl Viewport {
             let offset: Point = map.lock.lock(base_offset, *camera.size(), map_size).into();
 
             let map_point: Point = view_point + offset;
-            match map
-                .wrap
-                .try_wrap(map_point.x, map_point.y, map_size.0, map_size.1)
-            {
+            match map.try_wrap_xy(map_point.x, map_point.y) {
                 None => None,
                 Some((x, y)) => Some(Point::new(x, y)),
             }
@@ -362,18 +359,17 @@ fn draw_map(
 
     for y0 in 0..size.1 as i32 {
         for x0 in 0..size.0 as i32 {
-            let (x, y) = match wrap.try_wrap(x0 + left, y0 + top, map_size.0, map_size.1) {
+            let idx = match map.get_index(x0 + left, y0 + top) {
                 None => {
                     // TODO - Fancy?
                     buf.draw(x0, y0, 0, black, black);
                     continue;
                 }
-                Some((x, y)) => (x, y),
+                Some(idx) => idx,
             };
-            let idx = map.to_idx(x, y).unwrap();
 
-            let needs_draw = force_draw || map.needs_draw_idx(idx);
-            let needs_snapshot = memory.is_none() || map.needs_snapshot_idx(idx);
+            let needs_draw = force_draw || map.needs_draw(idx);
+            let needs_snapshot = memory.is_none() || map.needs_snapshot(idx);
             let (visible, revealed, mapped) = match vis.get_vis_type(idx) {
                 VisType::MAPPED => (false, false, true),
                 VisType::REVEALED => (false, true, false),
@@ -386,10 +382,11 @@ fn draw_map(
                 // println!("draw : {}", idx);
 
                 if revealed || mapped {
+                    let (x, y) = map.to_xy(idx);
                     let (glyph, mut fg, mut bg) = match needs_snapshot {
                         true => {
                             // println!(": tile changed - {},{}", x, y);
-                            let cell = map.get_cell_at_idx(idx).unwrap();
+                            let cell = map.get_cell(idx).unwrap();
                             let tile_sprite = cell.sprite();
                             if let Some(memory) = memory.as_mut() {
                                 memory.set_sprite(
@@ -399,7 +396,7 @@ fn draw_map(
                                     tile_sprite.bg,
                                     tile_sprite.glyph,
                                 );
-                                map.clear_needs_snapshot_idx(idx);
+                                map.clear_needs_snapshot(idx);
                             }
                             (tile_sprite.glyph, tile_sprite.fg, tile_sprite.bg)
                         }
@@ -447,10 +444,10 @@ fn draw_map(
                         }
                     }
 
-                    if map.has_flag_xy(x as i32, y as i32, CellFlags::IS_CURSOR) {
+                    if map.has_flag(idx, CellFlags::IS_CURSOR) {
                         // bg = mix_colors(&bg, &RGBA::rgba(0, 255, 255, 128))
                         bg = RGBA::binary_inverse(&fg);
-                    } else if map.has_flag_xy(x as i32, y as i32, CellFlags::IS_HIGHLIGHTED) {
+                    } else if map.has_flag(idx, CellFlags::IS_HIGHLIGHTED) {
                         bg = RGBA::alpha_mix(&bg, &RGBA::rgba(255, 255, 0, 128))
                     }
 
@@ -460,12 +457,12 @@ fn draw_map(
 
                     buf.draw(x0, y0, glyph, fg, bg);
                     // map.clear_needs_draw_idx(idx);
-                    map.set_flag_xy(x, y, CellFlags::DRAWN_THIS_FRAME);
+                    map.set_flag(idx, CellFlags::DRAWN_THIS_FRAME);
                 } else {
                     let mut bg = named::BLACK.into();
-                    if map.has_flag_xy(x as i32, y as i32, CellFlags::IS_CURSOR) {
+                    if map.has_flag(idx, CellFlags::IS_CURSOR) {
                         bg = RGBA::rgba(0, 128, 128, 255);
-                    } else if map.has_flag_xy(x as i32, y as i32, CellFlags::IS_HIGHLIGHTED) {
+                    } else if map.has_flag(idx, CellFlags::IS_HIGHLIGHTED) {
                         bg = RGBA::alpha_mix(&bg, &RGBA::rgba(255, 255, 0, 128))
                     }
                     buf.print_opt(x0, y0, Some(' '), Some(named::BLACK.into()), Some(bg));
@@ -481,6 +478,8 @@ fn draw_map(
 
 fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
     let (map, camera) = <(Read<Map>, Read<Camera>)>::fetch(&ecs.resources);
+
+    // TODO - USE REGION
 
     let wrap = map.wrap;
     let map_size = map.get_size();
@@ -517,17 +516,19 @@ fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
             let bufx = vx - left;
             let bufy = vy - top;
 
-            if map.has_flag_xy(pos.x, pos.y, CellFlags::DRAWN_THIS_FRAME) {
-                let fg = buf.get_fore(bufx, bufy).unwrap();
-                let bg = buf.get_back(bufx, bufy).unwrap();
+            if let Some(idx) = map.get_index(pos.x, pos.y) {
+                if map.has_flag(idx, CellFlags::DRAWN_THIS_FRAME) {
+                    let fg = buf.get_fore(bufx, bufy).unwrap();
+                    let bg = buf.get_back(bufx, bufy).unwrap();
 
-                buf.draw(
-                    bufx,
-                    bufy,
-                    sprite.glyph,
-                    RGBA::alpha_mix(fg, &sprite.fg),
-                    RGBA::alpha_mix(bg, &sprite.bg),
-                );
+                    buf.draw(
+                        bufx,
+                        bufy,
+                        sprite.glyph,
+                        RGBA::alpha_mix(fg, &sprite.fg),
+                        RGBA::alpha_mix(bg, &sprite.bg),
+                    );
+                }
             }
         }
     }
@@ -551,15 +552,15 @@ fn clear_needs_draw(viewport: &mut Viewport, level: &mut Level) {
         let y = y0 + top;
         for x0 in 0..size.0 as i32 {
             let x = x0 + left;
-            let _idx = match map.to_idx(x, y) {
+            let idx = match map.get_index(x, y) {
                 None => {
                     continue;
                 }
                 Some(idx) => idx,
             };
 
-            if map.has_flag_xy(x, y, CellFlags::DRAWN_THIS_FRAME) {
-                map.clear_flag_xy(x, y, CellFlags::DRAWN_THIS_FRAME | CellFlags::NEEDS_DRAW);
+            if map.has_flag(idx, CellFlags::DRAWN_THIS_FRAME) {
+                map.clear_flag(idx, CellFlags::DRAWN_THIS_FRAME | CellFlags::NEEDS_DRAW);
             }
         }
     }

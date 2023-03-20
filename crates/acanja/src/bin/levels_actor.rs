@@ -39,7 +39,8 @@ impl MainScreen {
 
         map.reveal_all();
         map.make_fully_visible();
-        let start_loc = map.locations.get("START").unwrap().clone();
+        let start_index = map.locations.get("START").unwrap().clone();
+        let start_loc = map.to_point(start_index);
 
         log(format!("locations = {:?}", &map.locations));
         log(format!("portals   = {:?}", &map.portals));
@@ -229,7 +230,8 @@ impl Screen for MainScreen {
                 let levels = ecs.resources.get::<Levels>().unwrap();
                 let level = levels.current();
                 let map = level.resources.get::<Map>().unwrap();
-                let cell = map.get_cell(pt.x, pt.y).unwrap();
+                let index = map.get_index(pt.x, pt.y).unwrap();
+                let cell = map.get_cell(index).unwrap();
                 log(format!("Mouse Pos = {} - {}", pt, cell.flavor()));
             }
             "VIEWPORT_CLICK" => {
@@ -310,11 +312,12 @@ fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
     let hero_entity = level.resources.get::<Hero>().unwrap().entity;
 
     let map = level.resources.get_mut::<Map>().unwrap();
+    let index = map.get_index(pt.x, pt.y).unwrap();
 
     log(format!("CLICK = {:?}", pt));
 
     let (new_map_id, location) = {
-        match map.get_portal(&pt) {
+        match map.get_portal(index) {
             None => return false,
             Some(info) => {
                 if !info.flags().contains(flag) {
@@ -346,8 +349,9 @@ fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
 
     let level = levels.current_mut();
     let mut map = level.resources.get_mut::<Map>().unwrap();
+    let current_idx = map.get_index(current_pt.x, current_pt.y).unwrap();
 
-    map.remove_actor_at_xy(current_pt.x, current_pt.y, hero_entity);
+    map.remove_actor(current_idx, hero_entity);
 
     drop(map);
     drop(level);
@@ -362,8 +366,8 @@ fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
     let new_pt = {
         let mut map = level.resources.get_mut::<Map>().unwrap();
         let pt = map.locations.get(&location).unwrap().clone();
-        map.add_actor_at_xy(pt.x, pt.y, new_entity, true);
-        pt
+        map.add_actor(pt, new_entity, true);
+        map.to_point(pt)
     };
     {
         let mut entry = level.world.entry(new_entity).unwrap();

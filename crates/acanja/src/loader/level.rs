@@ -4,7 +4,7 @@ use gw_app::{
     loader::{LoadError, LoadHandler, Loader},
     log, Ecs,
 };
-use gw_util::{point::Point, value::Value};
+use gw_util::value::Value;
 use gw_world::{
     level::{Level, Levels},
     map::{Map, PortalFlags, PortalInfo, Wrap},
@@ -325,7 +325,15 @@ pub fn load_level_data(tiles: &Tiles, json: Value) -> LevelData {
 
     level_data.map_size = (width, height);
     level_data.map_wrap = wrap;
-    level_data.welcome = root.get(&"welcome".into()).map(|v| v.to_string());
+    level_data.welcome = {
+        match root.get(&"welcome".into()) {
+            None => None,
+            Some(val) => match val.is_string() {
+                false => None,
+                true => Some(val.to_string()),
+            },
+        }
+    };
 
     if let Some(filename) = map_info.get(&"filename".into()) {
         level_data.map_data = Some(MapData::FileName(filename.to_string()));
@@ -391,31 +399,32 @@ pub fn make_level(mut level_data: LevelData) -> Level {
             if x >= width as i32 {
                 break;
             }
+            let index = map.get_index(x, y).unwrap();
             let char = format!("{}", ch);
             match cell_lookup.get(&char) {
                 None => panic!("Unknown tile in map data - {}", char),
                 Some(place) => {
                     match place.tile {
-                        None => map.reset_tiles(x, y, def_tile.clone()),
-                        Some(TileType::Tile(ref tile)) => map.reset_tiles(x, y, tile.clone()),
+                        None => map.reset_tiles(index, def_tile.clone()),
+                        Some(TileType::Tile(ref tile)) => map.reset_tiles(index, tile.clone()),
                         _ => {}
                     };
 
                     if let Some(tile_type) = place.fixture.as_ref() {
                         match tile_type {
                             TileType::Tile(tile) => {
-                                map.place_tile(x, y, tile.clone());
+                                map.place_tile(index, tile.clone());
                             }
                             _ => {}
                         }
                     }
 
                     if let Some(ref location) = place.location {
-                        map.set_location(location, Point::new(x, y));
+                        map.set_location(location, index);
                     }
 
                     if let Some(ref portal) = place.portal {
-                        map.set_portal(Point::new(x, y), portal.clone());
+                        map.set_portal(index, portal.clone());
                     }
                 }
             }

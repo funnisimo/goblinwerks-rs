@@ -64,10 +64,11 @@ pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32
     let grassland = tiles.get("GRASSLAND").unwrap();
     let forest = tiles.get("FOREST").unwrap();
     for (x, y, v) in grid.iter() {
+        let index = map.get_index(x, y).unwrap();
         if *v == 1 {
-            map.reset_tiles(x, y, grassland.clone());
+            map.reset_tiles(index, grassland.clone());
         } else if *v == 2 {
-            map.reset_tiles(x, y, forest.clone());
+            map.reset_tiles(index, forest.clone());
         }
     }
 
@@ -77,18 +78,19 @@ pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32
             tiles.ground().kind == TileKind::FLOOR && tiles.feature().is_null()
         })
         .expect("Failed to find town location");
+        let index = map.get_index(town_loc.x, town_loc.y).unwrap();
 
-        map.place_feature(town_loc.x, town_loc.y, tiles.get("TOWN").unwrap());
+        map.place_feature(index, tiles.get("TOWN").unwrap());
 
         // For when you come out of the town
         let loc_name = format!("TOWN{}", i);
-        map.set_location(&loc_name, town_loc);
+        map.set_location(&loc_name, index);
 
         // For going into the town
         let mut portal = PortalInfo::new(&loc_name, "START");
         portal.set_flavor(&format!("the town of {}", &loc_name));
         portal.set_flags(PortalFlags::ON_DESCEND);
-        map.set_portal(town_loc, portal);
+        map.set_portal(index, portal);
     }
 
     // ADD STARTING LOCATION
@@ -102,8 +104,9 @@ pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32
         }
         choices.choose(&mut rng).unwrap().clone()
     };
+    let index = map.get_index(start_loc.x, start_loc.y).unwrap();
 
-    map.locations.insert("START".to_string(), start_loc);
+    map.locations.insert("START".to_string(), index);
 
     map
 }

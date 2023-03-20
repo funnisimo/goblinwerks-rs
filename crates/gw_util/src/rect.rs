@@ -51,6 +51,15 @@ impl Rect {
         }
     }
 
+    pub fn set_pos(&mut self, left: i32, top: i32) {
+        let width = self.width();
+        let height = self.height();
+        self.x1 = left;
+        self.y1 = top;
+        self.x2 = left + (width as i32) - 1;
+        self.y2 = top + (height as i32) - 1;
+    }
+
     /// Returns true if this overlaps with other
     #[must_use]
     pub fn intersects(&self, other: &Rect) -> bool {
@@ -85,6 +94,22 @@ impl Rect {
         }
     }
 
+    pub fn left(&self) -> i32 {
+        self.x1
+    }
+
+    pub fn right(&self) -> i32 {
+        self.x2
+    }
+
+    pub fn top(&self) -> i32 {
+        self.y1
+    }
+
+    pub fn bottom(&self) -> i32 {
+        self.y2
+    }
+
     /// Returns the rectangle's width
     #[must_use]
     pub fn width(&self) -> u32 {
@@ -95,6 +120,10 @@ impl Rect {
     #[must_use]
     pub fn height(&self) -> u32 {
         ((self.y2 - self.y1).abs() + 1) as u32
+    }
+
+    pub fn size(&self) -> (u32, u32) {
+        (self.width(), self.height())
     }
 }
 

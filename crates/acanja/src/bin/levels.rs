@@ -182,7 +182,8 @@ impl Screen for MainScreen {
                 let levels = ecs.resources.get::<Levels>().unwrap();
                 let level = levels.current();
                 let map = level.resources.get::<Map>().unwrap();
-                let cell = map.get_cell(pt.x, pt.y).unwrap();
+                let index = map.get_index(pt.x, pt.y).unwrap();
+                let cell = map.get_cell(index).unwrap();
                 log(format!("Mouse Pos = {} - {}", pt, cell.flavor()));
             }
             "VIEWPORT_CLICK" => {
@@ -191,8 +192,9 @@ impl Screen for MainScreen {
                 let levels = ecs.resources.get::<Levels>().unwrap();
                 let level = levels.current();
                 let map = level.resources.get::<Map>().unwrap();
+                let index = map.get_index(pt.x, pt.y).unwrap();
 
-                if let Some(portal) = map.get_portal(&pt) {
+                if let Some(portal) = map.get_portal(index) {
                     log(format!(
                         "Enter Portal = {} - {}::{}",
                         portal.flavor().as_ref().unwrap(),
