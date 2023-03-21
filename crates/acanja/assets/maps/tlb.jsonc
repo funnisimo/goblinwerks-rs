@@ -1,4 +1,5 @@
 {
+  "$schema": "../map.schema.json",
   "id": "TLB",
   "map": {
     "filename": "tlb.txt",
@@ -29,7 +30,7 @@
     "<": {
       "fixture": "EXIT_LEFT",
       "tile": ".",
-      "portal": { "map": "SOSARIA", "location": "MOON", "type": "UP" }
+      "portal": { "map": "SOSARIA", "location": "TLB", "type": "UP" }
     },
 
     "m": {

@@ -37,7 +37,7 @@ impl Into<Value> for toml::Value {
             toml::Value::Boolean(v) => Value::Boolean(v),
             toml::Value::Datetime(v) => Value::String(v.to_string()),
             toml::Value::Float(v) => Value::Float(v),
-            toml::Value::Integer(v) => Value::Integer(v as u64),
+            toml::Value::Integer(v) => Value::Integer(v as i64),
             toml::Value::String(v) => Value::String(v),
             toml::Value::Table(obj) => {
                 let mut map: HashMap<Key, Value> = HashMap::new();

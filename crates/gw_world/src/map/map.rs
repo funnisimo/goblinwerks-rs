@@ -31,7 +31,7 @@ pub struct Map {
 
     // per cell information
     pub ground: Vec<Arc<Tile>>,
-    pub feature: Vec<Arc<Tile>>,
+    pub fixture: Vec<Arc<Tile>>,
     pub blocked: Vec<bool>, // TODO - Move to flag
     pub actors: Vec<Vec<(Entity, bool)>>,
     pub items: Vec<Vec<(Entity, bool)>>,
@@ -56,13 +56,13 @@ impl Map {
             lock: Lock::None,
             flags: MapFlags::empty(),
             welcome: None,
-            region: Rect::with_size(0, 0, width as i32, height as i32),
+            region: Rect::with_size(0, 0, width, height),
 
             any_entity_change: true,
             any_tile_change: true,
 
             ground: vec![fill_tile.clone(); count],
-            feature: vec![fill_tile.clone(); count],
+            fixture: vec![fill_tile.clone(); count],
 
             blocked: vec![false; count],
             actors: vec![Vec::new(); count],
@@ -83,12 +83,12 @@ impl Map {
     }
 
     pub fn select_region(&mut self, left: i32, top: i32, width: u32, height: u32) {
-        self.region = Rect::with_size(left, top, width as i32, height as i32);
+        self.region = Rect::with_size(left, top, width, height);
     }
 
     pub fn set_region_pos(&mut self, left: i32, top: i32) {
         let cur = &self.region;
-        self.region = Rect::with_size(left, top, cur.width() as i32, cur.height() as i32);
+        self.region = Rect::with_size(left, top, cur.width(), cur.height());
     }
 
     pub fn move_region_pos(&mut self, dx: i32, dy: i32) {
@@ -97,7 +97,7 @@ impl Map {
     }
 
     pub fn clear_region(&mut self) {
-        self.region = Rect::with_size(0, 0, self.width as i32, self.height as i32);
+        self.region = Rect::with_size(0, 0, self.width, self.height);
     }
 
     pub fn get_size(&self) -> (u32, u32) {
@@ -113,6 +113,13 @@ impl Map {
     }
 
     pub fn get_index(&self, x: i32, y: i32) -> Option<usize> {
+        if x < 0 || y < 0 || x >= self.width as i32 || y >= self.height as i32 {
+            return None;
+        }
+        Some((y * self.width as i32 + x) as usize)
+    }
+
+    pub fn get_wrapped_index(&self, x: i32, y: i32) -> Option<usize> {
         match self.try_wrap_xy(x, y) {
             None => None,
             Some((x, y)) => Some((x + y * self.width as i32) as usize),
@@ -199,7 +206,7 @@ impl Map {
             return;
         }
         self.ground[idx] = ground;
-        self.feature[idx] = NO_TILE.clone();
+        self.fixture[idx] = NO_TILE.clone();
 
         self.cell_flags[idx]
             .insert(CellFlags::NEEDS_DRAW | CellFlags::TILE_CHANGED | CellFlags::NEEDS_SNAPSHOT);
@@ -254,7 +261,7 @@ impl Map {
             return;
         }
 
-        self.feature[index] = feature;
+        self.fixture[index] = feature;
         self.cell_flags[index]
             .insert(CellFlags::NEEDS_DRAW | CellFlags::TILE_CHANGED | CellFlags::NEEDS_SNAPSHOT);
         self.any_tile_change = true;
@@ -594,7 +601,7 @@ where
         let x = rng.range(region.left(), region.right() + 1);
         let y = rng.range(region.top(), region.bottom() + 1);
 
-        if let Some(idx) = map.get_index(x, y) {
+        if let Some(idx) = map.get_wrapped_index(x, y) {
             if let Some(cell) = map.get_cell(idx) {
                 if func(x, y, cell) {
                     return Some(Point::new(x, y));
@@ -626,7 +633,7 @@ where
                 if distance::manhattan(&start, &current).round() as i32 != dist {
                     continue;
                 }
-                if let Some(index) = map.get_index(x2, y2) {
+                if let Some(index) = map.get_wrapped_index(x2, y2) {
                     if let Some(cell) = map.get_cell(index) {
                         if func(x2, y2, cell) {
                             points.push(Point::new(x2, y2));
@@ -655,7 +662,7 @@ pub fn dump_map(map: &Map) {
     for y in 0..map.height as i32 {
         let mut line = format!("{:2} |", y);
         for x in 0..map.width as i32 {
-            let index = map.get_index(x, y).unwrap();
+            let index = map.get_wrapped_index(x, y).unwrap();
             let cell = map.get_cell(index).unwrap();
             let sprite = cell.sprite();
             let ch = match sprite.glyph {
@@ -721,9 +728,9 @@ mod test {
         let map = Map::new(100, 100);
         assert_eq!(map.get_size(), (100, 100));
 
-        assert_eq!(map.get_index(5, 5).unwrap(), 505);
+        assert_eq!(map.get_wrapped_index(5, 5).unwrap(), 505);
         assert_eq!(map.try_wrap_xy(5, 5).unwrap(), (5, 5));
-        assert_eq!(map.get_index(15, 15).unwrap(), 1515);
+        assert_eq!(map.get_wrapped_index(15, 15).unwrap(), 1515);
         assert_eq!(map.try_wrap_xy(15, 15).unwrap(), (15, 15));
 
         let region = map.region();
@@ -752,9 +759,9 @@ mod test {
         }
         assert_eq!(map.get_size(), (10, 10));
 
-        assert_eq!(map.get_index(5, 5).unwrap(), 505);
+        assert_eq!(map.get_wrapped_index(5, 5).unwrap(), 505);
         assert_eq!(map.try_wrap_xy(5, 5).unwrap(), (5, 5));
-        assert_eq!(map.get_index(15, 15), None);
+        assert_eq!(map.get_wrapped_index(15, 15), None);
         assert_eq!(map.try_wrap_xy(15, 15), None);
 
         map.set_region_pos(10, 10);
@@ -792,9 +799,9 @@ mod test {
 
         assert_eq!(map.get_size(), (10, 10));
 
-        assert_eq!(map.get_index(5, 5).unwrap(), 505);
+        assert_eq!(map.get_wrapped_index(5, 5).unwrap(), 505);
         assert_eq!(map.try_wrap_xy(5, 5).unwrap(), (5, 5));
-        assert_eq!(map.get_index(15, 15).unwrap(), 1515);
+        assert_eq!(map.get_wrapped_index(15, 15).unwrap(), 1515);
         assert_eq!(map.try_wrap_xy(15, 15).unwrap(), (5, 5));
     }
 }

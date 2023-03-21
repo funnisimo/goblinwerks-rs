@@ -80,7 +80,7 @@ pub trait FovTarget {
 
 impl FovSource for Map {
     fn is_opaque(&self, x: i32, y: i32) -> bool {
-        let index = match self.get_index(x, y) {
+        let index = match self.get_wrapped_index(x, y) {
             None => return true,
             Some(idx) => idx,
         };

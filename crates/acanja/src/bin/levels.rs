@@ -182,7 +182,7 @@ impl Screen for MainScreen {
                 let levels = ecs.resources.get::<Levels>().unwrap();
                 let level = levels.current();
                 let map = level.resources.get::<Map>().unwrap();
-                let index = map.get_index(pt.x, pt.y).unwrap();
+                let index = map.get_wrapped_index(pt.x, pt.y).unwrap();
                 let cell = map.get_cell(index).unwrap();
                 log(format!("Mouse Pos = {} - {}", pt, cell.flavor()));
             }
@@ -192,7 +192,7 @@ impl Screen for MainScreen {
                 let levels = ecs.resources.get::<Levels>().unwrap();
                 let level = levels.current();
                 let map = level.resources.get::<Map>().unwrap();
-                let index = map.get_index(pt.x, pt.y).unwrap();
+                let index = map.get_wrapped_index(pt.x, pt.y).unwrap();
 
                 if let Some(portal) = map.get_portal(index) {
                     log(format!(
@@ -205,7 +205,9 @@ impl Screen for MainScreen {
                     drop(level);
 
                     let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-                    levels.set_current(portal.map_id());
+                    if levels.set_current(portal.map_id()).is_err() {
+                        panic!("Failed to change world - {}", portal.map_id());
+                    }
                 }
             }
             _ => {}

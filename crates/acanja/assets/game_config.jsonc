@@ -13,8 +13,9 @@
       "montor-west.jsonc",
       "moon.jsonc",
       "tlb.jsonc",
-      "yew.jsonc"
+      "yew.jsonc",
+      "clues.jsonc"
     ]
   },
-  "start": "SOSARIA"
+  "start": "CLUES"
 }

@@ -89,7 +89,10 @@ pub fn update_camera_follows(level: &mut Level) {
         if let Some(ref entity) = camera.follows {
             if let Some(entry) = level.world.entry(*entity) {
                 if let Ok(pos) = entry.get_component::<Position>() {
-                    camera.set_center(pos.x, pos.y);
+                    if camera.center != pos.point() {
+                        camera.set_center(pos.x, pos.y);
+                        log(format!("Set camera center={:?}", camera.center));
+                    }
                 }
             } else {
                 camera.follows = None;

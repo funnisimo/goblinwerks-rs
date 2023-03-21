@@ -1,6 +1,15 @@
 {
-  "map": { "filename": "clues.txt", "width": 16, "height": 16, "wrap": true },
-  "welcome": null,
+  "id": "CLUES",
+  "map": {
+    "filename": "clues.txt",
+    "width": 16,
+    "height": 128,
+    "wrap": true,
+    "lock": false
+  },
+  "camera": { "follow_hero": true, "size": [11, 11] },
+  "region": [0, 0, 16, 16],
+  // "welcome": null,
   "spawn_delay": 5,
   "tiles": {
     " ": {
@@ -15,7 +24,7 @@
     "*": "FORCEFIELD",
     "!": "LAVA",
 
-    "|": { "fixture": "Door_locked" },
+    "|": { "fixture": "Door" }, // DOOR_LOCKED
     "/": { "fixture": "Door" },
     "$": { "fixture": "Chest_locked" },
 
@@ -34,9 +43,13 @@
     "7": { "message": "#[darker_red]Gremlins!" },
     "8": { "message": "#[darker_red]Windy gold!" },
 
-    "U": { "entity": "Stairs", "up": [0, -16] },
-    "D": { "entity": "Stairs", "down": [0, 16] },
-    "H": { "entity": "Stairs", "up": [0, -16], "down": [0, 16] },
+    "U": { "tile": "Stairs_up", "climb": { "move_entity": [0, -16] } },
+    "D": { "tile": "Stairs_down", "descend": { "move_entity": [0, 16] } },
+    "H": {
+      "tile": "Stairs_both",
+      "climb": { "move_entity": [0, -16] },
+      "descend": { "move_entity": [0, 16] }
+    },
 
     "W": { "fixture": "Winds" },
     "G": { "fixture": "Gremlins" },

@@ -138,7 +138,7 @@
   "DOOR_LOCKED": {
     "ch": 262,
     "fg": "brown",
-    "bg": "darkest_brown",
+    // "bg": "darkest_brown",
     "kind": "WALL",
     "flags": "LOCKED",
     "blocks": true,
@@ -147,15 +147,15 @@
   "DOOR": {
     "ch": 262,
     "fg": "brown",
-    "bg": "darkest_brown",
+    // "bg": "darkest_brown",
     "kind": "WALL",
-    "blocks": true,
+    "blocks": "vision",
     "flavor": "an open door"
   },
   "CHEST_LOCKED": {
     "ch": 366,
     "fg": "gold",
-    "bg": "darkest_gold",
+    // "bg": "darkest_gold",
     "flags": "LOCKED",
     "kind": "FIXTURE",
     "flavor": "a locked chest"
@@ -221,7 +221,7 @@
 
   "DUNGEON_FLOOR": {
     "ch": 165, // ".",
-    "fg": "dark_gray",
+    "fg": "darkest_gray",
     "bg": "black",
     "flavor": "a stone floor"
   },
@@ -245,62 +245,92 @@
   "DUNGEON_EXIT": {
     "ch": 335,
     "fg": "gold",
+    "layer": "FIXTURE",
     "flavor": "an exit"
+  },
+  "STAIRS_DOWN": {
+    "ch": 277,
+    "fg": "brown3",
+    "flavor": "downward stairs"
+  },
+  "STAIRS_UP": {
+    "ch": 275,
+    "fg": "brown3",
+    "flavor": "upward stairs"
+  },
+  "STAIRS_BOTH": {
+    "ch": 276,
+    "fg": "brown3",
+    "flavor": "stairs going up and down"
   },
   "CURE_FOUNTAIN": {
     "ch": "^",
     "fg": "blue",
     "use": { "message": "Bubbly, effervescent.", "cure": true },
+    "layer": "FIXTURE",
     "flavor": "a fountain"
   },
   "HEAL_FOUNTAIN": {
     "ch": "^",
     "fg": "blue",
     "use": { "message": "Soothing.", "heal": true },
+    "layer": "FIXTURE",
     "flavor": "a fountain"
   },
   "POISON_FOUNTAIN": {
     "ch": "^",
     "fg": "blue",
     "use": { "message": "Tastes foul.", "poison": true },
+    "layer": "FIXTURE",
     "flavor": "a fountain"
   },
   "DAMAGE_FOUNTAIN": {
     "ch": "^",
     "fg": "blue",
     "use": { "message": "Burns your throat.", "damage": 10 },
+    "layer": "FIXTURE",
     "flavor": "a fountain"
   },
   "WINDS": {
+    "ch": 0,
+    "fg": "#0000",
+    "bg": "#0000",
+    "layer": "FIXTURE",
     "enter": { "winds": true }
   },
   "GREMLINS": {
+    "layer": "FIXTURE",
     "enter": { "gremlins": true }
   },
   "DAMAGE_TRAP": {
+    "layer": "FIXTURE",
     "enter": { "damage": 10, "message": "A trap!" }
   },
   "MARK_FORCE": {
     "ch": 383,
     "fg": "blue",
+    "layer": "FIXTURE",
     "flavor": "an altar",
     "use": { "mark": "FORCE", "message": "You receive the mark of Force!" }
   },
   "MARK_FIRE": {
     "ch": 383,
     "fg": "blue",
+    "layer": "FIXTURE",
     "flavor": "an altar",
     "use": { "mark": "FIRE", "message": "You receive the mark of Fire!" }
   },
   "MARK_SNAKE": {
     "ch": 383,
     "fg": "blue",
+    "layer": "FIXTURE",
     "flavor": "an altar",
     "use": { "mark": "SNAKE", "message": "You receive the mark of the Snake!" }
   },
   "MARK_KINGS": {
     "ch": 383,
     "fg": "blue",
+    "layer": "FIXTURE",
     "flavor": "an altar",
     "use": { "mark": "Kings", "message": "You receive the mark of Kings!" }
   }

@@ -2,6 +2,7 @@ pub mod action;
 pub mod actor;
 pub mod ai;
 pub mod camera;
+pub mod event;
 pub mod fov;
 pub mod hero;
 pub mod level;

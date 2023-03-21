@@ -44,8 +44,8 @@ impl Sprite {
     pub fn mix(&mut self, glyph: Glyph, fg: RGBA, bg: RGBA) {
         if glyph > 0 {
             self.glyph = glyph;
+            self.fg = RGBA::alpha_mix(&self.fg, &fg);
         }
-        self.fg = RGBA::alpha_mix(&self.fg, &fg);
         self.bg = RGBA::alpha_mix(&self.bg, &bg);
     }
 }

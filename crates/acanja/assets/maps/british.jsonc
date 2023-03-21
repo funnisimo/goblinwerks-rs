@@ -1,4 +1,5 @@
 {
+  "$schema": "../map.schema.json",
   "id": "BRITISH",
   "map": {
     "filename": "british.txt",

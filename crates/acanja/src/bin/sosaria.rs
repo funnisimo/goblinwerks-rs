@@ -10,7 +10,7 @@ use gw_world::action::move_step::MoveStepAction;
 use gw_world::actor::Actor;
 use gw_world::hero::Hero;
 use gw_world::level::{Level, Levels};
-use gw_world::map::{Map, PortalFlags};
+use gw_world::map::{Cell, Map, PortalFlags};
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
 use gw_world::task::DoNextActionResult;
@@ -74,14 +74,11 @@ impl Screen for MainScreen {
         ));
 
         {
-            let map = level.resources.get::<Map>().unwrap();
-            log(format!("MAP LOCATIONS - {:?}", &map.locations));
-            log(format!("MAP PORTALS - {:?}", &map.portals));
+            let mut camera = level
+                .resources
+                .get_mut_or_insert_with(|| Camera::new(CAMERA_WIDTH, CAMERA_HEIGHT));
+            camera.set_follows(entity);
         }
-
-        let mut camera = Camera::new(CAMERA_WIDTH, CAMERA_HEIGHT);
-        camera.set_follows(entity);
-        level.resources.insert(camera);
 
         level.resources.insert(Hero::new(entity));
         level.reset_tasks();
@@ -127,7 +124,7 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn message(&mut self, _app: &mut Ecs, id: &str, value: Option<Value>) -> ScreenResult {
+    fn message(&mut self, ecs: &mut Ecs, id: &str, value: Option<Value>) -> ScreenResult {
         match id {
             "VIEWPORT_MOVE" => {
                 // let pt: Point = value.unwrap().try_into().unwrap();
@@ -136,6 +133,16 @@ impl Screen for MainScreen {
             "VIEWPORT_CLICK" => {
                 let pt: Point = value.unwrap().try_into().unwrap();
                 log(format!("CLICK = {}", pt));
+
+                let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+                let level = levels.current_mut();
+                let map = level.resources.get::<Map>().unwrap();
+
+                let idx = map.get_index(pt.x, pt.y).unwrap();
+                let cell = map.get_cell(idx).unwrap();
+
+                log(format!("GROUND = {:?}", cell.ground()));
+                log(format!("FIXTURE = {:?}", cell.fixture()));
             }
             _ => {}
         }
@@ -241,7 +248,7 @@ fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
     let hero_entity = level.resources.get::<Hero>().unwrap().entity;
 
     let map = level.resources.get_mut::<Map>().unwrap();
-    let index = map.get_index(pt.x, pt.y).unwrap();
+    let index = map.get_wrapped_index(pt.x, pt.y).unwrap();
 
     log(format!("CLICK = {:?}", pt));
 
@@ -278,7 +285,7 @@ fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
 
     let level = levels.current_mut();
     let mut map = level.resources.get_mut::<Map>().unwrap();
-    let index = map.get_index(current_pt.x, current_pt.y).unwrap();
+    let index = map.get_wrapped_index(current_pt.x, current_pt.y).unwrap();
 
     map.remove_actor(index, hero_entity);
 
@@ -288,14 +295,19 @@ fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
     log("Moving hero to new world");
     let new_entity = levels.move_current_entity(hero_entity, &new_map_id);
     log("Changing current world");
-    levels.set_current(&new_map_id);
+    if levels.set_current(&new_map_id).is_err() {
+        panic!("Failed to change to world - {}", new_map_id);
+    }
 
     let level = levels.current_mut();
     level.resources.insert(Hero::new(hero_entity));
 
-    let mut camera = Camera::new(CAMERA_WIDTH, CAMERA_HEIGHT);
-    camera.set_follows(new_entity);
-    level.resources.insert(camera);
+    {
+        let mut camera = level
+            .resources
+            .get_mut_or_insert_with(|| Camera::new(CAMERA_WIDTH, CAMERA_HEIGHT));
+        camera.set_follows(new_entity);
+    }
 
     let new_pt = {
         let mut map = level.resources.get_mut::<Map>().unwrap();

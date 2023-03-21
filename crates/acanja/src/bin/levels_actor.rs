@@ -230,7 +230,7 @@ impl Screen for MainScreen {
                 let levels = ecs.resources.get::<Levels>().unwrap();
                 let level = levels.current();
                 let map = level.resources.get::<Map>().unwrap();
-                let index = map.get_index(pt.x, pt.y).unwrap();
+                let index = map.get_wrapped_index(pt.x, pt.y).unwrap();
                 let cell = map.get_cell(index).unwrap();
                 log(format!("Mouse Pos = {} - {}", pt, cell.flavor()));
             }
@@ -312,7 +312,7 @@ fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
     let hero_entity = level.resources.get::<Hero>().unwrap().entity;
 
     let map = level.resources.get_mut::<Map>().unwrap();
-    let index = map.get_index(pt.x, pt.y).unwrap();
+    let index = map.get_wrapped_index(pt.x, pt.y).unwrap();
 
     log(format!("CLICK = {:?}", pt));
 
@@ -349,7 +349,7 @@ fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
 
     let level = levels.current_mut();
     let mut map = level.resources.get_mut::<Map>().unwrap();
-    let current_idx = map.get_index(current_pt.x, current_pt.y).unwrap();
+    let current_idx = map.get_wrapped_index(current_pt.x, current_pt.y).unwrap();
 
     map.remove_actor(current_idx, hero_entity);
 
@@ -359,7 +359,9 @@ fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
     log("Moving hero to new world");
     let new_entity = levels.move_current_entity(hero_entity, &new_map_id);
     log("Changing current world");
-    levels.set_current(&new_map_id);
+    if levels.set_current(&new_map_id).is_err() {
+        panic!("Failed to change world - {}", new_map_id);
+    }
 
     let level = levels.current_mut();
     level.resources.insert(Hero::new(hero_entity));

@@ -64,7 +64,7 @@ pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32
     let grassland = tiles.get("GRASSLAND").unwrap();
     let forest = tiles.get("FOREST").unwrap();
     for (x, y, v) in grid.iter() {
-        let index = map.get_index(x, y).unwrap();
+        let index = map.get_wrapped_index(x, y).unwrap();
         if *v == 1 {
             map.reset_tiles(index, grassland.clone());
         } else if *v == 2 {
@@ -75,10 +75,10 @@ pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32
     // ADD TOWNS...
     for i in 1..=4 {
         let town_loc = find_random_point(&mut map, &mut rng, |_x, _y, tiles| {
-            tiles.ground().kind == TileKind::FLOOR && tiles.feature().is_null()
+            tiles.ground().kind == TileKind::FLOOR && tiles.fixture().is_null()
         })
         .expect("Failed to find town location");
-        let index = map.get_index(town_loc.x, town_loc.y).unwrap();
+        let index = map.get_wrapped_index(town_loc.x, town_loc.y).unwrap();
 
         map.place_feature(index, tiles.get("TOWN").unwrap());
 
@@ -104,7 +104,7 @@ pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32
         }
         choices.choose(&mut rng).unwrap().clone()
     };
-    let index = map.get_index(start_loc.x, start_loc.y).unwrap();
+    let index = map.get_wrapped_index(start_loc.x, start_loc.y).unwrap();
 
     map.locations.insert("START".to_string(), index);
 

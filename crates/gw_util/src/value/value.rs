@@ -13,7 +13,7 @@ use std::fmt::Display;
 pub enum Value {
     Empty,
     Index(usize),
-    Integer(u64),
+    Integer(i64),
     Float(f64),
     String(String),
     Boolean(bool),
@@ -168,7 +168,7 @@ impl Value {
         }
     }
 
-    pub fn as_int(&self) -> Option<u64> {
+    pub fn as_int(&self) -> Option<i64> {
         match self {
             Value::Index(v) => match (*v).try_into() {
                 Ok(v) => Some(v),
@@ -178,8 +178,8 @@ impl Value {
                 Ok(v) => Some(v),
                 Err(_) => None,
             },
-            Value::Float(v) => Some(v.trunc() as u64),
-            Value::String(v) => match v.parse::<u64>() {
+            Value::Float(v) => Some(v.trunc() as i64),
+            Value::String(v) => match v.parse::<i64>() {
                 Err(_) => None,
                 Ok(v) => Some(v),
             },
@@ -713,56 +713,56 @@ impl From<usize> for Value {
 // u64
 impl From<u64> for Value {
     fn from(v: u64) -> Self {
-        Value::Integer(v as u64)
+        Value::Integer(v as i64)
     }
 }
 
 // i64
 impl From<i64> for Value {
     fn from(v: i64) -> Self {
-        Value::Integer(v as u64)
+        Value::Integer(v as i64)
     }
 }
 
 // u32
 impl From<u32> for Value {
     fn from(v: u32) -> Self {
-        Value::Integer(v as u64)
+        Value::Integer(v as i64)
     }
 }
 
 // i32
 impl From<i32> for Value {
     fn from(v: i32) -> Self {
-        Value::Integer(v as u64)
+        Value::Integer(v as i64)
     }
 }
 
 // u16
 impl From<u16> for Value {
     fn from(v: u16) -> Self {
-        Value::Integer(v as u64)
+        Value::Integer(v as i64)
     }
 }
 
 // i16
 impl From<i16> for Value {
     fn from(v: i16) -> Self {
-        Value::Integer(v as u64)
+        Value::Integer(v as i64)
     }
 }
 
 // u8
 impl From<u8> for Value {
     fn from(v: u8) -> Self {
-        Value::Integer(v as u64)
+        Value::Integer(v as i64)
     }
 }
 
 // i8
 impl From<i8> for Value {
     fn from(v: i8) -> Self {
-        Value::Integer(v as u64)
+        Value::Integer(v as i64)
     }
 }
 

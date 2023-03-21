@@ -241,16 +241,16 @@ mod test {
         let mut map = Map::new(20, 20);
         let tiles = Tiles::default();
         map.fill(tiles.get("FLOOR").unwrap());
-        let idx = map.get_index(10, 9).unwrap();
+        let idx = map.get_wrapped_index(10, 9).unwrap();
         map.reset_tiles(idx, tiles.get("WALL").unwrap());
 
-        let idx = map.get_index(7, 10).unwrap();
+        let idx = map.get_wrapped_index(7, 10).unwrap();
         map.reset_tiles(idx, tiles.get("WALL").unwrap());
 
-        let idx = map.get_index(14, 9).unwrap();
+        let idx = map.get_wrapped_index(14, 9).unwrap();
         map.reset_tiles(idx, tiles.get("WALL").unwrap());
 
-        let idx = map.get_index(10, 11).unwrap();
+        let idx = map.get_wrapped_index(10, 11).unwrap();
         map.reset_tiles(idx, tiles.get("WALL").unwrap());
         ecs.resources.insert(map);
 
@@ -272,16 +272,16 @@ mod test {
         let mut map = Map::new(20, 20);
         let tiles = Tiles::default();
         map.fill(tiles.get("FLOOR").unwrap());
-        let idx = map.get_index(10, 9).unwrap();
+        let idx = map.get_wrapped_index(10, 9).unwrap();
         map.reset_tiles(idx, tiles.get("WALL").unwrap());
 
-        let idx = map.get_index(7, 10).unwrap();
+        let idx = map.get_wrapped_index(7, 10).unwrap();
         map.reset_tiles(idx, tiles.get("WALL").unwrap());
 
-        let idx = map.get_index(14, 9).unwrap();
+        let idx = map.get_wrapped_index(14, 9).unwrap();
         map.reset_tiles(idx, tiles.get("WALL").unwrap());
 
-        let idx = map.get_index(10, 11).unwrap();
+        let idx = map.get_wrapped_index(10, 11).unwrap();
         map.reset_tiles(idx, tiles.get("WALL").unwrap());
         ecs.resources.insert(map);
 

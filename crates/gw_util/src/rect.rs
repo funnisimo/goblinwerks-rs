@@ -22,12 +22,12 @@ impl Default for Rect {
 
 impl Rect {
     /// Create a new rectangle, specifying X/Y Width/Height
-    pub fn with_size(x: i32, y: i32, w: i32, h: i32) -> Rect {
+    pub fn with_size(x: i32, y: i32, w: u32, h: u32) -> Rect {
         Rect {
             x1: x,
             y1: y,
-            x2: x + w - 1,
-            y2: y + h - 1,
+            x2: x + w as i32 - 1,
+            y2: y + h as i32 - 1,
         }
     }
 

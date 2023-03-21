@@ -42,6 +42,10 @@ impl Levels {
         self.cache.len()
     }
 
+    pub fn has_map(&self, id: &str) -> bool {
+        self.index_of(id).is_some()
+    }
+
     pub fn get_start_map(&self) -> Option<&String> {
         self.start_map.as_ref()
     }
@@ -94,12 +98,13 @@ impl Levels {
         &self.cache[self.current].id
     }
 
-    pub fn set_current(&mut self, id: &str) {
+    pub fn set_current(&mut self, id: &str) -> Result<(), ()> {
         match self.index_of(id) {
-            None => panic!("Trying to activate invalid level - {}", id),
+            None => Err(()),
             Some(index) => {
                 self.current = index;
-                self.current_mut().set_needs_draw()
+                self.current_mut().set_needs_draw();
+                Ok(())
             }
         }
     }

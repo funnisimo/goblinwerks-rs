@@ -45,7 +45,7 @@ impl<'t> Builder<'t> {
     }
 
     pub fn set_tile(&mut self, x: i32, y: i32, name: &str) {
-        let idx = match self.map.get_index(x, y) {
+        let idx = match self.map.get_wrapped_index(x, y) {
             None => return,
             Some(idx) => idx,
         };
@@ -59,7 +59,7 @@ impl<'t> Builder<'t> {
     }
 
     pub fn place_tile(&mut self, x: i32, y: i32, name: &str) {
-        let idx = match self.map.get_index(x, y) {
+        let idx = match self.map.get_wrapped_index(x, y) {
             None => return,
             Some(idx) => idx,
         };
@@ -73,7 +73,7 @@ impl<'t> Builder<'t> {
     }
 
     pub fn get_tile(&self, x: i32, y: i32) -> Arc<Tile> {
-        let idx = match self.map.get_index(x, y) {
+        let idx = match self.map.get_wrapped_index(x, y) {
             None => panic!("Unknown x, y = {},{}", x, y),
             Some(idx) => idx,
         };
@@ -85,7 +85,7 @@ impl<'t> Builder<'t> {
     }
 
     pub fn set_portal(&mut self, point: Point, info: PortalInfo) -> &mut Self {
-        let idx = match self.map.get_index(point.x, point.y) {
+        let idx = match self.map.get_wrapped_index(point.x, point.y) {
             None => return self,
             Some(idx) => idx,
         };
@@ -95,7 +95,7 @@ impl<'t> Builder<'t> {
     }
 
     pub fn set_location(&mut self, location: &str, point: Point) -> &mut Self {
-        let idx = match self.map.get_index(point.x, point.y) {
+        let idx = match self.map.get_wrapped_index(point.x, point.y) {
             None => return self,
             Some(idx) => idx,
         };
@@ -113,16 +113,16 @@ impl<'t> Builder<'t> {
         let map = &mut self.map;
 
         for x in 0..=right {
-            let idx = map.get_index(x, 0).unwrap();
+            let idx = map.get_wrapped_index(x, 0).unwrap();
             map.reset_tiles(idx, wall.clone());
-            let idx = map.get_index(x, bottom).unwrap();
+            let idx = map.get_wrapped_index(x, bottom).unwrap();
             map.reset_tiles(idx, wall.clone());
         }
 
         for y in 0..=bottom {
-            let idx = map.get_index(0, y).unwrap();
+            let idx = map.get_wrapped_index(0, y).unwrap();
             map.reset_tiles(idx, wall.clone());
-            let idx = map.get_index(right, y).unwrap();
+            let idx = map.get_wrapped_index(right, y).unwrap();
             map.reset_tiles(idx, wall.clone());
         }
         self
@@ -137,7 +137,7 @@ impl<'t> Builder<'t> {
         for _i in 0..count {
             let x = self.rng.roll_dice(1, 79);
             let y = self.rng.roll_dice(1, 49);
-            let index = map.get_index(x, y).unwrap();
+            let index = map.get_wrapped_index(x, y).unwrap();
             map.reset_tiles(index, tile.clone());
         }
         self
@@ -148,7 +148,7 @@ impl<'t> Builder<'t> {
         for x in min(x1, x2)..=max(x1, x2) {
             if !self.get_tile(x, y).kind.contains(TileKind::FLOOR) {
                 let map = &mut self.map;
-                let index = map.get_index(x, y).unwrap();
+                let index = map.get_wrapped_index(x, y).unwrap();
                 map.reset_tiles(index, hall.clone());
             }
         }
@@ -160,7 +160,7 @@ impl<'t> Builder<'t> {
         for y in min(y1, y2)..=max(y1, y2) {
             if !self.get_tile(x, y).kind.contains(TileKind::FLOOR) {
                 let map = &mut self.map;
-                let index = map.get_index(x, y).unwrap();
+                let index = map.get_wrapped_index(x, y).unwrap();
                 map.reset_tiles(index, hall.clone());
             }
         }
@@ -191,7 +191,7 @@ impl<'t> Builder<'t> {
         let tile = self.tiles.get(name).unwrap();
         for y in room.y1 + 1..=room.y2 {
             for x in room.x1 + 1..=room.x2 {
-                let index = map.get_index(x, y).unwrap();
+                let index = map.get_wrapped_index(x, y).unwrap();
                 map.reset_tiles(index, tile.clone());
             }
         }
@@ -214,7 +214,7 @@ impl<'t> Builder<'t> {
             let h = self.rng.range(min_size, max_size);
             let x = self.rng.roll_dice(1, self.map.width as i32 - w - 1) - 1;
             let y = self.rng.roll_dice(1, self.map.height as i32 - h - 1) - 1;
-            let room = Rect::with_size(x, y, w, h);
+            let room = Rect::with_size(x, y, w as u32, h as u32);
 
             if self.try_add_room(room, floor) {
                 if !rooms.is_empty() {

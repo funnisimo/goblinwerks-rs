@@ -8,7 +8,7 @@ use std::fmt::Display;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Key {
     Index(usize),
-    Integer(u64),
+    Integer(i64),
     String(String),
     Point(i32, i32),
 
@@ -61,7 +61,7 @@ impl Key {
         }
     }
 
-    pub fn as_int(&self) -> Option<u64> {
+    pub fn as_int(&self) -> Option<i64> {
         match self {
             Key::Index(v) => match (*v).try_into() {
                 Ok(v) => Some(v),
@@ -71,7 +71,7 @@ impl Key {
                 Ok(v) => Some(v),
                 Err(_) => None,
             },
-            Key::String(v) => match v.parse::<u64>() {
+            Key::String(v) => match v.parse::<i64>() {
                 Err(_) => None,
                 Ok(v) => Some(v),
             },
@@ -148,7 +148,7 @@ impl PartialEq<u64> for Key {
     fn eq(&self, other: &u64) -> bool {
         match self.as_int() {
             None => false,
-            Some(v) => v == *other,
+            Some(v) => v == *other as i64,
         }
     }
 }
@@ -432,56 +432,56 @@ impl From<usize> for Key {
 // u64
 impl From<u64> for Key {
     fn from(v: u64) -> Self {
-        Key::Integer(v as u64)
+        Key::Integer(v as i64)
     }
 }
 
 // i64
 impl From<i64> for Key {
     fn from(v: i64) -> Self {
-        Key::Integer(v as u64)
+        Key::Integer(v as i64)
     }
 }
 
 // u32
 impl From<u32> for Key {
     fn from(v: u32) -> Self {
-        Key::Integer(v as u64)
+        Key::Integer(v as i64)
     }
 }
 
 // i32
 impl From<i32> for Key {
     fn from(v: i32) -> Self {
-        Key::Integer(v as u64)
+        Key::Integer(v as i64)
     }
 }
 
 // u16
 impl From<u16> for Key {
     fn from(v: u16) -> Self {
-        Key::Integer(v as u64)
+        Key::Integer(v as i64)
     }
 }
 
 // i16
 impl From<i16> for Key {
     fn from(v: i16) -> Self {
-        Key::Integer(v as u64)
+        Key::Integer(v as i64)
     }
 }
 
 // u8
 impl From<u8> for Key {
     fn from(v: u8) -> Self {
-        Key::Integer(v as u64)
+        Key::Integer(v as i64)
     }
 }
 
 // i8
 impl From<i8> for Key {
     fn from(v: i8) -> Self {
-        Key::Integer(v as u64)
+        Key::Integer(v as i64)
     }
 }
 

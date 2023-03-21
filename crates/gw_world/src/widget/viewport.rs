@@ -11,7 +11,7 @@ use gw_app::color::{named, RGBA};
 use gw_app::ecs::query::IntoQuery;
 use gw_app::ecs::{systems::ResourceSet, Read, Write};
 use gw_app::messages::Messages;
-use gw_app::{AppEvent, ScreenResult};
+use gw_app::{log, AppEvent, ScreenResult};
 use gw_app::{Ecs, Panel};
 use gw_util::point::Point;
 use gw_util::rect::Rect;
@@ -345,9 +345,8 @@ fn draw_map(
     let vis = AlwaysVisible::new();
     // let fov = global_world().get_fov(world.hero_entity()).unwrap().borrow();
 
-    let wrap = map.wrap;
-    let map_size = map.get_size();
-    let size = viewport.con.size();
+    // let map_size = map.get_size();
+    let view_size = viewport.con.size();
     // TODO - let offset = viewport.offset;
 
     let buf = viewport.con.buffer_mut();
@@ -357,9 +356,20 @@ fn draw_map(
     let top = offset.1; // camera.pos.y - size.1 as i32 / 2;
     let black = BLACK.into();
 
-    for y0 in 0..size.1 as i32 {
-        for x0 in 0..size.0 as i32 {
-            let idx = match map.get_index(x0 + left, y0 + top) {
+    // let draw_bounds = Rect::with_size(
+    //     0.max(view_size.0.saturating_sub(map_size.0) as i32 / 2),
+    //     0.max(view_size.1.saturating_sub(map_size.1) as i32 / 2),
+    //     view_size.0.min(map_size.0),
+    //     view_size.1.min(map_size.1),
+    // );
+
+    for y0 in 0..view_size.1 as i32 {
+        for x0 in 0..view_size.0 as i32 {
+            // if !draw_bounds.contains(x0, y0) {
+            //     continue;
+            // }
+
+            let idx = match map.get_wrapped_index(x0 + left, y0 + top) {
                 None => {
                     // TODO - Fancy?
                     buf.draw(x0, y0, 0, black, black);
@@ -483,22 +493,27 @@ fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
 
     let wrap = map.wrap;
     let map_size = map.get_size();
-    let size = viewport.con.size();
-    // TODO - let offset = viewport.offset;
+    let view_size = viewport.con.size();
+    // let center = camera.center();
+    // let half_size = (view_size.0 / 2, view_size.1 / 2);
 
     let buf = viewport.con.buffer_mut();
     // DO NOT CLEAR BUFFER!!!
 
-    let base_left = map
-        .lock
-        .lock_x(camera.center().x - size.0 as i32 / 2, size.0, map_size.0);
-    let base_top = map
-        .lock
-        .lock_y(camera.center().y - size.1 as i32 / 2, size.1, map_size.1);
+    let base_left = map.lock.lock_x(
+        camera.center().x - view_size.0 as i32 / 2,
+        view_size.0,
+        map_size.0,
+    );
+    let base_top = map.lock.lock_y(
+        camera.center().y - view_size.1 as i32 / 2,
+        view_size.1,
+        map_size.1,
+    );
 
     let left = wrap.wrap_x(base_left, map_size.0);
     let top = wrap.wrap_y(base_top, map_size.1);
-    let bounds = Rect::with_size(left, top, size.0 as i32, size.1 as i32);
+    let bounds = Rect::with_size(left, top, view_size.0, view_size.1);
 
     let mut query = <(&Position, &Sprite)>::query();
 
@@ -516,7 +531,7 @@ fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
             let bufx = vx - left;
             let bufy = vy - top;
 
-            if let Some(idx) = map.get_index(pos.x, pos.y) {
+            if let Some(idx) = map.get_wrapped_index(pos.x, pos.y) {
                 if map.has_flag(idx, CellFlags::DRAWN_THIS_FRAME) {
                     let fg = buf.get_fore(bufx, bufy).unwrap();
                     let bg = buf.get_back(bufx, bufy).unwrap();
@@ -552,7 +567,7 @@ fn clear_needs_draw(viewport: &mut Viewport, level: &mut Level) {
         let y = y0 + top;
         for x0 in 0..size.0 as i32 {
             let x = x0 + left;
-            let idx = match map.get_index(x, y) {
+            let idx = match map.get_wrapped_index(x, y) {
                 None => {
                     continue;
                 }

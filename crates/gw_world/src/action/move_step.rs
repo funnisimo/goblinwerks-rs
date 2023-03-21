@@ -50,7 +50,7 @@ impl MoveStepAction {
 
         let orig_pt = pos.point();
 
-        let idx = match map.get_index(orig_pt.x + self.dx, orig_pt.y + self.dy) {
+        let idx = match map.get_wrapped_index(orig_pt.x + self.dx, orig_pt.y + self.dy) {
             None => {
                 log("Bump edge of world");
                 return Some(ActionResult::Replace(Box::new(IdleAction::new(
@@ -104,14 +104,14 @@ impl MoveStepAction {
         let pos = entry.get_component_mut::<Position>().unwrap();
         let orig_pt = pos.point();
 
-        let old_idx = map.get_index(orig_pt.x, orig_pt.y).unwrap();
+        let old_idx = map.get_wrapped_index(orig_pt.x, orig_pt.y).unwrap();
         map.remove_actor(old_idx, self.entity);
         // println!("changed : {}", old_idx);
 
         let (new_x, new_y) = map.try_wrap_xy(pos.x + self.dx, pos.y + self.dy).unwrap();
         pos.set(new_x, new_y);
 
-        let new_idx = map.get_index(pos.x, pos.y).unwrap();
+        let new_idx = map.get_wrapped_index(pos.x, pos.y).unwrap();
         map.add_actor(new_idx, self.entity, pos.blocks_move);
 
         // if let Some(mut fov) = entry.get_component_mut::<FOV>() {

@@ -1,0 +1,64 @@
+{
+  "$id": "https://github.com/funnisimo/goblinwerks-rs/blob/master/crates/gw_world/assets/map.schema.json",
+  "title": "Map Schema",
+  "description": "A Goblinwerks Map Configuration",
+  "type": "object",
+  "properties": {
+    "id": {
+      "description": "The unique identifier for the map",
+      "type": "string"
+    },
+    "map": {
+      "description": "Basic map information",
+      "type": "object",
+      "oneOf": [
+        {
+          "properties": {
+            "width": { "type": "integer" },
+            "height": { "type": "integer" },
+            "filename": { "type": "string" }
+          },
+          "required": ["filename", "width", "height"]
+        },
+        {
+          "properties": {
+            "width": { "type": "integer" },
+            "height": { "type": "integer" },
+            "data": { "type": "array", "items": { "type": "string" } }
+          },
+          "required": ["data", "width", "height"]
+        }
+      ]
+    },
+    "tiles": {
+      "description": "The tiles that will be used to build the map, key is char in data, value is tile info",
+      "type": "object",
+      "patternProperties": {
+        "*": {
+          "description": "The tile information - a string is the tile id to place on the ground.",
+          "type": ["object", "string"],
+          "properties": {
+            "tile": {
+              "type": "string",
+              "description": "The tile id of the tile to place on the ground or a key to another entry in the tiles section that has a tile."
+            },
+            "fixture": {
+              "type": "string",
+              "description": "The tile id of the fixture to place or a key to another entry in the tiles section that has a fixture (and/or tile)."
+            },
+            "actor": {
+              "type": ["string", "object"],
+              "description": "The id or info for any actor placed on this tile."
+            },
+            "location": {
+              "type": "string",
+              "description": "The name of the location on the map (used for portals)."
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  },
+  "required": ["id", "map"]
+}

@@ -6,6 +6,7 @@ use gw_app::{
 };
 use gw_util::value::Value;
 use gw_world::{
+    camera::Camera,
     level::{Level, Levels},
     map::{Map, PortalFlags, PortalInfo, Wrap},
     tile::{Tile, Tiles},
@@ -52,6 +53,7 @@ pub struct LevelData {
     pub map_size: (u32, u32),
     pub map_wrap: bool,
     pub welcome: Option<String>,
+    pub camera_size: (u32, u32),
 }
 
 impl LevelData {
@@ -64,6 +66,7 @@ impl LevelData {
             map_size: (0, 0),
             map_wrap: false,
             welcome: None,
+            camera_size: (0, 0),
         }
     }
 }
@@ -90,6 +93,7 @@ impl LoadHandler for LevelLoader {
             Ok(v) => v,
         };
 
+        println!("Processing level - {}", path);
         let value = match gw_util::json::parse_string(&string) {
             Err(e) => {
                 return Err(LoadError::ParseError(format!(
@@ -105,7 +109,6 @@ impl LoadHandler for LevelLoader {
         let (tiles, mut loader, mut levels) =
             <(Read<Tiles>, Write<Loader>, Write<Levels>)>::fetch_mut(&mut ecs.resources);
 
-        println!("Processing level - {}", path);
         let level_data = load_level_data(&*tiles, value);
 
         match level_data.map_data {
@@ -335,6 +338,34 @@ pub fn load_level_data(tiles: &Tiles, json: Value) -> LevelData {
         }
     };
 
+    // camera size
+    if let Some(camera_value) = root.get(&"camera".into()) {
+        if camera_value.is_map() {
+            let camera_map = camera_value.as_map().unwrap();
+            if let Some(size_val) = camera_map.get(&"size".into()) {
+                let size: Vec<i64> = size_val
+                    .as_list()
+                    .unwrap()
+                    .into_iter()
+                    .map(|v| v.as_int().unwrap())
+                    .collect();
+
+                level_data.camera_size = (size[0] as u32, size[1] as u32);
+            }
+        } else if camera_value.is_list() {
+            let size: Vec<i64> = camera_value
+                .as_list()
+                .unwrap()
+                .into_iter()
+                .map(|v| v.as_int().unwrap())
+                .collect();
+
+            level_data.camera_size = (size[0] as u32, size[1] as u32);
+        }
+    }
+
+    // display region
+
     if let Some(filename) = map_info.get(&"filename".into()) {
         level_data.map_data = Some(MapData::FileName(filename.to_string()));
         // let raw = read_to_string(&format!("{}/{}", path, filename.to_string()))
@@ -399,15 +430,19 @@ pub fn make_level(mut level_data: LevelData) -> Level {
             if x >= width as i32 {
                 break;
             }
-            let index = map.get_index(x, y).unwrap();
+            let index = map.get_wrapped_index(x, y).unwrap();
             let char = format!("{}", ch);
             match cell_lookup.get(&char) {
                 None => panic!("Unknown tile in map data - {}", char),
                 Some(place) => {
                     match place.tile {
-                        None => map.reset_tiles(index, def_tile.clone()),
+                        None => {
+                            map.reset_tiles(index, def_tile.clone());
+                        }
                         Some(TileType::Tile(ref tile)) => map.reset_tiles(index, tile.clone()),
-                        _ => {}
+                        _ => {
+                            panic!("Invalid tile entry!");
+                        }
                     };
 
                     if let Some(tile_type) = place.fixture.as_ref() {
@@ -436,6 +471,14 @@ pub fn make_level(mut level_data: LevelData) -> Level {
 
     let mut level = Level::new(&level_data.id);
     level.resources.insert(map);
+
+    if level_data.camera_size.0 > 0 {
+        log(format!("MAP CAMERA SIZE = {:?}", level_data.camera_size));
+        level.resources.insert(Camera::new(
+            level_data.camera_size.0,
+            level_data.camera_size.1,
+        ));
+    }
 
     level
 }
