@@ -1,5 +1,6 @@
-use super::{Cell, CellMut, CellRef, PortalInfo, Wrap};
+use super::{Cell, CellMut, CellRef, Wrap};
 use super::{CellFlags, MapFlags};
+use crate::effect::BoxedEffect;
 // use crate::fov::FovSource;
 use crate::tile::Tile;
 use crate::tile::TileLayer;
@@ -27,7 +28,8 @@ pub struct Map {
     any_tile_change: bool,   // TODO - MapFlags
 
     pub locations: HashMap<String, usize>,
-    pub portals: HashMap<usize, PortalInfo>,
+    pub cell_effects: HashMap<usize, HashMap<String, Vec<BoxedEffect>>>,
+    pub flavors: HashMap<usize, String>,
 
     // per cell information
     pub ground: Vec<Arc<Tile>>,
@@ -63,6 +65,8 @@ impl Map {
 
             ground: vec![fill_tile.clone(); count],
             fixture: vec![fill_tile.clone(); count],
+            cell_effects: HashMap::new(),
+            flavors: HashMap::new(),
 
             blocked: vec![false; count],
             actors: vec![Vec::new(); count],
@@ -74,7 +78,6 @@ impl Map {
             // changed: vec![true; count],
             // tile_changed: vec![true; count],
             locations: HashMap::new(),
-            portals: HashMap::new(),
         }
     }
 
@@ -154,15 +157,6 @@ impl Map {
 
     ///// Everything from here on should use index...
 
-    pub fn get_portal(&self, index: usize) -> Option<&PortalInfo> {
-        self.portals.get(&index)
-    }
-
-    pub fn set_portal(&mut self, index: usize, info: PortalInfo) {
-        self.portals.insert(index, info);
-        self.cell_flags[index].insert(CellFlags::IS_PORTAL);
-    }
-
     pub fn get_location(&self, id: &str) -> Option<&usize> {
         self.locations.get(id)
     }
@@ -216,7 +210,7 @@ impl Map {
     pub fn place_tile(&mut self, index: usize, tile: Arc<Tile>) -> bool {
         match tile.layer {
             TileLayer::GROUND => self.place_ground(index, tile),
-            TileLayer::FIXTURE => self.place_feature(index, tile),
+            TileLayer::FIXTURE => self.place_fixture(index, tile),
             _ => false,
         }
     }
@@ -224,7 +218,7 @@ impl Map {
     pub fn force_tile(&mut self, index: usize, tile: Arc<Tile>) {
         match tile.layer {
             TileLayer::GROUND => self.force_ground(index, tile),
-            TileLayer::FIXTURE => self.force_feature(index, tile),
+            TileLayer::FIXTURE => self.force_fixture(index, tile),
             _ => {}
         }
     }
@@ -248,23 +242,69 @@ impl Map {
         self.any_tile_change = true;
     }
 
-    pub fn place_feature(&mut self, index: usize, feature: Arc<Tile>) -> bool {
+    pub fn place_fixture(&mut self, index: usize, fixture: Arc<Tile>) -> bool {
         // TODO - Check priority vs existing tile (if any)
-        // TODO - Check feature required tile (+priority)
+        // TODO - Check fixture required tile (+priority)
 
-        self.force_feature(index, feature);
+        self.force_fixture(index, fixture);
         true
     }
 
-    pub fn force_feature(&mut self, index: usize, feature: Arc<Tile>) {
+    pub fn force_fixture(&mut self, index: usize, fixture: Arc<Tile>) {
         if !self.has_index(index) {
             return;
         }
 
-        self.fixture[index] = feature;
+        self.fixture[index] = fixture;
         self.cell_flags[index]
             .insert(CellFlags::NEEDS_DRAW | CellFlags::TILE_CHANGED | CellFlags::NEEDS_SNAPSHOT);
         self.any_tile_change = true;
+    }
+
+    pub fn clear_fixture(&mut self, index: usize) {
+        if !self.has_index(index) {
+            return;
+        }
+
+        self.fixture[index] = NO_TILE.clone();
+        self.cell_flags[index]
+            .insert(CellFlags::NEEDS_DRAW | CellFlags::TILE_CHANGED | CellFlags::NEEDS_SNAPSHOT);
+        self.any_tile_change = true;
+    }
+
+    pub fn add_effect(&mut self, index: usize, action: &str, effect: BoxedEffect) {
+        match self.cell_effects.get_mut(&index) {
+            None => {
+                let mut map = HashMap::new();
+                map.insert(action.to_string(), vec![effect]);
+                self.cell_effects.insert(index, map);
+            }
+            Some(eff) => match eff.get_mut(action) {
+                None => {
+                    eff.insert(action.to_string(), vec![effect]);
+                }
+                Some(data) => {
+                    data.push(effect);
+                }
+            },
+        }
+    }
+
+    pub fn set_effects(&mut self, index: usize, action: &str, effects: Vec<BoxedEffect>) {
+        match self.cell_effects.get_mut(&index) {
+            None => {
+                let mut map = HashMap::new();
+                map.insert(action.to_string(), effects);
+                self.cell_effects.insert(index, map);
+            }
+            Some(eff) => {
+                eff.insert(action.to_string(), effects);
+            }
+        }
+    }
+
+    pub fn set_flavor(&mut self, index: usize, text: String) {
+        self.flavors.insert(index, text);
     }
 
     pub fn has_blocker(&self, index: usize) -> bool {

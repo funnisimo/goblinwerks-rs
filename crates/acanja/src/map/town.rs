@@ -2,7 +2,8 @@ use super::prefab::*;
 use gw_app::log;
 use gw_util::point::Point;
 use gw_util::rng::SliceRandom;
-use gw_world::map::{Builder, Map, PortalFlags, PortalInfo};
+use gw_world::effect::Portal;
+use gw_world::map::{Builder, Map};
 use gw_world::tile::Tiles;
 
 pub fn build_town_map<'t>(
@@ -24,19 +25,13 @@ pub fn build_town_map<'t>(
         };
 
         // Add way out...
-        let y = height as i32 / 2 - 1;
+        let y = height as i32 / 2;
         builder.place_tile(0, y, "EXIT_TOWN_LEFT");
-        builder.place_tile(0, y + 1, "EXIT_TOWN_LEFT");
-        builder.place_tile(0, y + 2, "EXIT_TOWN_LEFT");
 
-        builder.set_location("START", Point::new(1, y + 1));
-        let mut portal = PortalInfo::new("WORLD", id);
-        portal.set_flavor("a way back to the world");
-        portal.set_flags(PortalFlags::ON_CLIMB);
-        builder
-            .set_portal(Point::new(0, y), portal.clone())
-            .set_portal(Point::new(0, y + 1), portal.clone())
-            .set_portal(Point::new(0, y + 2), portal);
+        builder.set_location("START", Point::new(1, y));
+        let portal = Box::new(Portal::new("WORLD".to_string(), id.to_string()));
+        builder.add_effect(0, y, "climb", portal);
+        builder.set_flavor(0, y, "a way back to the world");
 
         log("Adding bridge...");
         x = match add_bridge(&mut builder, x) {

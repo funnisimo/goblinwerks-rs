@@ -1,0 +1,382 @@
+{
+  /* GROUND - WORLD */
+
+  "PLAINS": {
+    "glyph": 161, // 183,
+    "fg": "light_green",
+    "kind": "FLOOR",
+    "flavor": "some grassland"
+  },
+  "TREES": {
+    "ch": 162, // ":",
+    "fg": "dark_green",
+    "kind": "FLOOR",
+    "flavor": "some trees"
+  },
+  "FOREST": {
+    "ch": 163, // "%",
+    "fg": "darker_green",
+    "kind": "FLOOR",
+    "flavor": "the forest"
+  },
+  "MOUNTAINS": {
+    "ch": "^",
+    "fg": "darker_sepia",
+    "blocks": true,
+    "kind": "WALL",
+    "flavor": "the mountains"
+  },
+  "LAVA": {
+    "ch": 321,
+    "fg": "red",
+    "bg": "darkest_red",
+    "kind": "WALL",
+    "flavor": "some lava"
+  },
+  "WATER": {
+    "ch": "~",
+    "fg": "blue",
+    "bg": "darkest_blue",
+    "blocks": "move",
+    "kind": "LAKE",
+    "flavor": "some water"
+  },
+
+  /* FIXTURE - WORLD */
+
+  "TOWN": {
+    "glyph": 176, // 94,
+    "fg": "light_sepia",
+    "layer": "FIXTURE",
+    "flavor": "a town"
+  },
+  "CASTLE": {
+    "glyph": 177, // 148,
+    "fg": "white",
+    "layer": "FIXTURE",
+    "flavor": "a castle"
+  },
+  "DUNGEON": {
+    "glyph": 150,
+    "fg": "brown",
+    "layer": "FIXTURE",
+    "flavor": "a dungeon"
+  },
+  "SERPENT": {
+    "ch": "S",
+    "fg": "green",
+    "blocks": "move",
+    "layer": "FIXTURE",
+    "flavor": "a huge menacing serpent"
+  },
+
+  /* GROUND - TOWN */
+
+  "FLOOR": {
+    "ch": 165, // ".",
+    "fg": "#620",
+    "bg": "#410",
+    "flavor": "a stone floor"
+  },
+  "WALL": {
+    "ch": 164, // "#",
+    "fg": "gray",
+    "bg": "darker_gray",
+    "flavor": "a stone wall",
+    "blocks": true
+  },
+  "BRIDGE": {
+    "ch": "=",
+    "fg": "brown",
+    "bg": "darker_brown",
+    "flavor": "a bridge"
+  },
+  "BRIDGE_SPACE": {
+    "ch": " ",
+    "fg": "brown",
+    "bg": "darker_brown",
+    "blocks": "move",
+    "flavor": "a bridge railing"
+  },
+  "BRIDGE_{}": {
+    "ch": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H",
+      "I",
+      "J",
+      "K",
+      "L",
+      "M",
+      "N",
+      "O",
+      "P",
+      "Q",
+      "R",
+      "S",
+      "T",
+      "U",
+      "V",
+      "W",
+      "X",
+      "Y",
+      "Z"
+    ],
+    "fg": "brown",
+    "bg": "darker_brown",
+    "blocks": "move",
+    "flavor": "a bridge railing"
+  },
+
+  /* FIXTURE - TOWN */
+
+  "DOOR_LOCKED": {
+    "ch": 262,
+    "fg": "brown",
+    // "bg": "darkest_brown",
+    "kind": "WALL",
+    "flags": "LOCKED",
+    "blocks": true,
+    "flavor": "a locked door",
+    "unlock": { "fixture": "DOOR" }
+  },
+  "DOOR": {
+    "ch": 262,
+    "fg": "brown",
+    // "bg": "darkest_brown",
+    "kind": "WALL",
+    "blocks": "vision",
+    "flavor": "an open door",
+    "enter": { "fixture": "DOOR_OPEN" },
+    "lock": { "fixture": "DOOR_LOCKED" }
+  },
+  "DOOR_OPEN": {
+    "ch": 262,
+    "fg": "brown",
+    // "bg": "darkest_brown",
+    "kind": "WALL",
+    "blocks": "vision",
+    "flavor": "an open door",
+    "exit": { "fixture": "DOOR" }
+  },
+  "CHEST_LOCKED": {
+    "ch": 366,
+    "fg": "gold",
+    // "bg": "darkest_gold",
+    "flags": "LOCKED",
+    "kind": "FIXTURE",
+    "flavor": "a locked chest",
+    "unlock": { "fixture": "CHEST" }
+  },
+  "CHEST": {
+    "ch": 366,
+    "fg": "gold",
+    // "bg": "darkest_gold",
+    "kind": "FIXTURE",
+    "flavor": "a chest",
+    "open": {
+      "fixture": "CHEST_OPEN",
+      "treasure": true,
+      "restore_items": true
+    },
+    "lock": { "fixture": "CHEST_LOCKED" }
+  },
+  "CHEST_OPEN": {
+    "ch": 366,
+    "fg": "gold",
+    // "bg": "darkest_gold",
+    "kind": "FIXTURE",
+    "flavor": "an open chest",
+    "close": { "fixture": "CHEST" },
+    "drop": { "store_items": true }
+  },
+
+  "EXIT_LEFT": {
+    "kind": "FIXTURE",
+    "sprite": "<|YELLOW",
+    "flavor": "an exit"
+    // "move": "PORTAL_UP"
+  },
+  "FORCEFIELD": {
+    "ch": 321,
+    "fg": "teal",
+    "bg": "darkest_teal",
+    "kind": "WALL",
+    // "blocks": "move",
+    "flavor": "a forcefield"
+  },
+  "COUNTER_SPACE": {
+    "ch": " ",
+    "fg": "gray",
+    "bg": "dark_gray",
+    "blocks": "move",
+    "layer": "FIXTURE",
+    "flavor": "a countertop"
+  },
+  "COUNTER_{}": {
+    "ch": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H",
+      "I",
+      "J",
+      "K",
+      "L",
+      "M",
+      "N",
+      "O",
+      "P",
+      "Q",
+      "R",
+      "S",
+      "T",
+      "U",
+      "V",
+      "W",
+      "X",
+      "Y",
+      "Z"
+    ],
+    "fg": "gray",
+    "bg": "dark_gray",
+    "blocks": "move",
+    "layer": "FIXTURE",
+    "flavor": "a countertop"
+  },
+
+  /* GROUND - DUNGEON */
+
+  "DUNGEON_FLOOR": {
+    "ch": 165, // ".",
+    "fg": "darkest_gray",
+    "bg": "black",
+    "flavor": "a stone floor"
+  },
+  "DUNGEON_WALL": {
+    "ch": 164, // "#",
+    "fg": "darker_gray",
+    "bg": "black",
+    "flavor": "a stone wall",
+    "blocks": true
+  },
+  "FAKE_WALL": {
+    "ch": 164, // "#",
+    "fg": "darker_gray",
+    "bg": "black",
+    "flavor": "a stone wall",
+    "blocks": "vision",
+    "enter": { "tile": "FAKE_PASSAGE" }
+  },
+  "FAKE_PASSAGE": {
+    "ch": 165, // ".",
+    "fg": "darker_gray",
+    "bg": "black",
+    "flavor": "a hidden passage",
+    "exit": { "tile": "FAKE_WALL" }
+  },
+
+  /* FIXTURES - DUNGEON */
+
+  "DUNGEON_EXIT": {
+    "ch": 335,
+    "fg": "gold",
+    "layer": "FIXTURE",
+    "flavor": "an exit"
+  },
+  "STAIRS_DOWN": {
+    "ch": 277,
+    "fg": "brown3",
+    "flavor": "downward stairs"
+  },
+  "STAIRS_UP": {
+    "ch": 275,
+    "fg": "brown3",
+    "flavor": "upward stairs"
+  },
+  "STAIRS_BOTH": {
+    "ch": 276,
+    "fg": "brown3",
+    "flavor": "stairs going up and down"
+  },
+  "CURE_FOUNTAIN": {
+    "ch": "^",
+    "fg": "blue",
+    "use": { "message": "Bubbly, effervescent.", "cure": true },
+    "layer": "FIXTURE",
+    "flavor": "a fountain"
+  },
+  "HEAL_FOUNTAIN": {
+    "ch": "^",
+    "fg": "blue",
+    "use": { "message": "Soothing.", "heal": true },
+    "layer": "FIXTURE",
+    "flavor": "a fountain"
+  },
+  "POISON_FOUNTAIN": {
+    "ch": "^",
+    "fg": "blue",
+    "use": { "message": "Tastes foul.", "poison": true },
+    "layer": "FIXTURE",
+    "flavor": "a fountain"
+  },
+  "DAMAGE_FOUNTAIN": {
+    "ch": "^",
+    "fg": "blue",
+    "use": { "message": "Burns your throat.", "damage": 10 },
+    "layer": "FIXTURE",
+    "flavor": "a fountain"
+  },
+  "WINDS": {
+    "ch": 0,
+    "fg": "#0000",
+    "bg": "#0000",
+    "layer": "FIXTURE",
+    "enter": {}
+  },
+  "GREMLINS": {
+    "layer": "FIXTURE",
+    "enter": {}
+  },
+  "DAMAGE_TRAP": {
+    "layer": "FIXTURE",
+    "enter": { "damage": 10, "message": "A trap!" }
+  },
+  "MARK_FORCE": {
+    "ch": 383,
+    "fg": "blue",
+    "layer": "FIXTURE",
+    "flavor": "an altar",
+    "use": { "message": "You receive the mark of Force!" }
+  },
+  "MARK_FIRE": {
+    "ch": 383,
+    "fg": "blue",
+    "layer": "FIXTURE",
+    "flavor": "an altar",
+    "use": { "message": "You receive the mark of Fire!" }
+  },
+  "MARK_SNAKE": {
+    "ch": 383,
+    "fg": "blue",
+    "layer": "FIXTURE",
+    "flavor": "an altar",
+    "use": { "message": "You receive the mark of the Snake!" }
+  },
+  "MARK_KINGS": {
+    "ch": 383,
+    "fg": "blue",
+    "layer": "FIXTURE",
+    "flavor": "an altar",
+    "use": { "message": "You receive the mark of Kings!" }
+  }
+}

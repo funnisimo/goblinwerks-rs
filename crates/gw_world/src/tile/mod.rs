@@ -24,3 +24,9 @@ pub use load::*;
 
 mod tile_set;
 pub use tile_set::*;
+
+mod builder;
+pub use builder::*;
+
+mod tiles;
+pub use tiles::*;

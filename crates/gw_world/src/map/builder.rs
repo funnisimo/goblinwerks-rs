@@ -1,4 +1,5 @@
-use super::{Cell, PortalInfo};
+use super::Cell;
+use crate::effect::BoxedEffect;
 use crate::tile::{Tile, Tiles};
 use crate::{map::Map, tile::TileKind};
 use gw_util::point::Point;
@@ -84,15 +85,16 @@ impl<'t> Builder<'t> {
         &mut self.rng
     }
 
-    pub fn set_portal(&mut self, point: Point, info: PortalInfo) -> &mut Self {
-        let idx = match self.map.get_wrapped_index(point.x, point.y) {
-            None => return self,
-            Some(idx) => idx,
-        };
+    // pub fn set_portal(&mut self, point: Point, map_id: &str, location: &str) -> &mut Self {
+    //     let idx = match self.map.get_wrapped_index(point.x, point.y) {
+    //         None => return self,
+    //         Some(idx) => idx,
+    //     };
 
-        self.map.set_portal(idx, info);
-        self
-    }
+    //     // TODO - Set portal info on map cell
+    //     // self.map.set_portal(idx, info);
+    //     self
+    // }
 
     pub fn set_location(&mut self, location: &str, point: Point) -> &mut Self {
         let idx = match self.map.get_wrapped_index(point.x, point.y) {
@@ -100,6 +102,26 @@ impl<'t> Builder<'t> {
             Some(idx) => idx,
         };
         self.map.set_location(location, idx);
+        self
+    }
+
+    pub fn add_effect(&mut self, x: i32, y: i32, action: &str, effect: BoxedEffect) -> &mut Self {
+        let idx = match self.map.get_wrapped_index(x, y) {
+            None => return self,
+            Some(idx) => idx,
+        };
+
+        self.map.add_effect(idx, action, effect);
+        self
+    }
+
+    pub fn set_flavor(&mut self, x: i32, y: i32, text: &str) -> &mut Self {
+        let idx = match self.map.get_wrapped_index(x, y) {
+            None => return self,
+            Some(idx) => idx,
+        };
+
+        self.map.set_flavor(idx, text.to_string());
         self
     }
 

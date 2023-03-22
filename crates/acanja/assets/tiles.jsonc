@@ -142,7 +142,8 @@
     "kind": "WALL",
     "flags": "LOCKED",
     "blocks": true,
-    "flavor": "a locked door"
+    "flavor": "a locked door",
+    "unlock": { "fixture": "DOOR" }
   },
   "DOOR": {
     "ch": 262,
@@ -150,7 +151,18 @@
     // "bg": "darkest_brown",
     "kind": "WALL",
     "blocks": "vision",
-    "flavor": "an open door"
+    "flavor": "an open door",
+    "enter": { "fixture": "DOOR_OPEN" },
+    "lock": { "fixture": "DOOR_LOCKED" }
+  },
+  "DOOR_OPEN": {
+    "ch": 262,
+    "fg": "brown",
+    // "bg": "darkest_brown",
+    "kind": "WALL",
+    "blocks": "vision",
+    "flavor": "an open door",
+    "exit": { "fixture": "DOOR" }
   },
   "CHEST_LOCKED": {
     "ch": 366,
@@ -158,19 +170,44 @@
     // "bg": "darkest_gold",
     "flags": "LOCKED",
     "kind": "FIXTURE",
-    "flavor": "a locked chest"
+    "flavor": "a locked chest",
+    "unlock": { "fixture": "CHEST" }
   },
+  "CHEST": {
+    "ch": 366,
+    "fg": "gold",
+    // "bg": "darkest_gold",
+    "kind": "FIXTURE",
+    "flavor": "a chest",
+    "open": {
+      "fixture": "CHEST_OPEN",
+      "treasure": true,
+      "restore_items": true
+    },
+    "lock": { "fixture": "CHEST_LOCKED" }
+  },
+  "CHEST_OPEN": {
+    "ch": 366,
+    "fg": "gold",
+    // "bg": "darkest_gold",
+    "kind": "FIXTURE",
+    "flavor": "an open chest",
+    "close": { "fixture": "CHEST" },
+    "drop": { "store_items": true }
+  },
+
   "EXIT_LEFT": {
     "kind": "FIXTURE",
     "sprite": "<|YELLOW",
-    "flavor": "an exit",
-    "move": "PORTAL_UP"
+    "flavor": "an exit"
+    // "move": "PORTAL_UP"
   },
   "FORCEFIELD": {
     "ch": 321,
     "fg": "teal",
     "bg": "darkest_teal",
     "kind": "WALL",
+    // "blocks": "move",
     "flavor": "a forcefield"
   },
   "COUNTER_SPACE": {
@@ -237,7 +274,15 @@
     "fg": "darker_gray",
     "bg": "black",
     "flavor": "a stone wall",
-    "blocks": "vision"
+    "blocks": "vision",
+    "enter": { "tile": "FAKE_PASSAGE" }
+  },
+  "FAKE_PASSAGE": {
+    "ch": 165, // ".",
+    "fg": "darker_gray",
+    "bg": "black",
+    "flavor": "a hidden passage",
+    "exit": { "tile": "FAKE_WALL" }
   },
 
   /* FIXTURES - DUNGEON */

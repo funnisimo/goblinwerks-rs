@@ -28,7 +28,9 @@
     "<": {
       "fixture": "EXIT_LEFT",
       "tile": ".",
-      "portal": { "map": "SOSARIA", "location": "EAST", "type": "UP" }
+      "climb": {
+        "portal": { "map": "SOSARIA", "location": "EAST" }
+      }
     },
 
     "a": { "actor": { "id": "Bartender", "name": "Sam" } },

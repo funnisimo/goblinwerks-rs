@@ -23,6 +23,13 @@ bitflags! {
 
         const IS_PORTAL = fl!(7);
 
+        const NO_GROUND_EVENTS = fl!(8);    // Do not fire these events at the tile level (still fire cell events)
+        const NO_FIXTURE_EVENTS = fl!(9);
+        const NO_LIQUID_EVENTS = fl!(10);
+        const NO_GAS_EVENTS = fl!(11);
+
+        const NO_TILE_EVENTS = CellFlags::NO_GROUND_EVENTS.bits() | CellFlags::NO_FIXTURE_EVENTS.bits() | CellFlags::NO_LIQUID_EVENTS.bits() | CellFlags::NO_GAS_EVENTS.bits();
+
         // TODO
         // BLOCKED_MOVE
         // BLOCKED_VISION
@@ -75,6 +82,13 @@ impl FromStr for CellFlags {
                 "ENTITY_CHANGED" => result |= CellFlags::ENTITY_CHANGED,
 
                 "IS_PORTAL" => result |= CellFlags::IS_PORTAL,
+
+                "NO_GROUND_EVENTS" => result |= CellFlags::NO_GROUND_EVENTS,
+                "NO_FIXTURE_EVENTS" => result |= CellFlags::NO_FIXTURE_EVENTS,
+                "NO_LIQUID_EVENTS" => result |= CellFlags::NO_LIQUID_EVENTS,
+                "NO_GAS_EVENTS" => result |= CellFlags::NO_GAS_EVENTS,
+
+                "NO_TILE_EVENTS" => result |= CellFlags::NO_TILE_EVENTS,
 
                 "" => {}
                 _ => return Err(format!("Unknown TileFlag1: {}", s)),

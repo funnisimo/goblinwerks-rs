@@ -6,6 +6,8 @@ use gw_app::ecs::{systems::ResourceSet, Read};
 use gw_app::*;
 use gw_util::point::Point;
 use gw_world::camera::Camera;
+use gw_world::effect::BoxedEffect;
+use gw_world::hero::Hero;
 use gw_world::level::{Level, Levels};
 use gw_world::map::{Cell, Map};
 use gw_world::tile::{TileTomlFileLoader, Tiles};
@@ -155,7 +157,7 @@ impl Screen for MainScreen {
                         None => levels.iter().next().unwrap().id.clone(),
                         Some(level) => level.id.clone(),
                     };
-                    levels.set_current(&next_id);
+                    levels.set_current(&next_id).unwrap();
                 }
                 _ => {}
             },
@@ -187,27 +189,12 @@ impl Screen for MainScreen {
                 log(format!("Mouse Pos = {} - {}", pt, cell.flavor()));
             }
             "VIEWPORT_CLICK" => {
-                let pt: Point = value.unwrap().try_into().unwrap();
-
-                let levels = ecs.resources.get::<Levels>().unwrap();
-                let level = levels.current();
-                let map = level.resources.get::<Map>().unwrap();
-                let index = map.get_wrapped_index(pt.x, pt.y).unwrap();
-
-                if let Some(portal) = map.get_portal(index) {
-                    log(format!(
-                        "Enter Portal = {} - {}::{}",
-                        portal.flavor().as_ref().unwrap(),
-                        portal.map_id(),
-                        portal.location()
-                    ));
-
-                    drop(level);
-
-                    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-                    if levels.set_current(portal.map_id()).is_err() {
-                        panic!("Failed to change world - {}", portal.map_id());
+                let pos: Point = value.unwrap().try_into().unwrap();
+                match try_pos_action(ecs, pos, "descend") {
+                    false => {
+                        try_pos_action(ecs, pos, "climb");
                     }
+                    true => {}
                 }
             }
             _ => {}
@@ -246,4 +233,33 @@ fn move_camera(levels: &mut Levels, dx: i32, dy: i32) {
     let level = levels.current_mut();
     let mut camera = level.resources.get_mut::<Camera>().unwrap();
     camera.move_center(dx, dy);
+}
+
+fn get_pos_action_effects(ecs: &mut Ecs, pos: &Point, action: &str) -> Option<Vec<BoxedEffect>> {
+    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+    let level = levels.current_mut();
+
+    let map = level.resources.get::<Map>().unwrap();
+
+    let index = map.get_index(pos.x, pos.y).unwrap();
+
+    match map.cell_effects.get(&index) {
+        None => None,
+        Some(effect_map) => match effect_map.get(action) {
+            None => None,
+            Some(effects) => Some(effects.clone()),
+        },
+    }
+}
+
+fn try_pos_action(ecs: &mut Ecs, pos: Point, action: &str) -> bool {
+    match get_pos_action_effects(ecs, &pos, action) {
+        None => false,
+        Some(effects) => {
+            for eff in effects.iter() {
+                eff.fire(ecs, pos, None);
+            }
+            true
+        }
+    }
 }

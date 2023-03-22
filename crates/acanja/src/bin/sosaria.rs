@@ -1,5 +1,7 @@
+use acanja::effect::{parse_gremlins, parse_mark, parse_winds};
 use acanja::loader::GameConfigLoader;
 use acanja::map::prefab::{PrefabFileLoader, Prefabs};
+use gw_app::ecs::Entity;
 // use acanja::map::world::build_world_map;
 use gw_app::ecs::{systems::ResourceSet, Write};
 use gw_app::loader::{LoadError, LoadHandler, Loader};
@@ -8,9 +10,10 @@ use gw_util::json::parse_file;
 use gw_util::point::Point;
 use gw_world::action::move_step::MoveStepAction;
 use gw_world::actor::Actor;
+use gw_world::effect::{register_effect_parser, BoxedEffect};
 use gw_world::hero::Hero;
 use gw_world::level::{Level, Levels};
-use gw_world::map::{Cell, Map, PortalFlags};
+use gw_world::map::{Cell, Map};
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
 use gw_world::task::DoNextActionResult;
@@ -106,15 +109,22 @@ impl Screen for MainScreen {
                 VirtualKeyCode::Right => {
                     move_hero(ecs, 1, 0);
                 }
-                VirtualKeyCode::Period if key_down.shift => {
-                    // Down
-                    let hero_point = get_hero_point(ecs);
-                    try_move_hero_world(ecs, &hero_point, PortalFlags::ON_DESCEND);
+                _ => {}
+            },
+            AppEvent::CharEvent(ch) => match ch {
+                '<' => {
+                    // Climb
+                    log("CLIMB");
+                    try_fire_hero_action(ecs, "climb");
+                    // let hero_point = get_hero_point(ecs);
+                    // try_move_hero_world(ecs, &hero_point, PortalFlags::ON_CLIMB);
                 }
-                VirtualKeyCode::Comma if key_down.shift => {
-                    // Up
-                    let hero_point = get_hero_point(ecs);
-                    try_move_hero_world(ecs, &hero_point, PortalFlags::ON_CLIMB);
+                '>' => {
+                    // Descend
+                    log("DESCEND");
+                    try_fire_hero_action(ecs, "descend");
+                    // let hero_point = get_hero_point(ecs);
+                    // try_move_hero_world(ecs, &hero_point, PortalFlags::ON_DESCEND);
                 }
                 _ => {}
             },
@@ -192,6 +202,10 @@ impl Screen for MainScreen {
 }
 
 fn main() {
+    register_effect_parser("winds", parse_winds);
+    register_effect_parser("gremlins", parse_gremlins);
+    register_effect_parser("mark", parse_mark);
+
     let app = AppBuilder::new(1024, 768)
         .title("Acanja - World Viewer")
         .font("assets/font_32x58.png")
@@ -202,7 +216,7 @@ fn main() {
             registry.register::<UserControl>("UserControl".to_string());
         })
         .file(
-            "assets/maps/tiles.jsonc",
+            "assets/tiles.jsonc",
             Box::new(TileJsonFileLoader::new().with_dump()),
         )
         .file(
@@ -227,6 +241,50 @@ fn move_hero(ecs: &mut Ecs, dx: i32, dy: i32) {
     actor.next_action = Some(Box::new(MoveStepAction::new(hero_entity, dx, dy)));
 }
 
+fn get_hero_action_effects(
+    ecs: &mut Ecs,
+    action: &str,
+) -> Option<(Entity, Point, Vec<BoxedEffect>)> {
+    let action = action.to_uppercase();
+    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+    let level = levels.current_mut();
+    let hero_entity = level.resources.get::<Hero>().unwrap().entity;
+
+    let hero_point = level
+        .world
+        .entry(hero_entity)
+        .unwrap()
+        .get_component::<Position>()
+        .unwrap()
+        .point();
+
+    let map = level.resources.get::<Map>().unwrap();
+
+    let index = map.get_index(hero_point.x, hero_point.y).unwrap();
+
+    match map.cell_effects.get(&index) {
+        None => None,
+        Some(effect_map) => match effect_map.get(&action) {
+            None => None,
+            Some(effects) => Some((hero_entity, hero_point, effects.clone())),
+        },
+    }
+}
+
+fn try_fire_hero_action(ecs: &mut Ecs, action: &str) -> bool {
+    match get_hero_action_effects(ecs, action) {
+        None => false,
+        Some((entity, pos, effects)) => {
+            log("FIRE EFFECTS");
+            for eff in effects.iter() {
+                eff.fire(ecs, pos, Some(entity));
+            }
+            true
+        }
+    }
+}
+
+/*
 fn get_hero_point(ecs: &mut Ecs) -> Point {
     let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
     let level = levels.current_mut();
@@ -328,3 +386,4 @@ fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
     }
     true
 }
+*/

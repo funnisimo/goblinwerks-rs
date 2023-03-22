@@ -33,6 +33,10 @@ impl RGBA {
         RGBA(r, g, b, a)
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.a() == 0
+    }
+
     /// The red component
     pub fn r(&self) -> u8 {
         self.0

@@ -83,12 +83,8 @@ pub trait Cell {
     // flavor
 
     fn flavor(&self) -> String {
-        if self.has_cell_flag(CellFlags::IS_PORTAL) {
-            if let Some(ref info) = self.map().get_portal(self.index()) {
-                if let Some(ref flavor) = info.flavor() {
-                    return flavor.clone();
-                }
-            }
+        if let Some(flavor) = self.map().flavors.get(&self.index()) {
+            return flavor.clone();
         }
 
         let ground = self.ground();
@@ -100,8 +96,8 @@ pub trait Cell {
             (false, false) => {
                 format!("{} on {}", feature.flavor, ground.flavor)
             }
-            (true, false) => feature.flavor.to_string(),
-            (false, true) => ground.flavor.to_string(),
+            (true, false) => feature.flavor.clone(),
+            (false, true) => ground.flavor.clone(),
             (true, true) => "nothing".to_string(),
         }
     }

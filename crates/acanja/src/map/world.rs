@@ -4,9 +4,8 @@ use gw_util::blob::{Blob, BlobConfig};
 use gw_util::grid::{spread_replace, Grid};
 use gw_util::noise::{get_noise, print_histogram, square_bump, NoiseConfig};
 use gw_util::rng::{RandomNumberGenerator, RngCore};
-use gw_world::map::{
-    closest_points_matching, find_random_point, Builder, Cell, Map, PortalFlags, PortalInfo,
-};
+use gw_world::effect::Portal;
+use gw_world::map::{closest_points_matching, find_random_point, Builder, Cell, Map};
 use gw_world::tile::{TileKind, Tiles};
 use rand::prelude::SliceRandom;
 
@@ -80,17 +79,15 @@ pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32
         .expect("Failed to find town location");
         let index = map.get_wrapped_index(town_loc.x, town_loc.y).unwrap();
 
-        map.place_feature(index, tiles.get("TOWN").unwrap());
+        map.place_fixture(index, tiles.get("TOWN").unwrap());
 
         // For when you come out of the town
         let loc_name = format!("TOWN{}", i);
         map.set_location(&loc_name, index);
 
         // For going into the town
-        let mut portal = PortalInfo::new(&loc_name, "START");
-        portal.set_flavor(&format!("the town of {}", &loc_name));
-        portal.set_flags(PortalFlags::ON_DESCEND);
-        map.set_portal(index, portal);
+        let portal = Box::new(Portal::new(loc_name, "START".to_string()));
+        map.add_effect(index, "descend", portal);
     }
 
     // ADD STARTING LOCATION

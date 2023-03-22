@@ -30,7 +30,9 @@
     "<": {
       "fixture": "EXIT_LEFT",
       "tile": ".",
-      "portal": { "map": "SOSARIA", "location": "TLB", "type": "UP" }
+      "climb": {
+        "portal": { "map": "SOSARIA", "location": "TLB" }
+      }
     },
 
     "m": {

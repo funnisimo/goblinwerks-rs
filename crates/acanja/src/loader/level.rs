@@ -7,8 +7,9 @@ use gw_app::{
 use gw_util::value::Value;
 use gw_world::{
     camera::Camera,
+    effect::{parse_effects, BoxedEffect, Portal},
     level::{Level, Levels},
-    map::{Map, PortalFlags, PortalInfo, Wrap},
+    map::{Map, Wrap},
     tile::{Tile, Tiles},
     widget::Lock,
 };
@@ -26,22 +27,18 @@ pub enum TileType {
     Tile(Arc<Tile>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Cell {
-    tile: Option<TileType>,    // ground tile
-    fixture: Option<TileType>, // ground, fixture id
-    location: Option<String>,  // ground, fixture, location name
-    portal: Option<PortalInfo>,
+    tile: Option<TileType>,                     // ground tile
+    fixture: Option<TileType>,                  // ground, fixture id
+    location: Option<String>,                   // ground, fixture, location name
+    effects: HashMap<String, Vec<BoxedEffect>>, // action effects
+    flavor: Option<String>,
 }
 
 impl Cell {
     pub fn new() -> Self {
-        Cell {
-            tile: None,
-            fixture: None,
-            location: None,
-            portal: None,
-        }
+        Cell::default()
     }
 }
 
@@ -66,7 +63,7 @@ impl LevelData {
             map_size: (0, 0),
             map_wrap: false,
             welcome: None,
-            camera_size: (0, 0),
+            camera_size: (11, 11),
         }
     }
 }
@@ -154,7 +151,7 @@ pub fn load_level_data(tiles: &Tiles, json: Value) -> LevelData {
 
     let root = json.as_map().unwrap();
 
-    println!("Root keys = {:?}", root.keys());
+    // println!("Root keys = {:?}", root.keys());
 
     // Setup Tiles
     let mut cell_lookup: HashMap<String, Cell> = HashMap::new(); // char -> cell
@@ -237,47 +234,84 @@ pub fn load_level_data(tiles: &Tiles, json: Value) -> LevelData {
 
                 // item
 
+                // location
                 if let Some(location_value) = info.get(&"location".into()) {
                     let location = location_value.to_string().to_uppercase();
                     cell.location = Some(location);
                 }
 
-                if let Some(portal_value) = info.get(&"portal".into()) {
-                    if portal_value.is_string() {
-                        cell.portal = Some(PortalInfo::new(
-                            &portal_value.to_string().to_uppercase(),
-                            "START",
-                        ));
-                    } else if portal_value.is_map() {
-                        // need my map id
-                        let portal_map = portal_value.as_map().unwrap();
+                // flavor
+                if let Some(flavor_value) = info.get(&"flavor".into()) {
+                    let flavor = flavor_value.to_string();
+                    cell.flavor = Some(flavor);
+                }
 
-                        let map = match portal_map.get(&"map".into()) {
-                            None => map_id.clone(),
-                            Some(val) => val.to_string().to_uppercase(),
-                        };
+                // use
+                if let Some(use_value) = info.get(&"use".into()) {
+                    match parse_effects(use_value) {
+                        Err(e) => panic!("{}", e),
+                        Ok(val) => {
+                            cell.effects.insert("USE".to_string(), val);
+                        }
+                    }
+                }
 
-                        let location = match portal_map.get(&"location".into()) {
-                            None => "START".to_string(),
-                            Some(val) => val.to_string().to_uppercase(),
-                        };
-
-                        let flags = match portal_map.get(&"type".into()) {
-                            None => PortalFlags::ON_DESCEND,
-                            Some(val) => match val.to_string().to_uppercase().as_str() {
-                                "UP" => PortalFlags::ON_CLIMB,
-                                "DOWN" => PortalFlags::ON_DESCEND,
-                                "ENTER" => PortalFlags::ON_ENTER,
-                                _ => PortalFlags::ON_DESCEND, // Is this an error?
-                            },
-                        };
-
-                        let mut portal = PortalInfo::new(&map, &location);
-                        portal.set_flags(flags);
-
-                        cell.portal = Some(portal);
+                // climb
+                if let Some(climb_value) = info.get(&"climb".into()) {
+                    if climb_value.is_string() {
+                        cell.effects.insert(
+                            "CLIMB".to_string(),
+                            vec![Box::new(Portal::new(
+                                climb_value.to_string(),
+                                "START".to_string(),
+                            ))],
+                        );
                     } else {
-                        panic!("Invalid portal in entry - {}", text);
+                        match parse_effects(climb_value) {
+                            Err(e) => panic!("{}", e),
+                            Ok(val) => {
+                                cell.effects.insert("CLIMB".to_string(), val);
+                            }
+                        }
+                    }
+                }
+
+                // descend
+                if let Some(descend_value) = info.get(&"descend".into()) {
+                    if descend_value.is_string() {
+                        cell.effects.insert(
+                            "DESCEND".to_string(),
+                            vec![Box::new(Portal::new(
+                                descend_value.to_string(),
+                                "START".to_string(),
+                            ))],
+                        );
+                    } else {
+                        match parse_effects(descend_value) {
+                            Err(e) => panic!("{}", e),
+                            Ok(val) => {
+                                cell.effects.insert("DESCEND".to_string(), val);
+                            }
+                        }
+                    }
+                }
+                // enter
+                if let Some(enter_value) = info.get(&"enter".into()) {
+                    match parse_effects(enter_value) {
+                        Err(e) => panic!("{}", e),
+                        Ok(val) => {
+                            cell.effects.insert("ENTER".to_string(), val);
+                        }
+                    }
+                }
+
+                // exit
+                if let Some(exit_value) = info.get(&"exit".into()) {
+                    match parse_effects(exit_value) {
+                        Err(e) => panic!("{}", e),
+                        Ok(val) => {
+                            cell.effects.insert("EXIT".to_string(), val);
+                        }
                     }
                 }
 
@@ -286,8 +320,8 @@ pub fn load_level_data(tiles: &Tiles, json: Value) -> LevelData {
         }
     }
 
-    println!("Default entry - {:?}", default_entry.as_ref().unwrap());
-    println!("Tile Lookup = {:?}", cell_lookup.keys());
+    // println!("Default entry - {:?}", default_entry.as_ref().unwrap());
+    // println!("Tile Lookup = {:?}", cell_lookup.keys());
 
     let entry = cell_lookup.get(default_entry.as_ref().unwrap()).unwrap();
     match entry.tile.as_ref() {
@@ -304,7 +338,7 @@ pub fn load_level_data(tiles: &Tiles, json: Value) -> LevelData {
 
     // Map
 
-    println!("Tile Lookup = {:?}", cell_lookup);
+    // println!("Tile Lookup = {:?}", cell_lookup);
     let mut level_data = LevelData::new(map_id, cell_lookup, default_entry.unwrap());
 
     let map_info = root.get(&"map".into()).unwrap().as_map().unwrap();
@@ -458,8 +492,8 @@ pub fn make_level(mut level_data: LevelData) -> Level {
                         map.set_location(location, index);
                     }
 
-                    if let Some(ref portal) = place.portal {
-                        map.set_portal(index, portal.clone());
+                    for (action, effects) in place.effects.iter() {
+                        map.set_effects(index, action, effects.clone());
                     }
                 }
             }

@@ -31,7 +31,6 @@ impl<'a> Into<Value> for JsonValue<'a> {
                 if val.contains(".") {
                     Value::Float(val.parse().unwrap())
                 } else {
-                    println!("JsonNumber({})", val);
                     Value::Integer(val.parse().unwrap())
                 }
             }

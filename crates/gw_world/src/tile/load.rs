@@ -5,9 +5,9 @@ use gw_app::loader::{LoadError, LoadHandler};
 use gw_app::log;
 use gw_util::value::Value;
 
-pub fn load_tile_data(dest: &mut Tiles, toml: Value) -> Result<u32, String> {
-    let map = match toml.to_map() {
-        None => return Err("Wrong data format.".to_string()),
+pub fn load_tile_data(dest: &mut Tiles, data: Value) -> Result<u32, String> {
+    let map = match data.to_map() {
+        None => return Err("Tile data must be a map.".to_string()),
         Some(v) => v,
     };
 

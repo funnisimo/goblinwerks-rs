@@ -68,13 +68,13 @@
       "fixture": "Mark_force"
     },
     "N": {
-      "entity": "Mark_fire"
+      "fixture": "Mark_fire"
     },
     "K": {
-      "entity": "Mark_kings"
+      "fixture": "Mark_kings"
     },
     "S": {
-      "entity": "Mark_snake"
+      "fixture": "Mark_snake"
     },
 
     "L": {
@@ -87,7 +87,10 @@
     "@": {
       "location": "START",
       "fixture": "dungeon_Exit",
-      "portal": { "map": "SOSARIA", "location": "CLUES" }
+      "climb": {
+        "portal": { "map": "SOSARIA", "location": "CLUES" },
+        "message": "Back to Sosaria..."
+      }
     }
   },
   "actors": {

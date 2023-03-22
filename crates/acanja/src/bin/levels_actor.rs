@@ -8,9 +8,10 @@ use gw_util::point::Point;
 use gw_world::action::move_step::MoveStepAction;
 use gw_world::actor::Actor;
 use gw_world::camera::{update_camera_follows, Camera};
+use gw_world::effect::BoxedEffect;
 use gw_world::hero::Hero;
 use gw_world::level::{Level, Levels};
-use gw_world::map::{Cell, Map, PortalFlags};
+use gw_world::map::{Cell, Map};
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
 use gw_world::task::DoNextActionResult;
@@ -43,7 +44,6 @@ impl MainScreen {
         let start_loc = map.to_point(start_index);
 
         log(format!("locations = {:?}", &map.locations));
-        log(format!("portals   = {:?}", &map.portals));
 
         let mut level = Level::new("WORLD");
 
@@ -171,15 +171,20 @@ impl Screen for MainScreen {
                     log(format!("Viewport size={:?}", self.viewport.size()));
                     drop(level);
                 }
-                VirtualKeyCode::Period if key_down.shift => {
-                    // '>'
-                    let hero_point = get_hero_point(ecs);
-                    try_move_hero_world(ecs, &hero_point, PortalFlags::ON_DESCEND);
+                _ => {}
+            },
+            AppEvent::CharEvent(ch) => match ch {
+                '<' => {
+                    // Climb
+                    try_fire_hero_action(ecs, "climb");
+                    // let hero_point = get_hero_point(ecs);
+                    // try_move_hero_world(ecs, &hero_point, PortalFlags::ON_CLIMB);
                 }
-                VirtualKeyCode::Comma if key_down.shift => {
-                    // '<'
-                    let hero_point = get_hero_point(ecs);
-                    try_move_hero_world(ecs, &hero_point, PortalFlags::ON_CLIMB);
+                '>' => {
+                    // Descend
+                    try_fire_hero_action(ecs, "descend");
+                    // let hero_point = get_hero_point(ecs);
+                    // try_move_hero_world(ecs, &hero_point, PortalFlags::ON_DESCEND);
                 }
                 _ => {}
             },
@@ -235,8 +240,13 @@ impl Screen for MainScreen {
                 log(format!("Mouse Pos = {} - {}", pt, cell.flavor()));
             }
             "VIEWPORT_CLICK" => {
-                let pt: Point = value.unwrap().try_into().unwrap();
-                try_move_hero_world(ecs, &pt, PortalFlags::ON_DESCEND | PortalFlags::ON_CLIMB);
+                // let pos: Point = value.unwrap().try_into().unwrap();
+                // match try_pos_action(ecs, pos, "descend") {
+                //     false => {
+                //         try_pos_action(ecs, pos, "climb");
+                //     }
+                //     true => {}
+                // }
             }
             _ => {}
         }
@@ -291,52 +301,15 @@ fn move_hero(level: &mut Level, dx: i32, dy: i32) {
     actor.next_action = Some(Box::new(MoveStepAction::new(hero_entity, dx, dy)));
 }
 
-fn get_hero_point(ecs: &mut Ecs) -> Point {
+fn get_hero_action_effects(
+    ecs: &mut Ecs,
+    action: &str,
+) -> Option<(Entity, Point, Vec<BoxedEffect>)> {
     let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
     let level = levels.current_mut();
     let hero_entity = level.resources.get::<Hero>().unwrap().entity;
 
-    level
-        .world
-        .entry(hero_entity)
-        .unwrap()
-        .get_component::<Position>()
-        .unwrap()
-        .point()
-}
-
-fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
-    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-    let level = levels.current_mut();
-
-    let hero_entity = level.resources.get::<Hero>().unwrap().entity;
-
-    let map = level.resources.get_mut::<Map>().unwrap();
-    let index = map.get_wrapped_index(pt.x, pt.y).unwrap();
-
-    log(format!("CLICK = {:?}", pt));
-
-    let (new_map_id, location) = {
-        match map.get_portal(index) {
-            None => return false,
-            Some(info) => {
-                if !info.flags().contains(flag) {
-                    return false;
-                }
-
-                log(format!(
-                    "Enter Portal = {} - {}::{}",
-                    info.flavor().as_ref().unwrap(),
-                    info.map_id(),
-                    info.location()
-                ));
-
-                (info.map_id().to_string(), info.location().to_string())
-            }
-        }
-    };
-
-    let current_pt = level
+    let hero_point = level
         .world
         .entry(hero_entity)
         .unwrap()
@@ -344,37 +317,115 @@ fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
         .unwrap()
         .point();
 
-    drop(map);
-    drop(level);
+    let map = level.resources.get::<Map>().unwrap();
 
-    let level = levels.current_mut();
-    let mut map = level.resources.get_mut::<Map>().unwrap();
-    let current_idx = map.get_wrapped_index(current_pt.x, current_pt.y).unwrap();
+    let index = map.get_index(hero_point.x, hero_point.y).unwrap();
 
-    map.remove_actor(current_idx, hero_entity);
-
-    drop(map);
-    drop(level);
-
-    log("Moving hero to new world");
-    let new_entity = levels.move_current_entity(hero_entity, &new_map_id);
-    log("Changing current world");
-    if levels.set_current(&new_map_id).is_err() {
-        panic!("Failed to change world - {}", new_map_id);
+    match map.cell_effects.get(&index) {
+        None => None,
+        Some(effect_map) => match effect_map.get(action) {
+            None => None,
+            Some(effects) => Some((hero_entity, hero_point, effects.clone())),
+        },
     }
-
-    let level = levels.current_mut();
-    level.resources.insert(Hero::new(hero_entity));
-    let new_pt = {
-        let mut map = level.resources.get_mut::<Map>().unwrap();
-        let pt = map.locations.get(&location).unwrap().clone();
-        map.add_actor(pt, new_entity, true);
-        map.to_point(pt)
-    };
-    {
-        let mut entry = level.world.entry(new_entity).unwrap();
-        let pos = entry.get_component_mut::<Position>().unwrap();
-        pos.set(new_pt.x, new_pt.y);
-    }
-    true
 }
+
+fn try_fire_hero_action(ecs: &mut Ecs, action: &str) -> bool {
+    match get_hero_action_effects(ecs, action) {
+        None => false,
+        Some((entity, pos, effects)) => {
+            for eff in effects.iter() {
+                eff.fire(ecs, pos, Some(entity));
+            }
+            true
+        }
+    }
+}
+
+// fn get_hero_point(ecs: &mut Ecs) -> Point {
+//     let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+//     let level = levels.current_mut();
+//     let hero_entity = level.resources.get::<Hero>().unwrap().entity;
+
+//     level
+//         .world
+//         .entry(hero_entity)
+//         .unwrap()
+//         .get_component::<Position>()
+//         .unwrap()
+//         .point()
+// }
+
+// fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
+//     let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+//     let level = levels.current_mut();
+
+//     let hero_entity = level.resources.get::<Hero>().unwrap().entity;
+
+//     let map = level.resources.get_mut::<Map>().unwrap();
+//     let index = map.get_wrapped_index(pt.x, pt.y).unwrap();
+
+//     log(format!("CLICK = {:?}", pt));
+
+//     let (new_map_id, location) = {
+//         match map.get_portal(index) {
+//             None => return false,
+//             Some(info) => {
+//                 if !info.flags().contains(flag) {
+//                     return false;
+//                 }
+
+//                 log(format!(
+//                     "Enter Portal = {} - {}::{}",
+//                     info.flavor().as_ref().unwrap(),
+//                     info.map_id(),
+//                     info.location()
+//                 ));
+
+//                 (info.map_id().to_string(), info.location().to_string())
+//             }
+//         }
+//     };
+
+//     let current_pt = level
+//         .world
+//         .entry(hero_entity)
+//         .unwrap()
+//         .get_component::<Position>()
+//         .unwrap()
+//         .point();
+
+//     drop(map);
+//     drop(level);
+
+//     let level = levels.current_mut();
+//     let mut map = level.resources.get_mut::<Map>().unwrap();
+//     let current_idx = map.get_wrapped_index(current_pt.x, current_pt.y).unwrap();
+
+//     map.remove_actor(current_idx, hero_entity);
+
+//     drop(map);
+//     drop(level);
+
+//     log("Moving hero to new world");
+//     let new_entity = levels.move_current_entity(hero_entity, &new_map_id);
+//     log("Changing current world");
+//     if levels.set_current(&new_map_id).is_err() {
+//         panic!("Failed to change world - {}", new_map_id);
+//     }
+
+//     let level = levels.current_mut();
+//     level.resources.insert(Hero::new(hero_entity));
+//     let new_pt = {
+//         let mut map = level.resources.get_mut::<Map>().unwrap();
+//         let pt = map.locations.get(&location).unwrap().clone();
+//         map.add_actor(pt, new_entity, true);
+//         map.to_point(pt)
+//     };
+//     {
+//         let mut entry = level.world.entry(new_entity).unwrap();
+//         let pos = entry.get_component_mut::<Position>().unwrap();
+//         pos.set(new_pt.x, new_pt.y);
+//     }
+//     true
+// }
