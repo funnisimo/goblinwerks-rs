@@ -1,4 +1,11 @@
 {
+  "ERROR": {
+    "glyph": " ",
+    "bg": "red",
+    "kind": "FLOOR",
+    "flavor": "AN ERROR HAS OCCURRED"
+  },
+
   /* GROUND - WORLD */
 
   "PLAINS": {

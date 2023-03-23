@@ -1,0 +1,96 @@
+{
+  "$schema": "../map.schema.json",
+  "id": "DARDINS",
+  "map": {
+    "filename": "depths.txt",
+    "width": 17, // 16 + padding column
+    "height": 136, // 128 + 8 padding rows
+    "wrap": true
+  },
+  "camera": [11, 11],
+  "region": [0, 0, 16, 16], // Sets the region as the first floor
+  "spawn_delay": 5,
+  "tiles": {
+    " ": { "tile": "DUNGEON_FLOOR", "default": true },
+    "~": "WATER",
+    "#": "DUNGEON_WALL",
+    "+": "FAKE_WALL",
+    "-": "FLOOR",
+    ":": "TREES",
+    "*": "FORCEFIELD",
+    "!": "LAVA",
+
+    "|": { "fixture": "Door" }, // DOOR_LOCKED
+    "/": { "fixture": "Door" },
+    "$": { "fixture": "Chest_LOCKED" },
+
+    "1": { "message": "#[darker_red]Dardin's Pit!" },
+    "2": { "message": "#[darker_red]Secret slides!" },
+    "3": { "message": "#[darker_red]Beware traps!" },
+    "4": { "message": "#[darker_red]Ever adventure!" },
+    "5": { "message": "#[darker_red]Gremlins!" },
+    "6": { "message": "#[darker_red]Circle death!" },
+    "7": { "message": "#[darker_red]Collasal [sic] cavern!" },
+    "8": { "message": "#[darker_red]Traps to gold!" },
+
+    // Using 17 to skip the padding row
+    "U": {
+      "tile": "Stairs_up",
+      "climb": { "move_entity": [0, -17], "move_region": [0, -17] }
+    },
+    "D": {
+      "tile": "Stairs_down",
+      "descend": { "move_entity": [0, 17], "move_region": [0, 17] }
+    },
+    "H": {
+      "tile": "Stairs_both",
+      "climb": { "move_entity": [0, -17], "move_region": [0, -17] },
+      "descend": { "move_entity": [0, 17], "move_region": [0, 17] }
+    },
+
+    "W": { "enter": { "winds": true } },
+    "G": { "enter": { "gremlins": true } },
+    "T": { "enter": { "damage": 10, "message": "Trap!" } },
+
+    "C": {
+      "fixture": "CURE_FOUNTAIN"
+    },
+    "P": { "fixture": "POISON_FOUNTAIN" },
+    "E": { "fixture": "HEAL_FOUNTAIN" },
+    "X": {
+      "fixture": "DAMAGE_FOUNTAIN"
+    },
+
+    "M": {
+      "fixture": "MARK_FORCE"
+    },
+    "N": {
+      "fixture": "MARK_FIRE"
+    },
+    "K": {
+      "fixture": "MARK_KINGS"
+    },
+    "S": {
+      "fixture": "MARK_SNAKE"
+    },
+
+    "L": {
+      "actor": {
+        "id": "Time",
+        "talk": "The one way is Love, Sol, Moons, Death.  All others Fail."
+      }
+    },
+
+    "@": {
+      "location": "START",
+      "fixture": "dungeon_Exit",
+      "climb": {
+        "portal": { "map": "SOSARIA", "location": "DARDINS" },
+        "message": "Back to Sosaria..."
+      }
+    },
+    "Z": "ERROR",
+    "z": "ERROR"
+  },
+  "objects": []
+}

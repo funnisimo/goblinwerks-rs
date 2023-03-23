@@ -91,7 +91,7 @@ pub fn update_camera_follows(level: &mut Level) {
                 if let Ok(pos) = entry.get_component::<Position>() {
                     if camera.center != pos.point() {
                         camera.set_center(pos.x, pos.y);
-                        log(format!("Set camera center={:?}", camera.center));
+                        // log(format!("Set camera center={:?}", camera.center));
                     }
                 }
             } else {
