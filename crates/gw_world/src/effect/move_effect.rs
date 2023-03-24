@@ -18,8 +18,6 @@ pub struct MoveEntity(i32, i32);
 
 impl Effect for MoveEntity {
     fn fire(&self, ecs: &mut Ecs, _pos: Point, entity: Option<Entity>) -> EffectResult {
-        log(format!("Move entity({},{})", self.0, self.1));
-
         let entity = match entity {
             None => return EffectResult::Fail,
             Some(entity) => entity,
@@ -38,14 +36,21 @@ impl Effect for MoveEntity {
         let pos = entry.get_component_mut::<Position>().unwrap();
         let orig_pt = pos.point();
 
-        let old_idx = map.get_wrapped_index(orig_pt.x, orig_pt.y).unwrap();
+        let old_idx = map.get_index(orig_pt.x, orig_pt.y).unwrap();
         map.remove_actor(old_idx, entity);
         // println!("changed : {}", old_idx);
 
-        let (new_x, new_y) = map.try_wrap_xy(pos.x + self.0, pos.y + self.1).unwrap();
+        // let (new_x, new_y) = map.try_wrap_xy(pos.x + self.0, pos.y + self.1).unwrap();
+        let (new_x, new_y) = (pos.x + self.0, pos.y + self.1);
         pos.set(new_x, new_y);
 
-        let new_idx = map.get_wrapped_index(pos.x, pos.y).unwrap();
+        log(format!(
+            "Move entity({},{}) from: {:?}, to: {:?}",
+            self.0, self.1, orig_pt, pos
+        ));
+
+        // let new_idx = map.get_wrapped_index(pos.x, pos.y).unwrap();
+        let new_idx = map.get_index(pos.x, pos.y).unwrap();
         map.add_actor(new_idx, entity, pos.blocks_move);
 
         // if let Some(mut fov) = entry.get_component_mut::<FOV>() {
@@ -111,14 +116,19 @@ pub struct MoveRegion(i32, i32);
 
 impl Effect for MoveRegion {
     fn fire(&self, ecs: &mut Ecs, _pos: Point, _entity: Option<Entity>) -> EffectResult {
-        log("Move Region");
-
         let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
         let level = levels.current_mut();
 
         let mut map = level.resources.get_mut::<Map>().unwrap();
 
+        let orig = map.region().clone();
         map.move_region_pos(self.0, self.1);
+        let updated = map.region();
+
+        log(format!(
+            "Move Region({},{}) from: {},{}, to: {},{}",
+            self.0, self.1, orig.x1, orig.y1, updated.x1, updated.y1,
+        ));
 
         EffectResult::Success
     }

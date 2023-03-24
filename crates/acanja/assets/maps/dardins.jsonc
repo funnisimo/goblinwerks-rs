@@ -2,7 +2,7 @@
   "$schema": "../map.schema.json",
   "id": "DARDINS",
   "map": {
-    "filename": "depths.txt",
+    "filename": "dardins.txt",
     "width": 16, // ignore padding column
     "height": 136, // 128 + 8 padding rows
     "wrap": true

@@ -4,7 +4,7 @@ use gw_app::{
     loader::{LoadError, LoadHandler, Loader},
     log, Ecs,
 };
-use gw_util::value::Value;
+use gw_util::{rect::Rect, value::Value};
 use gw_world::{
     camera::Camera,
     effect::{parse_effects, BoxedEffect, Portal},
@@ -51,6 +51,7 @@ pub struct LevelData {
     pub map_wrap: bool,
     pub welcome: Option<String>,
     pub camera_size: (u32, u32),
+    pub region: Option<Rect>,
 }
 
 impl LevelData {
@@ -64,6 +65,7 @@ impl LevelData {
             map_wrap: false,
             welcome: None,
             camera_size: (11, 11),
+            region: None,
         }
     }
 }
@@ -399,6 +401,31 @@ pub fn load_level_data(tiles: &Tiles, json: Value) -> LevelData {
     }
 
     // display region
+    if let Some(region_val) = root.get(&"region".into()) {
+        if region_val.is_list() {
+            let region = region_val.as_list().unwrap();
+            if region.len() != 4 || region.iter().any(|v| !v.is_int()) {
+                panic!(
+                    "map region must be array of [x,y,w,h].  Found: {:?}",
+                    region
+                );
+            }
+
+            let vals: Vec<i64> = region.iter().map(|v| v.as_int().unwrap()).collect();
+
+            level_data.region = Some(Rect::with_size(
+                vals[0] as i32,
+                vals[1] as i32,
+                vals[2] as u32,
+                vals[3] as u32,
+            ));
+        } else {
+            panic!(
+                "map region must be array of [x,y,w,h].  Found: {:?}",
+                region_val
+            );
+        }
+    }
 
     if let Some(filename) = map_info.get(&"filename".into()) {
         level_data.map_data = Some(MapData::FileName(filename.to_string()));
@@ -502,6 +529,11 @@ pub fn make_level(mut level_data: LevelData) -> Level {
 
     map.reveal_all();
     map.make_fully_visible();
+
+    if let Some(ref region) = level_data.region {
+        log("SETTING REGION");
+        map.select_region(region.left(), region.top(), region.width(), region.height());
+    }
 
     let mut level = Level::new(&level_data.id);
     level.resources.insert(map);

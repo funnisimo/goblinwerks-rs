@@ -356,6 +356,8 @@ fn draw_map(
     let top = offset.1; // camera.pos.y - size.1 as i32 / 2;
     let black = BLACK.into();
 
+    // log(format!("map region = {:?}", map.region()));
+
     // let draw_bounds = Rect::with_size(
     //     0.max(view_size.0.saturating_sub(map_size.0) as i32 / 2),
     //     0.max(view_size.1.saturating_sub(map_size.1) as i32 / 2),
@@ -499,8 +501,8 @@ fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
 
     // TODO - USE REGION
 
-    let wrap = map.wrap;
     let map_size = map.get_size();
+    let region = map.region();
     let view_size = viewport.con.size();
     // let center = camera.center();
     // let half_size = (view_size.0 / 2, view_size.1 / 2);
@@ -519,13 +521,17 @@ fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
         map_size.1,
     );
 
-    let left = wrap.wrap_x(base_left, map_size.0);
-    let top = wrap.wrap_y(base_top, map_size.1);
+    let (left, top) = map.try_wrap_xy(base_left, base_top).unwrap();
     let bounds = Rect::with_size(left, top, view_size.0, view_size.1);
 
     let mut query = <(&Position, &Sprite)>::query();
 
     for (pos, sprite) in query.iter(&ecs.world) {
+        if !region.contains(pos.x, pos.y) {
+            log("ACTOR NOT IN REGION");
+            continue;
+        }
+
         let mut vx = pos.x;
         while vx < left {
             vx += map_size.0 as i32;
@@ -534,6 +540,11 @@ fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
         while vy < top {
             vy += map_size.1 as i32;
         }
+
+        // log(format!(
+        //     "Draw Actor - pos={:?}, vx,vy={},{}, bounds={:?}",
+        //     pos, vx, vy, bounds
+        // ));
 
         if bounds.contains(vx, vy) {
             let bufx = vx - left;

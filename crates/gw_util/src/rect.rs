@@ -6,10 +6,11 @@ use std::ops;
 pub struct Rect {
     /// The X position of the first point (typically the left)
     pub x1: i32,
-    /// The X position of the second point (typically the right)
-    pub x2: i32,
     /// The Y position of the first point (typically the top)
     pub y1: i32,
+
+    /// The X position of the second point (typically the right)
+    pub x2: i32,
     /// The Y position of the second point (typically the bottom)
     pub y2: i32,
 }
