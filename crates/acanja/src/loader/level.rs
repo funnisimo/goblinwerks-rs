@@ -307,6 +307,10 @@ pub fn load_level_data(tiles: &Tiles, json: Value) -> LevelData {
                     }
                 }
 
+                // message?
+                // TODO - message can be at the top level - it is shorthand for {enter: {message: text}}
+                //      - and adds to any other enter effects that were done
+
                 // exit
                 if let Some(exit_value) = info.get(&"exit".into()) {
                     match parse_effects(exit_value) {

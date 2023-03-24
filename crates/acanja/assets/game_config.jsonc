@@ -15,8 +15,9 @@
       "tlb.jsonc",
       "yew.jsonc",
       "clues.jsonc",
-      "dardins.jsonc"
+      "dardins.jsonc",
+      "depths.jsonc"
     ]
   },
-  "start": "DARDINS"
+  "start": "DEPTHS"
 }
