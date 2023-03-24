@@ -6,7 +6,7 @@ use gw_util::noise::{get_noise, print_histogram, square_bump, NoiseConfig};
 use gw_util::rng::{RandomNumberGenerator, RngCore};
 use gw_world::effect::Portal;
 use gw_world::map::{closest_points_matching, find_random_point, Builder, Cell, Map};
-use gw_world::tile::{TileKind, Tiles};
+use gw_world::tile::{tile_is_none, TileKind, Tiles};
 use rand::prelude::SliceRandom;
 
 pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32) -> Map {
@@ -74,7 +74,7 @@ pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32
     // ADD TOWNS...
     for i in 1..=4 {
         let town_loc = find_random_point(&mut map, &mut rng, |_x, _y, tiles| {
-            tiles.ground().kind == TileKind::FLOOR && tiles.fixture().is_null()
+            tiles.ground().kind == TileKind::FLOOR && tile_is_none(tiles.fixture())
         })
         .expect("Failed to find town location");
         let index = map.get_wrapped_index(town_loc.x, town_loc.y).unwrap();

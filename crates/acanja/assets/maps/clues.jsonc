@@ -1,4 +1,5 @@
 {
+  "$schema": "../map.schema.json",
   "id": "CLUES",
   "map": {
     "filename": "clues.txt",
@@ -8,8 +9,8 @@
     "lock": false
   },
   "camera": { "follow_hero": true, "size": [11, 11] },
-  "region": [0, 0, 16, 16],
-  // "welcome": null,
+  // "region": [0, 0, 16, 16],
+  // "welcome": "Do you have a clue?",
   "spawn_delay": 5,
   "tiles": {
     " ": {

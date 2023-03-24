@@ -7,6 +7,7 @@ use crate::tile::TileLayer;
 use crate::tile::NO_TILE;
 use crate::widget::Lock;
 use gw_app::ecs::Entity;
+use gw_app::log;
 use gw_util::point::distance;
 use gw_util::point::Point;
 use gw_util::rect::Rect;
@@ -183,7 +184,10 @@ impl Map {
 
     pub fn get_cell(&self, index: usize) -> Option<CellRef> {
         match self.has_index(index) {
-            false => None,
+            false => {
+                log(format!("Cell does not have index = {}", index));
+                None
+            }
             true => Some(CellRef::new(self, index)),
         }
     }

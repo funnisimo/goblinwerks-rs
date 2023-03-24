@@ -378,6 +378,14 @@ fn draw_map(
                 Some(idx) => idx,
             };
 
+            // log(format!(
+            //     "index = {} : {},{} => {:?}",
+            //     idx,
+            //     x0 + left,
+            //     y0 + top,
+            //     map.to_point(idx)
+            // ));
+
             let needs_draw = force_draw || map.needs_draw(idx);
             let needs_snapshot = memory.is_none() || map.needs_snapshot(idx);
             let (visible, revealed, mapped) = match vis.get_vis_type(idx) {

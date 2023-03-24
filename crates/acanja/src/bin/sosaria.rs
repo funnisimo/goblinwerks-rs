@@ -13,7 +13,7 @@ use gw_world::actor::Actor;
 use gw_world::effect::{register_effect_parser, BoxedEffect};
 use gw_world::hero::Hero;
 use gw_world::level::{Level, Levels};
-use gw_world::map::{Cell, Map};
+use gw_world::map::{dump_map, Cell, Map};
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
 use gw_world::task::DoNextActionResult;
@@ -67,6 +67,8 @@ impl Screen for MainScreen {
 
         let start_pos = {
             let map = level.resources.get::<Map>().unwrap();
+            dump_map(&*map);
+            log(format!("map size = {:?}", map.get_size()));
             map.to_point(*map.get_location("START").unwrap())
         };
         let entity = level.world.push((

@@ -6,7 +6,7 @@ use crate::{
 };
 use gw_app::{
     ecs::{Entity, EntityStore},
-    Ecs,
+    log, Ecs,
 };
 use gw_util::point::Point;
 use gw_util::value::Value;
@@ -18,6 +18,8 @@ pub struct MoveEntity(i32, i32);
 
 impl Effect for MoveEntity {
     fn fire(&self, ecs: &mut Ecs, _pos: Point, entity: Option<Entity>) -> EffectResult {
+        log(format!("Move entity({},{})", self.0, self.1));
+
         let entity = match entity {
             None => return EffectResult::Fail,
             Some(entity) => entity,
@@ -109,6 +111,8 @@ pub struct MoveRegion(i32, i32);
 
 impl Effect for MoveRegion {
     fn fire(&self, ecs: &mut Ecs, _pos: Point, _entity: Option<Entity>) -> EffectResult {
+        log("Move Region");
+
         let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
         let level = levels.current_mut();
 

@@ -2,7 +2,7 @@ use gw_app::RGBA;
 
 use crate::sprite::Sprite;
 
-use super::{Tile, TileFlags, TileMove};
+use super::{tile_is_none, Tile, TileFlags, TileMove};
 use std::sync::Arc;
 
 pub struct TileSet {
@@ -72,8 +72,8 @@ impl TileSet {
     // flavor
 
     pub fn flavor(&self) -> String {
-        let ground_null = self.tiles[0].is_null();
-        let feature_null = self.tiles[1].is_null();
+        let ground_null = tile_is_none(&self.tiles[0]);
+        let feature_null = tile_is_none(&self.tiles[1]);
         match (ground_null, feature_null) {
             (false, false) => {
                 format!("{} on {}", self.tiles[1].flavor, self.tiles[0].flavor)

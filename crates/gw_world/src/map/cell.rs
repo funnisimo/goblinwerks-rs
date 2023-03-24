@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
+use gw_app::log;
+
 use crate::{
     sprite::Sprite,
-    tile::{Tile, TileFlags, TileMove, TileSet},
+    tile::{tile_is_none, Tile, TileFlags, TileMove, TileSet},
 };
 
 use super::{CellFlags, Map};
@@ -84,21 +86,25 @@ pub trait Cell {
 
     fn flavor(&self) -> String {
         if let Some(flavor) = self.map().flavors.get(&self.index()) {
+            log(format!("cell flavor = {}", flavor));
             return flavor.clone();
         }
 
         let ground = self.ground();
         let feature = self.fixture();
 
-        let ground_null = ground.is_null();
-        let feature_null = feature.is_null();
+        let ground_null = tile_is_none(ground);
+        let feature_null = tile_is_none(feature);
         match (ground_null, feature_null) {
             (false, false) => {
                 format!("{} on {}", feature.flavor, ground.flavor)
             }
             (true, false) => feature.flavor.clone(),
             (false, true) => ground.flavor.clone(),
-            (true, true) => "nothing".to_string(),
+            (true, true) => {
+                println!("tile ids = {} + {}", ground.id, feature.id);
+                "nothing".to_string()
+            }
         }
     }
 }

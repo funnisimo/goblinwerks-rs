@@ -69,10 +69,6 @@ impl Tile {
         }
     }
 
-    pub fn is_null(&self) -> bool {
-        self.kind.is_empty()
-    }
-
     pub fn blocks(&self) -> bool {
         self.move_flags.intersects(TileMove::BLOCKS_MOVE)
     }
@@ -84,4 +80,8 @@ impl Tile {
     pub fn is_obstruction(&self) -> bool {
         self.move_flags.contains(TileMove::BLOCKS_DIAGONAL)
     }
+}
+
+pub fn tile_is_none(tile: &Arc<Tile>) -> bool {
+    Arc::ptr_eq(tile, &NO_TILE)
 }

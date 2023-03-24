@@ -14,8 +14,9 @@
       "moon.jsonc",
       "tlb.jsonc",
       "yew.jsonc",
-      "clues.jsonc"
+      "clues.jsonc",
+      "dardins.jsonc"
     ]
   },
-  "start": "CLUES"
+  "start": "DARDINS"
 }
