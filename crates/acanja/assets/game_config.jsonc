@@ -1,10 +1,14 @@
 {
-  "tiles": "./assets/maps/tiles.jsonc",
+  "tiles": "./assets/tiles.jsonc",
   "levels": {
     "dir": "./assets/maps",
     "files": [
       "sosaria.jsonc",
+
+      // CASTLES
       "british.jsonc",
+
+      // TOWNS
       "dawn.jsonc",
       "devil-guard.jsonc",
       "fawn.jsonc",
@@ -14,6 +18,8 @@
       "moon.jsonc",
       "tlb.jsonc",
       "yew.jsonc",
+
+      // DUNGEONS
       "clues.jsonc",
       "dardins.jsonc",
       "depths.jsonc"
