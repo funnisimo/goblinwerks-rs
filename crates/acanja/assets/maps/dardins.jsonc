@@ -88,9 +88,7 @@
         "portal": { "map": "SOSARIA", "location": "DARDINS" },
         "message": "Back to Sosaria..."
       }
-    },
-    "Z": "ERROR",
-    "z": "ERROR"
+    }
   },
   "objects": []
 }
