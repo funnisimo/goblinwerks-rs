@@ -31,7 +31,7 @@ fn parse_string_constant(parse_result: pest::iterators::Pair<Rule>) -> types::Fo
         .as_str()
         .parse::<String>()
         .unwrap();
-    types::Formula::Value(types::Value::Text(
+    types::Formula::Value(types::Value::String(
         string.trim_start_matches('\'').to_string(),
     ))
 }
@@ -45,27 +45,27 @@ pub fn parse_string_to_formula(
         Some(parse_result) => match parse_result.as_rule() {
             Rule::expr => build_formula_with_climber(parse_result.into_inner()),
             Rule::string_constant => parse_string_constant(parse_result),
-            _ => types::Formula::Value(types::Value::Error(types::Error::Parse)),
+            _ => types::Formula::Error(types::Error::Parse),
         },
-        None => types::Formula::Value(types::Value::Error(types::Error::Parse)),
+        None => types::Formula::Error(types::Error::Parse),
     }
 }
 
 fn build_formula_number(pair: pest::iterators::Pair<Rule>) -> types::Formula {
-    let x = pair.as_str().parse::<f32>().unwrap();
-    let value = types::Value::Number(x);
+    let x = pair.as_str().parse::<f64>().unwrap();
+    let value = types::Value::Float(x);
     types::Formula::Value(value)
 }
 
 fn build_formula_string_double_quote(pair: pest::iterators::Pair<Rule>) -> types::Formula {
     let string = pair.into_inner().as_str().parse::<String>().unwrap();
-    let value = types::Value::Text(string.replace("\"\"", "\""));
+    let value = types::Value::String(string.replace("\"\"", "\""));
     types::Formula::Value(value)
 }
 
 fn build_formula_string_single_quote(pair: pest::iterators::Pair<Rule>) -> types::Formula {
     let string = pair.into_inner().as_str().parse::<String>().unwrap();
-    let value = types::Value::Text(string);
+    let value = types::Value::String(string);
     types::Formula::Value(value)
 }
 
@@ -118,7 +118,7 @@ fn build_formula_collective_operator(
             | (term.as_str().parse::<String>().unwrap() == ", ")
             | (term.as_str().parse::<String>().unwrap() == " ,")
         {
-            vec.push(types::Formula::Value(types::Value::Blank))
+            vec.push(types::Formula::Value(types::Value::Empty))
         } else {
             vec.push(build_formula_with_climber(term.into_inner()))
         }
@@ -139,7 +139,7 @@ fn rule_to_function_operator(collective_operation: Rule) -> types::Operator {
         Rule::or => types::Operator::Function(types::Function::Or),
         Rule::and => types::Operator::Function(types::Function::And),
         Rule::xor => types::Operator::Function(types::Function::Xor),
-        Rule::days => types::Operator::Function(types::Function::Days),
+        // Rule::days => types::Operator::Function(types::Function::Days),
         Rule::right => types::Operator::Function(types::Function::Right),
         Rule::left => types::Operator::Function(types::Function::Left),
         Rule::iff => types::Operator::Function(types::Function::Iff),
@@ -158,7 +158,7 @@ fn build_formula_collective_operator_average(
             | (term.as_str().parse::<String>().unwrap() == ", ")
             | (term.as_str().parse::<String>().unwrap() == " ,")
         {
-            vec.push(types::Formula::Value(types::Value::Number(0.0)))
+            vec.push(types::Formula::Value(types::Value::Float(0.0)))
         } else {
             vec.push(build_formula_with_climber(term.into_inner()))
         }
@@ -203,7 +203,7 @@ fn build_formula_iff(pair: pest::iterators::Pair<Rule>) -> types::Formula {
             | (term.as_str().parse::<String>().unwrap() == ", ")
             | (term.as_str().parse::<String>().unwrap() == " ,")
         {
-            vec.push(types::Formula::Value(types::Value::Blank))
+            vec.push(types::Formula::Value(types::Value::Empty))
         } else {
             vec.push(build_formula_with_climber(term.into_inner()))
         }
@@ -220,7 +220,7 @@ fn build_formula_custom_function(pair: pest::iterators::Pair<Rule>) -> types::Fo
 
     match pair.as_rule() {
         Rule::custom_function => {}
-        _ => return types::Formula::Value(types::Value::Error(types::Error::Reference)),
+        _ => return types::Formula::Error(types::Error::Reference),
     }
 
     let mut iter = pair.clone().into_inner();
@@ -228,9 +228,9 @@ fn build_formula_custom_function(pair: pest::iterators::Pair<Rule>) -> types::Fo
     let name = match iter.next() {
         Some(field) => match field.as_rule() {
             Rule::reference => field.as_str().parse::<String>().unwrap(),
-            _ => return types::Formula::Value(types::Value::Error(types::Error::Reference)),
+            _ => return types::Formula::Error(types::Error::Reference),
         },
-        None => return types::Formula::Value(types::Value::Error(types::Error::Reference)),
+        None => return types::Formula::Error(types::Error::Reference),
     };
 
     let mut vec = Vec::new();
@@ -279,17 +279,17 @@ fn build_formula_custom_function(pair: pest::iterators::Pair<Rule>) -> types::Fo
     // match f {
     //     Some(f) => match f(ref_string, vec) {
     //         types::Value::Number(x) => types::Formula::Value(types::Value::Number(x)),
-    //         types::Value::Text(s) => types::Formula::Value(types::Value::Text(s)),
+    //         types::Value::String(s) => types::Formula::Value(types::Value::String(s)),
     //         types::Value::Boolean(x) => types::Formula::Value(types::Value::Boolean(x)),
     //         types::Value::Error(types::Error::Value) => {
-    //             types::Formula::Value(types::Value::Error(types::Error::Value))
+    //             types::Formula::Error(types::Error::Value))
     //         }
     //         types::Value::Iterator(v) => types::Formula::Value(types::Value::Iterator(v)),
     //         types::Value::Date(d) => types::Formula::Value(types::Value::Date(d)),
-    //         types::Value::Blank => types::Formula::Value(types::Value::Blank),
-    //         _ => types::Formula::Value(types::Value::Error(types::Error::Reference)),
+    //         types::Value::Empty => types::Formula::Value(types::Value::Empty),
+    //         _ => types::Formula::Error(types::Error::Reference)),
     //     },
-    //     None => types::Formula::Value(types::Value::Error(types::Error::Reference)),
+    //     None => types::Formula::Error(types::Error::Reference)),
     // }
 }
 
@@ -355,8 +355,8 @@ fn build_formula_with_climber(expression: pest::iterators::Pairs<Rule>) -> types
             Rule::days => build_formula_collective_operator(Rule::days, pair),
             Rule::right => build_formula_collective_operator(Rule::right, pair),
             Rule::left => build_formula_collective_operator(Rule::left, pair),
-            Rule::custom_function => build_formula_custom_function(pair),
             Rule::iff => build_formula_iff(pair),
+            Rule::custom_function => build_formula_custom_function(pair),
             Rule::atomic_expr => build_formula_with_climber(pair.into_inner()),
             _ => unreachable!(),
         })

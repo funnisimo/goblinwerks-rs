@@ -40,6 +40,14 @@ impl Value {
         }
     }
 
+    pub fn from_vec<V: Into<Value>>(v: Vec<V>) -> Self {
+        Value::List(v.into_iter().map(|a| a.into()).collect())
+    }
+
+    pub fn from_array<V: Into<Value> + Clone>(v: &[V]) -> Self {
+        Value::List(v.into_iter().map(|a| a.clone().into()).collect())
+    }
+
     pub fn is_empty(&self) -> bool {
         match self {
             Value::Empty => true,
@@ -207,14 +215,14 @@ impl Value {
                 false => Some(0.0),
             },
 
-            // Value::Blank => Ok(0.0),
+            Value::Empty => Some(0.0),
             _ => None,
         }
     }
 
     pub fn as_bool(&self) -> Option<bool> {
-        match self {
-            Value::Boolean(v) => Some(*v),
+        match self.clone().try_into() {
+            Ok(v) => Some(v),
             _ => None,
         }
     }
@@ -267,7 +275,7 @@ impl TryInto<usize> for Value {
                 false => Ok(0),
             },
 
-            // Value::Blank => Ok(0.0),
+            Value::Empty => Ok(0),
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -330,7 +338,7 @@ impl TryInto<u64> for Value {
                 false => Ok(0),
             },
 
-            // Value::Blank => Ok(0.0),
+            Value::Empty => Ok(0),
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -361,7 +369,7 @@ impl TryInto<i64> for Value {
                 false => Ok(0),
             },
 
-            // Value::Blank => Ok(0.0),
+            Value::Empty => Ok(0),
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -392,7 +400,7 @@ impl TryInto<u32> for Value {
                 false => Ok(0),
             },
 
-            // Value::Blank => Ok(0.0),
+            Value::Empty => Ok(0),
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -423,7 +431,7 @@ impl TryInto<i32> for Value {
                 false => Ok(0),
             },
 
-            // Value::Blank => Ok(0.0),
+            Value::Empty => Ok(0),
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -454,7 +462,7 @@ impl TryInto<u16> for Value {
                 false => Ok(0),
             },
 
-            // Value::Blank => Ok(0.0),
+            Value::Empty => Ok(0),
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -485,7 +493,7 @@ impl TryInto<i16> for Value {
                 false => Ok(0),
             },
 
-            // Value::Blank => Ok(0.0),
+            Value::Empty => Ok(0),
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -516,7 +524,7 @@ impl TryInto<u8> for Value {
                 false => Ok(0),
             },
 
-            // Value::Blank => Ok(0.0),
+            Value::Empty => Ok(0),
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -547,7 +555,7 @@ impl TryInto<i8> for Value {
                 false => Ok(0),
             },
 
-            // Value::Blank => Ok(0.0),
+            Value::Empty => Ok(0),
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -572,7 +580,7 @@ impl TryInto<f64> for Value {
                 false => Ok(0.0),
             },
 
-            // Value::Blank => Ok(0.0),
+            Value::Empty => Ok(0.0),
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -597,7 +605,7 @@ impl TryInto<f32> for Value {
                 false => Ok(0.0),
             },
 
-            // Value::Blank => Ok(0.0),
+            Value::Empty => Ok(0.0),
             _ => Err(DataConvertError::WrongType),
         }
     }
@@ -611,12 +619,15 @@ impl TryInto<bool> for Value {
             Value::Index(v) => Ok(v != 0),
             Value::Integer(v) => Ok(v != 0),
             Value::Float(v) => Ok(v != 0.0),
-            Value::String(v) => Ok(v.len() > 0),
+            Value::String(v) => {
+                // TODO - should case insensitive "false" be false?
+                Ok(v.len() > 0)
+            }
             Value::Boolean(v) => match v {
                 true => Ok(true),
                 false => Ok(false),
             },
-            // Value::Blank => Ok(false),
+            Value::Empty => Ok(false),
             _ => Err(DataConvertError::WrongType),
         }
     }

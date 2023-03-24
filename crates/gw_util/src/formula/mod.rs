@@ -300,5 +300,9 @@ pub mod types;
 /// Parses a string using `pest` and `pest::prec_climber`.
 pub mod parse_formula;
 
-pub type NoReference<'a> = &'a fn(String) -> types::Value;
-pub type NoCustomFunction<'a> = &'a fn(String, Vec<types::Value>) -> types::Value;
+pub type NoReference<'a> = &'a fn(String) -> Option<types::Value>;
+pub type NoCustomFunction<'a> =
+    &'a fn(String, Vec<types::Value>) -> Result<types::Value, types::Error>;
+
+#[cfg(test)]
+mod test;

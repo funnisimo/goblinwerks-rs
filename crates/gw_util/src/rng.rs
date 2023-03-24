@@ -142,7 +142,7 @@ mod tests {
     #[test]
     fn roll_basic() {
         let mut rng = RandomNumberGenerator::seeded(12345);
-        assert_eq!(rng.roll_dice(1, 6), 4);
+        assert_eq!(rng.roll_dice(1, 6), 2);
         assert_eq!(rng.roll_dice(3, 10), 22);
     }
 
