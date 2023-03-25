@@ -26,8 +26,11 @@
       "clues.jsonc",
       "dardins.jsonc",
       "depths.jsonc",
-      "doom.jsonc"
+      "doom.jsonc",
+      "hell.jsonc"
+      // morina
+      // time
     ]
   },
-  "start": "DOOM"
+  "start": "HELL"
 }

@@ -1,0 +1,94 @@
+{
+  "$schema": "../map.schema.json",
+  "id": "HELL",
+  "map": {
+    "filename": "hell.txt",
+    "width": 16,
+    "height": 128,
+    "wrap": true
+  },
+  "camera": [11, 11],
+  "region": [0, 0, 16, 16], // Sets the region as the first floor
+  "spawn_delay": 5,
+  "tiles": {
+    " ": { "tile": "DUNGEON_FLOOR", "default": true },
+    "~": "WATER",
+    "#": "DUNGEON_WALL",
+    "+": "FAKE_WALL",
+    "-": "FLOOR",
+    ":": "TREES",
+    "*": "FORCEFIELD",
+    "!": "LAVA",
+
+    "|": { "fixture": "Door" }, // DOOR_LOCKED
+    "/": { "fixture": "Door" },
+    "$": { "fixture": "Chest_LOCKED" },
+
+    // Using 17 to skip the padding row
+    "U": {
+      "tile": "Stairs_up",
+      "climb": { "move_entity": [0, -16], "move_region": [0, -16] }
+    },
+    "D": {
+      "tile": "Stairs_down",
+      "descend": { "move_entity": [0, 16], "move_region": [0, 16] }
+    },
+    "H": {
+      "tile": "Stairs_both",
+      "climb": { "move_entity": [0, -16], "move_region": [0, -16] },
+      "descend": { "move_entity": [0, 16], "move_region": [0, 16] }
+    },
+
+    "W": { "enter": { "winds": true } },
+    "G": { "enter": { "gremlins": true } },
+    "T": { "enter": { "damage": 10, "message": "Trap!" } },
+
+    "C": {
+      "fixture": "CURE_FOUNTAIN"
+    },
+    "P": { "fixture": "POISON_FOUNTAIN" },
+    "E": { "fixture": "HEAL_FOUNTAIN" },
+    "X": {
+      "fixture": "DAMAGE_FOUNTAIN"
+    },
+
+    "M": {
+      "fixture": "MARK_FORCE"
+    },
+    "N": {
+      "fixture": "MARK_FIRE"
+    },
+    "K": {
+      "fixture": "MARK_KINGS"
+    },
+    "S": {
+      "fixture": "MARK_SNAKE"
+    },
+
+    "L": {
+      "actor": {
+        "id": "Time",
+        "talk": "The one way is Love, Sol, Moons, Death.  All others Fail."
+      }
+    },
+
+    "@": {
+      "location": "START",
+      "fixture": "dungeon_Exit",
+      "climb": {
+        "portal": { "map": "SOSARIA", "location": "HELL" },
+        "message": "Back to Sosaria..."
+      }
+    },
+
+    "1": { "message": "#[darker_red]Beware, the Fires of Hell!" },
+    "2": { "message": "#[darker_red]Trapped Door!" },
+    "3": { "message": "#[darker_red]Twisty Maze!" },
+    "4": { "message": "#[darker_red]Windy Walk!" },
+    "5": { "message": "#[darker_red]Gremlin City!" },
+    "6": { "message": "#[darker_red]Devil's Den!" },
+    "7": { "message": "#[darker_red]Go back! Pits!" },
+    "8": { "message": "#[darker_red]Chamber of Fire!" }
+  },
+  "objects": []
+}
