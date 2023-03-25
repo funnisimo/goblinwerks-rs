@@ -4,9 +4,11 @@
     "dir": "./assets/maps",
     "files": [
       "sosaria.jsonc",
+      // ambrosia
 
       // CASTLES
       "british.jsonc",
+      // exodus
 
       // TOWNS
       "dawn.jsonc",
@@ -18,12 +20,14 @@
       "moon.jsonc",
       "tlb.jsonc",
       "yew.jsonc",
+      // death gultch
 
       // DUNGEONS
       "clues.jsonc",
       "dardins.jsonc",
-      "depths.jsonc"
+      "depths.jsonc",
+      "doom.jsonc"
     ]
   },
-  "start": "DEPTHS"
+  "start": "DOOM"
 }
