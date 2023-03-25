@@ -177,7 +177,7 @@ fn calculate_numeric_operator_rhs_iterator(
         }
         _ => match rhs.as_float() {
             None => Err(types::Error::Value),
-            Some(nr) => {
+            Some(_nr) => {
                 if let Some(mut temp) = lhs_vec.pop() {
                     while let Some(top) = lhs_vec.pop() {
                         temp = calculate_numeric_operator(temp, top, f)?;
@@ -437,19 +437,19 @@ fn calculate_boolean_operator_rhs_boolean(
     }
 }
 
-fn calculate_boolean_operator_rhs_error(rh: types::Value) -> Result<types::Value, types::Error> {
-    match rh {
-        types::Value::Boolean(r) => {
-            if r {
-                Ok(types::Value::Boolean(true))
-            } else {
-                Ok(types::Value::Boolean(false))
-            }
-        }
-        // Err(_) => Err(types::Error::Cast),
-        _ => Err(types::Error::Value),
-    }
-}
+// fn calculate_boolean_operator_rhs_error(rh: types::Value) -> Result<types::Value, types::Error> {
+//     match rh {
+//         types::Value::Boolean(r) => {
+//             if r {
+//                 Ok(types::Value::Boolean(true))
+//             } else {
+//                 Ok(types::Value::Boolean(false))
+//             }
+//         }
+//         // Err(_) => Err(types::Error::Cast),
+//         _ => Err(types::Error::Value),
+//     }
+// }
 
 fn calculate_boolean_operator_rhs_iterator(
     rh: types::Value,
