@@ -28,9 +28,9 @@
       "depths.jsonc",
       "doom.jsonc",
       "hell.jsonc",
-      "morinia.jsonc"
-      // time
+      "morinia.jsonc",
+      "time.jsonc"
     ]
   },
-  "start": "MORINIA"
+  "start": "TIME"
 }
