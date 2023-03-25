@@ -1,7 +1,7 @@
 ################|
-#H1 # #$ $#$#   |
-#1    #   #   #W|
-#  ## ##G#### # |
+#D  #@#$ $#$#   | // Changed entry so we don't have to have a custom sprite for up/down dungeon exit
+#    1#   #   #W|
+#  #####G#### # | // blocked one squre to make entry work
 ## #   #|#  # # |
 #    #      # # |
 ####  ##### # # |
@@ -132,5 +132,5 @@ WWWWWWWWWWWW  7U|
 # #$$$# ####### |
 # #$$$#         |
 # ##+###### ### |
-#           #F  |
+#           #N  |
 -----------------

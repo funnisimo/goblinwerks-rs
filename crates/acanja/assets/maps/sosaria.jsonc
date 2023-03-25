@@ -59,7 +59,7 @@
     },
     "M": { "descend": "Doom", "location": "Doom", "fixture": "D" },
     "L": { "descend": "Clues", "location": "Clues", "fixture": "D" },
-    "R": { "descend": "Morina", "location": "Morina", "fixture": "D" },
+    "R": { "descend": "Morinia", "location": "Morinia", "fixture": "D" },
     "H": { "descend": "Hell", "location": "Hell", "fixture": "D" },
     "A": { "descend": "Time", "location": "Time", "fixture": "D" },
     "I": { "descend": "Dardins", "location": "Dardins", "fixture": "D" },

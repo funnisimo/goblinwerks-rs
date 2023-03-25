@@ -27,10 +27,10 @@
       "dardins.jsonc",
       "depths.jsonc",
       "doom.jsonc",
-      "hell.jsonc"
-      // morina
+      "hell.jsonc",
+      "morinia.jsonc"
       // time
     ]
   },
-  "start": "HELL"
+  "start": "MORINIA"
 }
