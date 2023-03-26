@@ -29,11 +29,11 @@
     },
 
     "p": {
-      "actor": { "id": "Peasant", "talk": "We are honored!", "ai": null }
+      "actor": { "kind": "Peasant", "talk": "We are honored!", "ai": null }
     },
     "b": {
       "actor": {
-        "id": "Cleric",
+        "kind": "Cleric",
         "talk": "Seek ye the Shrines of Truth",
         "ai": null
       },
@@ -41,28 +41,28 @@
     },
     "e": {
       "actor": {
-        "id": "Fighter",
+        "kind": "Fighter",
         "talk": "<Bribe> guards! They will leave!",
         "ai": "RandomWalk"
       }
     },
     "f": {
       "actor": {
-        "id": "Fighter",
+        "kind": "Fighter",
         "talk": "To arms! and To battle!",
         "ai": "RandomWalk"
       }
     },
     "d": {
       "actor": {
-        "id": "Cleric",
+        "kind": "Cleric",
         "talk": "Peace be with you",
         "ai": "RandomWalk"
       }
     },
     "c": {
       "actor": {
-        "id": "Cleric",
+        "kind": "Cleric",
         "talk": "I've been beyond the whirlpool!",
         "ai": null
       },
@@ -70,7 +70,7 @@
     },
     "w": {
       "actor": {
-        "id": "Wizard",
+        "kind": "Wizard",
         "talk": "Dawn rises in the Dark Forest.",
         "ai": null
       },
@@ -78,7 +78,7 @@
     },
     "m": {
       "actor": {
-        "id": "Monster",
+        "kind": "Monster",
         "type": "Demon",
         "ai": null,
         "talk": "Depart or Die!"
@@ -90,8 +90,8 @@
     "v": { "actor": "Guard", "tile": "-" },
     "y": { "actor": "Guard", "tile": ":" },
 
-    "z": { "actor": { "id": "Wizard", "ai": "RandomWalk" } },
-    "j": { "actor": { "id": "Jester", "ai": "RandomWalk" } },
+    "z": { "actor": { "kind": "Wizard", "ai": "RandomWalk" } },
+    "j": { "actor": { "kind": "Jester", "ai": "RandomWalk" } },
 
     "r": { "actor": "Healer" },
     "s": { "actor": "Bartender" },

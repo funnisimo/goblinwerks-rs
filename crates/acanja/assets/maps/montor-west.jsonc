@@ -38,16 +38,16 @@
     "c": { "actor": "Weaponer", "tile": "-" },
     "d": { "actor": "Grocer", "tile": "-" },
 
-    "g": { "actor": { "id": "Guard", "ai": null }, "tile": "-" },
-    "h": { "actor": { "id": "Guard", "ai": "RandomWalk" }, "tile": "-" },
+    "g": { "actor": { "kind": "Guard", "ai": null }, "tile": "-" },
+    "h": { "actor": { "kind": "Guard", "ai": "RandomWalk" }, "tile": "-" },
     "i": {
-      "actor": { "id": "Guard", "ai": null, "talk": "None shall pass!" },
+      "actor": { "kind": "Guard", "ai": null, "talk": "None shall pass!" },
       "tile": "-"
     },
 
     "m": {
       "actor": {
-        "id": "Fighter",
+        "kind": "Fighter",
         "talk": "Seek the Jester in castle Fire!",
         "ai": "RandomWalk"
       },
@@ -55,7 +55,7 @@
     },
     "n": {
       "actor": {
-        "id": "Fighter",
+        "kind": "Fighter",
         "talk": "Sentri: Good grog!",
         "ai": "RandomWalk"
       },
@@ -63,7 +63,7 @@
     },
     "o": {
       "actor": {
-        "id": "Fighter",
+        "kind": "Fighter",
         "talk": "Shamino: Good food!",
         "ai": "RandomWalk"
       },
@@ -71,15 +71,15 @@
     },
 
     "t": {
-      "actor": { "id": "Thief", "talk": "<Search> the Shrines!", "ai": null },
+      "actor": { "kind": "Thief", "talk": "<Search> the Shrines!", "ai": null },
       "tile": "-"
     },
     "u": {
-      "actor": { "id": "Thief", "talk": "<Search> for cards!", "ai": null },
+      "actor": { "kind": "Thief", "talk": "<Search> for cards!", "ai": null },
       "tile": "-"
     },
     "v": {
-      "actor": { "id": "Thief", "talk": "Good stuff, eh?", "ai": null },
+      "actor": { "kind": "Thief", "talk": "Good stuff, eh?", "ai": null },
       "tile": "-"
     }
   },

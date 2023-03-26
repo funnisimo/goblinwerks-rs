@@ -41,42 +41,42 @@
     "k": { "actor": "Guildmaster", "tile": "-" },
 
     "g": {
-      "actor": { "id": "Guard", "talk": "Good day!", "ai": "RandomWalk" },
+      "actor": { "kind": "Guard", "talk": "Good day!", "ai": "RandomWalk" },
       "tile": "."
     },
-    "h": { "actor": { "id": "Guard", "talk": "Good day!" }, "tile": "%" },
-    "i": { "actor": { "id": "Guard", "talk": "Good day!" }, "tile": "-" },
+    "h": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "%" },
+    "i": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "-" },
 
-    "f": { "tile": ":", "actor": { "id": "Fighter", "ai": "RandomWalk" } },
-    "j": { "tile": ":", "actor": { "id": "Jester", "ai": "RandomWalk" } },
+    "f": { "tile": ":", "actor": { "kind": "Fighter", "ai": "RandomWalk" } },
+    "j": { "tile": ":", "actor": { "kind": "Jester", "ai": "RandomWalk" } },
 
     "s": {
-      "actor": { "id": "Fighter", "talk": "'Marks' gained in dungeons!" },
+      "actor": { "kind": "Fighter", "talk": "'Marks' gained in dungeons!" },
       "tile": "."
     },
     "t": {
-      "actor": { "id": "Fighter", "talk": "Hot metal leaves a 'Mark'!" },
+      "actor": { "kind": "Fighter", "talk": "Hot metal leaves a 'Mark'!" },
       "tile": "."
     },
     "u": {
-      "actor": { "id": "Fighter", "talk": "The King favors a 'Mark'!" },
+      "actor": { "kind": "Fighter", "talk": "The King favors a 'Mark'!" },
       "tile": ":"
     },
     "v": {
-      "actor": { "id": "Fighter", "talk": "A 'Mark' helps invoke the Snake" },
+      "actor": { "kind": "Fighter", "talk": "A 'Mark' helps invoke the Snake" },
       "tile": ":"
     },
     "w": {
       "tile": ".",
-      "actor": { "id": "Fighter", "talk": "4 'Marks', 4 uses!" }
+      "actor": { "kind": "Fighter", "talk": "4 'Marks', 4 uses!" }
     },
     "x": {
       "tile": ":",
-      "actor": { "id": "Fighter", "talk": "Seek ye the dungeon of fire!" }
+      "actor": { "kind": "Fighter", "talk": "Seek ye the dungeon of fire!" }
     },
     "y": {
       "tile": ":",
-      "actor": { "id": "Fighter", "talk": "Mark thee well!" }
+      "actor": { "kind": "Fighter", "talk": "Mark thee well!" }
     },
 
     "@": { "location": "START", "tile": "." }

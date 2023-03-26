@@ -54,7 +54,7 @@ impl MainScreen {
             Position::new(start_loc.x, start_loc.y),
             Sprite::new('@' as Glyph, WHITE.into(), RGBA::new()),
             UserControl, // Do we need this?
-            Actor::new("USER_CONTROL"),
+            Actor::new().with_ai("USER_CONTROL"),
         ));
 
         let mut camera = Camera::new(80, 50);

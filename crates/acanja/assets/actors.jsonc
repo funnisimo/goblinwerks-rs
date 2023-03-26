@@ -1,0 +1,66 @@
+{
+  "ARMORER": {
+    "sprite": "A|gray",
+    "flavor": "an armorer"
+  },
+  "BARTENDER": {
+    "sprite": "B|gray",
+    "flavor": "a bartender"
+  },
+  "BRITISH": {
+    "sprite": "K|purple",
+    "flavor": "the king"
+  },
+  "CLERIC": {
+    "sprite": "C|white",
+    "flavor": "a cleric"
+  },
+  "FIGHTER": {
+    "sprite": "F|grey",
+    "flavor": "a fighter"
+  },
+  "GROCER": {
+    "sprite": "R|gray",
+    "flavor": "a grocer"
+  },
+  "GUARD": {
+    "sprite": "G|dark_red",
+    "flavor": "a guard"
+  },
+  "GUILDMASTER": {
+    "sprite": "M|gray",
+    "flavor": "a guildmaster"
+  },
+  "HEALER": {
+    "sprite": "H|white",
+    "flavor": "a healer"
+  },
+  "JESTER": {
+    "sprite": "J|purple",
+    "flavor": "a jester"
+  },
+  "ORACLE": {
+    "sprite": "O|white",
+    "flavor": "an oracle"
+  },
+  "PEASANT": {
+    "sprite": "P|brown",
+    "flavor": "a townsperson"
+  },
+  "THIEF": {
+    "sprite": "T|gray",
+    "flavor": "a thief"
+  },
+  "TIME_LORD": {
+    "sprite": "L|white|lightest_blue",
+    "flavor": "an image of the Time Lord"
+  },
+  "WEAPONER": {
+    "sprite": "N|gray",
+    "flavor": "a weaponsmith"
+  },
+  "WIZARD": {
+    "sprite": "W|purple",
+    "flavor": "a wizard"
+  }
+}

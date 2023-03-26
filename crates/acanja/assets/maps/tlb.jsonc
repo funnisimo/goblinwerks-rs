@@ -36,43 +36,43 @@
     },
 
     "m": {
-      "actor": { "id": "Cleric", "talk": "Is it not lovely?" },
+      "actor": { "kind": "Cleric", "talk": "Is it not lovely?" },
       "tile": ":"
     },
     "n": {
-      "actor": { "id": "Wizard", "talk": "Quest ye unto Lost Ambrosia!" },
+      "actor": { "kind": "Wizard", "talk": "Quest ye unto Lost Ambrosia!" },
       "tile": "%"
     },
     "o": {
       "actor": {
-        "id": "Fighter",
+        "kind": "Fighter",
         "talk": "Only with Exotic arms can you win."
       },
       "tile": "."
     },
     "p": {
       "actor": {
-        "id": "Thief",
+        "kind": "Thief",
         "talk": "Exodus lies beyond the Silver Snake!"
       },
       "tile": "."
     },
     "q": {
-      "actor": { "id": "Peasant", "talk": "'Dawn' comes each new pair!" },
+      "actor": { "kind": "Peasant", "talk": "'Dawn' comes each new pair!" },
       "tile": "."
     },
     "r": {
-      "actor": { "id": "Peasant", "talk": "Dupre laughs: Drink up!" }
+      "actor": { "kind": "Peasant", "talk": "Dupre laughs: Drink up!" }
     },
     "s": {
-      "actor": { "id": "Fighter", "talk": "Round back!" }
+      "actor": { "kind": "Fighter", "talk": "Round back!" }
     },
     "t": {
-      "actor": { "id": "Jester", "talk": "Ho! Ho!" },
+      "actor": { "kind": "Jester", "talk": "Ho! Ho!" },
       "tile": "-"
     },
     "x": {
-      "actor": { "id": "Jester", "talk": "Ho! Ho!" },
+      "actor": { "kind": "Jester", "talk": "Ho! Ho!" },
       "tile": "."
     },
 
@@ -85,18 +85,18 @@
       "tile": ":"
     },
     "w": { "actor": "Peasant" }, // NPC
-    "a": { "actor": { "id": "Grocer", "welcome": "Welcome to De Grocer" } },
+    "a": { "actor": { "kind": "Grocer", "welcome": "Welcome to De Grocer" } },
     "b": {
       "actor": "Armorer"
     },
     "c": { "actor": "Weaponer" },
 
-    "d": { "actor": { "id": "Guard", "ai": "RandomWalk" }, "tile": "-" },
-    "e": { "actor": { "id": "Guard", "ai": "RandomWalk" }, "tile": "." },
-    "f": { "actor": { "id": "Guard", "talk": "Good day!" }, "tile": "." },
-    "g": { "actor": { "id": "Guard", "talk": "Good day!" } },
-    "k": { "actor": { "id": "Bartender", "name": "Coach" } },
-    "l": { "actor": { "id": "Bartender", "name": "Woody", "ai": null } }
+    "d": { "actor": { "kind": "Guard", "ai": "RandomWalk" }, "tile": "-" },
+    "e": { "actor": { "kind": "Guard", "ai": "RandomWalk" }, "tile": "." },
+    "f": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "." },
+    "g": { "actor": { "kind": "Guard", "talk": "Good day!" } },
+    "k": { "actor": { "kind": "Bartender", "name": "Coach" } },
+    "l": { "actor": { "kind": "Bartender", "name": "Woody", "ai": null } }
   },
   "stores": {
     "ARMORY": {

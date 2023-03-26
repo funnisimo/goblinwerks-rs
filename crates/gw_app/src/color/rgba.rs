@@ -1,7 +1,6 @@
-use serde::{Deserialize, Serialize};
-
-// use crate::console;
 use super::{get_color, ColorParseErr};
+use gw_util::value::Value;
+use serde::{Deserialize, Serialize};
 use std::{ops, str::FromStr};
 
 /// White color
@@ -308,5 +307,48 @@ impl FromStr for RGBA {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         get_color(s)
+    }
+}
+
+impl TryInto<RGBA> for Value {
+    type Error = ColorParseErr;
+
+    fn try_into(self) -> Result<RGBA, Self::Error> {
+        let r = &self;
+        r.try_into()
+    }
+}
+
+impl TryInto<RGBA> for &Value {
+    type Error = ColorParseErr;
+
+    fn try_into(self) -> Result<RGBA, Self::Error> {
+        if self.is_string() {
+            self.to_string().parse()
+        } else if self.is_map() {
+            Err(ColorParseErr::WrongFormat)
+        } else if self.is_int() {
+            // assume => rgba: u32
+            let val = self.as_int().unwrap() as u32;
+            let r = (val & 0xF000) >> 24;
+            let g = (val & 0x0F00) >> 16;
+            let b = (val & 0x00F0) >> 8;
+            let a = val & 0x000F;
+
+            Ok(RGBA::rgba(r as u8, g as u8, b as u8, a as u8))
+        } else if self.is_list() {
+            let list = self.as_list().unwrap();
+            if !list.iter().all(|v| v.is_int()) {
+                return Err(ColorParseErr::WrongFormat);
+            }
+            let data: Vec<u8> = list.iter().map(|v| v.as_int().unwrap() as u8).collect();
+            match list.len() {
+                3 => Ok(RGBA::rgb(data[0], data[1], data[2])),
+                4 => Ok(RGBA::rgba(data[0], data[1], data[2], data[3])),
+                _ => Err(ColorParseErr::WrongFormat),
+            }
+        } else {
+            Err(ColorParseErr::WrongFormat)
+        }
     }
 }

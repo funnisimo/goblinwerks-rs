@@ -4,12 +4,13 @@ use gw_app::log;
 use gw_app::Glyph;
 use gw_app::RGBA;
 use gw_util::text::find_first_of;
+use gw_util::value::Value;
 use serde::{Deserialize, Serialize};
 use std::convert::From;
 use std::fmt::Display;
 use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SpriteParseError {
     WrongFormat,
     BadGlyph(String),
@@ -156,6 +157,68 @@ pub fn from_text(ch: &str, fg: &str, bg: &str) -> Result<Sprite, SpriteParseErro
     };
 
     Ok(Sprite::new(glyph, fg, bg))
+}
+
+impl TryInto<Sprite> for Value {
+    type Error = SpriteParseError;
+
+    fn try_into(self) -> Result<Sprite, Self::Error> {
+        let r = &self;
+        r.try_into()
+    }
+}
+
+impl TryInto<Sprite> for &Value {
+    type Error = SpriteParseError;
+
+    fn try_into(self) -> Result<Sprite, Self::Error> {
+        if self.is_string() {
+            let text = self.to_string();
+            text.parse()
+        } else if self.is_map() {
+            let map = self.as_map().unwrap();
+
+            let ch_val = map.get(&"ch".into()).or_else(|| map.get(&"glyph".into()));
+            let fg_val = map.get(&"fg".into());
+            let bg_val = map.get(&"bg".into());
+
+            let ch = match ch_val {
+                None => 0,
+                Some(v) => {
+                    if v.is_int() {
+                        v.as_int().unwrap() as Glyph
+                    } else if v.is_string() {
+                        match parse_glyph(&v.to_string()) {
+                            Ok(v) => v,
+                            Err(e) => return Err(e),
+                        }
+                    } else {
+                        return Err(SpriteParseError::BadGlyph(v.to_string()));
+                    }
+                }
+            };
+
+            let fg: RGBA = match fg_val {
+                None => RGBA::new(),
+                Some(val) => match val.try_into() {
+                    Err(e) => return Err(SpriteParseError::BadForeColor(e)),
+                    Ok(v) => v,
+                },
+            };
+
+            let bg: RGBA = match bg_val {
+                None => RGBA::new(),
+                Some(val) => match val.try_into() {
+                    Err(e) => return Err(SpriteParseError::BadForeColor(e)),
+                    Ok(v) => v,
+                },
+            };
+
+            Err(SpriteParseError::WrongFormat)
+        } else {
+            Err(SpriteParseError::WrongFormat)
+        }
+    }
 }
 
 #[cfg(test)]

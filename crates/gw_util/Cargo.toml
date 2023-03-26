@@ -41,4 +41,5 @@ legion = { version = "0.4", default-features = false, optional = true, features 
 ] }
 
 [dev-dependencies]
-gw_app = { path = "../gw_app" }
+gw_app               = { path = "../gw_app" }
+pest-language-server = "0.2"                  # Trying to get pest ide integration, but...

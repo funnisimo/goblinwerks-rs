@@ -9,7 +9,7 @@ use gw_app::*;
 use gw_util::json::parse_file;
 use gw_util::point::Point;
 use gw_world::action::move_step::MoveStepAction;
-use gw_world::actor::Actor;
+use gw_world::actor::{Actor, ActorKindJsonFileLoader};
 use gw_world::effect::{register_effect_parser, BoxedEffect};
 use gw_world::hero::Hero;
 use gw_world::level::{Level, Levels};
@@ -75,7 +75,7 @@ impl Screen for MainScreen {
             Position::new(start_pos.x, start_pos.y),
             Sprite::new('@' as Glyph, WHITE.into(), RGBA::new()),
             UserControl, // Do we need this?
-            Actor::new("USER_CONTROL"),
+            Actor::new().with_ai("USER_CONTROL"),
         ));
 
         {
@@ -217,9 +217,10 @@ fn main() {
             registry.register::<gw_world::actor::Actor>("Actor".to_string());
             registry.register::<UserControl>("UserControl".to_string());
         })
+        .file("assets/tiles.jsonc", Box::new(TileJsonFileLoader::new()))
         .file(
-            "assets/tiles.jsonc",
-            Box::new(TileJsonFileLoader::new().with_dump()),
+            "assets/actors.jsonc",
+            Box::new(ActorKindJsonFileLoader::new()),
         )
         .file(
             "assets/store_prefab.toml",

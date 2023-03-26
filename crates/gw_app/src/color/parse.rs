@@ -17,6 +17,8 @@ pub enum ColorParseErr {
     InvalidName,
     /// Invalid Modifier
     InvalidModifier,
+    /// Wrong Format
+    WrongFormat,
 }
 
 pub fn get_color_opt(name: &str) -> Option<RGBA> {

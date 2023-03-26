@@ -33,15 +33,15 @@
       }
     },
 
-    "a": { "actor": { "id": "Bartender", "name": "Sam" } },
-    "b": { "actor": { "id": "Armorer", "ai": "RandomWalk" } },
-    "c": { "actor": { "id": "Weaponer", "ai": "RandomWalk" } },
+    "a": { "actor": { "kind": "Bartender", "name": "Sam" } },
+    "b": { "actor": { "kind": "Armorer", "ai": "RandomWalk" } },
+    "c": { "actor": { "kind": "Weaponer", "ai": "RandomWalk" } },
 
-    "g": { "actor": { "id": "Guard", "ai": null }, "tile": "-" },
-    "h": { "actor": { "id": "Guard", "ai": "RandomWalk" }, "tile": "-" },
+    "g": { "actor": { "kind": "Guard", "ai": null }, "tile": "-" },
+    "h": { "actor": { "kind": "Guard", "ai": "RandomWalk" }, "tile": "-" },
     "j": {
       "actor": {
-        "id": "Jester",
+        "kind": "Jester",
         "talk": "Jolly Joe: Ho Ho Ho!",
         "ai": "RandomWalk"
       },
@@ -50,7 +50,7 @@
 
     "l": {
       "actor": {
-        "id": "Fighter",
+        "kind": "Fighter",
         "talk": "Baby Bob: Bring me bucks!",
         "ai": "RandomWalk"
       },
@@ -58,7 +58,7 @@
     },
     "m": {
       "actor": {
-        "id": "Fighter",
+        "kind": "Fighter",
         "talk": "'Cards' are useful!",
         "ai": "RandomWalk"
       },
@@ -66,7 +66,7 @@
     },
     "n": {
       "actor": {
-        "id": "Fighter",
+        "kind": "Fighter",
         "talk": "'Marks' are useful!",
         "ai": "RandomWalk"
       },
@@ -74,7 +74,7 @@
     },
     "o": {
       "actor": {
-        "id": "Fighter",
+        "kind": "Fighter",
         "talk": "'Exotics' are useful!",
         "ai": "RandomWalk"
       },
@@ -82,12 +82,12 @@
     },
 
     "t": {
-      "actor": { "id": "Thief", "talk": "4 cards, 4 pannels", "ai": null },
+      "actor": { "kind": "Thief", "talk": "4 cards, 4 pannels", "ai": null },
       "tile": "%"
     },
     "u": {
       "actor": {
-        "id": "Thief",
+        "kind": "Thief",
         "talk": "<Insert> cards into pannels!",
         "ai": null
       },

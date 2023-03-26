@@ -63,7 +63,7 @@ pub fn register_ai(name: &str, handler: Arc<dyn AiHandler>) {
         .insert(name.to_string(), handler);
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone, Default, Debug)]
 pub struct AI {
     stack: Vec<String>,
 }

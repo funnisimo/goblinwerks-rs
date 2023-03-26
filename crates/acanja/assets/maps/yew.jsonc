@@ -30,7 +30,7 @@
 
     "a": {
       "actor": {
-        "id": "Cleric",
+        "kind": "Cleric",
         "ai": null,
         "talk": "Search and ye shall find!"
       },
@@ -38,7 +38,7 @@
     },
     "b": {
       "actor": {
-        "id": "Cleric",
+        "kind": "Cleric",
         "ai": "RandomWalk",
         "talk": "Know ye well thy foes!!"
       },
@@ -46,7 +46,7 @@
     },
     "c": {
       "actor": {
-        "id": "Cleric",
+        "kind": "Cleric",
         "ai": "RandomWalk",
         "talk": "Peace be with you"
       },
@@ -54,24 +54,24 @@
     },
     "d": {
       "actor": {
-        "id": "Cleric",
+        "kind": "Cleric",
         "ai": "RandomWalk",
         "talk": "I've been beyond the whirlpool!"
       },
       "tile": "%"
     },
     "e": {
-      "actor": { "id": "Cleric", "ai": "RandomWalk", "talk": null },
+      "actor": { "kind": "Cleric", "ai": "RandomWalk", "talk": null },
       "tile": "%"
     },
     "f": {
-      "actor": { "id": "Cleric", "ai": "RandomWalk", "talk": null },
+      "actor": { "kind": "Cleric", "ai": "RandomWalk", "talk": null },
       "tile": "%"
     },
 
     "g": {
       "actor": {
-        "id": "Cleric",
+        "kind": "Cleric",
         "ai": null,
         "talk": "Bonim Anima Teuri, Amen!"
       },
@@ -79,7 +79,7 @@
     },
     "h": {
       "actor": {
-        "id": "Cleric",
+        "kind": "Cleric",
         "ai": null,
         "talk": "Bonim Anima Teuri, Amen!"
       },
@@ -87,7 +87,7 @@
     },
     "i": {
       "actor": {
-        "id": "Cleric",
+        "kind": "Cleric",
         "ai": null,
         "talk": "Welcome to the Circle of Light!"
       },

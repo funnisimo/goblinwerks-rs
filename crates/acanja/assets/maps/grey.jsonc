@@ -34,16 +34,16 @@
 
     "g": {
       "tile": "-",
-      "actor": { "id": "Guard", "ai": null, "text": "Watch it bub!" }
+      "actor": { "kind": "Guard", "ai": null, "text": "Watch it bub!" }
     },
 
     "m": {
-      "actor": { "id": "Fighter", "talk": "Exotic clues found at Dawn!" },
+      "actor": { "kind": "Fighter", "talk": "Exotic clues found at Dawn!" },
       "tile": ":"
     },
     "j": {
       "actor": {
-        "id": "Jester",
+        "kind": "Jester",
         "talk": "Don't you wish you were a Jester!",
         "ai": "RandomWalk"
       },
@@ -54,7 +54,7 @@
       "tile": "-",
 
       "actor": {
-        "id": "Thief",
+        "kind": "Thief",
         "talk": "Yo! ho! ho! and a bottle of rum!!!",
         "ai": "RandomWalk"
       }
@@ -62,7 +62,7 @@
     "u": {
       "tile": "-",
       "actor": {
-        "id": "Thief",
+        "kind": "Thief",
         "talk": "Ever seen Exotic arms?",
         "ai": "RandomWalk"
       }
@@ -70,7 +70,7 @@
 
     "w": {
       "actor": {
-        "id": "Wizard",
+        "kind": "Wizard",
         "talk": "Only Exotics will protect from Great Evil!"
       },
       "tile": "%"

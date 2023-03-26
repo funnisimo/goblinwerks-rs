@@ -27,56 +27,56 @@
     },
 
     "t": {
-      "actor": { "id": "Wizard", "talk": "<DIG> up exotics" },
+      "actor": { "kind": "Wizard", "talk": "<DIG> up exotics" },
       "tile": "%"
     },
     "u": {
-      "actor": { "id": "Wizard", "talk": "<DIG> on isles." },
+      "actor": { "kind": "Wizard", "talk": "<DIG> on isles." },
       "tile": "%"
     },
     "v": {
-      "actor": { "id": "Wizard", "talk": "<DIG> carefully." },
+      "actor": { "kind": "Wizard", "talk": "<DIG> carefully." },
       "tile": "%"
     },
 
     "w": {
-      "actor": { "id": "Wizard", "talk": "Welcome to Dawn." },
+      "actor": { "kind": "Wizard", "talk": "Welcome to Dawn." },
       "tile": "."
     },
     "x": {
       "actor": {
-        "id": "Wizard",
+        "kind": "Wizard",
         "talk": "Dawn last but a brief moment.",
         "ai": "RandomWalk"
       },
       "tile": "."
     },
     "y": {
-      "actor": { "id": "Wizard", "talk": "Ambrosia awaits." },
+      "actor": { "kind": "Wizard", "talk": "Ambrosia awaits." },
       "tile": "-"
     },
     "z": {
-      "actor": { "id": "Wizard", "talk": "Seek ye thy fortune." },
+      "actor": { "kind": "Wizard", "talk": "Seek ye thy fortune." },
       "tile": "-"
     },
     "k": {
       "actor": {
-        "id": "Fighter",
+        "kind": "Fighter",
         "talk": "Jolly good day.",
         "ai": "RandomWalk"
       },
       "tile": "-"
     },
-    "a": { "actor": { "id": "Armorer" }, "tile": "-" },
+    "a": { "actor": { "kind": "Armorer" }, "tile": "-" },
     "b": { "actor": "Bartender", "tile": "-" },
     "c": { "actor": "Weaponer", "tile": "-" },
     "d": { "actor": "Grocer", "tile": "-" },
     "e": { "actor": "Healer", "tile": "-" },
     "f": { "actor": "Guildmaster", "tile": "-" },
 
-    "g": { "actor": { "id": "Guard", "talk": "Good day!" }, "tile": "." },
-    "h": { "actor": { "id": "Guard", "talk": "Good day!" }, "tile": "%" },
-    "i": { "actor": { "id": "Guard", "talk": "Good day!" }, "tile": "-" },
+    "g": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "." },
+    "h": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "%" },
+    "i": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "-" },
 
     "o": { "actor": "Oracle", "tile": "-" },
     "@": { "location": "START", "tile": "." }

@@ -41,49 +41,52 @@
 
     "g": {
       "tile": ".",
-      "actor": { "id": "Guard", "talk": "Good day!", "ai": "RandomWalk" }
+      "actor": { "kind": "Guard", "talk": "Good day!", "ai": "RandomWalk" }
     },
-    "h": { "id": "Guard", "actor": { "talk": "Good day!", "tile": "." } },
-    "i": { "id": "Guard", "actor": { "talk": "Good day!", "tile": "-" } },
+    "h": { "kind": "Guard", "actor": { "talk": "Good day!", "tile": "." } },
+    "i": { "kind": "Guard", "actor": { "talk": "Good day!", "tile": "-" } },
 
-    "f": { "tile": "-", "actor": { "id": "Fighter", "ai": "RandomWalk" } },
+    "f": { "tile": "-", "actor": { "kind": "Fighter", "ai": "RandomWalk" } },
     "j": {
       "tile": ".",
-      "actor": { "id": "Wizard", "talk": "Welocome to Fawn: City of the sea!" }
+      "actor": {
+        "kind": "Wizard",
+        "talk": "Welocome to Fawn: City of the sea!"
+      }
     },
 
     "s": {
       "tile": ".",
-      "actor": { "id": "Fighter", "talk": "Fawn is a nice place!" }
+      "actor": { "kind": "Fighter", "talk": "Fawn is a nice place!" }
     },
     "t": {
       "tile": ".",
-      "actor": { "id": "Wizard", "talk": "Fawn is a nice place!" }
+      "actor": { "kind": "Wizard", "talk": "Fawn is a nice place!" }
     },
     "u": {
       "tile": ".",
-      "actor": { "id": "Cleric", "talk": "Fawn is a nice place!" }
+      "actor": { "kind": "Cleric", "talk": "Fawn is a nice place!" }
     },
     "v": {
       "tile": ".",
-      "actor": { "id": "Thief", "talk": "Fawn is a nice place!" }
+      "actor": { "kind": "Thief", "talk": "Fawn is a nice place!" }
     },
 
     "w": {
       "tile": ":",
-      "actor": { "id": "Cleric", "talk": "<Pray> for the invocation!" }
+      "actor": { "kind": "Cleric", "talk": "<Pray> for the invocation!" }
     },
     "x": {
       "tile": ":",
-      "actor": { "id": "Cleric", "talk": "<Pray> in the Circle of Light!" }
+      "actor": { "kind": "Cleric", "talk": "<Pray> in the Circle of Light!" }
     },
     "y": {
       "tile": ":",
-      "actor": { "id": "Cleric", "talk": "'Invoke' the Silver Snake!" }
+      "actor": { "kind": "Cleric", "talk": "'Invoke' the Silver Snake!" }
     },
     "z": {
       "tile": ":",
-      "actor": { "id": "Cleric", "talk": "To pass you need a Mark!" }
+      "actor": { "kind": "Cleric", "talk": "To pass you need a Mark!" }
     },
 
     "@": { "location": "START", "tile": "." }
