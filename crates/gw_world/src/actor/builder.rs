@@ -1,6 +1,6 @@
 use super::{Actor, ActorKind};
 use crate::sprite::{Sprite, SpriteParseError};
-use gw_app::{color::get_color, log, Glyph, RGBA};
+use gw_app::{Glyph, RGBA};
 use gw_util::value::Value;
 use std::sync::Arc;
 

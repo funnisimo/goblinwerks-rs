@@ -1,14 +1,16 @@
 use crate::action::idle::IdleAction;
 use crate::action::{Action, ActionResult};
 use crate::actor::Actor;
+use crate::effect::fire_tile_action;
 use crate::hero::Hero;
-use crate::level::Level;
+use crate::level::{get_current_level, get_current_level_mut, Level};
 use crate::map::Cell;
 use crate::map::Map;
 use crate::position::Position;
 use gw_app::ecs::systems::ResourceSet;
 use gw_app::ecs::{Entity, EntityStore, Read};
-use gw_app::log;
+use gw_app::{log, Ecs};
+use gw_util::point::Point;
 
 #[derive(Copy, Clone, Debug)]
 pub struct MoveStepAction {
@@ -22,10 +24,14 @@ impl MoveStepAction {
         MoveStepAction { entity, dx, dy }
     }
 
-    fn validate(&mut self, level: &mut Level) -> Option<ActionResult> {
+    fn validate(&mut self, ecs: &mut Ecs) -> Option<ActionResult> {
+        let mut level = get_current_level_mut(ecs);
         let Level {
-            resources, world, ..
-        } = level;
+            resources,
+            world,
+            logger,
+            ..
+        } = &mut *level;
 
         let (map, hero) = <(Read<Map>, Read<Hero>)>::fetch(resources);
 
@@ -81,7 +87,7 @@ impl MoveStepAction {
         if map.is_blocked(idx) {
             let flavor = map.get_cell(idx).unwrap().flavor();
             if actor_is_hero {
-                level.logger.log(format!("Blocked by {}", flavor));
+                logger.log(format!("Blocked by {}", flavor));
             }
             return Some(ActionResult::Replace(Box::new(IdleAction::new(
                 self.entity,
@@ -92,27 +98,54 @@ impl MoveStepAction {
         None
     }
 
-    fn do_action(&mut self, level: &mut Level) -> ActionResult {
-        let Level {
-            resources, world, ..
-        } = level;
+    fn do_action(&mut self, ecs: &mut Ecs) -> ActionResult {
+        // let Level {
+        //     resources, world, ..
+        // } = levels.current_mut();
 
-        let mut map = resources.get_mut::<Map>().unwrap();
+        let orig_pt = {
+            let mut level = get_current_level_mut(ecs);
+            let entry = level.world.entry(self.entity).unwrap();
+            let pos = entry.get_component::<Position>().unwrap();
+            pos.point()
+        };
 
-        let mut entry = world.entry_mut(self.entity).unwrap();
+        let (old_idx, new_idx, new_pt) = {
+            let level = get_current_level(ecs);
+            let map = level.resources.get::<Map>().unwrap();
+            let (new_x, new_y) = map
+                .try_wrap_xy(orig_pt.x + self.dx, orig_pt.y + self.dy)
+                .unwrap();
 
-        let pos = entry.get_component_mut::<Position>().unwrap();
-        let orig_pt = pos.point();
+            (
+                map.get_wrapped_index(orig_pt.x, orig_pt.y).unwrap(),
+                map.get_wrapped_index(new_x, new_y).unwrap(),
+                Point::new(new_x, new_y),
+            )
+        };
 
-        let old_idx = map.get_wrapped_index(orig_pt.x, orig_pt.y).unwrap();
-        map.remove_actor(old_idx, self.entity);
+        // TODO - How to check for permission to exit?
+        fire_tile_action(ecs, orig_pt, "exit", Some(self.entity));
+
         // println!("changed : {}", old_idx);
+        let blocks_move = {
+            let mut level = get_current_level_mut(ecs);
+            let mut entry = level.world.entry_mut(self.entity).unwrap();
+            let pos = entry.get_component_mut::<Position>().unwrap();
 
-        let (new_x, new_y) = map.try_wrap_xy(pos.x + self.dx, pos.y + self.dy).unwrap();
-        pos.set(new_x, new_y);
+            pos.set(new_pt.x, new_pt.y);
+            pos.blocks_move
+        };
 
-        let new_idx = map.get_wrapped_index(pos.x, pos.y).unwrap();
-        map.add_actor(new_idx, self.entity, pos.blocks_move);
+        {
+            let level = get_current_level_mut(ecs);
+            let mut map = level.resources.get_mut::<Map>().unwrap();
+            map.remove_actor(old_idx, self.entity);
+            map.add_actor(new_idx, self.entity, blocks_move);
+        }
+
+        // TODO - How to check for permission to enter?
+        fire_tile_action(ecs, new_pt, "enter", Some(self.entity));
 
         // if let Some(mut fov) = entry.get_component_mut::<FOV>() {
         //     fov.set_needs_update();
@@ -131,6 +164,8 @@ impl MoveStepAction {
         // }
         // }
 
+        let mut level = get_current_level_mut(ecs);
+        let entry = level.world.entry(self.entity).unwrap();
         let actor = entry.get_component::<Actor>().unwrap();
 
         let mut move_time = actor.act_time;
@@ -142,10 +177,11 @@ impl MoveStepAction {
 }
 
 impl Action for MoveStepAction {
-    fn execute(&mut self, level: &mut Level) -> ActionResult {
-        match self.validate(level) {
-            Some(res) => res,
-            None => self.do_action(level),
+    fn execute(&mut self, ecs: &mut Ecs) -> ActionResult {
+        if let Some(res) = self.validate(ecs) {
+            return res;
         }
+
+        self.do_action(ecs)
     }
 }

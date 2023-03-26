@@ -3,6 +3,7 @@ use crate::ai::idle::ai_idle;
 use crate::ai::user::ai_user_control;
 use crate::level::Level;
 use gw_app::ecs::Entity;
+use gw_app::Ecs;
 use mirror_entity::MirrorEntity;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -28,17 +29,17 @@ pub type AiFn = fn(&mut Level, Entity) -> Option<BoxedAction>;
 
 #[allow(unused_variables)]
 pub trait AiHandler: Send + Sync {
-    fn on_enter(&self, level: &mut Level, entity: Entity) -> () {}
-    fn next_action(&self, level: &mut Level, entity: Entity) -> Option<BoxedAction>;
-    fn on_exit(&self, level: &mut Level, entity: Entity) -> () {}
+    fn on_enter(&self, ecs: &mut Ecs, entity: Entity) -> () {}
+    fn next_action(&self, ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction>;
+    fn on_exit(&self, ecs: &mut Ecs, entity: Entity) -> () {}
 }
 
 impl<F> AiHandler for F
 where
-    F: Fn(&mut Level, Entity) -> Option<BoxedAction> + Send + Sync,
+    F: Fn(&mut Ecs, Entity) -> Option<BoxedAction> + Send + Sync,
 {
-    fn next_action(&self, level: &mut Level, entity: Entity) -> Option<BoxedAction> {
-        (self)(level, entity)
+    fn next_action(&self, ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
+        (self)(ecs, entity)
     }
 }
 

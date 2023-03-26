@@ -1022,15 +1022,8 @@ name = "gw_ecs"
 version = "0.1.0"
 dependencies = [
  "atomic_refcell",
- "bit-set",
- "bitflags",
- "downcast-rs",
  "gw_util",
- "itertools",
- "parking_lot 0.12.1",
- "paste",
- "smallvec",
- "thiserror",
+ "legion",
 ]
 
 [[package]]

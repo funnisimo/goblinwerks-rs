@@ -1,3 +1,6 @@
+use crate::level::get_current_level;
+use crate::map::Map;
+
 use super::{
     parse_cure, parse_damage, parse_fixture, parse_heal, parse_message, parse_move_entity,
     parse_move_region, parse_poison, parse_portal, parse_restore_items, parse_store_items,
@@ -111,4 +114,35 @@ pub fn parse_effects(value: &Value) -> Result<Vec<BoxedEffect>, String> {
         }
     }
     Ok(output)
+}
+
+pub fn fire_tile_action(
+    ecs: &mut Ecs,
+    pos: Point,
+    action: &str,
+    entity: Option<Entity>,
+) -> EffectResult {
+    let effects = {
+        let level = get_current_level(ecs);
+        let map = level.resources.get::<Map>().unwrap();
+        let idx = map.get_index(pos.x, pos.y).unwrap();
+        match map.get_cell_effects(idx, action) {
+            None => return EffectResult::Success,
+            Some(d) => d,
+        }
+    };
+
+    for eff in effects.iter() {
+        match eff.fire(ecs, pos, entity) {
+            EffectResult::Stop => {
+                return EffectResult::Success;
+            }
+            EffectResult::Fail => {
+                return EffectResult::Fail;
+            }
+            _ => {}
+        }
+    }
+
+    EffectResult::Success
 }

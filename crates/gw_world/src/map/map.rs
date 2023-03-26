@@ -307,6 +307,16 @@ impl Map {
         }
     }
 
+    pub fn get_cell_effects(&self, index: usize, action: &str) -> Option<Vec<BoxedEffect>> {
+        match self.cell_effects.get(&index) {
+            None => None,
+            Some(all) => match all.get(action) {
+                None => None,
+                Some(data) => Some(data.clone()),
+            },
+        }
+    }
+
     pub fn set_flavor(&mut self, index: usize, text: String) {
         self.flavors.insert(index, text);
     }

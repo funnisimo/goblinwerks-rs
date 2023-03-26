@@ -1,8 +1,9 @@
 use crate::action::{move_step::MoveStepAction, BoxedAction};
 use crate::actor::Actor;
-use crate::level::Level;
+use crate::level::Levels;
 use crate::position::Position;
 use gw_app::ecs::Entity;
+use gw_app::Ecs;
 use gw_util::point::Point;
 use serde::{Deserialize, Serialize};
 
@@ -26,11 +27,13 @@ impl MirrorState {
 pub struct MirrorEntity;
 
 impl AiHandler for MirrorEntity {
-    fn on_enter(&self, _level: &mut Level, _entity: Entity) -> () {
+    fn on_enter(&self, _ecs: &mut Ecs, _entity: Entity) -> () {
         // Nothing???
     }
 
-    fn next_action(&self, level: &mut Level, entity: Entity) -> Option<BoxedAction> {
+    fn next_action(&self, ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
+        let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+        let level = levels.current_mut();
         let (last_point, mirror_entity) = {
             let mut entry = level.world.entry(entity).unwrap();
             match entry.get_component_mut::<MirrorState>() {
@@ -64,14 +67,19 @@ impl AiHandler for MirrorEntity {
         Some(Box::new(MoveStepAction::new(entity, unit.x, unit.y)))
     }
 
-    fn on_exit(&self, level: &mut Level, entity: Entity) -> () {
+    fn on_exit(&self, ecs: &mut Ecs, entity: Entity) -> () {
         // Pop State?
+        let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+        let level = levels.current_mut();
         let mut entry = level.world.entry(entity).unwrap();
         entry.remove_component::<MirrorState>();
     }
 }
 
-pub fn ai_mirror_entity(level: &mut Level, entity: Entity, mirror_entity: Entity) {
+pub fn ai_mirror_entity(ecs: &mut Ecs, entity: Entity, mirror_entity: Entity) {
+    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+    let level = levels.current_mut();
+
     let mirror_state = {
         let mirror_entry = level.world.entry(mirror_entity).unwrap();
         let pos = mirror_entry.get_component::<Position>().unwrap();

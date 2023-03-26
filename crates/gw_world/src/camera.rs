@@ -3,6 +3,7 @@ use gw_util::point::Point;
 
 use crate::{level::Level, position::Position};
 
+#[derive(Debug)]
 pub struct Camera {
     center: Point,
     follows: Option<Entity>,

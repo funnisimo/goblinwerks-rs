@@ -57,7 +57,6 @@ fn try_move_hero_world(
     location: &String,
 ) -> EffectResult {
     let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-
     if !levels.has_map(&new_map_id) {
         log(format!("UNKNOWN MAP - {}", new_map_id));
         return EffectResult::Fail;
@@ -153,7 +152,7 @@ fn try_change_world(ecs: &mut Ecs, new_map_id: &String, _location: &String) -> E
 
     level
         .resources
-        .get_mut_or_insert_with(|| Camera::new(map_size.0, map_size.1));
+        .get_or_insert_with(|| Camera::new(map_size.0, map_size.1));
 
     EffectResult::Success
 }

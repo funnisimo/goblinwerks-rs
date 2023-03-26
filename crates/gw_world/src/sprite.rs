@@ -214,7 +214,7 @@ impl TryInto<Sprite> for &Value {
                 },
             };
 
-            Err(SpriteParseError::WrongFormat)
+            Ok(Sprite::new(ch, fg, bg))
         } else {
             Err(SpriteParseError::WrongFormat)
         }

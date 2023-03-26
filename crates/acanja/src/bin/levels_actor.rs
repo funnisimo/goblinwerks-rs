@@ -14,7 +14,7 @@ use gw_world::level::{Level, Levels};
 use gw_world::map::{Cell, Map};
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
-use gw_world::task::DoNextActionResult;
+use gw_world::task::{do_next_action, DoNextActionResult};
 use gw_world::tile::{TileTomlFileLoader, Tiles};
 use gw_world::widget::Viewport;
 
@@ -107,8 +107,10 @@ impl MainScreen {
     }
 
     #[allow(dead_code)]
-    fn post_action(&mut self, level: &mut Level) {
+    fn post_action(&mut self, ecs: &mut Ecs) {
         // Post Update
+        let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+        let level = levels.current_mut();
         update_camera_follows(level);
     }
 }
@@ -198,33 +200,33 @@ impl Screen for MainScreen {
         // Pre Update
 
         // Update
-        let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-        let level = levels.current_mut();
+        // let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+        // let level = levels.current_mut();
 
-        level.execute(|level, executor| {
-            // Update
-            loop {
-                // if world.is_game_over() {
-                //     return (self.game_over)(world, ctx);
-                // } else if !world.animations().is_empty() {
-                //     return ScreenResult::Continue;
-                // }
-                let res = executor.do_next_action(level);
-                self.post_action(level);
-                match res {
-                    DoNextActionResult::Done => {
-                        return ScreenResult::Continue;
-                    }
-                    DoNextActionResult::Mob => {
-                        continue;
-                    }
-                    DoNextActionResult::Hero => {
-                        return ScreenResult::Continue;
-                    }
-                    DoNextActionResult::PushMode(mode) => return ScreenResult::Push(mode),
+        // level.execute(|level, executor| {
+        // Update
+        loop {
+            // if world.is_game_over() {
+            //     return (self.game_over)(world, ctx);
+            // } else if !world.animations().is_empty() {
+            //     return ScreenResult::Continue;
+            // }
+            let res = do_next_action(ecs);
+            self.post_action(ecs);
+            match res {
+                DoNextActionResult::Done => {
+                    return ScreenResult::Continue;
                 }
+                DoNextActionResult::Mob => {
+                    continue;
+                }
+                DoNextActionResult::Hero => {
+                    return ScreenResult::Continue;
+                }
+                DoNextActionResult::PushMode(mode) => return ScreenResult::Push(mode),
             }
-        })
+        }
+        // })
         // post update
     }
 

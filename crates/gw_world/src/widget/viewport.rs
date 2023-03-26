@@ -521,7 +521,10 @@ fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
         map_size.1,
     );
 
-    let (left, top) = map.try_wrap_xy(base_left, base_top).unwrap();
+    let (left, top) = match map.try_wrap_xy(base_left, base_top) {
+        None => (base_left, base_top),
+        Some((x, y)) => (x, y),
+    };
     let bounds = Rect::with_size(left, top, view_size.0, view_size.1);
 
     let mut query = <(&Position, &Sprite)>::query();

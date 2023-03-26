@@ -13,9 +13,9 @@
 
 use crate::action::need_input::NeedInputAction;
 use crate::action::BoxedAction;
-use crate::level::Level;
 use gw_app::ecs::Entity;
+use gw_app::Ecs;
 
-pub fn ai_user_control(_ecs: &mut Level, entity: Entity) -> Option<BoxedAction> {
+pub fn ai_user_control(_ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
     Some(Box::new(NeedInputAction::new(entity)))
 }
