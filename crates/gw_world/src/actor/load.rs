@@ -9,11 +9,11 @@ use gw_util::value::Value;
 /*
    JSON format:
    "ID": {
-       "sprite": "<SPRITE_CONFIG>",
+       "sprite": <SPRITE_CONFIG>,
        --or--
-       "glyph" | "ch": "ch" || ###,
-       "fg": "<RGBA_CONFIG>",
-       "bg": "<RGBA_CONFIG>",
+       "glyph" | "ch": <char> || <int>
+       "fg": <RGBA_CONFIG>,
+       "bg": <RGBA_CONFIG>,
 
        "flavor": <STRING>,
        "description": <STRING>
@@ -48,13 +48,13 @@ pub fn load_actor_data(dest: &mut ActorKinds, data: Value) -> Result<u32, String
     Ok(count)
 }
 
-pub struct ActorKindTomlFileLoader {
+pub struct ActorKindsLoader {
     dump: bool,
 }
 
-impl ActorKindTomlFileLoader {
-    pub fn new() -> ActorKindTomlFileLoader {
-        ActorKindTomlFileLoader { dump: false }
+impl ActorKindsLoader {
+    pub fn new() -> ActorKindsLoader {
+        ActorKindsLoader { dump: false }
     }
 
     pub fn with_dump(mut self) -> Self {
@@ -63,7 +63,7 @@ impl ActorKindTomlFileLoader {
     }
 }
 
-impl LoadHandler for ActorKindTomlFileLoader {
+impl LoadHandler for ActorKindsLoader {
     fn file_loaded(&mut self, path: &str, data: Vec<u8>, ecs: &mut Ecs) -> Result<(), LoadError> {
         let mut tiles = ecs
             .resources
@@ -80,71 +80,30 @@ impl LoadHandler for ActorKindTomlFileLoader {
             Ok(v) => v,
         };
 
-        let string_table = match gw_util::toml::parse_string(&string) {
-            Err(e) => {
-                return Err(LoadError::ParseError(format!(
-                    "Failed to parse '{}' => {}",
-                    path, e
-                )))
+        let string_table = if path.ends_with(".toml") {
+            match gw_util::toml::parse_string(&string) {
+                Err(e) => {
+                    return Err(LoadError::ParseError(format!(
+                        "Failed to parse '{}' => {}",
+                        path, e
+                    )))
+                }
+                Ok(v) => v,
             }
-            Ok(v) => v,
-        };
-
-        match load_actor_data(&mut tiles, string_table) {
-            Err(e) => return Err(LoadError::ProcessError(e)),
-            Ok(count) => {
-                log(format!("Loaded {} actor kinds", count));
+        } else if path.ends_with(".json") || path.ends_with(".jsonc") {
+            match gw_util::json::parse_string(&string) {
+                Err(e) => {
+                    return Err(LoadError::ParseError(format!(
+                        "Failed to parse '{}' => {}",
+                        path, e
+                    )))
+                }
+                Ok(v) => v,
             }
-        }
-
-        if self.dump {
-            tiles.dump();
-        }
-
-        Ok(())
-    }
-}
-
-pub struct ActorKindJsonFileLoader {
-    dump: bool,
-}
-
-impl ActorKindJsonFileLoader {
-    pub fn new() -> ActorKindJsonFileLoader {
-        ActorKindJsonFileLoader { dump: false }
-    }
-
-    pub fn with_dump(mut self) -> Self {
-        self.dump = true;
-        self
-    }
-}
-
-impl LoadHandler for ActorKindJsonFileLoader {
-    fn file_loaded(&mut self, path: &str, data: Vec<u8>, ecs: &mut Ecs) -> Result<(), LoadError> {
-        let mut tiles = ecs
-            .resources
-            .get_mut_or_insert_with(|| ActorKinds::default());
-
-        let string = match String::from_utf8(data) {
-            Err(e) => {
-                return Err(LoadError::ParseError(format!(
-                    "Malformed file data '{}' : {}",
-                    path,
-                    e.to_string()
-                )))
-            }
-            Ok(v) => v,
-        };
-
-        let string_table = match gw_util::json::parse_string(&string) {
-            Err(e) => {
-                return Err(LoadError::ParseError(format!(
-                    "Failed to parse '{}' => {}",
-                    path, e
-                )))
-            }
-            Ok(v) => v,
+        } else {
+            return Err(LoadError::ParseError(
+                "Unsupported file format - require '.toml' or '.json' or '.jsonc'".to_string(),
+            ));
         };
 
         match load_actor_data(&mut tiles, string_table) {

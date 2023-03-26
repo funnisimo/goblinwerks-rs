@@ -6,7 +6,6 @@ use super::{
     parse_move_region, parse_poison, parse_portal, parse_restore_items, parse_store_items,
     parse_tile, parse_treasure,
 };
-use gw_app::log;
 use gw_app::{ecs::Entity, Ecs};
 use gw_util::point::Point;
 use gw_util::value::Value;

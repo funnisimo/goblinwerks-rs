@@ -1,5 +1,6 @@
 {
   "tiles": "./assets/tiles.jsonc",
+  "actors": "./assets/actors.jsonc",
   "levels": {
     "dir": "./assets/maps",
     "files": [

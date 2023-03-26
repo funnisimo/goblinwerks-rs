@@ -14,7 +14,7 @@ use gw_world::map::Map;
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
 use gw_world::task::{do_next_action, DoNextActionResult};
-use gw_world::tile::{TileTomlFileLoader, Tiles};
+use gw_world::tile::{Tiles, TilesLoader};
 use gw_world::widget::{Lock, Viewport};
 
 struct UserControl;
@@ -202,7 +202,7 @@ fn main() {
         .title("Acanja - World Viewer")
         .file(
             "assets/tiles.toml",
-            Box::new(TileTomlFileLoader::new().with_dump()),
+            Box::new(TilesLoader::new().with_dump()),
         )
         .file(
             "assets/store_prefab.toml",

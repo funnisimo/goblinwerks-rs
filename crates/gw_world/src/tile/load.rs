@@ -62,13 +62,13 @@ pub fn load_tile_data(dest: &mut Tiles, data: Value) -> Result<u32, String> {
     Ok(count)
 }
 
-pub struct TileTomlFileLoader {
+pub struct TilesLoader {
     dump: bool,
 }
 
-impl TileTomlFileLoader {
-    pub fn new() -> TileTomlFileLoader {
-        TileTomlFileLoader { dump: false }
+impl TilesLoader {
+    pub fn new() -> TilesLoader {
+        TilesLoader { dump: false }
     }
 
     pub fn with_dump(mut self) -> Self {
@@ -77,7 +77,7 @@ impl TileTomlFileLoader {
     }
 }
 
-impl LoadHandler for TileTomlFileLoader {
+impl LoadHandler for TilesLoader {
     fn file_loaded(&mut self, path: &str, data: Vec<u8>, ecs: &mut Ecs) -> Result<(), LoadError> {
         let mut tiles = ecs.resources.get_mut_or_insert_with(|| Tiles::default());
 
@@ -92,69 +92,30 @@ impl LoadHandler for TileTomlFileLoader {
             Ok(v) => v,
         };
 
-        let string_table = match gw_util::toml::parse_string(&string) {
-            Err(e) => {
-                return Err(LoadError::ParseError(format!(
-                    "Failed to parse '{}' => {}",
-                    path, e
-                )))
+        let string_table = if path.ends_with(".toml") {
+            match gw_util::toml::parse_string(&string) {
+                Err(e) => {
+                    return Err(LoadError::ParseError(format!(
+                        "Failed to parse '{}' => {}",
+                        path, e
+                    )))
+                }
+                Ok(v) => v,
             }
-            Ok(v) => v,
-        };
-
-        match load_tile_data(&mut tiles, string_table) {
-            Err(e) => return Err(LoadError::ProcessError(e)),
-            Ok(count) => {
-                log(format!("Loaded {} tiles", count));
+        } else if path.ends_with(".json") || path.ends_with(".jsonc") {
+            match gw_util::json::parse_string(&string) {
+                Err(e) => {
+                    return Err(LoadError::ParseError(format!(
+                        "Failed to parse '{}' => {}",
+                        path, e
+                    )))
+                }
+                Ok(v) => v,
             }
-        }
-
-        if self.dump {
-            tiles.dump();
-        }
-
-        Ok(())
-    }
-}
-
-pub struct TileJsonFileLoader {
-    dump: bool,
-}
-
-impl TileJsonFileLoader {
-    pub fn new() -> TileJsonFileLoader {
-        TileJsonFileLoader { dump: false }
-    }
-
-    pub fn with_dump(mut self) -> Self {
-        self.dump = true;
-        self
-    }
-}
-
-impl LoadHandler for TileJsonFileLoader {
-    fn file_loaded(&mut self, path: &str, data: Vec<u8>, ecs: &mut Ecs) -> Result<(), LoadError> {
-        let mut tiles = ecs.resources.get_mut_or_insert_with(|| Tiles::default());
-
-        let string = match String::from_utf8(data) {
-            Err(e) => {
-                return Err(LoadError::ParseError(format!(
-                    "Malformed file data '{}' : {}",
-                    path,
-                    e.to_string()
-                )))
-            }
-            Ok(v) => v,
-        };
-
-        let string_table = match gw_util::json::parse_string(&string) {
-            Err(e) => {
-                return Err(LoadError::ParseError(format!(
-                    "Failed to parse '{}' => {}",
-                    path, e
-                )))
-            }
-            Ok(v) => v,
+        } else {
+            return Err(LoadError::ParseError(
+                "Unsupported file extension - require '.toml' or '.json' or '.jsonc'".to_string(),
+            ));
         };
 
         match load_tile_data(&mut tiles, string_table) {

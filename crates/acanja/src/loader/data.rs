@@ -1,10 +1,10 @@
 use super::{make_level, LevelData, MapData};
 use gw_app::{
-    ecs::{Read, ResourceSet, Write},
+    ecs::{ResourceSet, Write},
     loader::{LoadError, LoadHandler},
     log,
 };
-use gw_world::{level::Levels, tile::Tiles};
+use gw_world::level::Levels;
 
 pub struct LevelDataLoader {
     level_data: Option<LevelData>,

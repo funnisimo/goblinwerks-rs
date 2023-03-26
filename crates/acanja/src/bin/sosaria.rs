@@ -9,7 +9,7 @@ use gw_app::*;
 use gw_util::json::parse_file;
 use gw_util::point::Point;
 use gw_world::action::move_step::MoveStepAction;
-use gw_world::actor::{Actor, ActorKindJsonFileLoader};
+use gw_world::actor::{Actor, ActorKindsLoader};
 use gw_world::effect::{register_effect_parser, BoxedEffect};
 use gw_world::hero::Hero;
 use gw_world::level::{Level, Levels};
@@ -20,8 +20,8 @@ use gw_world::task::{do_next_action, DoNextActionResult};
 // use gw_world::memory::MapMemory;
 use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::map::Wrap;
-use gw_world::tile::TileJsonFileLoader;
 use gw_world::tile::Tiles;
+use gw_world::tile::TilesLoader;
 use gw_world::widget::Viewport;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs::read_to_string};
@@ -224,15 +224,15 @@ fn main() {
             registry.register::<gw_world::actor::Actor>("Actor".to_string());
             registry.register::<UserControl>("UserControl".to_string());
         })
-        .file("assets/tiles.jsonc", Box::new(TileJsonFileLoader::new()))
-        .file(
-            "assets/actors.jsonc",
-            Box::new(ActorKindJsonFileLoader::new()),
-        )
-        .file(
-            "assets/store_prefab.toml",
-            Box::new(PrefabFileLoader::new().with_dump()),
-        )
+        // .file("assets/tiles.jsonc", Box::new(TileJsonFileLoader::new()))
+        // .file(
+        //     "assets/actors.jsonc",
+        //     Box::new(ActorKindJsonFileLoader::new()),
+        // )
+        // .file(
+        //     "assets/store_prefab.toml",
+        //     Box::new(PrefabFileLoader::new().with_dump()),
+        // )
         .file("assets/game_config.jsonc", Box::new(GameConfigLoader))
         .vsync(false)
         .build();

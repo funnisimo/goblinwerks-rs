@@ -4,7 +4,7 @@ use gw_app::{
     loader::{LoadError, LoadHandler, Loader},
     log,
 };
-use gw_world::level::Levels;
+use gw_world::{actor::ActorKindsLoader, level::Levels, tile::TilesLoader};
 
 pub struct GameConfigLoader;
 
@@ -49,6 +49,26 @@ impl LoadHandler for GameConfigLoader {
 
         let (mut loader, mut levels) =
             <(Write<Loader>, Write<Levels>)>::fetch_mut(&mut ecs.resources);
+
+        // Load TILES
+        if let Some(tiles_value) = table.get(&"tiles".into()) {
+            if tiles_value.is_string() {
+                let filename = tiles_value.to_string();
+                loader
+                    .load_file(&filename, Box::new(TilesLoader::new()))
+                    .expect("Failed to load tiles!");
+            }
+        }
+
+        // Load ACTORS
+        if let Some(actor_value) = table.get(&"actors".into()) {
+            if actor_value.is_string() {
+                let filename = actor_value.to_string();
+                loader
+                    .load_file(&filename, Box::new(ActorKindsLoader::new()))
+                    .expect("Failed to load actors file!");
+            }
+        }
 
         levels.set_start_map(&start_map);
 

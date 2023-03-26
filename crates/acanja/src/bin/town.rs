@@ -5,7 +5,7 @@ use gw_app::*;
 use gw_util::point::Point;
 use gw_world::camera::Camera;
 use gw_world::map::Map;
-use gw_world::tile::{TileTomlFileLoader, Tiles};
+use gw_world::tile::{Tiles, TilesLoader};
 use gw_world::widget::Viewport;
 
 struct MainScreen {
@@ -97,7 +97,7 @@ fn main() {
         .title("Acanja - Town Viewer")
         .file(
             "assets/tiles.toml",
-            Box::new(TileTomlFileLoader::new().with_dump()),
+            Box::new(TilesLoader::new().with_dump()),
         )
         .file(
             "assets/store_prefab.toml",
