@@ -7,7 +7,7 @@ use gw_app::{
 use gw_util::{rect::Rect, value::Value};
 use gw_world::{
     camera::Camera,
-    effect::{parse_effects, BoxedEffect, Portal},
+    effect::{parse_effects, BoxedEffect, Message, Portal},
     level::{Level, Levels},
     map::{Map, Wrap},
     tile::{Tile, Tiles},
@@ -307,9 +307,25 @@ pub fn load_level_data(tiles: &Tiles, json: Value) -> LevelData {
                     }
                 }
 
-                // message?
-                // TODO - message can be at the top level - it is shorthand for {enter: {message: text}}
-                //      - and adds to any other enter effects that were done
+                // message - shorthand for "enter": { "message": <TEXT> }
+                if let Some(message_value) = info.get(&"message".into()) {
+                    if message_value.is_string() {
+                        let text = message_value.to_string();
+                        match cell.effects.get_mut("ENTER") {
+                            None => {
+                                cell.effects.insert(
+                                    "ENTER".to_string(),
+                                    vec![Box::new(Message::new(&text))],
+                                );
+                            }
+                            Some(current) => {
+                                current.push(Box::new(Message::new(&text)));
+                            }
+                        }
+                    } else {
+                        panic!("Message must be a string!  found: {:?}", message_value);
+                    }
+                }
 
                 // exit
                 if let Some(exit_value) = info.get(&"exit".into()) {

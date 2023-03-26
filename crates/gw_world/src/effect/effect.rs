@@ -6,6 +6,7 @@ use super::{
     parse_move_region, parse_poison, parse_portal, parse_restore_items, parse_store_items,
     parse_tile, parse_treasure,
 };
+use gw_app::log;
 use gw_app::{ecs::Entity, Ecs};
 use gw_util::point::Point;
 use gw_util::value::Value;
@@ -116,21 +117,25 @@ pub fn parse_effects(value: &Value) -> Result<Vec<BoxedEffect>, String> {
     Ok(output)
 }
 
-pub fn fire_tile_action(
+pub fn fire_cell_action(
     ecs: &mut Ecs,
     pos: Point,
     action: &str,
     entity: Option<Entity>,
 ) -> EffectResult {
+    // log(format!("Fire cell effects - {}", action));
+
     let effects = {
         let level = get_current_level(ecs);
         let map = level.resources.get::<Map>().unwrap();
         let idx = map.get_index(pos.x, pos.y).unwrap();
-        match map.get_cell_effects(idx, action) {
+        match map.get_cell_effects(idx, &action.to_uppercase()) {
             None => return EffectResult::Success,
             Some(d) => d,
         }
     };
+
+    // log(format!(" - effects - {:?}", effects));
 
     for eff in effects.iter() {
         match eff.fire(ecs, pos, entity) {

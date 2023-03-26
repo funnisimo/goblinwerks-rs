@@ -157,6 +157,10 @@ impl Screen for MainScreen {
 
                 log(format!("GROUND = {:?}", cell.ground()));
                 log(format!("FIXTURE = {:?}", cell.fixture()));
+
+                if let Some(effects) = map.cell_effects.get(&idx) {
+                    log(format!("CELL EFFECTS = {:?}", effects));
+                }
             }
             _ => {}
         }

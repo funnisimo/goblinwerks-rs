@@ -1,7 +1,7 @@
 use crate::action::idle::IdleAction;
 use crate::action::{Action, ActionResult};
 use crate::actor::Actor;
-use crate::effect::fire_tile_action;
+use crate::effect::fire_cell_action;
 use crate::hero::Hero;
 use crate::level::{get_current_level, get_current_level_mut, Level};
 use crate::map::Cell;
@@ -125,7 +125,7 @@ impl MoveStepAction {
         };
 
         // TODO - How to check for permission to exit?
-        fire_tile_action(ecs, orig_pt, "exit", Some(self.entity));
+        fire_cell_action(ecs, orig_pt, "exit", Some(self.entity));
 
         // println!("changed : {}", old_idx);
         let blocks_move = {
@@ -145,7 +145,7 @@ impl MoveStepAction {
         }
 
         // TODO - How to check for permission to enter?
-        fire_tile_action(ecs, new_pt, "enter", Some(self.entity));
+        fire_cell_action(ecs, new_pt, "enter", Some(self.entity));
 
         // if let Some(mut fov) = entry.get_component_mut::<FOV>() {
         //     fov.set_needs_update();
