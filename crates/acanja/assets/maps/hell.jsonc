@@ -67,7 +67,7 @@
 
     "L": {
       "actor": {
-        "id": "Time",
+        "kind": "TIME_LORD",
         "talk": "The one way is Love, Sol, Moons, Death.  All others Fail."
       }
     },

@@ -89,7 +89,7 @@ impl FovSource for Map {
     }
 
     fn has_xy(&self, x: i32, y: i32) -> bool {
-        Map::has_xy(&self, x, y)
+        Map::try_wrap_xy(&self, x, y).is_some()
     }
 
     fn get_size(&self) -> (u32, u32) {

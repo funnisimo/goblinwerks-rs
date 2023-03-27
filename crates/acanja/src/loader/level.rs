@@ -4,14 +4,17 @@ use gw_app::{
     loader::{LoadError, LoadHandler, Loader},
     log, Ecs,
 };
-use gw_util::{rect::Rect, value::Value};
+use gw_util::{
+    rect::Rect,
+    value::Value,
+    xy::{Lock, Wrap},
+};
 use gw_world::{
     camera::Camera,
     effect::{parse_effects, BoxedEffect, Message, Portal},
     level::{Level, Levels},
-    map::{Map, Wrap},
+    map::Map,
     tile::{Tile, Tiles},
-    widget::Lock,
 };
 use std::{collections::HashMap, sync::Arc};
 
@@ -34,6 +37,7 @@ pub struct Cell {
     location: Option<String>,                   // ground, fixture, location name
     effects: HashMap<String, Vec<BoxedEffect>>, // action effects
     flavor: Option<String>,
+    // actor: Option<String>, // actor kind
 }
 
 impl Cell {
@@ -233,6 +237,9 @@ pub fn load_level_data(tiles: &Tiles, json: Value) -> LevelData {
                 }
 
                 // actor
+                if let Some(actor_value) = info.get(&"actor".into()) {
+                    log(format!("Actor - {:?}", actor_value));
+                }
 
                 // item
 

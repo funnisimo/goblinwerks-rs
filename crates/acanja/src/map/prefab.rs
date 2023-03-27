@@ -240,9 +240,9 @@ impl Prefabs {
         Prefabs(HashMap::new())
     }
 
-    pub fn get(&self, id: &str) -> Option<&Prefab> {
-        self.0.get(id)
-    }
+    // pub fn get(&self, id: &str) -> Option<&Prefab> {
+    //     self.0.get(id)
+    // }
 
     pub fn insert(&mut self, id: &str, prefab: Prefab) {
         self.0.insert(id.to_string(), prefab);

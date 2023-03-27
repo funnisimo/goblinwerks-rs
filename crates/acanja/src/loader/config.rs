@@ -2,7 +2,7 @@ use super::LevelLoader;
 use gw_app::{
     ecs::{ResourceSet, Write},
     loader::{LoadError, LoadHandler, Loader},
-    log,
+    // log,
 };
 use gw_world::{actor::ActorKindsLoader, level::Levels, tile::TilesLoader};
 

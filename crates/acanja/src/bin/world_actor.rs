@@ -5,6 +5,7 @@ use gw_app::ecs::*;
 use gw_app::ecs::{systems::ResourceSet, Read};
 use gw_app::*;
 use gw_util::point::Point;
+use gw_util::xy::Lock;
 use gw_world::action::move_step::MoveStepAction;
 use gw_world::actor::Actor;
 use gw_world::camera::{update_camera_follows, Camera};
@@ -15,7 +16,7 @@ use gw_world::position::Position;
 use gw_world::sprite::Sprite;
 use gw_world::task::{do_next_action, DoNextActionResult};
 use gw_world::tile::{Tiles, TilesLoader};
-use gw_world::widget::{Lock, Viewport};
+use gw_world::widget::Viewport;
 
 struct UserControl;
 

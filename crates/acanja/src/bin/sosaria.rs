@@ -1,30 +1,20 @@
 use acanja::effect::{parse_gremlins, parse_mark, parse_winds};
 use acanja::loader::GameConfigLoader;
-use acanja::map::prefab::{PrefabFileLoader, Prefabs};
 use gw_app::ecs::Entity;
-// use acanja::map::world::build_world_map;
-use gw_app::ecs::{systems::ResourceSet, Write};
-use gw_app::loader::{LoadError, LoadHandler, Loader};
 use gw_app::*;
-use gw_util::json::parse_file;
 use gw_util::point::Point;
 use gw_world::action::move_step::MoveStepAction;
-use gw_world::actor::{Actor, ActorKindsLoader};
+use gw_world::actor::Actor;
+use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::effect::{register_effect_parser, BoxedEffect};
 use gw_world::hero::Hero;
-use gw_world::level::{Level, Levels};
+use gw_world::level::Levels;
 use gw_world::map::{dump_map, Cell, Map};
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
 use gw_world::task::{do_next_action, DoNextActionResult};
-// use gw_world::memory::MapMemory;
-use gw_world::camera::{update_camera_follows, Camera};
-use gw_world::map::Wrap;
-use gw_world::tile::Tiles;
-use gw_world::tile::TilesLoader;
 use gw_world::widget::Viewport;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs::read_to_string};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct UserControl;

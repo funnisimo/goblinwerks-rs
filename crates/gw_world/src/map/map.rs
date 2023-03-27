@@ -1,17 +1,18 @@
-use super::{Cell, CellMut, CellRef, Wrap};
+use super::{Cell, CellMut, CellRef};
 use super::{CellFlags, MapFlags};
 use crate::effect::BoxedEffect;
 // use crate::fov::FovSource;
 use crate::tile::Tile;
 use crate::tile::TileLayer;
 use crate::tile::NO_TILE;
-use crate::widget::Lock;
 use gw_app::ecs::Entity;
 use gw_app::log;
 use gw_util::point::distance;
 use gw_util::point::Point;
 use gw_util::rect::Rect;
 use gw_util::rng::RandomNumberGenerator;
+use gw_util::xy::Lock;
+use gw_util::xy::Wrap;
 use std::collections::HashMap;
 use std::sync::Arc; // For FOV Calc
 

@@ -9,7 +9,8 @@ use gw_world::map::{closest_points_matching, find_random_point, Builder, Cell, M
 use gw_world::tile::{tile_is_none, TileKind, Tiles};
 use rand::prelude::SliceRandom;
 
-pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32) -> Map {
+#[allow(dead_code)]
+pub fn build_world_map(tiles: &Tiles, _prefabs: &Prefabs, width: u32, height: u32) -> Map {
     let mut map = Map::new(width, height);
 
     let mut rng = RandomNumberGenerator::new();
@@ -111,7 +112,7 @@ pub fn build_world_map(tiles: &Tiles, prefabs: &Prefabs, width: u32, height: u32
 #[allow(dead_code)]
 pub fn build_world_map_with_noise<'t>(
     tiles: &'t Tiles,
-    prefabs: &Prefabs,
+    _prefabs: &Prefabs,
     width: u32,
     height: u32,
 ) -> Map {

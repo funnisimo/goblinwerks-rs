@@ -11,6 +11,7 @@ pub mod rng;
 pub mod text;
 pub mod toml;
 pub mod value;
+pub mod xy;
 
 #[macro_use]
 extern crate pest_derive;

@@ -1,4 +1,4 @@
-use gw_util::rect::Rect;
+use crate::rect::Rect;
 
 #[derive(Debug, Copy, Clone, Default)]
 pub enum Wrap {

@@ -1,7 +1,7 @@
 use uni_gl::BufferBit;
 
 use super::input::AppInput;
-use crate::ecs::{init_ecs, scoped_resource, Ecs, Time, WindowInfo};
+use crate::ecs::{init_ecs, Ecs, Time, WindowInfo};
 use crate::ecs::{systems::ResourceSet, Read, Write};
 use crate::font::{default_from_glyph, default_to_glyph};
 use crate::fps::Fps;
