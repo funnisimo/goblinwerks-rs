@@ -20,6 +20,7 @@ gw_util = { path = "../gw_util" }
 # scoped-tls-hkt    = { version = "0.1", optional = true }
 # erased-serde      = { version = "0.3", optional = true }
 # crossbeam-channel = { version = "0.5", optional = true }
+shipyard = "0.6.2"
 
 [target.wasm32-unknown-unknown.dependencies]
 legion = { version = "0.4", default-features = false, features = [

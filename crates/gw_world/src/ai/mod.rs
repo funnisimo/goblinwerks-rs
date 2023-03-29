@@ -18,9 +18,12 @@ use std::sync::{Arc, Mutex};
 // mod player;
 // pub use player::PlayerAI;
 
+mod ai_flags;
 pub mod idle;
 pub mod mirror_entity;
 pub mod user;
+
+pub use ai_flags::AIFlags;
 
 // mod basic_monster;
 // pub use basic_monster::BasicMonster;
@@ -71,7 +74,13 @@ pub struct AI {
 
 impl AI {
     pub fn new() -> Self {
-        AI { stack: Vec::new() }
+        AI {
+            stack: vec!["IDLE".to_string()],
+        }
+    }
+
+    pub fn reset(&mut self, ai: &str) {
+        self.stack = vec![ai.to_string()];
     }
 
     pub fn push(&mut self, name: &str) {

@@ -5,11 +5,13 @@ use gw_app::{
     log, Ecs,
 };
 use gw_util::{
+    point::Point,
     rect::Rect,
     value::Value,
     xy::{Lock, Wrap},
 };
 use gw_world::{
+    actor::{spawn_actor, ActorKind, ActorKinds},
     camera::Camera,
     effect::{parse_effects, BoxedEffect, Message, Portal},
     level::{Level, Levels},
@@ -37,7 +39,7 @@ pub struct Cell {
     location: Option<String>,                   // ground, fixture, location name
     effects: HashMap<String, Vec<BoxedEffect>>, // action effects
     flavor: Option<String>,
-    // actor: Option<String>, // actor kind
+    actor: Option<Arc<ActorKind>>, // actor kind id
 }
 
 impl Cell {
@@ -109,10 +111,12 @@ impl LoadHandler for LevelLoader {
 
         ecs.resources.get_mut_or_insert_with(|| Tiles::default());
         ecs.resources.get_mut_or_insert_with(|| Levels::default());
-        let (tiles, mut loader, mut levels) =
-            <(Read<Tiles>, Write<Loader>, Write<Levels>)>::fetch_mut(&mut ecs.resources);
+        let (tiles, mut loader, mut levels, actor_kinds) =
+            <(Read<Tiles>, Write<Loader>, Write<Levels>, Read<ActorKinds>)>::fetch_mut(
+                &mut ecs.resources,
+            );
 
-        let level_data = load_level_data(&*tiles, value);
+        let level_data = load_level_data(&*tiles, &*actor_kinds, value);
 
         match level_data.map_data {
             None => panic!("No map data in level file."),
@@ -151,7 +155,7 @@ impl LoadHandler for LevelLoader {
 }
 
 ////////////////////////////////////////////////////////////
-pub fn load_level_data(tiles: &Tiles, json: Value) -> LevelData {
+pub fn load_level_data(tiles: &Tiles, actor_kinds: &ActorKinds, json: Value) -> LevelData {
     // let path = "./assets/maps/";
     // let json_file = "sosaria.jsonc";
 
@@ -239,6 +243,21 @@ pub fn load_level_data(tiles: &Tiles, json: Value) -> LevelData {
                 // actor
                 if let Some(actor_value) = info.get(&"actor".into()) {
                     log(format!("Actor - {:?}", actor_value));
+                    let kind_id = if actor_value.is_string() {
+                        actor_value.to_string()
+                    } else if actor_value.is_map() {
+                        let map = actor_value.as_map().unwrap();
+
+                        if let Some(kind_value) = map.get(&"kind".into()) {
+                            kind_value.to_string()
+                        } else {
+                            panic!("Actor with no kind information - {:?}", actor_value);
+                        }
+                    } else {
+                        panic!("Invalid actor data type = {:?}", actor_value);
+                    };
+
+                    cell.actor = actor_kinds.get(&kind_id.to_uppercase());
                 }
 
                 // item
@@ -486,6 +505,8 @@ pub fn make_level(mut level_data: LevelData) -> Level {
         _ => panic!("Must have map data to make level"),
     };
 
+    let mut level = Level::new(&level_data.id);
+
     let def_entry = cell_lookup
         .get(&level_data.default_entry)
         .expect(&format!(
@@ -518,7 +539,7 @@ pub fn make_level(mut level_data: LevelData) -> Level {
             if x >= width as i32 {
                 break;
             }
-            let index = map.get_wrapped_index(x, y).unwrap();
+            let index = map.get_index(x, y).unwrap();
             let char = format!("{}", ch);
             match cell_lookup.get(&char) {
                 None => panic!("Unknown tile in map data - {}", char),
@@ -549,6 +570,11 @@ pub fn make_level(mut level_data: LevelData) -> Level {
                     for (action, effects) in place.effects.iter() {
                         map.set_effects(index, action, effects.clone());
                     }
+
+                    if let Some(ref kind) = place.actor {
+                        log(format!("Spawn Actor - {} @ {},{}", kind.id, x, y));
+                        spawn_actor(kind, &mut level, Point::new(x, y));
+                    }
                 }
             }
         }
@@ -562,7 +588,6 @@ pub fn make_level(mut level_data: LevelData) -> Level {
         map.select_region(region.left(), region.top(), region.width(), region.height());
     }
 
-    let mut level = Level::new(&level_data.id);
     level.resources.insert(map);
 
     if level_data.camera_size.0 > 0 {

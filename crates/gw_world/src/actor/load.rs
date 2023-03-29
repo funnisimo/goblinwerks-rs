@@ -65,10 +65,6 @@ impl ActorKindsLoader {
 
 impl LoadHandler for ActorKindsLoader {
     fn file_loaded(&mut self, path: &str, data: Vec<u8>, ecs: &mut Ecs) -> Result<(), LoadError> {
-        let mut tiles = ecs
-            .resources
-            .get_mut_or_insert_with(|| ActorKinds::default());
-
         let string = match String::from_utf8(data) {
             Err(e) => {
                 return Err(LoadError::ParseError(format!(
@@ -106,15 +102,20 @@ impl LoadHandler for ActorKindsLoader {
             ));
         };
 
-        match load_actor_data(&mut tiles, string_table) {
+        let mut actor_kinds = ecs
+            .resources
+            .get_mut_or_insert_with(|| ActorKinds::default());
+
+        match load_actor_data(&mut actor_kinds, string_table) {
             Err(e) => return Err(LoadError::ProcessError(e)),
             Ok(count) => {
                 log(format!("Loaded {} actor kinds", count));
+                actor_kinds.dump();
             }
         }
 
         if self.dump {
-            tiles.dump();
+            actor_kinds.dump();
         }
 
         Ok(())

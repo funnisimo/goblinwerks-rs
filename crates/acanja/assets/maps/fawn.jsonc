@@ -43,8 +43,8 @@
       "tile": ".",
       "actor": { "kind": "Guard", "talk": "Good day!", "ai": "RandomWalk" }
     },
-    "h": { "kind": "Guard", "actor": { "talk": "Good day!", "tile": "." } },
-    "i": { "kind": "Guard", "actor": { "talk": "Good day!", "tile": "-" } },
+    "h": { "actor": { "kind": "Guard", "talk": "Good day!", "tile": "." } },
+    "i": { "actor": { "kind": "Guard", "talk": "Good day!", "tile": "-" } },
 
     "f": { "tile": "-", "actor": { "kind": "Fighter", "ai": "RandomWalk" } },
     "j": {

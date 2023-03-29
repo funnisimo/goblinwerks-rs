@@ -17,15 +17,15 @@ impl Ecs {
         }
     }
 
-    pub fn insert<R: Resource>(&mut self, res: R) {
+    pub fn insert_res<R: Resource>(&mut self, res: R) {
         self.resources.insert(res);
     }
 
-    pub fn get<R: Resource>(&self) -> Option<AtomicRef<R>> {
+    pub fn res<R: Resource>(&self) -> Option<AtomicRef<R>> {
         self.resources.get::<R>()
     }
 
-    pub fn get_mut<R: Resource>(&mut self) -> Option<AtomicRefMut<R>> {
+    pub fn res_mut<R: Resource>(&mut self) -> Option<AtomicRefMut<R>> {
         self.resources.get_mut::<R>()
     }
 

@@ -1,10 +1,12 @@
+use std::sync::Arc;
+
 use acanja::effect::{parse_gremlins, parse_mark, parse_winds};
 use acanja::loader::GameConfigLoader;
-use gw_app::ecs::Entity;
+use gw_app::ecs::{Entity, Read, ResourceSet, Write};
 use gw_app::*;
 use gw_util::point::Point;
 use gw_world::action::move_step::MoveStepAction;
-use gw_world::actor::Actor;
+use gw_world::actor::{spawn_actor, Actor, ActorKind, ActorKinds};
 use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::effect::{register_effect_parser, BoxedEffect};
 use gw_world::hero::Hero;
@@ -52,23 +54,31 @@ impl Screen for MainScreen {
         // resources.get_or_insert_with(|| Tiles::default());
         // resources.get_or_insert_with(|| Prefabs::default());
 
-        let mut levels = resources.get_mut::<Levels>().unwrap();
+        let (mut levels, actor_kinds) = <(Write<Levels>, Read<ActorKinds>)>::fetch_mut(resources);
+
         log(format!("START MAP = {}", levels.current_id()));
         levels.setup();
         let level = levels.current_mut();
 
         let start_pos = {
             let map = level.resources.get::<Map>().unwrap();
-            dump_map(&*map);
-            log(format!("map size = {:?}", map.get_size()));
+            // dump_map(&*map);
+            // log(format!("map size = {:?}", map.get_size()));
             map.to_point(*map.get_location("START").unwrap())
         };
-        let entity = level.world.push((
-            Position::new(start_pos.x, start_pos.y),
-            Sprite::new('@' as Glyph, WHITE.into(), RGBA::new()),
-            UserControl, // Do we need this?
-            Actor::new().with_ai("USER_CONTROL"),
-        ));
+
+        let hero_kind = actor_kinds.get("HERO").unwrap();
+        log(format!("HERO - {:?}", hero_kind));
+
+        let entity = spawn_actor(&hero_kind, level, start_pos);
+
+        // let entity = level.world.push((
+        //     Position::new(start_pos.x, start_pos.y),
+        //     Sprite::new('@' as Glyph, WHITE.into(), RGBA::new()),
+        //     // UserControl, // Do we need this?
+        //     Actor::new().with_ai("USER_CONTROL"),
+        // ));
+        // level.resources.insert(Hero::new(entity));
 
         {
             let mut camera = level
@@ -77,7 +87,6 @@ impl Screen for MainScreen {
             camera.set_follows(entity);
         }
 
-        level.resources.insert(Hero::new(entity));
         level.reset_tasks();
     }
 
@@ -213,6 +222,7 @@ fn main() {
             registry.register::<gw_world::sprite::Sprite>("Sprite".to_string());
             registry.register::<gw_world::actor::Actor>("Actor".to_string());
             registry.register::<UserControl>("UserControl".to_string());
+            // registry.register::<Arc<ActorKind>>("ActorKind".to_string());
         })
         // .file("assets/tiles.jsonc", Box::new(TileJsonFileLoader::new()))
         // .file(

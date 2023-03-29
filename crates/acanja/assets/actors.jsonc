@@ -1,4 +1,10 @@
 {
+  "HERO": {
+    "sprite": "@|white",
+    "flavor": "yourself",
+    "ai": "USER_CONTROL",
+    "hero": true
+  },
   "ARMORER": {
     "sprite": "A|gray",
     "flavor": "an armorer"

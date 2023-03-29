@@ -1,4 +1,7 @@
-use super::{Actor, ActorKindBuilder};
+use std::sync::Arc;
+
+use super::{Actor, ActorKindBuilder, ActorKindFlags};
+use crate::hero::Hero;
 use crate::level::Level;
 use crate::position::Position;
 use crate::sprite::Sprite;
@@ -10,6 +13,7 @@ pub struct ActorKind {
     pub id: String,
     pub sprite: Sprite,
     pub info: Actor,
+    pub flags: ActorKindFlags,
 }
 
 impl ActorKind {
@@ -22,13 +26,22 @@ impl ActorKind {
             id: builder.id,
             sprite: builder.sprite,
             info: builder.info,
+            flags: builder.flags,
         }
     }
+}
 
-    pub fn spawn(&self, level: &mut Level, point: Point) -> Entity {
-        let pos: Position = point.into();
-        level
-            .world
-            .push((Actor::new(), pos, self.sprite.clone(), self.info.clone()))
+pub fn spawn_actor(kind: &Arc<ActorKind>, level: &mut Level, point: Point) -> Entity {
+    let pos: Position = point.into();
+    let entity = level.world.push((
+        kind.info.clone(),
+        pos,
+        kind.sprite.clone(), /* kind.clone() */
+    ));
+
+    if kind.flags.contains(ActorKindFlags::HERO) {
+        level.resources.insert(Hero::new(entity));
     }
+
+    entity
 }

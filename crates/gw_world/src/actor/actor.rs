@@ -3,7 +3,7 @@ use crate::ai::AI;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Formatter, Result};
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize)]
 pub struct Actor {
     pub busy_time: u32,
     pub act_time: u32,
@@ -22,6 +22,7 @@ impl Actor {
         Actor {
             busy_time: 0,
             act_time: 100,
+
             next_action: None,
             ai: AI::new(),
             flavor: None,
@@ -44,6 +45,12 @@ impl Clone for Actor {
         out.flavor = self.flavor.clone();
         out.description = self.description.clone();
         out
+    }
+}
+
+impl Default for Actor {
+    fn default() -> Self {
+        Actor::new()
     }
 }
 

@@ -8,14 +8,14 @@ fn main() {
     let mut ecs = Ecs::default();
 
     {
-        ecs.insert(Info(4));
-        let info = ecs.get::<Info>().unwrap();
+        ecs.insert_res(Info(4));
+        let info = ecs.res::<Info>().unwrap();
         println!("Info = {}", info.0);
     }
 
     {
-        ecs.insert(Age(5));
-        let age = ecs.get::<Age>().unwrap();
+        ecs.insert_res(Age(5));
+        let age = ecs.res::<Age>().unwrap();
         println!("Age = {}", age.0);
     }
 

@@ -1,4 +1,4 @@
-use super::{Actor, ActorKind};
+use super::{Actor, ActorKind, ActorKindFlags};
 use crate::sprite::{Sprite, SpriteParseError};
 use gw_app::{Glyph, RGBA};
 use gw_util::value::Value;
@@ -8,6 +8,7 @@ pub struct ActorKindBuilder {
     pub(super) id: String,
     pub(super) sprite: Sprite,
     pub(super) info: Actor,
+    pub(super) flags: ActorKindFlags,
 }
 
 impl ActorKindBuilder {
@@ -16,6 +17,7 @@ impl ActorKindBuilder {
             id: id.to_string(),
             sprite: Sprite::default(),
             info: Actor::default(),
+            flags: ActorKindFlags::empty(),
         }
     }
 
@@ -36,6 +38,16 @@ impl ActorKindBuilder {
 
     pub fn sprite(&mut self, sprite: Sprite) -> &mut Self {
         self.sprite = sprite;
+        self
+    }
+
+    pub fn ai(&mut self, ai: &str) -> &mut Self {
+        self.info.ai.reset(ai);
+        self
+    }
+
+    pub fn hero(&mut self) -> &mut Self {
+        self.flags.insert(ActorKindFlags::HERO);
         self
     }
 
@@ -71,7 +83,7 @@ impl ActorKindBuilder {
 #[derive(Debug, Clone)]
 pub enum BuilderError {
     BadSprite(SpriteParseError),
-    UnknownField,
+    UnknownField(String),
 }
 
 pub fn set_field(
@@ -124,6 +136,16 @@ pub fn set_field(
             builder.description(&value.to_string());
             Ok(())
         }
-        _ => Err(BuilderError::UnknownField),
+        "ai" => {
+            // {"ai": <STRING>}
+            builder.ai(&value.to_string());
+            Ok(())
+        }
+        "hero" => {
+            // {"hero": true}
+            builder.hero();
+            Ok(())
+        }
+        _ => Err(BuilderError::UnknownField(field.to_string())),
     }
 }
