@@ -4,8 +4,8 @@ use crate::actor::Actor;
 use crate::effect::fire_cell_action;
 use crate::hero::Hero;
 use crate::level::{get_current_level, get_current_level_mut, Level};
-use crate::map::Cell;
 use crate::map::Map;
+use crate::map::{cell_flavor, Cell};
 use crate::position::Position;
 use gw_app::ecs::systems::ResourceSet;
 use gw_app::ecs::{Entity, EntityStore, Read};
@@ -83,15 +83,56 @@ impl MoveStepAction {
         // }
 
         let actor_is_hero = self.entity == hero.entity;
+        let act_time = actor.act_time;
+        drop(actor);
 
         if map.is_blocked(idx) {
-            let flavor = map.get_cell(idx).unwrap().flavor();
+            // Check for actor at location...
+            if let Some(entity) = map.iter_actors(idx).next() {
+                if let Some(entity) = world.entry(entity) {
+                    // Check for shopkeeper
+                    // Check for talk...
+                    if let Ok(other_actor) = entity.get_component::<Actor>() {
+                        if let Some(ref talk) = other_actor.talk {
+                            log(format!(
+                                "{} says: '{}'",
+                                other_actor
+                                    .flavor
+                                    .as_ref()
+                                    .unwrap_or(&"An actor".to_string()),
+                                talk
+                            ));
+                            return Some(ActionResult::Replace(Box::new(IdleAction::new(
+                                self.entity,
+                                act_time,
+                            ))));
+                        }
+                        // Check for combat?
+
+                        // Should this be a different thing?
+                        log(format!(
+                            "{} says: 'Hello'",
+                            other_actor
+                                .flavor
+                                .as_ref()
+                                .unwrap_or(&"An actor".to_string())
+                        ));
+                        return Some(ActionResult::Replace(Box::new(IdleAction::new(
+                            self.entity,
+                            act_time,
+                        ))));
+                    }
+                }
+            }
+
+            let flavor = cell_flavor(&*map, world, idx);
             if actor_is_hero {
                 logger.log(format!("Blocked by {}", flavor));
             }
+
             return Some(ActionResult::Replace(Box::new(IdleAction::new(
                 self.entity,
-                actor.act_time,
+                act_time,
             ))));
         }
 

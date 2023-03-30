@@ -78,8 +78,7 @@
     },
     "m": {
       "actor": {
-        "kind": "Monster",
-        "type": "Demon",
+        "kind": "Demon",
         "ai": null,
         "talk": "Depart or Die!"
       },

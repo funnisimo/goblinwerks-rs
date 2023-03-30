@@ -68,5 +68,9 @@
   "WIZARD": {
     "sprite": "W|purple",
     "flavor": "a wizard"
+  },
+  "DEMON": {
+    "sprite": "D|red",
+    "flavor": "a demon"
   }
 }

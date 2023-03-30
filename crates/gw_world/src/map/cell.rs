@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
-use gw_app::log;
+use gw_app::{ecs::World, log};
 
 use crate::{
+    actor::Actor,
+    level::Level,
     sprite::Sprite,
     tile::{tile_is_none, Tile, TileFlags, TileMove, TileSet},
 };
@@ -83,30 +85,6 @@ pub trait Cell {
     }
 
     // flavor
-
-    fn flavor(&self) -> String {
-        if let Some(flavor) = self.map().flavors.get(&self.index()) {
-            log(format!("cell flavor = {}", flavor));
-            return flavor.clone();
-        }
-
-        let ground = self.ground();
-        let feature = self.fixture();
-
-        let ground_null = tile_is_none(ground);
-        let feature_null = tile_is_none(feature);
-        match (ground_null, feature_null) {
-            (false, false) => {
-                format!("{} on {}", feature.flavor, ground.flavor)
-            }
-            (true, false) => feature.flavor.clone(),
-            (false, true) => ground.flavor.clone(),
-            (true, true) => {
-                println!("tile ids = {} + {}", ground.id, feature.id);
-                "nothing".to_string()
-            }
-        }
-    }
 }
 
 ///////////////////
@@ -166,5 +144,42 @@ impl<'m> Cell for CellMut<'m> {
     }
     fn map(&self) -> &Map {
         self.map
+    }
+}
+
+///////////////////
+
+pub fn cell_flavor(map: &Map, world: &mut World, index: usize) -> String {
+    if let Some(actor_entity) = map.iter_actors(index).next() {
+        if let Some(entry) = world.entry(actor_entity) {
+            if let Ok(actor) = entry.get_component::<Actor>() {
+                if let Some(ref flavor) = actor.flavor {
+                    return flavor.clone();
+                }
+            }
+        }
+    }
+
+    if let Some(flavor) = map.flavors.get(&index) {
+        log(format!("cell flavor = {}", flavor));
+        return flavor.clone();
+    }
+
+    let cell = map.get_cell(index).unwrap();
+    let ground = cell.ground();
+    let feature = cell.fixture();
+
+    let ground_null = tile_is_none(ground);
+    let feature_null = tile_is_none(feature);
+    match (ground_null, feature_null) {
+        (false, false) => {
+            format!("{} on {}", feature.flavor, ground.flavor)
+        }
+        (true, false) => feature.flavor.clone(),
+        (false, true) => ground.flavor.clone(),
+        (true, true) => {
+            println!("tile ids = {} + {}", ground.id, feature.id);
+            "nothing".to_string()
+        }
     }
 }

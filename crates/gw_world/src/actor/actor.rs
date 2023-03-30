@@ -8,8 +8,9 @@ pub struct Actor {
     pub busy_time: u32,
     pub act_time: u32,
 
-    pub(super) flavor: Option<String>,
-    pub(super) description: Option<String>,
+    pub talk: Option<String>,
+    pub flavor: Option<String>,
+    pub description: Option<String>,
 
     #[serde(skip)] // Always move from level to level with no action - ai can add later
     pub next_action: Option<BoxedAction>,
@@ -25,6 +26,8 @@ impl Actor {
 
             next_action: None,
             ai: AI::new(),
+
+            talk: None,
             flavor: None,
             description: None,
         }
@@ -42,6 +45,8 @@ impl Clone for Actor {
         out.busy_time = self.busy_time;
         out.act_time = self.act_time;
         out.ai = self.ai.clone();
+
+        out.talk = self.talk.clone();
         out.flavor = self.flavor.clone();
         out.description = self.description.clone();
         out

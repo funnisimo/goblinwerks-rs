@@ -8,7 +8,7 @@ use gw_util::point::Point;
 use gw_world::camera::Camera;
 use gw_world::effect::BoxedEffect;
 use gw_world::level::{Level, Levels};
-use gw_world::map::{Cell, Map};
+use gw_world::map::{cell_flavor, Cell, Map};
 use gw_world::tile::{Tiles, TilesLoader};
 use gw_world::widget::Viewport;
 
@@ -180,12 +180,15 @@ impl Screen for MainScreen {
         match id {
             "VIEWPORT_MOVE" => {
                 let pt: Point = value.unwrap().try_into().unwrap();
-                let levels = ecs.resources.get::<Levels>().unwrap();
-                let level = levels.current();
+                let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+                let level = levels.current_mut();
                 let map = level.resources.get::<Map>().unwrap();
                 let index = map.get_wrapped_index(pt.x, pt.y).unwrap();
-                let cell = map.get_cell(index).unwrap();
-                log(format!("Mouse Pos = {} - {}", pt, cell.flavor()));
+                log(format!(
+                    "Mouse Pos = {} - {}",
+                    pt,
+                    cell_flavor(&*map, &mut level.world, index)
+                ));
             }
             "VIEWPORT_CLICK" => {
                 let pos: Point = value.unwrap().try_into().unwrap();

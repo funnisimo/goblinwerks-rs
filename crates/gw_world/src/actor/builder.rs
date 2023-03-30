@@ -21,6 +21,14 @@ impl ActorKindBuilder {
         }
     }
 
+    /// need to call this first
+    pub fn extend(&mut self, kind: &Arc<ActorKind>) -> &mut Self {
+        self.sprite = kind.sprite.clone();
+        self.info = kind.info.clone();
+        self.flags = kind.flags.clone();
+        self
+    }
+
     pub fn glyph(&mut self, glyph: Glyph) -> &mut Self {
         self.sprite.glyph = glyph;
         self
@@ -48,6 +56,11 @@ impl ActorKindBuilder {
 
     pub fn hero(&mut self) -> &mut Self {
         self.flags.insert(ActorKindFlags::HERO);
+        self
+    }
+
+    pub fn talk(&mut self, talk: &str) -> &mut Self {
+        self.info.talk = Some(talk.to_string());
         self
     }
 

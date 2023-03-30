@@ -243,21 +243,36 @@ pub fn load_level_data(tiles: &Tiles, actor_kinds: &ActorKinds, json: Value) -> 
                 // actor
                 if let Some(actor_value) = info.get(&"actor".into()) {
                     log(format!("Actor - {:?}", actor_value));
-                    let kind_id = if actor_value.is_string() {
-                        actor_value.to_string()
+                    if actor_value.is_string() {
+                        cell.actor = actor_kinds.get(&actor_value.to_string().to_uppercase());
                     } else if actor_value.is_map() {
                         let map = actor_value.as_map().unwrap();
 
                         if let Some(kind_value) = map.get(&"kind".into()) {
-                            kind_value.to_string()
+                            let id = format!("{}@{}", kind_value.to_string().to_uppercase(), ch);
+                            let mut builder = ActorKind::builder(&id);
+
+                            match actor_kinds.get(&kind_value.to_string().to_uppercase()) {
+                                None => panic!(
+                                    "Actor kind extends missing actor - {}",
+                                    kind_value.to_string()
+                                ),
+                                Some(base) => {
+                                    builder.extend(&base);
+                                }
+                            }
+
+                            if let Some(talk) = map.get(&"talk".into()) {
+                                builder.talk(&talk.to_string());
+                            }
+
+                            cell.actor = Some(builder.build());
                         } else {
                             panic!("Actor with no kind information - {:?}", actor_value);
                         }
                     } else {
                         panic!("Invalid actor data type = {:?}", actor_value);
                     };
-
-                    cell.actor = actor_kinds.get(&kind_id.to_uppercase());
                 }
 
                 // item
@@ -570,11 +585,6 @@ pub fn make_level(mut level_data: LevelData) -> Level {
                     for (action, effects) in place.effects.iter() {
                         map.set_effects(index, action, effects.clone());
                     }
-
-                    if let Some(ref kind) = place.actor {
-                        log(format!("Spawn Actor - {} @ {},{}", kind.id, x, y));
-                        spawn_actor(kind, &mut level, Point::new(x, y));
-                    }
                 }
             }
         }
@@ -589,6 +599,29 @@ pub fn make_level(mut level_data: LevelData) -> Level {
     }
 
     level.resources.insert(map);
+
+    for (y, line) in data.iter().enumerate() {
+        let y = y as i32;
+        if y >= height as i32 {
+            break;
+        }
+        for (x, ch) in line.char_indices() {
+            let x = x as i32;
+            if x >= width as i32 {
+                break;
+            }
+            let char = format!("{}", ch);
+            match cell_lookup.get(&char) {
+                None => panic!("Unknown tile in map data - {}", char),
+                Some(place) => {
+                    if let Some(ref kind) = place.actor {
+                        log(format!("Spawn Actor - {} @ {},{}", kind.id, x, y));
+                        spawn_actor(kind, &mut level, Point::new(x, y));
+                    }
+                }
+            }
+        }
+    }
 
     if level_data.camera_size.0 > 0 {
         log(format!("MAP CAMERA SIZE = {:?}", level_data.camera_size));
