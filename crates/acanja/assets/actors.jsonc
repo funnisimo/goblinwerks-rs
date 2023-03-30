@@ -72,5 +72,9 @@
   "DEMON": {
     "sprite": "D|red",
     "flavor": "a demon"
+  },
+  "WHIRLPOOL": {
+    "sprite": "*|white",
+    "flavor": "a whirlpool"
   }
 }

@@ -16,7 +16,7 @@ impl ActorKindBuilder {
         ActorKindBuilder {
             id: id.to_string(),
             sprite: Sprite::default(),
-            info: Actor::default(),
+            info: Actor::new(id.to_string()),
             flags: ActorKindFlags::empty(),
         }
     }
@@ -61,6 +61,11 @@ impl ActorKindBuilder {
 
     pub fn talk(&mut self, talk: &str) -> &mut Self {
         self.info.talk = Some(talk.to_string());
+        self
+    }
+
+    pub fn name(&mut self, name: &str) -> &mut Self {
+        self.info.name = Some(name.to_string());
         self
     }
 

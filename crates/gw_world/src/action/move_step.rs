@@ -94,14 +94,7 @@ impl MoveStepAction {
                     // Check for talk...
                     if let Ok(other_actor) = entity.get_component::<Actor>() {
                         if let Some(ref talk) = other_actor.talk {
-                            log(format!(
-                                "{} says: '{}'",
-                                other_actor
-                                    .flavor
-                                    .as_ref()
-                                    .unwrap_or(&"An actor".to_string()),
-                                talk
-                            ));
+                            log(format!("{} says: '{}'", other_actor.name(), talk));
                             return Some(ActionResult::Replace(Box::new(IdleAction::new(
                                 self.entity,
                                 act_time,
@@ -110,13 +103,7 @@ impl MoveStepAction {
                         // Check for combat?
 
                         // Should this be a different thing?
-                        log(format!(
-                            "{} says: 'Hello'",
-                            other_actor
-                                .flavor
-                                .as_ref()
-                                .unwrap_or(&"An actor".to_string())
-                        ));
+                        log(format!("{} says: 'Hello'", other_actor.name()));
                         return Some(ActionResult::Replace(Box::new(IdleAction::new(
                             self.entity,
                             act_time,

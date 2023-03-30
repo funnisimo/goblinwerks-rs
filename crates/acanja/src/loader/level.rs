@@ -244,7 +244,11 @@ pub fn load_level_data(tiles: &Tiles, actor_kinds: &ActorKinds, json: Value) -> 
                 if let Some(actor_value) = info.get(&"actor".into()) {
                     log(format!("Actor - {:?}", actor_value));
                     if actor_value.is_string() {
-                        cell.actor = actor_kinds.get(&actor_value.to_string().to_uppercase());
+                        cell.actor = match actor_kinds.get(&actor_value.to_string().to_uppercase())
+                        {
+                            None => panic!("Actor kind is unknown = {}", actor_value.to_string()),
+                            Some(k) => Some(k),
+                        };
                     } else if actor_value.is_map() {
                         let map = actor_value.as_map().unwrap();
 
@@ -264,6 +268,10 @@ pub fn load_level_data(tiles: &Tiles, actor_kinds: &ActorKinds, json: Value) -> 
 
                             if let Some(talk) = map.get(&"talk".into()) {
                                 builder.talk(&talk.to_string());
+                            }
+
+                            if let Some(name) = map.get(&"name".into()) {
+                                builder.name(&name.to_string());
                             }
 
                             cell.actor = Some(builder.build());

@@ -42,7 +42,7 @@
       "actor": {
         "kind": "Peasant",
         "name": "Cookie",
-        "talk": "Cookie: Like the food?",
+        "talk": "Like the food?",
         "_ai": "StandStill"
       }
     },
@@ -50,21 +50,21 @@
       "actor": {
         "kind": "Jester",
         "name": "Iolo",
-        "talk": "Iolo sings: Ho Eyo He Hum!"
+        "talk": "Ho Eyo He Hum!"
       }
     },
     "l": {
       "actor": {
         "kind": "Jester",
         "name": "Gwino",
-        "talk": "Gwino sings: Muh Eh Oye Oh!"
+        "talk": "Muh Eh Oye Oh!"
       }
     },
     "m": {
       "actor": {
         "kind": "Peasant",
         "name": "Phantom Fighter",
-        "talk": "Phantom Fighter: The food sucks!",
+        "talk": "The food sucks!",
         "_ai": "StandStill"
       }
     },
@@ -82,11 +82,14 @@
       "actor": {
         "kind": "Jester",
         "name": "Chuckles",
-        "talk": "Chuckles: Welcome All!"
+        "talk": "Welcome All!"
       }
     },
 
-    "b": { "actor": "British", "tile": " " },
+    "b": {
+      "actor": { "kind": "British", "talk": "Welcome to my realm!" },
+      "tile": " "
+    },
     "f": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "." },
     "g": { "actor": { "kind": "Guard", "talk": "Good day!" } },
     "i": {
