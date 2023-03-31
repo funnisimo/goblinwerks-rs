@@ -156,7 +156,7 @@ pub fn set_field(
         }
         "ai" => {
             // {"ai": <STRING>}
-            builder.ai(&value.to_string());
+            builder.ai(&value.to_string().to_uppercase());
             Ok(())
         }
         "hero" => {

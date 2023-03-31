@@ -3,8 +3,8 @@ use crate::ai::idle::ai_idle;
 use crate::ai::user::ai_user_control;
 use crate::level::Level;
 use gw_app::ecs::Entity;
-use gw_app::Ecs;
-use mirror_entity::MirrorEntity;
+use gw_app::{log, Ecs};
+// use mirror_entity::MirrorEntity;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -20,7 +20,7 @@ use std::sync::{Arc, Mutex};
 
 mod ai_flags;
 pub mod idle;
-pub mod mirror_entity;
+// pub mod mirror_entity;
 pub mod user;
 
 pub use ai_flags::AIFlags;
@@ -28,39 +28,48 @@ pub use ai_flags::AIFlags;
 // mod basic_monster;
 // pub use basic_monster::BasicMonster;
 
-pub type AiFn = fn(&mut Level, Entity) -> Option<BoxedAction>;
+pub type AiFn = fn(&mut Ecs, Entity) -> Option<BoxedAction>;
 
-#[allow(unused_variables)]
-pub trait AiHandler: Send + Sync {
-    fn on_enter(&self, ecs: &mut Ecs, entity: Entity) -> () {}
-    fn next_action(&self, ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction>;
-    fn on_exit(&self, ecs: &mut Ecs, entity: Entity) -> () {}
-}
+// #[allow(unused_variables)]
+// pub trait AiHandler: Send + Sync {
+//     fn on_enter(&self, ecs: &mut Ecs, entity: Entity) -> () {}
+//     fn next_action(&self, ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction>;
+//     fn on_exit(&self, ecs: &mut Ecs, entity: Entity) -> () {}
+// }
 
-impl<F> AiHandler for F
-where
-    F: Fn(&mut Ecs, Entity) -> Option<BoxedAction> + Send + Sync,
-{
-    fn next_action(&self, ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
-        (self)(ecs, entity)
-    }
-}
+// impl<F> AiHandler for F
+// where
+//     F: Fn(&mut Ecs, Entity) -> Option<BoxedAction> + Send + Sync,
+// {
+//     fn next_action(&self, ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
+//         (self)(ecs, entity)
+//     }
+// }
 
 // pub type BoxedAiHandler = Box<dyn AiHandler>;
 
 lazy_static::lazy_static! {
-    pub static ref AI_HANDLERS: Mutex<HashMap<String,Arc<dyn AiHandler>>> = {
-        let mut handlers: HashMap<String,Arc<dyn AiHandler>> = HashMap::new();
-        handlers.insert("IDLE".to_string(), Arc::new(ai_idle));
-        handlers.insert("USER_CONTROL".to_string(), Arc::new(ai_user_control));
-        handlers.insert("MIRROR_ENTITY".to_string(), Arc::new(MirrorEntity));
+    // pub static ref AI_HANDLERS: Mutex<HashMap<String,Arc<dyn AiHandler>>> = {
+    //     let mut handlers: HashMap<String,Arc<dyn AiHandler>> = HashMap::new();
+    //     handlers.insert("IDLE".to_string(), Arc::new(ai_idle));
+    //     handlers.insert("USER_CONTROL".to_string(), Arc::new(ai_user_control));
+    //     handlers.insert("MIRROR_ENTITY".to_string(), Arc::new(MirrorEntity));
+    //     Mutex::new(handlers)
+    // };
+
+    // pub static ref DEFAULT_AI: Arc<dyn AiHandler> = Arc::new(ai_idle);
+    pub static ref AI_HANDLERS: Mutex<HashMap<String,AiFn>> = {
+        let mut handlers: HashMap<String,AiFn> = HashMap::new();
+        handlers.insert("IDLE".to_string(), ai_idle);
+        handlers.insert("USER_CONTROL".to_string(), ai_user_control);
+        // handlers.insert("MIRROR_ENTITY".to_string(), MirrorEntity);
         Mutex::new(handlers)
     };
 
-    pub static ref DEFAULT_AI: Arc<dyn AiHandler> = Arc::new(ai_idle);
+    pub static ref DEFAULT_AI: AiFn = ai_idle;
 }
 
-pub fn register_ai(name: &str, handler: Arc<dyn AiHandler>) {
+pub fn register_ai(name: &str, handler: AiFn) {
     AI_HANDLERS
         .lock()
         .unwrap()
@@ -97,16 +106,26 @@ impl AI {
         self.stack.push(name.to_string());
     }
 
-    pub fn current(&self) -> Arc<dyn AiHandler> {
+    pub fn current(&self) -> AiFn {
         let handlers = AI_HANDLERS.lock().unwrap();
 
         let name = match self.stack.last() {
-            None => return DEFAULT_AI.clone(),
+            None => {
+                log("NO AI");
+                return DEFAULT_AI.clone();
+            }
             Some(name) => name,
         };
 
         match handlers.get(name) {
-            None => DEFAULT_AI.clone(),
+            None => {
+                log(format!(
+                    "Could not find AI - {}, choices = {:?}",
+                    name,
+                    handlers.keys()
+                ));
+                DEFAULT_AI.clone()
+            }
             Some(handler) => handler.clone(),
         }
     }

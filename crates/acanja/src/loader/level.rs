@@ -274,6 +274,10 @@ pub fn load_level_data(tiles: &Tiles, actor_kinds: &ActorKinds, json: Value) -> 
                                 builder.name(&name.to_string());
                             }
 
+                            if let Some(ai) = map.get(&"ai".into()) {
+                                builder.ai(&ai.to_string());
+                            }
+
                             cell.actor = Some(builder.build());
                         } else {
                             panic!("Actor with no kind information - {:?}", actor_value);

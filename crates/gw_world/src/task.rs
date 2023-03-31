@@ -1,5 +1,5 @@
 use crate::{
-    action::{ActionResult, BoxedAction},
+    action::{dead::DeadAction, idle::IdleAction, ActionResult, BoxedAction},
     actor::Actor,
     hero::Hero,
     level::{get_current_level_mut, with_current_level, with_current_level_mut},
@@ -18,6 +18,7 @@ impl TaskEntry {
     }
 }
 
+#[derive(Debug)]
 pub struct TaskList {
     tasks: Vec<TaskEntry>,
     pub time: u64,
@@ -93,6 +94,7 @@ pub enum DoNextActionResult {
     PushMode(BoxedScreen),
 }
 
+#[derive(Debug)]
 pub struct Executor {
     tasks: TaskList,
 }
@@ -232,23 +234,22 @@ impl Executor {
 }
 
 #[must_use]
-pub fn get_next_action(entity: Entity, ecs: &mut Ecs) -> Option<BoxedAction> {
-    let ai = {
+pub fn get_next_action(entity: Entity, ecs: &mut Ecs) -> BoxedAction {
+    let (ai_fn, idle_time) = {
         let mut level = get_current_level_mut(ecs);
         let mut entry = match level.world.entry(entity) {
-            None => return None,
+            None => return Box::new(DeadAction::new(entity)),
             Some(entry) => entry,
         };
 
         let actor = entry.get_component_mut::<Actor>().unwrap();
         match actor.next_action.take() {
-            Some(action) => return Some(action),
-            None => actor.ai.clone(),
+            Some(action) => return action,
+            None => (actor.ai.current(), actor.act_time),
         }
     };
 
-    let ai_fn = ai.current();
-    ai_fn.next_action(ecs, entity)
+    ai_fn(ecs, entity).unwrap_or(Box::new(IdleAction::new(entity, idle_time)))
 }
 
 #[must_use]
@@ -266,60 +267,58 @@ pub fn do_next_action(ecs: &mut Ecs) -> DoNextActionResult {
             Some(entity) => {
                 let is_player = entity == hero_entity;
 
-                match get_next_action(entity, ecs) {
-                    None => continue,
-                    Some(mut action) => {
-                        'inner: loop {
-                            match action.execute(ecs) {
-                                ActionResult::Dead(_) => {
-                                    // no rescedule - entity dead
-                                    with_current_level_mut(ecs, |level| {
-                                        level.logger.debug(format!("{:?} - Dead result", entity));
-                                    });
-                                    break 'inner;
-                                }
-                                ActionResult::Done(time) => {
-                                    // do_debug!("{} - Done result : {}", entity, time);
-                                    with_current_level_mut(ecs, |level| {
-                                        level.executor.insert(entity, time);
-                                    });
+                let mut action = get_next_action(entity, ecs);
 
-                                    break 'inner;
-                                }
-                                ActionResult::Fail(msg) => {
-                                    with_current_level_mut(ecs, |level| {
-                                        level.logger.debug(format!("#[violetred]{}", msg));
-                                        level.executor.unpop(entity);
-                                    });
-                                    break 'inner;
-                                }
-                                ActionResult::Replace(new_action) => {
-                                    // do_debug!("{} - Replace result - {:?}", entity, new_action);
-                                    action = new_action;
-                                }
-                                ActionResult::WaitForInput => {
-                                    // debug_msg(format!("{} - Wait for input", entity));
-                                    with_current_level_mut(ecs, |level| {
-                                        level.executor.unpop(entity);
-                                    });
-                                    return DoNextActionResult::Done;
-                                }
-                                ActionResult::Retry => {
-                                    with_current_level_mut(ecs, |level| {
-                                        level.executor.unpop(entity);
-                                    });
-                                    break 'inner;
-                                }
-                                ActionResult::PushMode(mode) => {
-                                    with_current_level_mut(ecs, |level| {
-                                        level.executor.unpop(entity);
-                                    });
-                                    return DoNextActionResult::PushMode(mode);
-                                }
-                            }
+                'inner: loop {
+                    match action.execute(ecs) {
+                        ActionResult::Dead(_) => {
+                            // no rescedule - entity dead
+                            with_current_level_mut(ecs, |level| {
+                                level.logger.debug(format!("{:?} - Dead result", entity));
+                            });
+                            break 'inner;
+                        }
+                        ActionResult::Done(time) => {
+                            // do_debug!("{} - Done result : {}", entity, time);
+                            with_current_level_mut(ecs, |level| {
+                                level.executor.insert(entity, time);
+                            });
+
+                            break 'inner;
+                        }
+                        ActionResult::Fail(msg) => {
+                            with_current_level_mut(ecs, |level| {
+                                level.logger.debug(format!("#[violetred]{}", msg));
+                                level.executor.unpop(entity);
+                            });
+                            break 'inner;
+                        }
+                        ActionResult::Replace(new_action) => {
+                            // do_debug!("{} - Replace result - {:?}", entity, new_action);
+                            action = new_action;
+                        }
+                        ActionResult::WaitForInput => {
+                            // debug_msg(format!("{} - Wait for input", entity));
+                            with_current_level_mut(ecs, |level| {
+                                level.executor.unpop(entity);
+                            });
+                            return DoNextActionResult::Done;
+                        }
+                        ActionResult::Retry => {
+                            with_current_level_mut(ecs, |level| {
+                                level.executor.unpop(entity);
+                            });
+                            break 'inner;
+                        }
+                        ActionResult::PushMode(mode) => {
+                            with_current_level_mut(ecs, |level| {
+                                level.executor.unpop(entity);
+                            });
+                            return DoNextActionResult::PushMode(mode);
                         }
                     }
                 }
+
                 return match is_player {
                     true => DoNextActionResult::Hero,
                     false => DoNextActionResult::Mob,

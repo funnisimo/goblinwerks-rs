@@ -50,8 +50,13 @@ pub fn spawn_actor(kind: &Arc<ActorKind>, level: &mut Level, point: Point) -> En
             level.resources.insert(Hero::new(entity));
         }
 
+        // make map aware of actor
         let mut map = level.resources.get_mut::<Map>().unwrap();
         map.add_actor(idx, entity, true);
+
+        // Add to schedule
+        level.executor.insert(entity, kind.info.act_time);
+
         return entity;
     }
 

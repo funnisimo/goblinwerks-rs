@@ -7,6 +7,7 @@ use gw_app::*;
 use gw_util::point::Point;
 use gw_world::action::move_step::MoveStepAction;
 use gw_world::actor::{spawn_actor, Actor, ActorKind, ActorKinds};
+use gw_world::ai::register_ai;
 use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::effect::{register_effect_parser, BoxedEffect};
 use gw_world::hero::Hero;
@@ -88,6 +89,8 @@ impl Screen for MainScreen {
         }
 
         level.reset_tasks();
+
+        log(format!("STARTING TASKS = {:?}", level.executor));
     }
 
     fn input(&mut self, ecs: &mut Ecs, ev: &AppEvent) -> ScreenResult {
@@ -160,6 +163,14 @@ impl Screen for MainScreen {
                 if let Some(effects) = map.cell_effects.get(&idx) {
                     log(format!("CELL EFFECTS = {:?}", effects));
                 }
+
+                for entity in map.iter_actors(idx) {
+                    let entry = level.world.entry(entity).unwrap();
+                    let actor = entry.get_component::<Actor>().unwrap();
+                    log(format!("ACTOR({:?}) = {:?}", entity, actor));
+                }
+
+                log(format!("TASK LIST = {:?}", level.executor));
             }
             _ => {}
         }
@@ -224,6 +235,10 @@ fn main() {
             registry.register::<UserControl>("UserControl".to_string());
             // registry.register::<Arc<ActorKind>>("ActorKind".to_string());
         })
+        .startup(Box::new(|_ecs: &mut Ecs| {
+            register_ai("SHOPKEEPER", acanja::ai::shopkeeper);
+            log("REGISTERED AI - SHOPKEEPER");
+        }))
         // .file("assets/tiles.jsonc", Box::new(TileJsonFileLoader::new()))
         // .file(
         //     "assets/actors.jsonc",

@@ -91,8 +91,8 @@
     },
     "c": { "actor": "Weaponer" },
 
-    "d": { "actor": { "kind": "Guard", "ai": "RandomWalk" }, "tile": "-" },
-    "e": { "actor": { "kind": "Guard", "ai": "RandomWalk" }, "tile": "." },
+    "d": { "actor": { "kind": "Guard", "_ai": "RandomWalk" }, "tile": "-" },
+    "e": { "actor": { "kind": "Guard", "_ai": "RandomWalk" }, "tile": "." },
     "f": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "." },
     "g": { "actor": { "kind": "Guard", "talk": "Good day!" } },
     "k": { "actor": { "kind": "Bartender", "name": "Coach" } },

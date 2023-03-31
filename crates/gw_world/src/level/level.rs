@@ -10,7 +10,7 @@ pub struct Level {
     pub world: World,
     pub logger: Logger,
     needs_draw: bool,
-    pub(crate) executor: Executor,
+    pub executor: Executor,
 }
 
 impl Level {
@@ -56,6 +56,8 @@ impl Level {
         let Level {
             executor, world, ..
         } = self;
+
+        executor.clear();
 
         // you can then iterate through the components found in the world
         for (entity, actor) in query.iter(world) {

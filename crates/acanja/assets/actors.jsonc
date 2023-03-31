@@ -7,11 +7,13 @@
   },
   "ARMORER": {
     "sprite": "A|gray",
-    "flavor": "an armorer"
+    "flavor": "an armorer",
+    "ai": "shopkeeper"
   },
   "BARTENDER": {
     "sprite": "B|gray",
-    "flavor": "a bartender"
+    "flavor": "a bartender",
+    "ai": "shopkeeper"
   },
   "BRITISH": {
     "sprite": "K|purple",
@@ -27,7 +29,8 @@
   },
   "GROCER": {
     "sprite": "R|gray",
-    "flavor": "a grocer"
+    "flavor": "a grocer",
+    "ai": "shopkeeper"
   },
   "GUARD": {
     "sprite": "G|dark_red",
@@ -35,7 +38,8 @@
   },
   "GUILDMASTER": {
     "sprite": "M|gray",
-    "flavor": "a guildmaster"
+    "flavor": "a guildmaster",
+    "ai": "shopkeeper"
   },
   "HEALER": {
     "sprite": "H|white",
@@ -47,7 +51,8 @@
   },
   "ORACLE": {
     "sprite": "O|white",
-    "flavor": "an oracle"
+    "flavor": "an oracle",
+    "ai": "shopkeeper"
   },
   "PEASANT": {
     "sprite": "P|brown",
@@ -63,7 +68,8 @@
   },
   "WEAPONER": {
     "sprite": "N|gray",
-    "flavor": "a weaponsmith"
+    "flavor": "a weaponsmith",
+    "ai": "shopkeeper"
   },
   "WIZARD": {
     "sprite": "W|purple",

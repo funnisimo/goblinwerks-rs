@@ -15,9 +15,8 @@ bitflags! {
         // NOTE - If you add anything, you must add to FromStr impl below!!!!
         // !!!!!!!!!!!!!!!!!!!!!
 
-        // const NEVER_MOVE = fl!(0);      /* Never make physical move */
-        // const RAND_25 = fl!(1);      /* Moves randomly (25%) */
-        // const RAND_50 = fl!(2);      /* Moves randomly (50%) */
+        const AIMLESS_MOVE = fl!(0);    // Will move around, but not too much
+        const WANDER = fl!(1);          // Will pick a point on the map periodically to go and visit
 
         const STUPID = fl!(3);      /* Monster is stupid */
         const SMART = fl!(4);      /* Monster is smart */
@@ -74,9 +73,9 @@ impl FromStr for AIFlags {
         let mut result = AIFlags::empty();
         for val in s.split("|") {
             match val.trim().to_uppercase().as_ref() {
-                // "NEVER_MOVE" => result |= AIFlags::NEVER_MOVE, /* Never make physical move */
-                // "RAND_25" => result |= AIFlags::RAND_25,       /* Moves randomly (25%) */
-                // "RAND_50" => result |= AIFlags::RAND_50,       /* Moves randomly (50%) */
+                "AIMLESS_MOVE" => result |= AIFlags::AIMLESS_MOVE,
+                "WANDER" => result |= AIFlags::WANDER,
+
                 "NEVER_BLOW" => result |= AIFlags::NEVER_BLOW, /* Never make physical blow */
                 "STUPID" => result |= AIFlags::STUPID,         /* Monster is stupid */
                 "SMART" => result |= AIFlags::SMART,           /* Monster is smart */

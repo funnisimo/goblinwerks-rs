@@ -291,7 +291,12 @@ impl Runner {
             }
             Some(mut ctx) => {
                 if called {
-                    load_files(&mut ctx);
+                    if load_files(&mut ctx) {
+                        // call any startup fns
+                        for func in self.builder.startup.drain(..) {
+                            func(&mut ctx);
+                        }
+                    }
                 }
                 self.do_frame(&mut ctx, app, &mut last_frame_time, &mut next_frame);
                 self.ecs = Some(ctx);
