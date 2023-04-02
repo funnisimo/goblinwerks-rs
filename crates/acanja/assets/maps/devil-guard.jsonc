@@ -41,14 +41,21 @@
     "k": { "actor": "Guildmaster", "tile": "-" },
 
     "g": {
-      "actor": { "kind": "Guard", "talk": "Good day!", "ai": "RandomWalk" },
+      "actor": {
+        "kind": "Guard",
+        "talk": "Good day!",
+        "ai": "ANCHORED_WANDER"
+      },
       "tile": "."
     },
     "h": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "%" },
     "i": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "-" },
 
-    "f": { "tile": ":", "actor": { "kind": "Fighter", "ai": "RandomWalk" } },
-    "j": { "tile": ":", "actor": { "kind": "Jester", "ai": "RandomWalk" } },
+    "f": { "tile": ":", "actor": { "kind": "Fighter", "ai": "RANDOM_WANDER" } },
+    "j": {
+      "tile": ":",
+      "actor": { "kind": "Jester", "ai": "ANCHORED_WANDER" }
+    },
 
     "s": {
       "actor": { "kind": "Fighter", "talk": "'Marks' gained in dungeons!" },

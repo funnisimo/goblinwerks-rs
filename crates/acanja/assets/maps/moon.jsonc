@@ -34,8 +34,7 @@
     "b": {
       "actor": {
         "kind": "Cleric",
-        "talk": "Seek ye the Shrines of Truth",
-        "ai": null
+        "talk": "Seek ye the Shrines of Truth"
       },
       "tile": "."
     },
@@ -43,43 +42,40 @@
       "actor": {
         "kind": "Fighter",
         "talk": "<Bribe> guards! They will leave!",
-        "ai": "RandomWalk"
+        "ai": "RANDOM_WANDER"
       }
     },
     "f": {
       "actor": {
         "kind": "Fighter",
         "talk": "To arms! and To battle!",
-        "ai": "RandomWalk"
+        "ai": "RANDOM_WANDER"
       }
     },
     "d": {
       "actor": {
         "kind": "Cleric",
         "talk": "Peace be with you",
-        "ai": "RandomWalk"
+        "ai": "RANDOM_WANDER"
       }
     },
     "c": {
       "actor": {
         "kind": "Cleric",
-        "talk": "I've been beyond the whirlpool!",
-        "ai": null
+        "talk": "I've been beyond the whirlpool!"
       },
       "tile": "%"
     },
     "w": {
       "actor": {
         "kind": "Wizard",
-        "talk": "Dawn rises in the Dark Forest.",
-        "ai": null
+        "talk": "Dawn rises in the Dark Forest."
       },
       "tile": "%"
     },
     "m": {
       "actor": {
         "kind": "Demon",
-        "ai": null,
         "talk": "Depart or Die!"
       },
       "tile": "%"
@@ -89,8 +85,8 @@
     "v": { "actor": "Guard", "tile": "-" },
     "y": { "actor": "Guard", "tile": ":" },
 
-    "z": { "actor": { "kind": "Wizard", "ai": "RandomWalk" } },
-    "j": { "actor": { "kind": "Jester", "ai": "RandomWalk" } },
+    "z": { "actor": { "kind": "Wizard", "ai": "RANDOM_WANDER" } },
+    "j": { "actor": { "kind": "Jester", "ai": "ANCHORED_WANDER" } },
 
     "r": { "actor": "Healer" },
     "s": { "actor": "Bartender" },

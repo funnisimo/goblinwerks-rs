@@ -45,7 +45,7 @@
       "actor": {
         "kind": "Jester",
         "talk": "Don't you wish you were a Jester!",
-        "ai": "RandomWalk"
+        "ai": "ANCHORED_WANDER"
       },
       "tile": "-"
     },
@@ -56,7 +56,7 @@
       "actor": {
         "kind": "Thief",
         "talk": "Yo! ho! ho! and a bottle of rum!!!",
-        "ai": "RandomWalk"
+        "ai": "RANDOM_WANDER"
       }
     },
     "u": {
@@ -64,7 +64,7 @@
       "actor": {
         "kind": "Thief",
         "talk": "Ever seen Exotic arms?",
-        "ai": "RandomWalk"
+        "ai": "RANDOM_WANDER"
       }
     },
 

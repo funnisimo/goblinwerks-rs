@@ -47,7 +47,7 @@
       "actor": {
         "kind": "Wizard",
         "talk": "Dawn last but a brief moment.",
-        "ai": "RandomWalk"
+        "ai": "RANDOM_WANDER"
       },
       "tile": "."
     },
@@ -63,7 +63,7 @@
       "actor": {
         "kind": "Fighter",
         "talk": "Jolly good day.",
-        "ai": "RandomWalk"
+        "ai": "RANDOM_WANDER"
       },
       "tile": "-"
     },

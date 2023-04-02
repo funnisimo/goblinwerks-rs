@@ -38,10 +38,10 @@
     "c": { "actor": "Weaponer", "tile": "-" },
     "d": { "actor": "Grocer", "tile": "-" },
 
-    "g": { "actor": { "kind": "Guard", "ai": null }, "tile": "-" },
-    "h": { "actor": { "kind": "Guard", "ai": "RandomWalk" }, "tile": "-" },
+    "g": { "actor": { "kind": "Guard" }, "tile": "-" },
+    "h": { "actor": { "kind": "Guard", "ai": "ANCHORED_WANDER" }, "tile": "-" },
     "i": {
-      "actor": { "kind": "Guard", "ai": null, "talk": "None shall pass!" },
+      "actor": { "kind": "Guard", "talk": "None shall pass!" },
       "tile": "-"
     },
 
@@ -49,37 +49,39 @@
       "actor": {
         "kind": "Fighter",
         "talk": "Seek the Jester in castle Fire!",
-        "ai": "RandomWalk"
+        "ai": "RANDOM_WANDER"
       },
       "tile": "-"
     },
     "n": {
       "actor": {
         "kind": "Fighter",
-        "talk": "Sentri: Good grog!",
-        "ai": "RandomWalk"
+        "name": "Sentri",
+        "talk": "Good grog!",
+        "ai": "RANDOM_WANDER"
       },
       "tile": "-"
     },
     "o": {
       "actor": {
         "kind": "Fighter",
-        "talk": "Shamino: Good food!",
-        "ai": "RandomWalk"
+        "name": "Shamino",
+        "talk": "Good food!",
+        "ai": "RANDOM_WANDER"
       },
       "tile": "-"
     },
 
     "t": {
-      "actor": { "kind": "Thief", "talk": "<Search> the Shrines!", "ai": null },
+      "actor": { "kind": "Thief", "talk": "<Search> the Shrines!" },
       "tile": "-"
     },
     "u": {
-      "actor": { "kind": "Thief", "talk": "<Search> for cards!", "ai": null },
+      "actor": { "kind": "Thief", "talk": "<Search> for cards!" },
       "tile": "-"
     },
     "v": {
-      "actor": { "kind": "Thief", "talk": "Good stuff, eh?", "ai": null },
+      "actor": { "kind": "Thief", "talk": "Good stuff, eh?" },
       "tile": "-"
     }
   },
