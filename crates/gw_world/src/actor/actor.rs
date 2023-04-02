@@ -3,12 +3,15 @@ use crate::ai::AI;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Formatter, Result};
 
+use super::MoveFlags;
+
 #[derive(Serialize, Deserialize)]
 pub struct Actor {
     pub id: String,
     pub busy_time: u32,
     pub act_time: u32,
 
+    pub move_flags: MoveFlags,
     pub name: Option<String>,
     pub talk: Option<String>,
     pub flavor: Option<String>,
@@ -30,6 +33,7 @@ impl Actor {
             next_action: None,
             ai: AI::new(),
 
+            move_flags: MoveFlags::empty(),
             name: None,
             talk: None,
             flavor: None,

@@ -79,6 +79,11 @@ impl ActorKindBuilder {
         self
     }
 
+    pub fn move_flags(&mut self, flag_string: &str) -> &mut Self {
+        self.info.move_flags.apply(flag_string);
+        self
+    }
+
     pub fn build(self) -> Arc<ActorKind> {
         Arc::new(ActorKind::new(self))
     }
@@ -162,6 +167,10 @@ pub fn set_field(
         "hero" => {
             // {"hero": true}
             builder.hero();
+            Ok(())
+        }
+        "move" => {
+            builder.move_flags(&value.to_string());
             Ok(())
         }
         _ => Err(BuilderError::UnknownField(field.to_string())),

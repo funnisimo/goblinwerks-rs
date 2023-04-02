@@ -2,6 +2,7 @@ use crate::{actor::Actor, log::Logger, task::Executor};
 use gw_app::ecs::query::IntoQuery;
 use gw_app::ecs::{self, EntityStore};
 use gw_app::ecs::{Entity, Resources, World};
+use gw_util::rng::RandomNumberGenerator;
 // use gw_app::ScreenResult;
 
 pub struct Level {
@@ -11,6 +12,7 @@ pub struct Level {
     pub logger: Logger,
     needs_draw: bool,
     pub executor: Executor,
+    pub rng: RandomNumberGenerator,
 }
 
 impl Level {
@@ -22,7 +24,12 @@ impl Level {
             logger: Logger::new(),
             needs_draw: true,
             executor: Executor::new(),
+            rng: RandomNumberGenerator::new(),
         }
+    }
+
+    pub fn set_seed(&mut self, seed: u64) {
+        self.rng = RandomNumberGenerator::seeded(seed);
     }
 
     pub fn needs_draw(&self) -> bool {

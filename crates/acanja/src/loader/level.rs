@@ -275,7 +275,13 @@ pub fn load_level_data(tiles: &Tiles, actor_kinds: &ActorKinds, json: Value) -> 
                             }
 
                             if let Some(ai) = map.get(&"ai".into()) {
-                                builder.ai(&ai.to_string());
+                                if ai.is_string() {
+                                    builder.ai(&ai.to_string());
+                                } else if ai.is_bool() {
+                                    if !ai.as_bool().unwrap() {
+                                        builder.ai("IDLE");
+                                    }
+                                }
                             }
 
                             cell.actor = Some(builder.build());

@@ -90,24 +90,30 @@ impl MoveStepAction {
             // Check for actor at location...
             if let Some(entity) = map.iter_actors(idx).next() {
                 if let Some(entity) = world.entry(entity) {
-                    // Check for shopkeeper
+                    // Check for shopkeeper (Really only possible for horses)
+
                     // Check for talk...
                     if let Ok(other_actor) = entity.get_component::<Actor>() {
                         if let Some(ref talk) = other_actor.talk {
-                            log(format!("{} says: '{}'", other_actor.name(), talk));
+                            if actor_is_hero {
+                                log(format!("{} says: '{}'", other_actor.name(), talk));
+                                return Some(ActionResult::Replace(Box::new(IdleAction::new(
+                                    self.entity,
+                                    act_time,
+                                ))));
+                            }
+                        }
+                        // Check for combat?
+                        // if hero and will make other hostile ask for
+
+                        // Should this be a different thing?
+                        if actor_is_hero {
+                            log(format!("{} says: 'Hello'", other_actor.name()));
                             return Some(ActionResult::Replace(Box::new(IdleAction::new(
                                 self.entity,
                                 act_time,
                             ))));
                         }
-                        // Check for combat?
-
-                        // Should this be a different thing?
-                        log(format!("{} says: 'Hello'", other_actor.name()));
-                        return Some(ActionResult::Replace(Box::new(IdleAction::new(
-                            self.entity,
-                            act_time,
-                        ))));
                     }
                 }
             }

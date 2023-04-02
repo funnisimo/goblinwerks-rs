@@ -17,16 +17,17 @@ bitflags! {
         const NO_MOVE = fl!(0);
         const RAND25 = fl!(1);
         const RAND50 = fl!(2);
+        const RAND100 = fl!(3);
 
-        const MOVE_FAST = fl!(3);
-        const MOVE_SLOW = fl!(4);
+        const MOVE_FAST = fl!(4);
+        const MOVE_SLOW = fl!(5);
 
-        const CAN_DIG = fl!(5);      /* Monster can dig */
-        const CAN_SWIM = fl!(6);      /* Monster can swim */
-        const MUST_SWIM = fl!(7);      /* Monster must swim */
-        const CAN_CLIMB = fl!(8);      /* Monster can climb walls */
-        const CAN_FLY = fl!(9);      /* Monster can fly */
-        const MUST_FLY = fl!(10);      /* Monster must fly */
+        const CAN_DIG = fl!(6);      /* Monster can dig */
+        const CAN_SWIM = fl!(7);      /* Monster can swim */
+        const MUST_SWIM = fl!(8);      /* Monster must swim */
+        const CAN_CLIMB = fl!(9);      /* Monster can climb walls */
+        const CAN_FLY = fl!(10);      /* Monster can fly */
+        const MUST_FLY = fl!(11);      /* Monster must fly */
 
 
         // !!!!!!!!!!!!!!!!!!!!!
@@ -47,6 +48,7 @@ impl FromStr for MoveFlags {
                 "NO_MOVE" => result |= MoveFlags::NO_MOVE,
                 "RAND25" => result |= MoveFlags::RAND25,
                 "RAND50" => result |= MoveFlags::RAND50,
+                "RAND100" => result |= MoveFlags::RAND100,
 
                 "MOVE_FAST" => result |= MoveFlags::MOVE_FAST,
                 "MOVE_SLOW" => result |= MoveFlags::MOVE_SLOW,

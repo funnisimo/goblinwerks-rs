@@ -62,7 +62,7 @@
       "tile": "."
     },
     "r": {
-      "actor": { "kind": "Peasant", "talk": "Dupre laughs: Drink up!" }
+      "actor": { "kind": "Peasant", "name": "Dupre", "talk": "Drink up!" }
     },
     "s": {
       "actor": { "kind": "Fighter", "talk": "Round back!" }
@@ -91,8 +91,8 @@
     },
     "c": { "actor": "Weaponer" },
 
-    "d": { "actor": { "kind": "Guard", "_ai": "RandomWalk" }, "tile": "-" },
-    "e": { "actor": { "kind": "Guard", "_ai": "RandomWalk" }, "tile": "." },
+    "d": { "actor": { "kind": "Guard", "ai": "ANCHORED_WANDER" }, "tile": "-" },
+    "e": { "actor": { "kind": "Guard", "ai": "ANCHORED_WANDER" }, "tile": "." },
     "f": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "." },
     "g": { "actor": { "kind": "Guard", "talk": "Good day!" } },
     "k": { "actor": { "kind": "Bartender", "name": "Coach" } },

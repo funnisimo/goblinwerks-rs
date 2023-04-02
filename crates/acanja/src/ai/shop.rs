@@ -13,7 +13,7 @@ pub fn shopkeeper(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
 
     let hero_entity = level.resources.get::<Hero>().unwrap().entity;
 
-    log(format!("SHOPKEEPER - {:?}", entity));
+    // log(format!("SHOPKEEPER - {:?}", entity));
 
     let hero_point = match level
         .world
@@ -22,7 +22,7 @@ pub fn shopkeeper(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
         .get_component::<Position>()
     {
         Err(_) => {
-            log("- no hero_point");
+            // log("- no hero_point");
             return None;
         }
         Ok(pos) => pos.point(),
@@ -35,18 +35,18 @@ pub fn shopkeeper(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
         .get_component::<Position>()
     {
         Err(_) => {
-            log("- no entity point");
+            // log("- no entity point");
             return None;
         }
         Ok(pos) => pos.point(),
     };
 
-    log(format!("- entity_point={:?}", entity_point));
-    log(format!("- hero_point={:?}", hero_point));
+    // log(format!("- entity_point={:?}", entity_point));
+    // log(format!("- hero_point={:?}", hero_point));
 
     let move_dir = hero_point - entity_point;
 
-    log(format!("- move_dir={:?}", move_dir));
+    // log(format!("- move_dir={:?}", move_dir));
 
     // shopkeepers always have horizontal shops with counters separating them from the patrons
     // they should move to try to stay accesible by the patron (directly above/below)
@@ -69,17 +69,17 @@ pub fn shopkeeper(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
         }
     };
 
-    log(format!("- dx={}, dy={}", dx, dy));
+    // log(format!("- dx={}, dy={}", dx, dy));
 
     if dx == 0 && dy == 0 {
-        log("- no dx,dy");
+        // log("- no dx,dy");
         return None;
     }
 
     // what about constantly trying to bump diagonally???
     // what about bumping into other shopkeepers???  Should we move randomly if there is a closer shopkeeper?
 
-    log(format!("- move: {},{}", dx, dy));
+    // log(format!("- move: {},{}", dx, dy));
 
     Some(Box::new(MoveStepAction::new(entity, dx, dy)))
 }

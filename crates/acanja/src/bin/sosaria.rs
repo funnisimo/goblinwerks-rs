@@ -5,6 +5,7 @@ use acanja::loader::GameConfigLoader;
 use gw_app::ecs::{Entity, Read, ResourceSet, Write};
 use gw_app::*;
 use gw_util::point::Point;
+use gw_world::action::idle::IdleAction;
 use gw_world::action::move_step::MoveStepAction;
 use gw_world::actor::{spawn_actor, Actor, ActorKind, ActorKinds};
 use gw_world::ai::register_ai;
@@ -132,6 +133,9 @@ impl Screen for MainScreen {
                     // let hero_point = get_hero_point(ecs);
                     // try_move_hero_world(ecs, &hero_point, PortalFlags::ON_DESCEND);
                 }
+                '.' | ' ' => {
+                    hero_idle(ecs);
+                }
                 _ => {}
             },
             _ => {}
@@ -169,8 +173,6 @@ impl Screen for MainScreen {
                     let actor = entry.get_component::<Actor>().unwrap();
                     log(format!("ACTOR({:?}) = {:?}", entity, actor));
                 }
-
-                log(format!("TASK LIST = {:?}", level.executor));
             }
             _ => {}
         }
@@ -236,18 +238,11 @@ fn main() {
             // registry.register::<Arc<ActorKind>>("ActorKind".to_string());
         })
         .startup(Box::new(|_ecs: &mut Ecs| {
+            register_ai("ANCHORED_WANDER", acanja::ai::anchored_wander);
+            register_ai("RANDOM_WANDER", acanja::ai::random_wander);
             register_ai("SHOPKEEPER", acanja::ai::shopkeeper);
-            log("REGISTERED AI - SHOPKEEPER");
+            log("REGISTERED SOSARIA AI FUNCTIONS");
         }))
-        // .file("assets/tiles.jsonc", Box::new(TileJsonFileLoader::new()))
-        // .file(
-        //     "assets/actors.jsonc",
-        //     Box::new(ActorKindJsonFileLoader::new()),
-        // )
-        // .file(
-        //     "assets/store_prefab.toml",
-        //     Box::new(PrefabFileLoader::new().with_dump()),
-        // )
         .file("assets/game_config.jsonc", Box::new(GameConfigLoader))
         .vsync(false)
         .build();
@@ -264,6 +259,17 @@ fn move_hero(ecs: &mut Ecs, dx: i32, dy: i32) {
     let mut entry = level.world.entry(hero_entity).unwrap();
     let actor = entry.get_component_mut::<Actor>().unwrap();
     actor.next_action = Some(Box::new(MoveStepAction::new(hero_entity, dx, dy)));
+}
+
+fn hero_idle(ecs: &mut Ecs) {
+    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+    let level = levels.current_mut();
+
+    let hero_entity = level.resources.get::<Hero>().unwrap().entity;
+
+    let mut entry = level.world.entry(hero_entity).unwrap();
+    let actor = entry.get_component_mut::<Actor>().unwrap();
+    actor.next_action = Some(Box::new(IdleAction::new(hero_entity, actor.act_time)));
 }
 
 fn get_hero_action_effects(

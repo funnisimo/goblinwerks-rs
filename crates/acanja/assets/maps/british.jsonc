@@ -34,7 +34,8 @@
     "t": {
       "actor": {
         "kind": "Thief",
-        "talk": "West 8, South 35 and await the Dawn!"
+        "talk": "West 8, South 35 and await the Dawn!",
+        "ai": "RANDOM_WANDER"
       },
       "tile": "."
     },
@@ -43,7 +44,7 @@
         "kind": "Peasant",
         "name": "Cookie",
         "talk": "Like the food?",
-        "_ai": "StandStill"
+        "ai": "IDLE"
       }
     },
     "k": {
@@ -65,7 +66,7 @@
         "kind": "Peasant",
         "name": "Phantom Fighter",
         "talk": "The food sucks!",
-        "_ai": "StandStill"
+        "ai": "IDLE"
       }
     },
     "c": {
@@ -73,8 +74,7 @@
         "kind": "Cleric",
         "name": "Wise Cleric",
         "talk": "The Wise Cleric: 4 cards, 4 slots",
-        "ai": "RandomWalk",
-        "walk_delay": "5"
+        "ai": "RANDOM_WANDER"
       }
     },
     "h": { "actor": { "kind": "Guard", "talk": "Enter if you dare!" } },
@@ -93,17 +93,17 @@
     "f": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "." },
     "g": { "actor": { "kind": "Guard", "talk": "Good day!" } },
     "i": {
-      "actor": { "kind": "Guard", "talk": "Good day!", "ai": "RandomWalk" }
+      "actor": { "kind": "Guard", "talk": "Good day!", "ai": "ANCHORED_WANDER" }
     },
     "n": {
       "actor": {
         "kind": "Cleric",
-        "ai": "RandomWalk",
+        "ai": "RANDOM_WANDER",
         "talk": "Howdy stranger!"
       }
     },
-    "p": { "actor": { "kind": "Healer", "ai": "FollowParty" } },
-    "r": { "actor": "Oracle" },
+    "p": { "actor": { "kind": "Healer", "ai": "SHOPKEEPER" } },
+    "r": { "actor": "Oracle", "ai": "SHOPKEEPER" },
 
     "@": { "location": "START", "tile": "=" }
   },

@@ -28,13 +28,25 @@ impl RandomNumberGenerator {
         self.chance_in(count, 100)
     }
 
-    pub fn chance_in(&mut self, count: u32, total: u32) -> bool {
-        count >= self.rand(total)
+    pub fn chance_in(&mut self, count: u32, of_total: u32) -> bool {
+        if count == 0 {
+            return false;
+        }
+        let r = self.rand(of_total);
+        // println!(
+        //     "chance_in {} of {} = {}/{} : {}",
+        //     count,
+        //     of_total,
+        //     r,
+        //     of_total,
+        //     r < count
+        // );
+        r < count
     }
 
     /// Returns a random value of 0 <= val < count
     pub fn rand(&mut self, count: u32) -> u32 {
-        self.range(0, count as i32 - 1) as u32
+        self.range(0, count as i32) as u32
     }
 
     /// Returns a random value in the specified range, of type specified at the call site.
@@ -62,9 +74,9 @@ impl RandomNumberGenerator {
         rng + min
     }
 
-    /// Rolls dice, using the classic 3d6 type of format: n is the number of dice, die_type is the size of the dice.
-    pub fn roll_dice(&mut self, n: i32, die_type: i32) -> i32 {
-        (0..n).map(|_| self.range(1, die_type + 1)).sum()
+    /// Rolls dice, using the classic 3d6 type of format: count is the number of dice, sides is the max number on each die [1-sides].
+    pub fn roll_dice(&mut self, count: i32, sides: i32) -> i32 {
+        (0..count).map(|_| self.range(1, sides + 1)).sum()
     }
 
     // /// Rolls dice based on a DiceType struct, including application of the bonus

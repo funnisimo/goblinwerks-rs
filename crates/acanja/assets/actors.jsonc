@@ -47,7 +47,9 @@
   },
   "JESTER": {
     "sprite": "J|purple",
-    "flavor": "a jester"
+    "flavor": "a jester",
+    "ai": "ANCHORED_WANDER",
+    "move": "RAND50"
   },
   "ORACLE": {
     "sprite": "O|white",
@@ -56,7 +58,8 @@
   },
   "PEASANT": {
     "sprite": "P|brown",
-    "flavor": "a townsperson"
+    "flavor": "a townsperson",
+    "ai": "RANDOM_WANDER"
   },
   "THIEF": {
     "sprite": "T|gray",
