@@ -8,6 +8,7 @@
     "wrap": false,
     "spawnHordes": false
   },
+  "fov": 5,
   "tiles": {
     ".": "PLAINS",
     "~": "WATER",

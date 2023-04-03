@@ -424,6 +424,10 @@ fn draw_map(
                         // }
 
                         if !visible {
+                            if memory.is_none() {
+                                buf.draw(x0, y0, 0, black, black);
+                                continue;
+                            }
                             fg = RGBA::darken(&fg, 0.35); // Need to slightly dim as well
                         } else {
                             // for actor_id in map.actors_at_xy(x as i32, y as i32) {

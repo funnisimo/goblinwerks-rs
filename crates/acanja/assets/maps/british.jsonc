@@ -8,6 +8,7 @@
     "wrap": false,
     "lock": true
   },
+  "fov": 11,
   "welcome": "Lord British welcomes you.",
   "tiles": {
     "-": { "tile": "FLOOR", "default": true },

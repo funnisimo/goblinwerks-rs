@@ -4,6 +4,7 @@
   "map": { "filename": "sosaria.txt", "width": 64, "height": 64, "wrap": true },
   "font": "DEFAULT",
   "camera": { "size": [21, 21] },
+  "fov": false,
   "tiles": {
     ".": { "tile": "PLAINS", "default": true },
     ":": "TREES",

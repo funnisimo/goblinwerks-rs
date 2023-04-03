@@ -1,4 +1,9 @@
-use crate::{hero::Hero, map::Map, position::Position};
+use crate::{
+    hero::Hero,
+    level::{get_current_level_mut, Level},
+    map::Map,
+    position::Position,
+};
 
 use super::{goblin::calculate_fov, FovTarget};
 use bitflags::bitflags;
@@ -331,16 +336,25 @@ mod tests {
 }
 
 pub fn update_fov(ecs: &mut Ecs) {
-    let Ecs { resources, world } = ecs;
+    let mut level = get_current_level_mut(ecs);
 
-    let (map, mut fov, hero) = <(Read<Map>, Write<FOV>, Read<Hero>)>::fetch_mut(resources);
+    if !level.resources.contains::<FOV>() {
+        return;
+    }
 
-    let hero_point = world
-        .entry(hero.entity)
-        .unwrap()
-        .get_component::<Position>()
-        .unwrap()
-        .point();
+    let hero_point = {
+        let hero = level.resources.get::<Hero>().unwrap().entity;
 
-    calculate_fov(&*map, hero_point, 5, &mut *fov);
+        level
+            .world
+            .entry(hero)
+            .unwrap()
+            .get_component::<Position>()
+            .unwrap()
+            .point()
+    };
+
+    let (map, mut fov) = <(Read<Map>, Write<FOV>)>::fetch_mut(&mut level.resources);
+
+    calculate_fov(&*map, hero_point, fov.range, &mut *fov);
 }

@@ -24,6 +24,7 @@
     "ch": 163, // "%",
     "fg": "darker_green",
     "kind": "FLOOR",
+    "blocks": "vision",
     "flavor": "the forest"
   },
   "MOUNTAINS": {

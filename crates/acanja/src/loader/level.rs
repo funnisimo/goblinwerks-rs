@@ -14,6 +14,7 @@ use gw_world::{
     actor::{spawn_actor, ActorKind, ActorKinds},
     camera::Camera,
     effect::{parse_effects, BoxedEffect, Message, Portal},
+    fov::FOV,
     level::{Level, Levels},
     map::Map,
     tile::{Tile, Tiles},
@@ -58,6 +59,7 @@ pub struct LevelData {
     pub welcome: Option<String>,
     pub camera_size: (u32, u32),
     pub region: Option<Rect>,
+    pub fov: Option<u32>,
 }
 
 impl LevelData {
@@ -72,6 +74,7 @@ impl LevelData {
             welcome: None,
             camera_size: (11, 11),
             region: None,
+            fov: None,
         }
     }
 }
@@ -453,6 +456,23 @@ pub fn load_level_data(tiles: &Tiles, actor_kinds: &ActorKinds, json: Value) -> 
         }
     };
 
+    level_data.fov = {
+        match root.get(&"fov".into()) {
+            None => None,
+            Some(fov_data) => match fov_data {
+                Value::Boolean(b) => match b {
+                    true => Some(11),
+                    false => Some(99),
+                },
+                Value::Integer(v) => Some(*v as u32),
+                _ => panic!(
+                    "Received invalid fov value = {:?}, expected # or false.",
+                    fov_data
+                ),
+            },
+        }
+    };
+
     // camera size
     if let Some(camera_value) = root.get(&"camera".into()) {
         if camera_value.is_map() {
@@ -647,6 +667,11 @@ pub fn make_level(mut level_data: LevelData) -> Level {
             level_data.camera_size.0,
             level_data.camera_size.1,
         ));
+    }
+
+    if let Some(range) = level_data.fov {
+        level.resources.insert(FOV::new(range));
+        log(format!("[[[[ FOV ]]]] = {}", range));
     }
 
     level

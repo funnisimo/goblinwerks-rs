@@ -11,8 +11,9 @@ use gw_world::actor::{spawn_actor, Actor, ActorKind, ActorKinds};
 use gw_world::ai::register_ai;
 use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::effect::{register_effect_parser, BoxedEffect};
+use gw_world::fov::{update_fov, FOV};
 use gw_world::hero::Hero;
-use gw_world::level::Levels;
+use gw_world::level::{get_current_level_mut, Levels};
 use gw_world::map::{dump_map, Cell, Map};
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
@@ -44,9 +45,9 @@ impl MainScreen {
 
     fn post_action(&mut self, ecs: &mut Ecs) {
         // Post Update
-        let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-        let level = levels.current_mut();
-        update_camera_follows(level);
+
+        update_camera_follows(&mut *get_current_level_mut(ecs));
+        update_fov(ecs);
     }
 }
 
