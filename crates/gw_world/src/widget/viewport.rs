@@ -1,4 +1,5 @@
 use crate::camera::Camera;
+use crate::fov::FOV;
 use crate::level::{Level, Levels};
 use crate::map::Cell;
 // use crate::map::Wrap;
@@ -10,6 +11,7 @@ use gw_app::color::named::BLACK;
 use gw_app::color::{named, RGBA};
 use gw_app::ecs::query::IntoQuery;
 use gw_app::ecs::{systems::ResourceSet, Read, Write};
+use gw_app::ecs::{AtomicRef, AtomicRefMut};
 use gw_app::messages::Messages;
 use gw_app::{log, AppEvent, ScreenResult};
 use gw_app::{Ecs, Panel};
@@ -18,9 +20,9 @@ use gw_util::rect::Rect;
 use gw_util::value::Value;
 
 enum VisType {
-    // NONE,
-    // MAPPED,
-    // REVEALED,
+    NONE,
+    MAPPED,
+    REVEALED,
     VISIBLE,
 }
 
@@ -31,30 +33,30 @@ trait VisSource {
     }
 }
 
-// struct FovVisibility<'a> {
-//     fov: Ref<'a, FOV>,
-// }
+struct FovVisibility<'a> {
+    fov: AtomicRef<'a, FOV>,
+}
 
-// impl<'a> FovVisibility<'a> {
-//     pub fn new(fov: &'a RefCell<FOV>) -> Self {
-//         FovVisibility { fov: fov.borrow() }
-//     }
-// }
+impl<'a> FovVisibility<'a> {
+    pub fn new(fov: AtomicRef<'a, FOV>) -> Self {
+        FovVisibility { fov }
+    }
+}
 
-// impl<'a> VisSource for FovVisibility<'a> {
-//     fn get_vis_type(&self, idx: usize) -> VisType {
-//         if self.fov.is_visible_idx(idx) {
-//             return VisType::VISIBLE;
-//         }
-//         if self.fov.is_revealed_idx(idx) {
-//             return VisType::REVEALED;
-//         }
-//         if self.fov.is_mapped_idx(idx) {
-//             return VisType::MAPPED;
-//         }
-//         VisType::NONE
-//     }
-// }
+impl<'a> VisSource for FovVisibility<'a> {
+    fn get_vis_type(&self, idx: usize) -> VisType {
+        if self.fov.is_visible_idx(idx) {
+            return VisType::VISIBLE;
+        }
+        if self.fov.is_revealed_idx(idx) {
+            return VisType::REVEALED;
+        }
+        if self.fov.is_mapped_idx(idx) {
+            return VisType::MAPPED;
+        }
+        VisType::NONE
+    }
+}
 
 struct AlwaysVisible {}
 
@@ -199,36 +201,62 @@ impl Viewport {
             level.needs_draw() || camera.needs_draw() || self.needs_draw
         };
 
-        if level.resources.contains::<MapMemory>() {
-            let (mut map, mut memory) =
-                <(Write<Map>, Write<MapMemory>)>::fetch_mut(&mut level.resources);
-
-            draw_map(
-                self,
-                &mut map,
-                Some(&mut memory),
-                offset,
-                viewport_needs_draw,
-            );
-        } else {
-            let mut map = level.resources.get_mut::<Map>().unwrap();
-            draw_map(self, &mut map, None, offset, viewport_needs_draw);
-        }
+        let has_mem = level.resources.contains::<MapMemory>();
+        let has_fov = level.resources.contains::<FOV>();
+        match (has_mem, has_fov) {
+            (true, true) => {
+                let (mut map, memory, fov) =
+                    <(Write<Map>, Write<MapMemory>, Read<FOV>)>::fetch_mut(&mut level.resources);
+                let vis = FovVisibility::new(fov);
+                draw_map(
+                    self,
+                    &mut *map,
+                    Some(memory),
+                    &vis,
+                    offset,
+                    viewport_needs_draw,
+                );
+            }
+            (true, false) => {
+                let (mut map, memory) =
+                    <(Write<Map>, Write<MapMemory>)>::fetch_mut(&mut level.resources);
+                let vis = AlwaysVisible::new();
+                draw_map(
+                    self,
+                    &mut *map,
+                    Some(memory),
+                    &vis,
+                    offset,
+                    viewport_needs_draw,
+                );
+            }
+            (false, true) => {
+                let (mut map, fov) = <(Write<Map>, Read<FOV>)>::fetch_mut(&mut level.resources);
+                let vis = FovVisibility::new(fov);
+                draw_map(self, &mut *map, None, &vis, offset, viewport_needs_draw);
+            }
+            (false, false) => {
+                let mut map = <Write<Map>>::fetch_mut(&mut level.resources);
+                let vis = AlwaysVisible::new();
+                draw_map(self, &mut *map, None, &vis, offset, viewport_needs_draw);
+            }
+        };
 
         draw_actors(self, level);
         clear_needs_draw(self, level);
     }
 
-    pub fn draw_map(
-        &mut self,
-        map: &mut Map,
-        memory: Option<&mut MapMemory>,
-        offset: (i32, i32),
-        force_draw: bool,
-    ) {
-        let needs_draw = force_draw || self.needs_draw;
-        draw_map(self, map, memory, offset, needs_draw);
-    }
+    // pub fn draw_map(
+    //     &mut self,
+    //     map: &mut Map,
+    //     memory: Option<AtomicRefMut<MapMemory>>,
+    //     vis: &dyn VisSource,
+    //     offset: (i32, i32),
+    //     force_draw: bool,
+    // ) {
+    //     let needs_draw = force_draw || self.needs_draw;
+    //     draw_map(self, map, memory, vis, offset, needs_draw);
+    // }
 
     pub fn render(&mut self, ecs: &mut Ecs) {
         self.con.render(ecs);
@@ -291,11 +319,12 @@ impl ViewPortBuilder {
 fn draw_map(
     viewport: &mut Viewport,
     map: &mut Map,
-    mut memory: Option<&mut MapMemory>,
+    mut memory: Option<AtomicRefMut<MapMemory>>,
+    vis: &dyn VisSource,
     offset: (i32, i32),
     force_draw: bool,
 ) {
-    let vis = AlwaysVisible::new();
+    // let vis = AlwaysVisible::new();
     // let fov = global_world().get_fov(world.hero_entity()).unwrap().borrow();
 
     // let map_size = map.get_size();
@@ -344,10 +373,10 @@ fn draw_map(
             let needs_draw = force_draw || map.needs_draw(idx);
             let needs_snapshot = memory.is_none() || map.needs_snapshot(idx);
             let (visible, revealed, mapped) = match vis.get_vis_type(idx) {
-                // VisType::MAPPED => (false, false, true),
-                // VisType::REVEALED => (false, true, false),
+                VisType::MAPPED => (false, false, true),
+                VisType::REVEALED => (false, true, false),
                 VisType::VISIBLE => (true, true, false),
-                // VisType::NONE => (false, false, false),
+                VisType::NONE => (false, false, false),
             };
 
             // Render a tile depending upon the tile type

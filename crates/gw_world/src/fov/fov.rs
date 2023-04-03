@@ -1,5 +1,11 @@
-use super::FovTarget;
+use crate::{hero::Hero, map::Map, position::Position};
+
+use super::{goblin::calculate_fov, FovTarget};
 use bitflags::bitflags;
+use gw_app::{
+    ecs::{Read, ResourceSet, Write},
+    Ecs,
+};
 use gw_util::fl;
 use std::fmt;
 
@@ -55,11 +61,11 @@ impl fmt::Display for FovFlags {
 // #[derive(Component, Clone, Debug)]
 #[derive(Clone, Debug)]
 pub struct FOV {
-    pub flags: Vec<FovFlags>,
+    pub(crate) flags: Vec<FovFlags>,
     width: u32,
     height: u32,
-    pub range: u32,
-    pub dirty: bool,
+    range: u32,
+    dirty: bool,
 }
 
 impl FOV {
@@ -71,6 +77,22 @@ impl FOV {
             range,
             dirty: true,
         }
+    }
+
+    pub fn set_range(&mut self, range: u32) {
+        self.range = range;
+    }
+
+    pub fn range(&self) -> u32 {
+        self.range
+    }
+
+    pub fn set_dirty(&mut self) {
+        self.dirty = true;
+    }
+
+    pub fn is_dirty(&self) -> bool {
+        self.dirty
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {
@@ -306,4 +328,19 @@ mod tests {
         let flags = FovFlags::REVEALED | FovFlags::VISIBLE;
         assert_eq!(format!("{:?}", flags), "VISIBLE | REVEALED");
     }
+}
+
+pub fn update_fov(ecs: &mut Ecs) {
+    let Ecs { resources, world } = ecs;
+
+    let (map, mut fov, hero) = <(Read<Map>, Write<FOV>, Read<Hero>)>::fetch_mut(resources);
+
+    let hero_point = world
+        .entry(hero.entity)
+        .unwrap()
+        .get_component::<Position>()
+        .unwrap()
+        .point();
+
+    calculate_fov(&*map, hero_point, 5, &mut *fov);
 }

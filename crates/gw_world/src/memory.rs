@@ -47,6 +47,6 @@ impl MapMemory {
 
     pub fn restore_flags(&self, fov: &mut FOV) {
         fov.flags.copy_from_slice(&self.flags);
-        fov.dirty = true;
+        fov.set_dirty();
     }
 }
