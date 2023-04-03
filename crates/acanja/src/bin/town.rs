@@ -6,7 +6,7 @@ use gw_util::point::Point;
 use gw_world::camera::Camera;
 use gw_world::map::Map;
 use gw_world::tile::{Tiles, TilesLoader};
-use gw_world::widget::Viewport;
+use gw_world::widget::{AlwaysVisible, Viewport};
 
 struct MainScreen {
     viewport: Viewport,
@@ -86,7 +86,8 @@ impl Screen for MainScreen {
     fn render(&mut self, app: &mut Ecs) {
         {
             let mut map = app.resources.get_mut::<Map>().unwrap();
-            self.viewport.draw_map(&mut *map, None, (0, 0), false);
+            self.viewport
+                .draw_map(&mut *map, None, &AlwaysVisible::new(), (0, 0), false);
         }
         self.viewport.render(app);
     }

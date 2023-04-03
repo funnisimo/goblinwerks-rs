@@ -5,7 +5,7 @@ use gw_world::camera::Camera;
 use gw_world::map::{dig_room_level, dump_map, Map};
 use gw_world::memory::MapMemory;
 use gw_world::tile::Tiles;
-use gw_world::widget::Viewport;
+use gw_world::widget::{AlwaysVisible, Viewport};
 
 struct MainScreen {
     viewport: Viewport,
@@ -115,7 +115,8 @@ impl Screen for MainScreen {
         {
             let (mut map, camera) = <(Write<Map>, Read<Camera>)>::fetch_mut(&mut app.resources);
             let offset = camera.offset();
-            self.viewport.draw_map(&mut map, None, offset, false);
+            self.viewport
+                .draw_map(&mut map, None, &AlwaysVisible::new(), offset, false);
         }
         self.viewport.render(app);
     }

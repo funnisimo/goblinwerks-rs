@@ -19,7 +19,7 @@ use gw_util::point::Point;
 use gw_util::rect::Rect;
 use gw_util::value::Value;
 
-enum VisType {
+pub enum VisType {
     NONE,
     MAPPED,
     REVEALED,
@@ -27,13 +27,13 @@ enum VisType {
 }
 
 #[allow(unused_variables)]
-trait VisSource {
+pub trait VisSource {
     fn get_vis_type(&self, idx: usize) -> VisType {
         VisType::VISIBLE
     }
 }
 
-struct FovVisibility<'a> {
+pub struct FovVisibility<'a> {
     fov: AtomicRef<'a, FOV>,
 }
 
@@ -58,10 +58,10 @@ impl<'a> VisSource for FovVisibility<'a> {
     }
 }
 
-struct AlwaysVisible {}
+pub struct AlwaysVisible {}
 
 impl AlwaysVisible {
-    fn new() -> Self {
+    pub fn new() -> Self {
         AlwaysVisible {}
     }
 }
@@ -246,17 +246,17 @@ impl Viewport {
         clear_needs_draw(self, level);
     }
 
-    // pub fn draw_map(
-    //     &mut self,
-    //     map: &mut Map,
-    //     memory: Option<AtomicRefMut<MapMemory>>,
-    //     vis: &dyn VisSource,
-    //     offset: (i32, i32),
-    //     force_draw: bool,
-    // ) {
-    //     let needs_draw = force_draw || self.needs_draw;
-    //     draw_map(self, map, memory, vis, offset, needs_draw);
-    // }
+    pub fn draw_map(
+        &mut self,
+        map: &mut Map,
+        memory: Option<AtomicRefMut<MapMemory>>,
+        vis: &dyn VisSource,
+        offset: (i32, i32),
+        force_draw: bool,
+    ) {
+        let needs_draw = force_draw || self.needs_draw;
+        draw_map(self, map, memory, vis, offset, needs_draw);
+    }
 
     pub fn render(&mut self, ecs: &mut Ecs) {
         self.con.render(ecs);
