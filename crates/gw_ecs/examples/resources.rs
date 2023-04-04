@@ -5,7 +5,7 @@ struct Info(u32);
 struct Age(u32);
 
 fn main() {
-    let mut ecs = Ecs::default();
+    let mut ecs = Ecs::new();
 
     {
         ecs.insert_res(Info(4));
@@ -20,7 +20,7 @@ fn main() {
     }
 
     {
-        let (mut info, age) = ecs.fetch_mut::<(ResMut<Info>, Res<Age>)>();
+        let (mut info, age) = ecs.fetch::<(ResMut<Info>, Res<Age>)>();
         info.0 = info.0 + 1;
         println!("Set: Info({}), Age({})", info.0, age.0);
     }
