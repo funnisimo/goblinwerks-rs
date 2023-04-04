@@ -113,7 +113,7 @@ impl Viewport {
         };
 
         let calc_cell = move |map: &Map, camera: &Camera| {
-            let map_size = map.get_size();
+            let map_size = map.size();
             let base_offset = camera.offset();
             let offset: Point = map.lock.lock(base_offset, *camera.size(), map_size).into();
 
@@ -179,7 +179,7 @@ impl Viewport {
 
     pub fn draw_level(&mut self, level: &mut Level) {
         if !level.resources.contains::<Camera>() {
-            let map_size = level.resources.get::<Map>().unwrap().get_size();
+            let map_size = level.resources.get::<Map>().unwrap().size();
             let camera = Camera::new(map_size.0, map_size.1);
             level.resources.insert(camera);
         }
@@ -192,7 +192,7 @@ impl Viewport {
             }
             let base_offset = camera.offset();
             map.lock
-                .lock(base_offset, *camera.size(), map.get_size())
+                .lock(base_offset, *camera.size(), map.size())
                 .into()
         };
 
@@ -487,7 +487,7 @@ fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
 
     // TODO - USE REGION
 
-    let map_size = map.get_size();
+    let map_size = map.size();
     let region = map.region();
     let view_size = viewport.con.size();
     // let center = camera.center();

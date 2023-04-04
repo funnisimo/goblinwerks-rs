@@ -1,10 +1,11 @@
-use super::LevelDataLoader;
+use super::{load_level_data_file, LevelDataLoader};
 use gw_app::{
     ecs::{Read, ResourceSet, Write},
     loader::{LoadError, LoadHandler, Loader},
     log, Ecs,
 };
 use gw_util::{
+    json::parse_string,
     point::Point,
     rect::Rect,
     value::Value,
@@ -19,7 +20,7 @@ use gw_world::{
     map::Map,
     tile::{Tile, Tiles},
 };
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, fs::read_to_string, sync::Arc};
 
 pub enum MapData {
     Data(Vec<String>),
@@ -462,7 +463,7 @@ pub fn load_level_data(tiles: &Tiles, actor_kinds: &ActorKinds, json: Value) -> 
             Some(fov_data) => match fov_data {
                 Value::Boolean(b) => match b {
                     true => Some(11),
-                    false => Some(99),
+                    false => None,
                 },
                 Value::Integer(v) => Some(*v as u32),
                 _ => panic!(
@@ -775,4 +776,36 @@ fn resolve_references(tiles: &Tiles, map: &HashMap<String, Cell>) -> HashMap<Str
     }
 
     result
+}
+
+pub fn load_level_file(filename: &str, tiles: &Tiles, actor_kinds: &ActorKinds) -> Level {
+    let file_text = read_to_string(filename).expect(&format!("Failed to open {filename}"));
+
+    let json = parse_string(&file_text).expect(&format!("Failed to parse level file - {filename}"));
+
+    let mut level_data = load_level_data(tiles, actor_kinds, json);
+
+    match level_data.map_data {
+        None => panic!("No map data in level file."),
+        Some(MapData::Data(_)) => make_level(level_data),
+        Some(MapData::FileName(ref file)) => {
+            // Need to load level file
+
+            let level_data_filename = if file.contains("/") {
+                file.clone()
+            } else {
+                let path = match filename.rsplit_once("/") {
+                    None => "./".to_string(),
+                    Some((a, _)) => a.to_string(),
+                };
+                format!("{}/{}", path, file)
+            };
+
+            log(format!("Loading level data file - {}", level_data_filename));
+
+            load_level_data_file(&level_data_filename, &mut level_data);
+
+            make_level(level_data)
+        }
+    }
 }

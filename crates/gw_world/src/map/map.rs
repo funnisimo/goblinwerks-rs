@@ -105,8 +105,12 @@ impl Map {
         self.region = Rect::with_size(0, 0, self.width, self.height);
     }
 
-    pub fn get_size(&self) -> (u32, u32) {
+    pub fn size(&self) -> (u32, u32) {
         self.region.size()
+    }
+
+    pub fn full_size(&self) -> (u32, u32) {
+        (self.width, self.height)
     }
 
     pub fn set_id(&mut self, id: u32) {
@@ -781,7 +785,7 @@ mod test {
     #[test]
     fn default_no_region() {
         let map = Map::new(100, 100);
-        assert_eq!(map.get_size(), (100, 100));
+        assert_eq!(map.size(), (100, 100));
 
         assert_eq!(map.get_wrapped_index(5, 5).unwrap(), 505);
         assert_eq!(map.try_wrap_xy(5, 5).unwrap(), (5, 5));
@@ -796,7 +800,7 @@ mod test {
         assert_eq!(region.width(), 100);
         assert_eq!(region.height(), 100);
 
-        assert_eq!(map.get_size(), (100, 100));
+        assert_eq!(map.size(), (100, 100));
     }
 
     #[test]
@@ -812,7 +816,7 @@ mod test {
             assert_eq!(region.width(), 10);
             assert_eq!(region.height(), 10);
         }
-        assert_eq!(map.get_size(), (10, 10));
+        assert_eq!(map.size(), (10, 10));
 
         assert_eq!(map.get_wrapped_index(5, 5).unwrap(), 505);
         assert_eq!(map.try_wrap_xy(5, 5).unwrap(), (5, 5));
@@ -852,7 +856,7 @@ mod test {
         map.select_region(0, 0, 10, 10);
         map.wrap = Wrap::XY;
 
-        assert_eq!(map.get_size(), (10, 10));
+        assert_eq!(map.size(), (10, 10));
 
         assert_eq!(map.get_wrapped_index(5, 5).unwrap(), 505);
         assert_eq!(map.try_wrap_xy(5, 5).unwrap(), (5, 5));

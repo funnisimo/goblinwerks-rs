@@ -1,3 +1,5 @@
+use std::fs::read_to_string;
+
 use super::set_field;
 use super::ActorKindBuilder;
 use super::ActorKinds;
@@ -120,4 +122,39 @@ impl LoadHandler for ActorKindsLoader {
 
         Ok(())
     }
+}
+
+pub fn load_actor_kinds_file(filename: &str) -> ActorKinds {
+    let file_text = read_to_string(filename).expect(&format!("Failed to open {filename}"));
+
+    let value = if filename.ends_with(".toml") {
+        match gw_util::toml::parse_string(&file_text) {
+            Err(e) => {
+                panic!("Failed to parse '{}' => {}", filename, e);
+            }
+            Ok(v) => v,
+        }
+    } else if filename.ends_with(".json") || filename.ends_with(".jsonc") {
+        match gw_util::json::parse_string(&file_text) {
+            Err(e) => {
+                panic!("Failed to parse '{}' => {}", filename, e);
+            }
+            Ok(v) => v,
+        }
+    } else {
+        panic!(
+                "Unsupported file extension - require '.toml' or '.json' or '.jsonc'.  found: {filename}"
+            );
+    };
+
+    let mut kinds = ActorKinds::default();
+
+    match load_actor_data(&mut kinds, value) {
+        Err(e) => panic!("{}", e),
+        Ok(count) => {
+            log(format!("Loaded {} actors", count));
+        }
+    }
+
+    kinds
 }

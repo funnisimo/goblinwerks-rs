@@ -1,3 +1,5 @@
+use std::fs::read_to_string;
+
 use super::{make_level, LevelData, MapData};
 use gw_app::{
     ecs::{ResourceSet, Write},
@@ -49,4 +51,12 @@ impl LoadHandler for LevelDataLoader {
 
         Ok(())
     }
+}
+
+pub fn load_level_data_file(filename: &str, level_data: &mut LevelData) {
+    let text = read_to_string(filename).expect("Failed to read level file");
+
+    let lines: Vec<String> = text.split("\n").map(|s| s.to_string()).collect();
+
+    level_data.map_data = Some(MapData::Data(lines));
 }

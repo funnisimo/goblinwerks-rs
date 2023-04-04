@@ -1,3 +1,5 @@
+use std::fs::read_to_string;
+
 use super::TileBuilder;
 use super::Tiles;
 use gw_app::ecs::Ecs;
@@ -131,4 +133,39 @@ impl LoadHandler for TilesLoader {
 
         Ok(())
     }
+}
+
+pub fn load_tiles_file(filename: &str) -> Tiles {
+    let file_text = read_to_string(filename).expect(&format!("Failed to open {filename}"));
+
+    let value = if filename.ends_with(".toml") {
+        match gw_util::toml::parse_string(&file_text) {
+            Err(e) => {
+                panic!("Failed to parse '{}' => {}", filename, e);
+            }
+            Ok(v) => v,
+        }
+    } else if filename.ends_with(".json") || filename.ends_with(".jsonc") {
+        match gw_util::json::parse_string(&file_text) {
+            Err(e) => {
+                panic!("Failed to parse '{}' => {}", filename, e);
+            }
+            Ok(v) => v,
+        }
+    } else {
+        panic!(
+                "Unsupported file extension - require '.toml' or '.json' or '.jsonc'.  found: {filename}"
+            );
+    };
+
+    let mut tiles = Tiles::default();
+
+    match load_tile_data(&mut tiles, value) {
+        Err(e) => panic!("{}", e),
+        Ok(count) => {
+            log(format!("Loaded {} tiles", count));
+        }
+    }
+
+    tiles
 }

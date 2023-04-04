@@ -99,7 +99,7 @@ fn try_move_hero_world(
         level.resources.insert(Hero::new(hero_entity));
     }
 
-    let map_size = level.resources.get::<Map>().unwrap().get_size();
+    let map_size = level.resources.get::<Map>().unwrap().size();
 
     {
         let mut camera = level
@@ -147,7 +147,7 @@ fn try_change_world(ecs: &mut Ecs, new_map_id: &String, _location: &String) -> E
         if let Some(ref welcome) = map.welcome {
             level.logger.log(welcome);
         }
-        map.get_size()
+        map.size()
     };
 
     level

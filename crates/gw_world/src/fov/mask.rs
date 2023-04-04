@@ -1,5 +1,6 @@
 use super::goblin::calculate_fov;
 use super::FovTarget;
+use crate::level::get_current_level;
 use crate::map::Map;
 use crate::position::Position;
 use gw_app::ecs::world::EntityStore;
@@ -122,16 +123,53 @@ impl FovTarget for FOVMask {
 
 impl Debug for FOVMask {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "     ")?;
+
+        for x in 0..self.width as i32 {
+            write!(f, "{:1}", x % 10)?;
+        }
+        write!(f, " \n")?;
+
+        write!(f, "    |")?;
+
+        for x in 0..self.width as i32 {
+            if x % 10 == 0 {
+                write!(f, "|")?;
+            } else {
+                write!(f, "-")?;
+            }
+        }
+        write!(f, "|\n")?;
+
         for y in 0..self.height as i32 {
-            let mut line = "".to_owned();
+            let mut line = format!("{y:3} |");
             for x in 0..self.width as i32 {
                 line += match self.in_fov(x, y) {
                     true => ".",
-                    false => " ",
+                    false => "X",
                 };
             }
-            write!(f, "|{}|\n", line)?
+            write!(f, "{}|\n", line)?
         }
+
+        write!(f, "    |")?;
+
+        for x in 0..self.width as i32 {
+            if x % 10 == 0 {
+                write!(f, "|")?;
+            } else {
+                write!(f, "-")?;
+            }
+        }
+        write!(f, "|\n")?;
+
+        write!(f, "     ")?;
+
+        for x in 0..self.width as i32 {
+            write!(f, "{:1}", x % 10)?;
+        }
+        write!(f, " \n")?;
+
         Ok(())
     }
 }
@@ -178,14 +216,17 @@ impl<'a> Iterator for FovIter<'a> {
 }
 
 pub fn get_fov_mask(ecs: &Ecs, entity: Entity, radius: u32) -> FOVMask {
-    let map = ecs.resources.get::<Map>().unwrap();
-    let size = map.get_size();
-    let mut mask = FOVMask::new(size.0 as i32, size.1 as i32);
+    let level = get_current_level(ecs);
 
-    let origin: Point = match ecs.world.entry_ref(entity) {
-        Err(_) => return FOVMask::new(size.0 as i32, size.1 as i32),
+    let origin: Point = match level.world.entry_ref(entity) {
+        Err(_) => panic!("Trying to get FOV mask for non-existant entity"),
         Ok(obj) => obj.get_component::<Position>().unwrap().point(),
     };
+
+    let map = level.resources.get::<Map>().unwrap();
+    let size = map.size();
+    let mut mask = FOVMask::new(size.0 as i32, size.1 as i32);
+
     calculate_fov(&*map, origin, radius, &mut mask);
     mask
 }

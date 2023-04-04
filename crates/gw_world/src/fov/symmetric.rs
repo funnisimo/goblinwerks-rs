@@ -107,8 +107,8 @@ impl<S: FovSource, T: FovTarget> FovScanner<'_, S, T> {
 
     fn is_opaque(&mut self, tile: Tile) -> bool {
         let point = self.quadrant.transform(tile);
-        if self.source.has_xy(point.x, point.y) {
-            self.source.is_opaque(point.x, point.y)
+        if let Some((x, y)) = self.source.try_wrap_xy(point.x, point.y) {
+            self.source.is_opaque(x, y)
         } else {
             true
         }

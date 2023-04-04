@@ -92,11 +92,14 @@ fn cast_light<S: FovSource, T: FovTarget>(
         max_slope = delta_x as f32 / (delta_y as f32 + 0.5);
         min_slope = (delta_x as f32 + 0.5) / delta_y as f32;
 
-        if !source.has_xy(current_x, current_y) {
-            blocked = true;
-            // next_start = inner_slope;
-            continue;
-        }
+        (current_x, current_y) = match source.try_wrap_xy(current_x, current_y) {
+            None => {
+                blocked = true;
+                // next_start = inner_slope;
+                continue;
+            }
+            Some((x, y)) => (x, y),
+        };
 
         // println!(
         //     "- test {},{} ... start={}, min={}, max={}, end={}, dx={}, dy={}",

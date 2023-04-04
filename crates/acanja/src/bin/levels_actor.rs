@@ -166,7 +166,7 @@ impl Screen for MainScreen {
                 }
                 VirtualKeyCode::Minus => {
                     let level = ecs.resources.get::<Level>().unwrap();
-                    let map_size = level.resources.get::<Map>().unwrap().get_size();
+                    let map_size = level.resources.get::<Map>().unwrap().size();
                     let size = self.viewport.size();
                     self.viewport
                         .resize((size.0 + 8).min(map_size.0), (size.1 + 5).min(map_size.1));

@@ -55,8 +55,8 @@ pub trait FovSource {
     }
 
     #[allow(unused_variables)]
-    fn has_xy(&self, x: i32, y: i32) -> bool {
-        false
+    fn try_wrap_xy(&self, x: i32, y: i32) -> Option<(i32, i32)> {
+        None
     }
 
     #[allow(unused_variables)]
@@ -88,11 +88,11 @@ impl FovSource for Map {
         self.get_cell(index).unwrap().blocks_vision()
     }
 
-    fn has_xy(&self, x: i32, y: i32) -> bool {
-        Map::try_wrap_xy(&self, x, y).is_some()
+    fn try_wrap_xy(&self, x: i32, y: i32) -> Option<(i32, i32)> {
+        Map::try_wrap_xy(&self, x, y)
     }
 
     fn get_size(&self) -> (u32, u32) {
-        (self.width, self.height)
+        self.full_size()
     }
 }

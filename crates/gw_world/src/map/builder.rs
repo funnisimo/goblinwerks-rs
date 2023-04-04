@@ -34,7 +34,7 @@ impl<'t> Builder<'t> {
     }
 
     pub fn size(&self) -> (u32, u32) {
-        self.map.get_size()
+        self.map.size()
     }
 
     pub fn fill(&mut self, name: &str) -> &mut Self {
