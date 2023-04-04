@@ -1,4 +1,4 @@
-use gw_ecs::{Ecs, Level, LevelMut, LevelRef, Levels, UniRef};
+use gw_ecs::{Ecs, Level, LevelMut, LevelRef, Levels, UniMut, UniRef};
 
 // struct Info(u32);
 
@@ -9,9 +9,11 @@ fn main() {
 
     {
         let mut levels = ecs.res_mut::<Levels>().unwrap();
-        let level = Level::new();
+        let mut level = Level::new();
+        level.insert_unique(Age(10));
         levels.insert(level);
-        let level = Level::new();
+        let mut level = Level::new();
+        level.insert_unique(Age(20));
         levels.insert(level);
     }
 
@@ -21,14 +23,22 @@ fn main() {
     }
 
     {
-        let mut levels = ecs.res_mut::<Levels>().unwrap();
-        levels.select(1);
+        let mut age = ecs.fetch::<UniMut<Age>>();
+        println!("Direct Fetch: Age: {}", age.0);
+        age.0 += 1;
+        println!(" - Increment");
     }
 
     {
-        let mut level = ecs.fetch::<LevelMut>();
+        let level = ecs.fetch::<LevelMut>();
         println!("Level: index({})", level.index());
-        level.insert_unique(Age(12));
+        let age = level.unique::<Age>().unwrap();
+        println!(" - Age: {}", age.0);
+    }
+
+    {
+        let mut levels = ecs.res_mut::<Levels>().unwrap();
+        levels.select(1);
     }
 
     {
