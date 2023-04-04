@@ -1,5 +1,6 @@
+use crate::levels::Levels;
 use crate::refcell::{AtomicRef, AtomicRefMut};
-use crate::{levels::Levels, Resource, ResourceSet, Resources};
+use crate::resource::{Resource, ResourceSet, Resources};
 
 pub struct Ecs {
     resources: Resources,

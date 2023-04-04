@@ -1,6 +1,6 @@
+use super::{Resources, UnsafeResources};
 use crate::refcell::{AtomicRef, AtomicRef2, AtomicRefMut, AtomicRefMut2};
 use crate::resource::{Resource, ResourceTypeId};
-use crate::resources::{Resources, UnsafeResources};
 use crate::{Level, LevelMut, LevelRef, Levels, Res, ResMut};
 
 /// Trait which is implemented for tuples of resources and singular resources. This abstracts
