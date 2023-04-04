@@ -8,7 +8,8 @@
     "wrap": false,
     "spawnHordes": false
   },
-  "fov": 5,
+  "camera": { "size": [11, 11] },
+  "fov": 10,
   "tiles": {
     ".": "PLAINS",
     "~": "WATER",

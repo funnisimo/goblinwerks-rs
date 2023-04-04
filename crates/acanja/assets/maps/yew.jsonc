@@ -1,6 +1,8 @@
 {
   "id": "YEW",
   "map": { "filename": "yew.txt", "width": 64, "height": 64, "wrap": false },
+  "camera": { "size": [11, 11] },
+  "fov": 11,
   "tiles": {
     ".": "PLAINS",
     "~": "WATER",

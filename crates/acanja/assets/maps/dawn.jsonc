@@ -2,6 +2,8 @@
   "id": "DAWN",
   "map": { "filename": "dawn.txt", "width": 64, "height": 64, "wrap": false },
   "welcome": "Welcome to Dawn!",
+  "camera": { "size": [11, 11] },
+  "fov": 11,
   "tiles": {
     ".": {
       "tile": "PLAINS",

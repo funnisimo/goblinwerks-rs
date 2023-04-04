@@ -7,6 +7,8 @@
     "wrap": false
   },
   "welcome": "Welcome to Devil Guard!",
+  "camera": { "size": [11, 11] },
+  "fov": 11,
   "tiles": {
     ".": {
       "tile": "PLAINS",
