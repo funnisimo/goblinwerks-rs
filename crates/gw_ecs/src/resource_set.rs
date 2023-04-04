@@ -1,8 +1,7 @@
-use crate::atomic_refcell::{AtomicRef, AtomicRefMut};
-
+use crate::refcell::{AtomicRef, AtomicRef2, AtomicRefMut, AtomicRefMut2};
 use crate::resource::{Resource, ResourceTypeId};
 use crate::resources::{Resources, UnsafeResources};
-use crate::{Level, LevelMut, LevelRef, Levels, Ref, RefMut, Res, ResMut};
+use crate::{Level, LevelMut, LevelRef, Levels, Res, ResMut};
 
 /// Trait which is implemented for tuples of resources and singular resources. This abstracts
 /// fetching resources to allow for ergonomic fetching.
@@ -85,7 +84,7 @@ impl<'a, T: Resource> ResourceSet<'a> for ResMut<T> {
 }
 
 impl<'a> ResourceSet<'a> for LevelRef {
-    type Result = Ref<'a, Level>;
+    type Result = AtomicRef2<'a, Level>;
 
     unsafe fn fetch_unchecked(resources: &'a UnsafeResources) -> Self::Result {
         let type_id = &ResourceTypeId::of::<Levels>();
@@ -96,12 +95,12 @@ impl<'a> ResourceSet<'a> for LevelRef {
 
         let (levels, all_borrow) = levels_ref.destructure();
         let (inner, borrow) = levels.current().destructure();
-        Ref::new(inner, all_borrow, borrow)
+        AtomicRef2::new(inner, all_borrow, borrow)
     }
 }
 
 impl<'a> ResourceSet<'a> for LevelMut {
-    type Result = RefMut<'a, Level>;
+    type Result = AtomicRefMut2<'a, Level>;
 
     unsafe fn fetch_unchecked(resources: &'a UnsafeResources) -> Self::Result {
         let type_id = &ResourceTypeId::of::<Levels>();
@@ -112,7 +111,7 @@ impl<'a> ResourceSet<'a> for LevelMut {
 
         let (levels, all_borrow) = levels_ref.destructure();
         let (inner, borrow) = levels.current_mut().destructure();
-        RefMut::new(inner, all_borrow, borrow)
+        AtomicRefMut2::new(inner, all_borrow, borrow)
     }
 }
 

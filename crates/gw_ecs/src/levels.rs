@@ -1,5 +1,5 @@
-use crate::atomic_refcell::{AtomicRef, AtomicRefCell, AtomicRefMut};
 use crate::level::Level;
+use crate::refcell::{AtomicRef, AtomicRefCell, AtomicRefMut};
 
 #[derive(Default)]
 pub struct Levels {

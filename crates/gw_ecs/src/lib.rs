@@ -1,16 +1,15 @@
 // pub mod entities;
 // mod internal;
 
-mod atomic_refcell;
 mod ecs;
 mod level;
 mod levels;
+pub mod refcell;
 mod resource;
 mod resource_set;
 mod resources;
 mod view;
 
-pub use atomic_refcell::*;
 pub use ecs::*;
 pub use level::*;
 pub use levels::*;

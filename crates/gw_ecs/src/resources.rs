@@ -1,4 +1,4 @@
-use crate::atomic_refcell::{AtomicRef, AtomicRefCell, AtomicRefMut};
+use crate::refcell::{AtomicRef, AtomicRefCell, AtomicRefMut};
 use crate::resource::{Resource, ResourceTypeId};
 use std::collections::{hash_map::Entry, HashMap};
 use std::hash::BuildHasherDefault;
