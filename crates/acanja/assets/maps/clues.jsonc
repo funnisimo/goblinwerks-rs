@@ -11,6 +11,7 @@
   "camera": { "follow_hero": true, "size": [11, 11] },
   // "region": [0, 0, 16, 16],
   // "welcome": "Do you have a clue?",
+  "fov": 10,
   "spawn_delay": 5,
   "tiles": {
     " ": {

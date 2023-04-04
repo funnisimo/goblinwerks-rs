@@ -10,6 +10,7 @@
   "camera": [11, 11],
   "region": [0, 0, 16, 16], // Sets the region as the first floor
   "spawn_delay": 5,
+  "fov": 10,
   "tiles": {
     " ": { "tile": "DUNGEON_FLOOR", "default": true },
     "~": "WATER",
