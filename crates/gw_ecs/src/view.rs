@@ -48,3 +48,26 @@ impl Default for LevelMut {
         Self
     }
 }
+
+/// Reads a single entity data component type from a chunk.
+#[derive(Debug, Copy, Clone)]
+pub struct UniRef<T>(PhantomData<*const T>);
+
+impl<T> Default for UniRef<T> {
+    fn default() -> Self {
+        Self(PhantomData)
+    }
+}
+
+// unsafe impl<T> Send for Res<T> {}
+// unsafe impl<T: Sync> Sync for Res<T> {}
+
+/// Reads a single entity data component type from a chunk.
+#[derive(Debug, Copy, Clone)]
+pub struct UniMut<T>(PhantomData<*const T>);
+
+impl<T> Default for UniMut<T> {
+    fn default() -> Self {
+        Self(PhantomData)
+    }
+}

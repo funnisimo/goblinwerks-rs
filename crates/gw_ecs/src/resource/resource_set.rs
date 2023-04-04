@@ -1,7 +1,9 @@
 use super::{Resources, UnsafeResources};
-use crate::refcell::{AtomicRef, AtomicRef2, AtomicRefMut, AtomicRefMut2};
+use crate::refcell::{
+    AtomicRef, AtomicRef2, AtomicRef3, AtomicRefMut, AtomicRefMut2, AtomicRefMut3,
+};
 use crate::resource::{Resource, ResourceTypeId};
-use crate::{Level, LevelMut, LevelRef, Levels, Res, ResMut};
+use crate::{Level, LevelMut, LevelRef, Levels, Res, ResMut, UniMut, UniRef, Unique};
 
 /// Trait which is implemented for tuples of resources and singular resources. This abstracts
 /// fetching resources to allow for ergonomic fetching.
@@ -36,7 +38,7 @@ pub trait ResourceSet<'a> {
     ///
     /// # Safety
     /// It is up to the end user to validate proper mutability rules across the resources being accessed.
-    unsafe fn fetch_unchecked(resources: &'a UnsafeResources) -> Self::Result;
+    fn fetch_unchecked(resources: &'a UnsafeResources) -> Self::Result;
 
     // /// Fetches all defined resources.
     // fn fetch_mut(resources: &'a mut Resources) -> Self::Result {
@@ -49,20 +51,22 @@ pub trait ResourceSet<'a> {
 // where
     //     Self: ReadOnly,
     {
-        unsafe { Self::fetch_unchecked(&resources.internal) }
+        {
+            Self::fetch_unchecked(&resources.internal)
+        }
     }
 }
 
 impl<'a> ResourceSet<'a> for () {
     type Result = ();
 
-    unsafe fn fetch_unchecked(_: &UnsafeResources) -> Self::Result {}
+    fn fetch_unchecked(_: &UnsafeResources) -> Self::Result {}
 }
 
 impl<'a, T: Resource> ResourceSet<'a> for Res<T> {
     type Result = AtomicRef<'a, T>;
 
-    unsafe fn fetch_unchecked(resources: &'a UnsafeResources) -> Self::Result {
+    fn fetch_unchecked(resources: &'a UnsafeResources) -> Self::Result {
         let type_id = &ResourceTypeId::of::<T>();
         resources
             .get(&type_id)
@@ -74,7 +78,7 @@ impl<'a, T: Resource> ResourceSet<'a> for Res<T> {
 impl<'a, T: Resource> ResourceSet<'a> for ResMut<T> {
     type Result = AtomicRefMut<'a, T>;
 
-    unsafe fn fetch_unchecked(resources: &'a UnsafeResources) -> Self::Result {
+    fn fetch_unchecked(resources: &'a UnsafeResources) -> Self::Result {
         let type_id = &ResourceTypeId::of::<T>();
         resources
             .get(&type_id)
@@ -86,7 +90,7 @@ impl<'a, T: Resource> ResourceSet<'a> for ResMut<T> {
 impl<'a> ResourceSet<'a> for LevelRef {
     type Result = AtomicRef2<'a, Level>;
 
-    unsafe fn fetch_unchecked(resources: &'a UnsafeResources) -> Self::Result {
+    fn fetch_unchecked(resources: &'a UnsafeResources) -> Self::Result {
         let type_id = &ResourceTypeId::of::<Levels>();
         let levels_ref = resources
             .get(&type_id)
@@ -102,7 +106,7 @@ impl<'a> ResourceSet<'a> for LevelRef {
 impl<'a> ResourceSet<'a> for LevelMut {
     type Result = AtomicRefMut2<'a, Level>;
 
-    unsafe fn fetch_unchecked(resources: &'a UnsafeResources) -> Self::Result {
+    fn fetch_unchecked(resources: &'a UnsafeResources) -> Self::Result {
         let type_id = &ResourceTypeId::of::<Levels>();
         let levels_ref = resources
             .get(&type_id)
@@ -112,6 +116,44 @@ impl<'a> ResourceSet<'a> for LevelMut {
         let (levels, all_borrow) = levels_ref.destructure();
         let (inner, borrow) = levels.current_mut().destructure();
         AtomicRefMut2::new(inner, all_borrow, borrow)
+    }
+}
+
+impl<'a, U: Unique> ResourceSet<'a> for UniRef<U> {
+    type Result = AtomicRef3<'a, U>;
+
+    fn fetch_unchecked(resources: &'a UnsafeResources) -> Self::Result {
+        let type_id = &ResourceTypeId::of::<Levels>();
+        let levels_ref = resources
+            .get(&type_id)
+            .map(|x| x.get::<Levels>())
+            .unwrap_or_else(|| panic_nonexistent_resource(type_id));
+
+        let (levels, all_borrow) = levels_ref.destructure();
+        let (level, level_borrow) = levels.current().destructure();
+
+        let (inner, borrow) = level.unique::<U>().unwrap().destructure();
+
+        AtomicRef3::new(inner, all_borrow, level_borrow, borrow)
+    }
+}
+
+impl<'a, U: Unique> ResourceSet<'a> for UniMut<U> {
+    type Result = AtomicRefMut3<'a, U>;
+
+    fn fetch_unchecked(resources: &'a UnsafeResources) -> Self::Result {
+        let type_id = &ResourceTypeId::of::<Levels>();
+        let levels_ref = resources
+            .get(&type_id)
+            .map(|x| x.get::<Levels>())
+            .unwrap_or_else(|| panic_nonexistent_resource(type_id));
+
+        let (levels, all_borrow) = levels_ref.destructure();
+        let (level, level_borrow) = levels.current().destructure();
+
+        let (inner, borrow) = level.unique_mut::<U>().unwrap().destructure();
+
+        AtomicRefMut3::new(inner, all_borrow, level_borrow, borrow)
     }
 }
 
@@ -139,7 +181,7 @@ macro_rules! impl_resource_tuple {
         {
             type Result = ($( $ty::Result, )*);
 
-            unsafe fn fetch_unchecked(resources: &'a UnsafeResources) -> Self::Result {
+            fn fetch_unchecked(resources: &'a UnsafeResources) -> Self::Result {
                 ($( $ty::fetch_unchecked(resources), )*)
             }
         }
