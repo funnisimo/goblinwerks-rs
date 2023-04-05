@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use crate::{
     action::{dead::DeadAction, idle::IdleAction, ActionResult, BoxedAction},
     actor::Actor,
@@ -6,19 +8,33 @@ use crate::{
 };
 use gw_app::{ecs::Entity, screen::BoxedScreen, Ecs};
 
-#[derive(Copy, Clone, Debug)]
+pub enum DoNextActionResult {
+    Hero,
+    Mob,
+    Other,
+    Done,
+    PushMode(BoxedScreen),
+}
+
+pub type TaskFn = dyn Fn(&mut Ecs) -> DoNextActionResult;
+
+pub type BoxedTask = Box<TaskFn>;
+
 struct TaskEntry {
-    pub entity: Entity,
+    // pub entity: Entity,
+    pub task: BoxedTask,
     pub time: u64,
 }
 
 impl TaskEntry {
-    pub fn new(entity: Entity, time: u64) -> TaskEntry {
-        TaskEntry { entity, time }
+    // pub fn new(entity: Entity, time: u64) -> TaskEntry {
+    //     TaskEntry { entity, time }
+    // }
+    pub fn new(task: BoxedTask, time: u64) -> TaskEntry {
+        TaskEntry { task, time }
     }
 }
 
-#[derive(Debug)]
 pub struct TaskList {
     tasks: Vec<TaskEntry>,
     pub time: u64,
@@ -51,8 +67,8 @@ impl TaskList {
         self.tasks.len()
     }
 
-    pub fn insert(&mut self, entity: Entity, in_time: u32) -> () {
-        let task = TaskEntry::new(entity, in_time as u64 + self.time);
+    pub fn insert(&mut self, task: BoxedTask, in_time: u32) -> () {
+        let task = TaskEntry::new(task, in_time as u64 + self.time);
         match self.tasks.iter().position(|t| t.time > task.time) {
             Some(idx) => {
                 self.tasks.insert(idx, task);
@@ -63,35 +79,37 @@ impl TaskList {
         }
     }
 
-    pub fn remove(&mut self, entity: Entity) {
-        self.tasks = self
-            .tasks
-            .iter()
-            .filter(|&task| task.entity != entity)
-            .cloned()
-            .collect();
-    }
+    // pub fn remove(&mut self, entity: Entity) {
+    //     self.tasks = self
+    //         .tasks
+    //         .iter()
+    //         .filter(|&task| task.entity != entity)
+    //         .cloned()
+    //         .collect();
+    // }
 
-    pub fn pop(&mut self) -> Option<Entity> {
+    pub fn pop(&mut self) -> Option<BoxedTask> {
         if self.tasks.len() < 1 {
             return None;
         }
 
         let res = self.tasks.remove(0);
         self.time = res.time;
-        Some(res.entity)
+        Some(res.task)
     }
 
-    pub fn unpop(&mut self, entity: Entity) -> () {
-        self.tasks.insert(0, TaskEntry::new(entity, self.time));
+    pub fn unpop(&mut self, task: BoxedTask) -> () {
+        self.tasks.insert(0, TaskEntry::new(task, self.time));
     }
 }
 
-pub enum DoNextActionResult {
-    Hero,
-    Mob,
-    Done,
-    PushMode(BoxedScreen),
+impl Debug for TaskList {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut s = f.debug_struct("TaskList");
+        s.field("tasks", &self.tasks.len());
+        s.field("time", &self.time);
+        s.finish()
+    }
 }
 
 #[derive(Debug)]
@@ -118,20 +136,25 @@ impl Executor {
         self.tasks.len()
     }
 
-    pub fn insert(&mut self, entity: Entity, in_time: u32) {
-        self.tasks.insert(entity, in_time)
+    pub fn insert_actor(&mut self, entity: Entity, in_time: u32) {
+        let task = Box::new(move |ecs: &mut Ecs| do_entity_action(entity, ecs));
+        self.tasks.insert(task, in_time)
     }
 
-    pub fn remove(&mut self, entity: Entity) {
-        self.tasks.remove(entity);
+    pub fn insert(&mut self, task: BoxedTask, in_time: u32) {
+        self.tasks.insert(task, in_time)
     }
 
-    pub fn pop(&mut self) -> Option<Entity> {
+    // pub fn remove(&mut self, entity: Entity) {
+    //     self.tasks.remove(entity);
+    // }
+
+    fn pop(&mut self) -> Option<BoxedTask> {
         self.tasks.pop()
     }
 
-    pub fn unpop(&mut self, entity: Entity) {
-        self.tasks.unpop(entity);
+    fn unpop(&mut self, task: BoxedTask) {
+        self.tasks.unpop(task);
     }
 
     // pub fn get_next_action(&self, entity: Entity, ecs: &mut Ecs) -> Option<BoxedAction> {
@@ -234,7 +257,7 @@ impl Executor {
 }
 
 #[must_use]
-pub fn get_next_action(entity: Entity, ecs: &mut Ecs) -> BoxedAction {
+fn get_next_action(entity: Entity, ecs: &mut Ecs) -> BoxedAction {
     let (ai_fn, idle_time) = {
         let mut level = get_current_level_mut(ecs);
         let mut entry = match level.world.entry(entity) {
@@ -254,103 +277,115 @@ pub fn get_next_action(entity: Entity, ecs: &mut Ecs) -> BoxedAction {
 
 #[must_use]
 pub fn do_next_action(ecs: &mut Ecs) -> DoNextActionResult {
+    let task = with_current_level_mut(ecs, |level| level.executor.pop());
+
+    match task {
+        None => DoNextActionResult::Done,
+        Some(task) => task(ecs),
+    }
+}
+
+fn do_entity_action(entity: Entity, ecs: &mut Ecs) -> DoNextActionResult {
     let hero_entity = with_current_level(ecs, |level| {
         let entity = level.resources.get::<Hero>().unwrap().entity;
         entity
     });
 
-    loop {
-        let task = with_current_level_mut(ecs, |level| level.executor.pop());
+    let is_player = entity == hero_entity;
 
-        match task {
-            None => return DoNextActionResult::Done,
-            Some(entity) => {
-                let is_player = entity == hero_entity;
+    let mut action = get_next_action(entity, ecs);
 
-                let mut action = get_next_action(entity, ecs);
+    'inner: loop {
+        match action.execute(ecs) {
+            ActionResult::Dead(_) => {
+                // no rescedule - entity dead
+                with_current_level_mut(ecs, |level| {
+                    level.logger.debug(format!("{:?} - Dead result", entity));
+                });
+                break 'inner;
+            }
+            ActionResult::Done(time) => {
+                // do_debug!("{} - Done result : {}", entity, time);
+                with_current_level_mut(ecs, |level| {
+                    level.executor.insert_actor(entity, time);
+                });
 
-                'inner: loop {
-                    match action.execute(ecs) {
-                        ActionResult::Dead(_) => {
-                            // no rescedule - entity dead
-                            with_current_level_mut(ecs, |level| {
-                                level.logger.debug(format!("{:?} - Dead result", entity));
-                            });
-                            break 'inner;
-                        }
-                        ActionResult::Done(time) => {
-                            // do_debug!("{} - Done result : {}", entity, time);
-                            with_current_level_mut(ecs, |level| {
-                                level.executor.insert(entity, time);
-                            });
-
-                            break 'inner;
-                        }
-                        ActionResult::Fail(msg) => {
-                            with_current_level_mut(ecs, |level| {
-                                level.logger.debug(format!("#[violetred]{}", msg));
-                                level.executor.unpop(entity);
-                            });
-                            break 'inner;
-                        }
-                        ActionResult::Replace(new_action) => {
-                            // do_debug!("{} - Replace result - {:?}", entity, new_action);
-                            action = new_action;
-                        }
-                        ActionResult::WaitForInput => {
-                            // debug_msg(format!("{} - Wait for input", entity));
-                            with_current_level_mut(ecs, |level| {
-                                level.executor.unpop(entity);
-                            });
-                            return DoNextActionResult::Done;
-                        }
-                        ActionResult::Retry => {
-                            with_current_level_mut(ecs, |level| {
-                                level.executor.unpop(entity);
-                            });
-                            break 'inner;
-                        }
-                        ActionResult::PushMode(mode) => {
-                            with_current_level_mut(ecs, |level| {
-                                level.executor.unpop(entity);
-                            });
-                            return DoNextActionResult::PushMode(mode);
-                        }
-                    }
-                }
-
-                return match is_player {
-                    true => DoNextActionResult::Hero,
-                    false => DoNextActionResult::Mob,
-                };
+                break 'inner;
+            }
+            ActionResult::Fail(msg) => {
+                with_current_level_mut(ecs, |level| {
+                    level.logger.debug(format!("#[violetred]{}", msg));
+                    let task: BoxedTask = Box::new(move |ecs| do_entity_action(entity, ecs));
+                    level.executor.unpop(task);
+                });
+                break 'inner;
+            }
+            ActionResult::Replace(new_action) => {
+                // do_debug!("{} - Replace result - {:?}", entity, new_action);
+                action = new_action;
+            }
+            ActionResult::WaitForInput => {
+                // debug_msg(format!("{} - Wait for input", entity));
+                with_current_level_mut(ecs, |level| {
+                    let ent = entity;
+                    let task: BoxedTask = Box::new(move |ecs_a| do_entity_action(ent, ecs_a));
+                    level.executor.unpop(task);
+                });
+                return DoNextActionResult::Done;
+            }
+            ActionResult::Retry => {
+                with_current_level_mut(ecs, |level| {
+                    let task: BoxedTask = Box::new(move |ecs_a| do_entity_action(entity, ecs_a));
+                    level.executor.unpop(task);
+                });
+                break 'inner;
+            }
+            ActionResult::PushMode(mode) => {
+                with_current_level_mut(ecs, |level| {
+                    let task: BoxedTask = Box::new(move |ecs_a| do_entity_action(entity, ecs_a));
+                    level.executor.unpop(task);
+                });
+                return DoNextActionResult::PushMode(mode);
             }
         }
     }
+
+    return match is_player {
+        true => DoNextActionResult::Hero,
+        false => DoNextActionResult::Mob,
+    };
 }
 
 #[cfg(test)]
 mod tests {
-    use gw_app::ecs::World;
-
-    use crate::position::Position;
-
     use super::*;
-    // use crate::prelude::*;
+    use gw_app::ecs::Ecs;
+    use std::sync::{
+        atomic::{AtomicI32, Ordering},
+        Arc,
+    };
 
     #[test]
     fn one_task() {
         let mut scheduler = TaskList::new();
         assert_eq!(scheduler.is_empty(), true);
 
-        let mut world: World = World::default();
-        let entity = world.push((Position::new(0, 0),));
+        let mut ecs = Ecs::new();
 
-        scheduler.insert(entity, 10);
+        let count = Arc::new(AtomicI32::new(0));
+        let c2 = count.clone();
+        let task: BoxedTask = Box::new(move |_| {
+            c2.fetch_add(1, Ordering::Acquire);
+            DoNextActionResult::Done
+        });
+
+        scheduler.insert(task, 10);
 
         assert_eq!(scheduler.is_empty(), false);
         match scheduler.pop() {
-            Some(entity) => {
-                assert_eq!(entity, entity);
+            Some(task) => {
+                task(&mut ecs);
+                assert_eq!(count.load(Ordering::Acquire), 1);
                 assert_eq!(scheduler.time, 10);
             }
             None => {
@@ -365,18 +400,29 @@ mod tests {
     fn two_actions() {
         let mut scheduler = TaskList::new();
 
-        let mut world: World = World::default();
-        let entity_a = world.push((Position::new(0, 0),));
-        let entity_b = world.push((Position::new(1, 1),));
+        let mut ecs: Ecs = Ecs::new();
 
-        scheduler.insert(entity_a, 10);
-        scheduler.insert(entity_b, 20);
+        let count = Arc::new(AtomicI32::new(0));
+        let c2 = count.clone();
+        let task_a: BoxedTask = Box::new(move |_| {
+            c2.fetch_add(1, Ordering::Acquire);
+            DoNextActionResult::Done
+        });
+
+        let c3 = count.clone();
+        let task_b: BoxedTask = Box::new(move |_| {
+            c3.fetch_add(1, Ordering::Acquire);
+            DoNextActionResult::Done
+        });
+
+        scheduler.insert(task_a, 10);
+        scheduler.insert(task_b, 20);
 
         assert_eq!(scheduler.is_empty(), false);
         match scheduler.pop() {
-            Some(entity) => {
+            Some(task) => {
+                task(&mut ecs);
                 assert_eq!(scheduler.time, 10);
-                assert_eq!(entity, entity_a);
             }
             None => {
                 panic!("Should be there.");
@@ -391,18 +437,29 @@ mod tests {
     fn two_actions_last_first() {
         let mut scheduler = TaskList::new();
 
-        let mut world: World = World::default();
-        let entity_a = world.push((Position::new(0, 0),));
-        let entity_b = world.push((Position::new(1, 1),));
+        let mut ecs: Ecs = Ecs::new();
 
-        scheduler.insert(entity_b, 20);
-        scheduler.insert(entity_a, 10);
+        let count = Arc::new(AtomicI32::new(0));
+        let c2 = count.clone();
+        let task_a: BoxedTask = Box::new(move |_| {
+            c2.fetch_add(1, Ordering::Acquire);
+            DoNextActionResult::Done
+        });
+
+        let c3 = count.clone();
+        let task_b: BoxedTask = Box::new(move |_| {
+            c3.fetch_add(1, Ordering::Acquire);
+            DoNextActionResult::Done
+        });
+
+        scheduler.insert(task_b, 20);
+        scheduler.insert(task_a, 10);
 
         assert_eq!(scheduler.is_empty(), false);
         match scheduler.pop() {
-            Some(entity) => {
+            Some(task) => {
+                task(&mut ecs);
                 assert_eq!(scheduler.time, 10);
-                assert_eq!(entity, entity_a);
             }
             None => {
                 panic!("Should be there.");
@@ -417,37 +474,49 @@ mod tests {
     fn two_actions_second() {
         let mut scheduler = TaskList::new();
 
-        let mut world: World = World::default();
-        let entity_a = world.push((Position::new(0, 0),));
-        let entity_b = world.push((Position::new(1, 1),));
+        let mut ecs: Ecs = Ecs::new();
 
-        scheduler.insert(entity_a, 10);
+        let count = Arc::new(AtomicI32::new(0));
+        let c2 = count.clone();
+        let task_a: BoxedTask = Box::new(move |_| {
+            c2.fetch_add(1, Ordering::Acquire);
+            DoNextActionResult::Done
+        });
+
+        let c3 = count.clone();
+        let task_b: BoxedTask = Box::new(move |_| {
+            c3.fetch_add(1, Ordering::Acquire);
+            DoNextActionResult::Done
+        });
+
+        scheduler.insert(task_a, 10);
+        scheduler.insert(task_b, 20);
 
         assert_eq!(scheduler.is_empty(), false);
         match scheduler.pop() {
-            Some(entity) => {
+            Some(task) => {
+                task(&mut ecs);
                 assert_eq!(scheduler.time, 10);
-                assert_eq!(entity, entity_a);
             }
             None => {
                 panic!("Should be there.");
             }
         }
-
-        scheduler.insert(entity_b, 20);
 
         assert!(!scheduler.is_empty());
         assert_eq!(scheduler.time, 10);
 
         match scheduler.pop() {
-            Some(entity) => {
-                assert_eq!(scheduler.time, 30);
-                assert_eq!(entity, entity_b);
+            Some(task) => {
+                task(&mut ecs);
+                assert_eq!(scheduler.time, 20);
             }
             None => {
                 panic!("Should be there.");
             }
         }
-        assert_eq!(scheduler.time, 30);
+
+        assert!(scheduler.is_empty());
+        assert_eq!(scheduler.time, 20);
     }
 }

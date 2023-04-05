@@ -68,7 +68,7 @@ impl Level {
 
         // you can then iterate through the components found in the world
         for (entity, actor) in query.iter(world) {
-            executor.insert(*entity, actor.act_time);
+            executor.insert_actor(*entity, actor.act_time);
         }
     }
 }
@@ -76,7 +76,7 @@ impl Level {
 pub fn move_entity(entity: Entity, src: &mut Level, dest: &mut Level) -> Entity {
     let new_entity = ecs::move_entity(entity, &mut src.world, &mut dest.world);
 
-    src.executor.remove(entity);
+    // src.executor.remove(entity);
 
     if let Ok(actor) = dest
         .world
@@ -84,7 +84,7 @@ pub fn move_entity(entity: Entity, src: &mut Level, dest: &mut Level) -> Entity 
         .unwrap()
         .get_component::<Actor>()
     {
-        dest.executor.insert(new_entity, actor.act_time);
+        dest.executor.insert_actor(new_entity, actor.act_time);
     }
 
     new_entity

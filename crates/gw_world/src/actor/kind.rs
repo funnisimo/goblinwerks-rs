@@ -55,7 +55,7 @@ pub fn spawn_actor(kind: &Arc<ActorKind>, level: &mut Level, point: Point) -> En
         map.add_actor(idx, entity, true);
 
         // Add to schedule
-        level.executor.insert(entity, kind.info.act_time);
+        level.executor.insert_actor(entity, kind.info.act_time);
 
         return entity;
     }

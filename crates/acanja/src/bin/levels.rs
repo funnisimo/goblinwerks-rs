@@ -8,7 +8,7 @@ use gw_util::point::Point;
 use gw_world::camera::Camera;
 use gw_world::effect::BoxedEffect;
 use gw_world::level::{Level, Levels};
-use gw_world::map::{cell_flavor, Cell, Map};
+use gw_world::map::{cell_flavor, Map};
 use gw_world::tile::{Tiles, TilesLoader};
 use gw_world::widget::Viewport;
 

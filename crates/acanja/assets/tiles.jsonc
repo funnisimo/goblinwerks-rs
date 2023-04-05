@@ -77,6 +77,12 @@
     "layer": "FIXTURE",
     "flavor": "a huge menacing serpent"
   },
+  "MOONGATE": {
+    "ch": "#",
+    "fg": "blue",
+    "layer": "FIXTURE",
+    "flavor": "a moongate"
+  },
 
   /* GROUND - TOWN */
 
@@ -150,6 +156,7 @@
     "kind": "WALL",
     "flags": "LOCKED",
     "blocks": true,
+    "layer": "FIXTURE",
     "flavor": "a locked door",
     "unlock": { "fixture": "DOOR" }
   },
@@ -159,6 +166,7 @@
     // "bg": "darkest_brown",
     "kind": "WALL",
     "blocks": "vision",
+    "layer": "FIXTURE",
     "flavor": "an open door",
     "enter": { "fixture": "DOOR_OPEN" },
     "lock": { "fixture": "DOOR_LOCKED" }
@@ -170,6 +178,7 @@
     "kind": "WALL",
     "blocks": "vision",
     "flavor": "an open door",
+    "layer": "FIXTURE",
     "exit": { "fixture": "DOOR" }
   },
   "CHEST_LOCKED": {
@@ -179,6 +188,7 @@
     "flags": "LOCKED",
     "kind": "FIXTURE",
     "flavor": "a locked chest",
+    "layer": "FIXTURE",
     "unlock": { "fixture": "CHEST" }
   },
   "CHEST": {
@@ -186,6 +196,7 @@
     "fg": "gold",
     // "bg": "darkest_gold",
     "kind": "FIXTURE",
+    "layer": "FIXTURE",
     "flavor": "a chest",
     "open": {
       "fixture": "CHEST_OPEN",
@@ -198,6 +209,7 @@
     "ch": 366,
     "fg": "gold",
     // "bg": "darkest_gold",
+    "layer": "FIXTURE",
     "kind": "FIXTURE",
     "flavor": "an open chest",
     "close": { "fixture": "CHEST" },
@@ -205,6 +217,7 @@
   },
 
   "EXIT_LEFT": {
+    "layer": "FIXTURE",
     "kind": "FIXTURE",
     "sprite": "<|YELLOW",
     "flavor": "an exit"
@@ -214,6 +227,7 @@
     "ch": 321,
     "fg": "teal",
     "bg": "darkest_teal",
+    "layer": "FIXTURE",
     "kind": "WALL",
     // "blocks": "move",
     "flavor": "a forcefield"
@@ -304,16 +318,19 @@
   "STAIRS_DOWN": {
     "ch": 277,
     "fg": "brown3",
+    "layer": "FIXTURE",
     "flavor": "downward stairs"
   },
   "STAIRS_UP": {
     "ch": 275,
     "fg": "brown3",
+    "layer": "FIXTURE",
     "flavor": "upward stairs"
   },
   "STAIRS_BOTH": {
     "ch": 276,
     "fg": "brown3",
+    "layer": "FIXTURE",
     "flavor": "stairs going up and down"
   },
   "CURE_FOUNTAIN": {

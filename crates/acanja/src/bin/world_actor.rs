@@ -162,7 +162,7 @@ impl Screen for MainScreen {
                 DoNextActionResult::Done => {
                     return ScreenResult::Continue;
                 }
-                DoNextActionResult::Mob => {
+                DoNextActionResult::Mob | DoNextActionResult::Other => {
                     continue;
                 }
                 DoNextActionResult::Hero => {

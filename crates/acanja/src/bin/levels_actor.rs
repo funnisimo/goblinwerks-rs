@@ -11,7 +11,7 @@ use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::effect::BoxedEffect;
 use gw_world::hero::Hero;
 use gw_world::level::{Level, Levels};
-use gw_world::map::{cell_flavor, Cell, Map};
+use gw_world::map::{cell_flavor, Map};
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
 use gw_world::task::{do_next_action, DoNextActionResult};
@@ -217,7 +217,7 @@ impl Screen for MainScreen {
                 DoNextActionResult::Done => {
                     return ScreenResult::Continue;
                 }
-                DoNextActionResult::Mob => {
+                DoNextActionResult::Mob | DoNextActionResult::Other => {
                     continue;
                 }
                 DoNextActionResult::Hero => {
