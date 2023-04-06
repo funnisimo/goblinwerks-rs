@@ -6,7 +6,8 @@ use gw_app::ecs::{systems::ResourceSet, Deserialize, Read, Serialize};
 use gw_app::*;
 use gw_util::point::Point;
 use gw_world::action::move_step::MoveStepAction;
-use gw_world::actor::Actor;
+use gw_world::ai::Actor;
+use gw_world::being::Being;
 use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::effect::BoxedEffect;
 use gw_world::hero::Hero;
@@ -54,7 +55,8 @@ impl MainScreen {
             Position::new(start_loc.x, start_loc.y),
             Sprite::new('@' as Glyph, WHITE.into(), RGBA::new()),
             UserControl, // Do we need this?
-            Actor::new("HERO".to_string()).with_ai("USER_CONTROL"),
+            Being::new("HERO".to_string()),
+            Actor::new("USER_CONTROL".to_string()),
         ));
 
         let mut camera = Camera::new(80, 50);
@@ -282,8 +284,9 @@ fn main() {
         .register_components(|registry| {
             registry.register::<gw_world::position::Position>("Position".to_string());
             registry.register::<gw_world::sprite::Sprite>("Sprite".to_string());
-            registry.register::<gw_world::actor::Actor>("Actor".to_string());
+            registry.register::<gw_world::being::Being>("Being".to_string());
             registry.register::<UserControl>("UserControl".to_string());
+            registry.register::<gw_world::ai::Actor>("Actor".to_string());
         })
         .vsync(false)
         .build();

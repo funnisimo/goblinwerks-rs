@@ -31,14 +31,14 @@
     },
 
     "a": {
-      "actor": {
+      "being": {
         "kind": "Cleric",
         "talk": "Search and ye shall find!"
       },
       "tile": "."
     },
     "b": {
-      "actor": {
+      "being": {
         "kind": "Cleric",
         "ai": "RANDOM_WANDER",
         "talk": "Know ye well thy foes!!"
@@ -46,7 +46,7 @@
       "tile": "%"
     },
     "c": {
-      "actor": {
+      "being": {
         "kind": "Cleric",
         "ai": "RANDOM_WANDER",
         "talk": "Peace be with you"
@@ -54,7 +54,7 @@
       "tile": "%"
     },
     "d": {
-      "actor": {
+      "being": {
         "kind": "Cleric",
         "ai": "RANDOM_WANDER",
         "talk": "I've been beyond the whirlpool!"
@@ -62,38 +62,38 @@
       "tile": "%"
     },
     "e": {
-      "actor": { "kind": "Cleric", "ai": "RANDOM_WANDER", "talk": null },
+      "being": { "kind": "Cleric", "ai": "RANDOM_WANDER", "talk": null },
       "tile": "%"
     },
     "f": {
-      "actor": { "kind": "Cleric", "ai": "RANDOM_WANDER", "talk": null },
+      "being": { "kind": "Cleric", "ai": "RANDOM_WANDER", "talk": null },
       "tile": "%"
     },
 
     "g": {
-      "actor": {
+      "being": {
         "kind": "Cleric",
         "talk": "Bonim Anima Teuri, Amen!"
       },
       "tile": "."
     },
     "h": {
-      "actor": {
+      "being": {
         "kind": "Cleric",
         "talk": "Bonim Anima Teuri, Amen!"
       },
       "tile": "-"
     },
     "i": {
-      "actor": {
+      "being": {
         "kind": "Cleric",
         "talk": "Welcome to the Circle of Light!"
       },
       "tile": "."
     },
 
-    "j": { "actor": "Grocer", "tile": "." },
-    "k": { "actor": "Healer", "tile": "-" }
+    "j": { "being": "Grocer", "tile": "." },
+    "k": { "being": "Healer", "tile": "-" }
   },
   "objects": []
 }

@@ -34,24 +34,24 @@
       "climb": { "portal": { "map": "SOSARIA", "location": "FAWN" } }
     },
 
-    "a": { "actor": "Armorer", "tile": "-" },
-    "b": { "actor": "Bartender", "tile": "-" },
-    "c": { "actor": "Weaponer", "tile": "-" },
-    "d": { "actor": "Grocer", "tile": "-" },
-    "e": { "actor": "Healer", "tile": "-" },
-    "k": { "actor": "Guildmaster", "tile": "-" },
+    "a": { "being": "Armorer", "tile": "-" },
+    "b": { "being": "Bartender", "tile": "-" },
+    "c": { "being": "Weaponer", "tile": "-" },
+    "d": { "being": "Grocer", "tile": "-" },
+    "e": { "being": "Healer", "tile": "-" },
+    "k": { "being": "Guildmaster", "tile": "-" },
 
     "g": {
       "tile": ".",
-      "actor": { "kind": "Guard", "talk": "Good day!", "ai": "ANCHORED_WANDER" }
+      "being": { "kind": "Guard", "talk": "Good day!", "ai": "ANCHORED_WANDER" }
     },
-    "h": { "actor": { "kind": "Guard", "talk": "Good day!", "tile": "." } },
-    "i": { "actor": { "kind": "Guard", "talk": "Good day!", "tile": "-" } },
+    "h": { "being": { "kind": "Guard", "talk": "Good day!", "tile": "." } },
+    "i": { "being": { "kind": "Guard", "talk": "Good day!", "tile": "-" } },
 
-    "f": { "tile": "-", "actor": { "kind": "Fighter", "ai": "RANDOM_WANDER" } },
+    "f": { "tile": "-", "being": { "kind": "Fighter", "ai": "RANDOM_WANDER" } },
     "j": {
       "tile": ".",
-      "actor": {
+      "being": {
         "kind": "Wizard",
         "talk": "Welocome to Fawn: City of the sea!"
       }
@@ -59,36 +59,36 @@
 
     "s": {
       "tile": ".",
-      "actor": { "kind": "Fighter", "talk": "Fawn is a nice place!" }
+      "being": { "kind": "Fighter", "talk": "Fawn is a nice place!" }
     },
     "t": {
       "tile": ".",
-      "actor": { "kind": "Wizard", "talk": "Fawn is a nice place!" }
+      "being": { "kind": "Wizard", "talk": "Fawn is a nice place!" }
     },
     "u": {
       "tile": ".",
-      "actor": { "kind": "Cleric", "talk": "Fawn is a nice place!" }
+      "being": { "kind": "Cleric", "talk": "Fawn is a nice place!" }
     },
     "v": {
       "tile": ".",
-      "actor": { "kind": "Thief", "talk": "Fawn is a nice place!" }
+      "being": { "kind": "Thief", "talk": "Fawn is a nice place!" }
     },
 
     "w": {
       "tile": ":",
-      "actor": { "kind": "Cleric", "talk": "<Pray> for the invocation!" }
+      "being": { "kind": "Cleric", "talk": "<Pray> for the invocation!" }
     },
     "x": {
       "tile": ":",
-      "actor": { "kind": "Cleric", "talk": "<Pray> in the Circle of Light!" }
+      "being": { "kind": "Cleric", "talk": "<Pray> in the Circle of Light!" }
     },
     "y": {
       "tile": ":",
-      "actor": { "kind": "Cleric", "talk": "'Invoke' the Silver Snake!" }
+      "being": { "kind": "Cleric", "talk": "'Invoke' the Silver Snake!" }
     },
     "z": {
       "tile": ":",
-      "actor": { "kind": "Cleric", "talk": "To pass you need a Mark!" }
+      "being": { "kind": "Cleric", "talk": "To pass you need a Mark!" }
     },
 
     "@": { "location": "START", "tile": "." }

@@ -1,13 +1,12 @@
 use crate::action::BoxedAction;
 use crate::ai::idle::ai_idle;
 use crate::ai::user::ai_user_control;
-use crate::level::Level;
 use gw_app::ecs::Entity;
 use gw_app::{log, Ecs};
 // use mirror_entity::MirrorEntity;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 // mod mirror_player;
 // pub use mirror_player::MirrorPlayerAI;
@@ -18,11 +17,14 @@ use std::sync::{Arc, Mutex};
 // mod player;
 // pub use player::PlayerAI;
 
+mod actor;
 mod ai_flags;
+
 pub mod idle;
 // pub mod mirror_entity;
 pub mod user;
 
+pub use actor::*;
 pub use ai_flags::AIFlags;
 
 // mod basic_monster;
@@ -76,15 +78,15 @@ pub fn register_ai(name: &str, handler: AiFn) {
         .insert(name.to_string(), handler);
 }
 
-#[derive(Deserialize, Serialize, Clone, Default, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct AI {
     stack: Vec<String>,
 }
 
 impl AI {
-    pub fn new() -> Self {
+    pub fn new(initial_ai: String) -> Self {
         AI {
-            stack: vec!["IDLE".to_string()],
+            stack: vec![initial_ai],
         }
     }
 
@@ -128,6 +130,12 @@ impl AI {
             }
             Some(handler) => handler.clone(),
         }
+    }
+}
+
+impl Default for AI {
+    fn default() -> Self {
+        AI::new("IDLE".to_string())
     }
 }
 

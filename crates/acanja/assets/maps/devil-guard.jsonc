@@ -35,57 +35,57 @@
       "climb": { "portal": { "map": "SOSARIA", "location": "DEVIL GUARD" } }
     },
 
-    "a": { "actor": "Armorer", "tile": "-" },
-    "b": { "actor": "Bartender", "tile": "-" },
-    "c": { "actor": "Weaponer", "tile": "-" },
-    "d": { "actor": "Grocer", "tile": "-" },
-    "e": { "actor": "Healer", "tile": "-" },
-    "k": { "actor": "Guildmaster", "tile": "-" },
+    "a": { "being": "Armorer", "tile": "-" },
+    "b": { "being": "Bartender", "tile": "-" },
+    "c": { "being": "Weaponer", "tile": "-" },
+    "d": { "being": "Grocer", "tile": "-" },
+    "e": { "being": "Healer", "tile": "-" },
+    "k": { "being": "Guildmaster", "tile": "-" },
 
     "g": {
-      "actor": {
+      "being": {
         "kind": "Guard",
         "talk": "Good day!",
         "ai": "ANCHORED_WANDER"
       },
       "tile": "."
     },
-    "h": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "%" },
-    "i": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "-" },
+    "h": { "being": { "kind": "Guard", "talk": "Good day!" }, "tile": "%" },
+    "i": { "being": { "kind": "Guard", "talk": "Good day!" }, "tile": "-" },
 
-    "f": { "tile": ":", "actor": { "kind": "Fighter", "ai": "RANDOM_WANDER" } },
+    "f": { "tile": ":", "being": { "kind": "Fighter", "ai": "RANDOM_WANDER" } },
     "j": {
       "tile": ":",
-      "actor": { "kind": "Jester", "ai": "ANCHORED_WANDER" }
+      "being": { "kind": "Jester", "ai": "ANCHORED_WANDER" }
     },
 
     "s": {
-      "actor": { "kind": "Fighter", "talk": "'Marks' gained in dungeons!" },
+      "being": { "kind": "Fighter", "talk": "'Marks' gained in dungeons!" },
       "tile": "."
     },
     "t": {
-      "actor": { "kind": "Fighter", "talk": "Hot metal leaves a 'Mark'!" },
+      "being": { "kind": "Fighter", "talk": "Hot metal leaves a 'Mark'!" },
       "tile": "."
     },
     "u": {
-      "actor": { "kind": "Fighter", "talk": "The King favors a 'Mark'!" },
+      "being": { "kind": "Fighter", "talk": "The King favors a 'Mark'!" },
       "tile": ":"
     },
     "v": {
-      "actor": { "kind": "Fighter", "talk": "A 'Mark' helps invoke the Snake" },
+      "being": { "kind": "Fighter", "talk": "A 'Mark' helps invoke the Snake" },
       "tile": ":"
     },
     "w": {
       "tile": ".",
-      "actor": { "kind": "Fighter", "talk": "4 'Marks', 4 uses!" }
+      "being": { "kind": "Fighter", "talk": "4 'Marks', 4 uses!" }
     },
     "x": {
       "tile": ":",
-      "actor": { "kind": "Fighter", "talk": "Seek ye the dungeon of fire!" }
+      "being": { "kind": "Fighter", "talk": "Seek ye the dungeon of fire!" }
     },
     "y": {
       "tile": ":",
-      "actor": { "kind": "Fighter", "talk": "Mark thee well!" }
+      "being": { "kind": "Fighter", "talk": "Mark thee well!" }
     },
 
     "@": { "location": "START", "tile": "." }

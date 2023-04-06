@@ -78,7 +78,7 @@
     "flavor": "a huge menacing serpent"
   },
   "MOONGATE": {
-    "ch": "#",
+    "ch": 368,
     "fg": "blue",
     "layer": "FIXTURE",
     "flavor": "a moongate"

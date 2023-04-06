@@ -1,17 +1,18 @@
 use acanja::effect::{parse_gremlins, parse_mark, parse_winds};
 use acanja::loader::GameConfigLoader;
+use gw_app::ecs::IntoQuery;
 use gw_app::ecs::{Entity, Read, ResourceSet, Write};
 use gw_app::*;
 use gw_util::point::Point;
 use gw_world::action::idle::IdleAction;
 use gw_world::action::move_step::MoveStepAction;
-use gw_world::actor::{spawn_actor, Actor, ActorKinds};
-use gw_world::ai::register_ai;
+use gw_world::ai::{register_ai, Actor};
+use gw_world::being::{spawn_actor, Being, BeingKinds};
 use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::effect::{register_effect_parser, BoxedEffect};
 use gw_world::fov::update_fov;
 use gw_world::hero::Hero;
-use gw_world::level::{get_current_level_mut, Levels};
+use gw_world::level::{get_current_level_mut, with_current_level, Levels};
 use gw_world::map::{Cell, Map};
 use gw_world::position::Position;
 use gw_world::task::{do_next_action, DoNextActionResult};
@@ -54,7 +55,7 @@ impl Screen for MainScreen {
         // resources.get_or_insert_with(|| Tiles::default());
         // resources.get_or_insert_with(|| Prefabs::default());
 
-        let (mut levels, actor_kinds) = <(Write<Levels>, Read<ActorKinds>)>::fetch_mut(resources);
+        let (mut levels, actor_kinds) = <(Write<Levels>, Read<BeingKinds>)>::fetch_mut(resources);
 
         log(format!("START MAP = {}", levels.current_id()));
         levels.setup();
@@ -134,6 +135,21 @@ impl Screen for MainScreen {
                 '.' | ' ' => {
                     hero_idle(ecs);
                 }
+                't' => with_current_level(ecs, |level| {
+                    println!("TASKS = {:?}", level.executor);
+                }),
+                'a' => with_current_level(ecs, |level| {
+                    let mut query = <&Actor>::query();
+
+                    // you can then iterate through the components found in the world
+                    for actor in query.iter(&level.world) {
+                        println!("{:?}", actor);
+                    }
+                }),
+                'k' => {
+                    let kinds = ecs.resources.get::<BeingKinds>().unwrap();
+                    kinds.dump();
+                }
                 _ => {}
             },
             _ => {}
@@ -166,8 +182,10 @@ impl Screen for MainScreen {
                     log(format!("CELL EFFECTS = {:?}", effects));
                 }
 
-                for entity in map.iter_actors(idx) {
+                for entity in map.iter_beings(idx) {
                     let entry = level.world.entry(entity).unwrap();
+                    let being = entry.get_component::<Being>().unwrap();
+                    log(format!("BEING({:?}) = {:?}", entity, being));
                     let actor = entry.get_component::<Actor>().unwrap();
                     log(format!("ACTOR({:?}) = {:?}", entity, actor));
                 }
@@ -231,9 +249,9 @@ fn main() {
         .register_components(|registry| {
             registry.register::<gw_world::position::Position>("Position".to_string());
             registry.register::<gw_world::sprite::Sprite>("Sprite".to_string());
-            registry.register::<gw_world::actor::Actor>("Actor".to_string());
+            registry.register::<gw_world::being::Being>("Being".to_string());
             registry.register::<UserControl>("UserControl".to_string());
-            // registry.register::<Arc<ActorKind>>("ActorKind".to_string());
+            registry.register::<gw_world::ai::Actor>("Actor".to_string());
         })
         .startup(Box::new(|_ecs: &mut Ecs| {
             register_ai("ANCHORED_WANDER", acanja::ai::anchored_wander);

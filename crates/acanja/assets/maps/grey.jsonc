@@ -28,23 +28,23 @@
       "climb": { "portal": { "map": "SOSARIA", "location": "GREY" } }
     },
 
-    "a": { "actor": "Bartender", "tile": "-" },
-    "b": { "actor": "Armorer", "tile": "-" },
-    "c": { "actor": "Weaponer", "tile": "-" },
-    "d": { "actor": "Grocer", "tile": "-" },
-    "e": { "actor": "Guildmaster", "tile": "-" },
+    "a": { "being": "Bartender", "tile": "-" },
+    "b": { "being": "Armorer", "tile": "-" },
+    "c": { "being": "Weaponer", "tile": "-" },
+    "d": { "being": "Grocer", "tile": "-" },
+    "e": { "being": "Guildmaster", "tile": "-" },
 
     "g": {
       "tile": "-",
-      "actor": { "kind": "Guard", "ai": null, "text": "Watch it bub!" }
+      "being": { "kind": "Guard", "ai": null, "text": "Watch it bub!" }
     },
 
     "m": {
-      "actor": { "kind": "Fighter", "talk": "Exotic clues found at Dawn!" },
+      "being": { "kind": "Fighter", "talk": "Exotic clues found at Dawn!" },
       "tile": ":"
     },
     "j": {
-      "actor": {
+      "being": {
         "kind": "Jester",
         "talk": "Don't you wish you were a Jester!",
         "ai": "ANCHORED_WANDER"
@@ -55,7 +55,7 @@
     "t": {
       "tile": "-",
 
-      "actor": {
+      "being": {
         "kind": "Thief",
         "talk": "Yo! ho! ho! and a bottle of rum!!!",
         "ai": "RANDOM_WANDER"
@@ -63,7 +63,7 @@
     },
     "u": {
       "tile": "-",
-      "actor": {
+      "being": {
         "kind": "Thief",
         "talk": "Ever seen Exotic arms?",
         "ai": "RANDOM_WANDER"
@@ -71,7 +71,7 @@
     },
 
     "w": {
-      "actor": {
+      "being": {
         "kind": "Wizard",
         "talk": "Only Exotics will protect from Great Evil!"
       },

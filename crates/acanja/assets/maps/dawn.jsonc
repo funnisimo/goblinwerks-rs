@@ -29,24 +29,24 @@
     },
 
     "t": {
-      "actor": { "kind": "Wizard", "talk": "<DIG> up exotics" },
+      "being": { "kind": "Wizard", "talk": "<DIG> up exotics" },
       "tile": "%"
     },
     "u": {
-      "actor": { "kind": "Wizard", "talk": "<DIG> on isles." },
+      "being": { "kind": "Wizard", "talk": "<DIG> on isles." },
       "tile": "%"
     },
     "v": {
-      "actor": { "kind": "Wizard", "talk": "<DIG> carefully." },
+      "being": { "kind": "Wizard", "talk": "<DIG> carefully." },
       "tile": "%"
     },
 
     "w": {
-      "actor": { "kind": "Wizard", "talk": "Welcome to Dawn." },
+      "being": { "kind": "Wizard", "talk": "Welcome to Dawn." },
       "tile": "."
     },
     "x": {
-      "actor": {
+      "being": {
         "kind": "Wizard",
         "talk": "Dawn last but a brief moment.",
         "ai": "RANDOM_WANDER"
@@ -54,33 +54,33 @@
       "tile": "."
     },
     "y": {
-      "actor": { "kind": "Wizard", "talk": "Ambrosia awaits." },
+      "being": { "kind": "Wizard", "talk": "Ambrosia awaits." },
       "tile": "-"
     },
     "z": {
-      "actor": { "kind": "Wizard", "talk": "Seek ye thy fortune." },
+      "being": { "kind": "Wizard", "talk": "Seek ye thy fortune." },
       "tile": "-"
     },
     "k": {
-      "actor": {
+      "being": {
         "kind": "Fighter",
         "talk": "Jolly good day.",
         "ai": "RANDOM_WANDER"
       },
       "tile": "-"
     },
-    "a": { "actor": { "kind": "Armorer" }, "tile": "-" },
-    "b": { "actor": "Bartender", "tile": "-" },
-    "c": { "actor": "Weaponer", "tile": "-" },
-    "d": { "actor": "Grocer", "tile": "-" },
-    "e": { "actor": "Healer", "tile": "-" },
-    "f": { "actor": "Guildmaster", "tile": "-" },
+    "a": { "being": { "kind": "Armorer" }, "tile": "-" },
+    "b": { "being": "Bartender", "tile": "-" },
+    "c": { "being": "Weaponer", "tile": "-" },
+    "d": { "being": "Grocer", "tile": "-" },
+    "e": { "being": "Healer", "tile": "-" },
+    "f": { "being": "Guildmaster", "tile": "-" },
 
-    "g": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "." },
-    "h": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "%" },
-    "i": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "-" },
+    "g": { "being": { "kind": "Guard", "talk": "Good day!" }, "tile": "." },
+    "h": { "being": { "kind": "Guard", "talk": "Good day!" }, "tile": "%" },
+    "i": { "being": { "kind": "Guard", "talk": "Good day!" }, "tile": "-" },
 
-    "o": { "actor": "Oracle", "tile": "-" },
+    "o": { "being": "Oracle", "tile": "-" },
     "@": { "location": "START", "tile": "." }
   }
 }

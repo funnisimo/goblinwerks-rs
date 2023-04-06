@@ -1,6 +1,6 @@
 pub mod action;
-pub mod actor;
 pub mod ai;
+pub mod being;
 pub mod camera;
 pub mod effect;
 pub mod fov;

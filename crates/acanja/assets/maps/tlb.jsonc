@@ -38,67 +38,67 @@
     },
 
     "m": {
-      "actor": { "kind": "Cleric", "talk": "Is it not lovely?" },
+      "being": { "kind": "Cleric", "talk": "Is it not lovely?" },
       "tile": ":"
     },
     "n": {
-      "actor": { "kind": "Wizard", "talk": "Quest ye unto Lost Ambrosia!" },
+      "being": { "kind": "Wizard", "talk": "Quest ye unto Lost Ambrosia!" },
       "tile": "%"
     },
     "o": {
-      "actor": {
+      "being": {
         "kind": "Fighter",
         "talk": "Only with Exotic arms can you win."
       },
       "tile": "."
     },
     "p": {
-      "actor": {
+      "being": {
         "kind": "Thief",
         "talk": "Exodus lies beyond the Silver Snake!"
       },
       "tile": "."
     },
     "q": {
-      "actor": { "kind": "Peasant", "talk": "'Dawn' comes each new pair!" },
+      "being": { "kind": "Peasant", "talk": "'Dawn' comes each new pair!" },
       "tile": "."
     },
     "r": {
-      "actor": { "kind": "Peasant", "name": "Dupre", "talk": "Drink up!" }
+      "being": { "kind": "Peasant", "name": "Dupre", "talk": "Drink up!" }
     },
     "s": {
-      "actor": { "kind": "Fighter", "talk": "Round back!" }
+      "being": { "kind": "Fighter", "talk": "Round back!" }
     },
     "t": {
-      "actor": { "kind": "Jester", "talk": "Ho! Ho!" },
+      "being": { "kind": "Jester", "talk": "Ho! Ho!" },
       "tile": "-"
     },
     "x": {
-      "actor": { "kind": "Jester", "talk": "Ho! Ho!" },
+      "being": { "kind": "Jester", "talk": "Ho! Ho!" },
       "tile": "."
     },
 
     "u": {
-      "actor": "Wizard",
+      "being": "Wizard",
       "tile": "."
     },
     "v": {
-      "actor": "Cleric", // NPC
+      "being": "Cleric", // NPC
       "tile": ":"
     },
-    "w": { "actor": "Peasant" }, // NPC
-    "a": { "actor": { "kind": "Grocer", "welcome": "Welcome to De Grocer" } },
+    "w": { "being": "Peasant" }, // NPC
+    "a": { "being": { "kind": "Grocer", "welcome": "Welcome to De Grocer" } },
     "b": {
-      "actor": "Armorer"
+      "being": "Armorer"
     },
-    "c": { "actor": "Weaponer" },
+    "c": { "being": "Weaponer" },
 
-    "d": { "actor": { "kind": "Guard", "ai": "ANCHORED_WANDER" }, "tile": "-" },
-    "e": { "actor": { "kind": "Guard", "ai": "ANCHORED_WANDER" }, "tile": "." },
-    "f": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "." },
-    "g": { "actor": { "kind": "Guard", "talk": "Good day!" } },
-    "k": { "actor": { "kind": "Bartender", "name": "Coach" } },
-    "l": { "actor": { "kind": "Bartender", "name": "Woody", "ai": null } }
+    "d": { "being": { "kind": "Guard", "ai": "ANCHORED_WANDER" }, "tile": "-" },
+    "e": { "being": { "kind": "Guard", "ai": "ANCHORED_WANDER" }, "tile": "." },
+    "f": { "being": { "kind": "Guard", "talk": "Good day!" }, "tile": "." },
+    "g": { "being": { "kind": "Guard", "talk": "Good day!" } },
+    "k": { "being": { "kind": "Bartender", "name": "Coach" } },
+    "l": { "being": { "kind": "Bartender", "name": "Woody", "ai": null } }
   },
   "stores": {
     "ARMORY": {

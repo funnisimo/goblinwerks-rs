@@ -84,7 +84,7 @@ fn try_move_hero_world(
     let mut map = level.resources.get_mut::<Map>().unwrap();
     let index = map.get_wrapped_index(current_pt.x, current_pt.y).unwrap();
 
-    map.remove_actor(index, hero_entity);
+    map.remove_being(index, hero_entity);
 
     drop(map);
     drop(level);
@@ -113,7 +113,7 @@ fn try_move_hero_world(
     let new_pt = {
         let mut map = level.resources.get_mut::<Map>().unwrap();
         let pt = map.locations.get(location).unwrap().clone();
-        map.add_actor(pt, new_entity, true);
+        map.add_being(pt, new_entity, true);
         map.to_point(pt)
     };
     {

@@ -7,7 +7,8 @@ use gw_app::*;
 use gw_util::point::Point;
 use gw_util::xy::Lock;
 use gw_world::action::move_step::MoveStepAction;
-use gw_world::actor::Actor;
+use gw_world::ai::Actor;
+use gw_world::being::Being;
 use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::hero::Hero;
 use gw_world::level::{get_current_level_mut, Level};
@@ -57,7 +58,8 @@ impl MainScreen {
             Position::new(80, 50),
             Sprite::new('@' as Glyph, WHITE.into(), RGBA::new()),
             UserControl, // Do we need this?
-            Actor::new("HERO".to_string()).with_ai("USER_CONTROL"),
+            Being::new("HERO".to_string()),
+            Actor::new("USER_CONTROL".to_string()),
         ));
 
         let mut camera = Camera::new(80, 50);

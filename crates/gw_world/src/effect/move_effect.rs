@@ -37,7 +37,7 @@ impl Effect for MoveEntity {
         let orig_pt = pos.point();
 
         let old_idx = map.get_index(orig_pt.x, orig_pt.y).unwrap();
-        map.remove_actor(old_idx, entity);
+        map.remove_being(old_idx, entity);
         // println!("changed : {}", old_idx);
 
         // let (new_x, new_y) = map.try_wrap_xy(pos.x + self.0, pos.y + self.1).unwrap();
@@ -51,7 +51,7 @@ impl Effect for MoveEntity {
 
         // let new_idx = map.get_wrapped_index(pos.x, pos.y).unwrap();
         let new_idx = map.get_index(pos.x, pos.y).unwrap();
-        map.add_actor(new_idx, entity, pos.blocks_move);
+        map.add_being(new_idx, entity, pos.blocks_move);
 
         // if let Some(mut fov) = entry.get_component_mut::<FOV>() {
         //     fov.set_needs_update();

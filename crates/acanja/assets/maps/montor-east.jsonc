@@ -35,14 +35,14 @@
       }
     },
 
-    "a": { "actor": { "kind": "Bartender", "name": "Sam" } },
-    "b": { "actor": { "kind": "Armorer", "_ai": "RandomWalk" } },
-    "c": { "actor": { "kind": "Weaponer", "_ai": "RandomWalk" } },
+    "a": { "being": { "kind": "Bartender", "name": "Sam" } },
+    "b": { "being": { "kind": "Armorer", "_ai": "RandomWalk" } },
+    "c": { "being": { "kind": "Weaponer", "_ai": "RandomWalk" } },
 
-    "g": { "actor": { "kind": "Guard" }, "tile": "-" },
-    "h": { "actor": { "kind": "Guard", "ai": "ANCHORED_WANDER" }, "tile": "-" },
+    "g": { "being": { "kind": "Guard" }, "tile": "-" },
+    "h": { "being": { "kind": "Guard", "ai": "ANCHORED_WANDER" }, "tile": "-" },
     "j": {
-      "actor": {
+      "being": {
         "kind": "Jester",
         "talk": "Jolly Joe: Ho Ho Ho!",
         "ai": "ANCHORED_WANDER"
@@ -51,7 +51,7 @@
     },
 
     "l": {
-      "actor": {
+      "being": {
         "kind": "Fighter",
         "name": "Baby Bob",
         "talk": "Bring me bucks!",
@@ -60,7 +60,7 @@
       "tile": "-"
     },
     "m": {
-      "actor": {
+      "being": {
         "kind": "Fighter",
         "talk": "'Cards' are useful!",
         "ai": "RANDOM_WANDER"
@@ -68,7 +68,7 @@
       "tile": "-"
     },
     "n": {
-      "actor": {
+      "being": {
         "kind": "Fighter",
         "talk": "'Marks' are useful!",
         "ai": "RANDOM_WANDER"
@@ -76,7 +76,7 @@
       "tile": "-"
     },
     "o": {
-      "actor": {
+      "being": {
         "kind": "Fighter",
         "talk": "'Exotics' are useful!",
         "ai": "RANDOM_WANDER"
@@ -85,11 +85,11 @@
     },
 
     "t": {
-      "actor": { "kind": "Thief", "talk": "4 cards, 4 pannels" },
+      "being": { "kind": "Thief", "talk": "4 cards, 4 pannels" },
       "tile": "%"
     },
     "u": {
-      "actor": {
+      "being": {
         "kind": "Thief",
         "talk": "<Insert> cards into pannels!"
       },

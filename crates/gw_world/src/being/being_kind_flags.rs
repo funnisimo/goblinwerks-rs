@@ -7,7 +7,7 @@ use std::str::FromStr;
 
 bitflags! {
     #[derive(Default, Serialize, Deserialize)]
-    pub struct ActorKindFlags: u32 {
+    pub struct BeingKindFlags: u32 {
 
         // !!!!!!!!!!!!!!!!!!!!!
         // NOTE - If you add anything, you must add to FromStr impl below!!!!
@@ -61,55 +61,55 @@ bitflags! {
     }
 }
 
-impl FromStr for ActorKindFlags {
+impl FromStr for BeingKindFlags {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut result = ActorKindFlags::empty();
+        let mut result = BeingKindFlags::empty();
         for val in s.split("|") {
             match val.trim().to_uppercase().as_ref() {
                 // "EXAMPLE" => result |= ActorKindFlags::EXAMPLE,
-                "HERO" => result |= ActorKindFlags::HERO,
+                "HERO" => result |= BeingKindFlags::HERO,
 
-                "UNIQUE" => result |= ActorKindFlags::UNIQUE,
-                "QUESTOR" => result |= ActorKindFlags::QUESTOR,
-                "GUARDIAN" => result |= ActorKindFlags::GUARDIAN,
+                "UNIQUE" => result |= BeingKindFlags::UNIQUE,
+                "QUESTOR" => result |= BeingKindFlags::QUESTOR,
+                "GUARDIAN" => result |= BeingKindFlags::GUARDIAN,
 
-                "MALE" => result |= ActorKindFlags::MALE,
-                "FEMALE" => result |= ActorKindFlags::FEMALE,
-                "OBJECT" => result |= ActorKindFlags::OBJECT,
+                "MALE" => result |= BeingKindFlags::MALE,
+                "FEMALE" => result |= BeingKindFlags::FEMALE,
+                "OBJECT" => result |= BeingKindFlags::OBJECT,
 
-                "FORCE_DEPTH" => result |= ActorKindFlags::FORCE_DEPTH,
-                "FORCE_MAXHP" => result |= ActorKindFlags::FORCE_MAXHP,
-                "FORCE_SLEEP" => result |= ActorKindFlags::FORCE_SLEEP,
+                "FORCE_DEPTH" => result |= BeingKindFlags::FORCE_DEPTH,
+                "FORCE_MAXHP" => result |= BeingKindFlags::FORCE_MAXHP,
+                "FORCE_SLEEP" => result |= BeingKindFlags::FORCE_SLEEP,
 
-                "HAS_LITE" => result |= ActorKindFlags::HAS_LITE,
-                "INVISIBLE" => result |= ActorKindFlags::INVISIBLE,
-                "COLD_BLOOD" => result |= ActorKindFlags::COLD_BLOOD,
-                "EMPTY_MIND" => result |= ActorKindFlags::EMPTY_MIND,
-                "WEIRD_MIND" => result |= ActorKindFlags::WEIRD_MIND,
-                "MULTIPLY" => result |= ActorKindFlags::MULTIPLY,
-                "REGENERATE" => result |= ActorKindFlags::REGENERATE,
-                "POWERFUL" => result |= ActorKindFlags::POWERFUL,
+                "HAS_LITE" => result |= BeingKindFlags::HAS_LITE,
+                "INVISIBLE" => result |= BeingKindFlags::INVISIBLE,
+                "COLD_BLOOD" => result |= BeingKindFlags::COLD_BLOOD,
+                "EMPTY_MIND" => result |= BeingKindFlags::EMPTY_MIND,
+                "WEIRD_MIND" => result |= BeingKindFlags::WEIRD_MIND,
+                "MULTIPLY" => result |= BeingKindFlags::MULTIPLY,
+                "REGENERATE" => result |= BeingKindFlags::REGENERATE,
+                "POWERFUL" => result |= BeingKindFlags::POWERFUL,
 
-                "TRAIL" => result |= ActorKindFlags::TRAIL,
-                "SNEAKY" => result |= ActorKindFlags::SNEAKY,
-                "ARMOR" => result |= ActorKindFlags::ARMOR,
+                "TRAIL" => result |= BeingKindFlags::TRAIL,
+                "SNEAKY" => result |= BeingKindFlags::SNEAKY,
+                "ARMOR" => result |= BeingKindFlags::ARMOR,
 
-                "PROPER_NAME" => result |= ActorKindFlags::PROPER_NAME,
-                "IGNORE_WHEN_SEEN" => result |= ActorKindFlags::IGNORE_WHEN_SEEN,
+                "PROPER_NAME" => result |= BeingKindFlags::PROPER_NAME,
+                "IGNORE_WHEN_SEEN" => result |= BeingKindFlags::IGNORE_WHEN_SEEN,
 
                 // "WARRIOR" => result |= ActorKindFlags::WARRIOR,
                 // "ARCHER" => result |= ActorKindFlags::ARCHER,
                 // "PRIEST" => result |= ActorKindFlags::PRIEST,
                 // "MAGE" => result |= ActorKindFlags::MAGE,
-                "HAS_AURA" => result |= ActorKindFlags::HAS_AURA,
-                "HAS_WEB" => result |= ActorKindFlags::HAS_WEB,
-                "NEED_LITE" => result |= ActorKindFlags::NEED_LITE,
+                "HAS_AURA" => result |= BeingKindFlags::HAS_AURA,
+                "HAS_WEB" => result |= BeingKindFlags::HAS_WEB,
+                "NEED_LITE" => result |= BeingKindFlags::NEED_LITE,
 
-                "EVIL" => result |= ActorKindFlags::EVIL,
-                "GOOD" => result |= ActorKindFlags::GOOD,
-                "NEUTRAL" => result |= ActorKindFlags::NEUTRAL,
+                "EVIL" => result |= BeingKindFlags::EVIL,
+                "GOOD" => result |= BeingKindFlags::GOOD,
+                "NEUTRAL" => result |= BeingKindFlags::NEUTRAL,
 
                 "" => {}
                 _ => return Err(format!("Unknown ActorKindFlags: {}", s)),
@@ -119,7 +119,7 @@ impl FromStr for ActorKindFlags {
     }
 }
 
-impl ActorKindFlags {
+impl BeingKindFlags {
     pub fn apply(&mut self, flags: &str) {
         for val in flags.split("|") {
             if val.trim().starts_with("!") {
@@ -137,7 +137,7 @@ impl ActorKindFlags {
     }
 }
 
-impl From<&str> for ActorKindFlags {
+impl From<&str> for BeingKindFlags {
     fn from(s: &str) -> Self {
         match Self::from_str(s) {
             Ok(flag) => flag,
@@ -146,7 +146,7 @@ impl From<&str> for ActorKindFlags {
     }
 }
 
-impl fmt::Display for ActorKindFlags {
+impl fmt::Display for BeingKindFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }

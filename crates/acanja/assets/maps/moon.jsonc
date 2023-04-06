@@ -31,68 +31,68 @@
     },
 
     "p": {
-      "actor": { "kind": "Peasant", "talk": "We are honored!", "ai": null }
+      "being": { "kind": "Peasant", "talk": "We are honored!", "ai": null }
     },
     "b": {
-      "actor": {
+      "being": {
         "kind": "Cleric",
         "talk": "Seek ye the Shrines of Truth"
       },
       "tile": "."
     },
     "e": {
-      "actor": {
+      "being": {
         "kind": "Fighter",
         "talk": "<Bribe> guards! They will leave!",
         "ai": "RANDOM_WANDER"
       }
     },
     "f": {
-      "actor": {
+      "being": {
         "kind": "Fighter",
         "talk": "To arms! and To battle!",
         "ai": "RANDOM_WANDER"
       }
     },
     "d": {
-      "actor": {
+      "being": {
         "kind": "Cleric",
         "talk": "Peace be with you",
         "ai": "RANDOM_WANDER"
       }
     },
     "c": {
-      "actor": {
+      "being": {
         "kind": "Cleric",
         "talk": "I've been beyond the whirlpool!"
       },
       "tile": "%"
     },
     "w": {
-      "actor": {
+      "being": {
         "kind": "Wizard",
         "talk": "Dawn rises in the Dark Forest."
       },
       "tile": "%"
     },
     "m": {
-      "actor": {
+      "being": {
         "kind": "Demon",
         "talk": "Depart or Die!"
       },
       "tile": "%"
     },
 
-    "x": { "actor": "Guard", "tile": "." },
-    "v": { "actor": "Guard", "tile": "-" },
-    "y": { "actor": "Guard", "tile": ":" },
+    "x": { "being": "Guard", "tile": "." },
+    "v": { "being": "Guard", "tile": "-" },
+    "y": { "being": "Guard", "tile": ":" },
 
-    "z": { "actor": { "kind": "Wizard", "ai": "RANDOM_WANDER" } },
-    "j": { "actor": { "kind": "Jester", "ai": "ANCHORED_WANDER" } },
+    "z": { "being": { "kind": "Wizard", "ai": "RANDOM_WANDER" } },
+    "j": { "being": { "kind": "Jester", "ai": "ANCHORED_WANDER" } },
 
-    "r": { "actor": "Healer" },
-    "s": { "actor": "Bartender" },
-    "u": { "actor": "Grocer" }
+    "r": { "being": "Healer" },
+    "s": { "being": "Bartender" },
+    "u": { "being": "Grocer" }
   },
   "objects": []
 }

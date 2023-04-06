@@ -1,0 +1,89 @@
+{
+  "HERO": {
+    "sprite": "@|white",
+    "flavor": "yourself",
+    "ai": "USER_CONTROL",
+    "hero": true
+  },
+  "ARMORER": {
+    "sprite": "A|gray",
+    "flavor": "an armorer",
+    "ai": "shopkeeper"
+  },
+  "BARTENDER": {
+    "sprite": "B|gray",
+    "flavor": "a bartender",
+    "ai": "shopkeeper"
+  },
+  "BRITISH": {
+    "sprite": "K|purple",
+    "flavor": "the king"
+  },
+  "CLERIC": {
+    "sprite": "C|white",
+    "flavor": "a cleric"
+  },
+  "FIGHTER": {
+    "sprite": "F|grey",
+    "flavor": "a fighter"
+  },
+  "GROCER": {
+    "sprite": "R|gray",
+    "flavor": "a grocer",
+    "ai": "shopkeeper"
+  },
+  "GUARD": {
+    "sprite": "G|dark_red",
+    "flavor": "a guard"
+  },
+  "GUILDMASTER": {
+    "sprite": "M|gray",
+    "flavor": "a guildmaster",
+    "ai": "shopkeeper"
+  },
+  "HEALER": {
+    "sprite": "H|white",
+    "flavor": "a healer"
+  },
+  "JESTER": {
+    "sprite": "J|purple",
+    "flavor": "a jester",
+    "ai": "ANCHORED_WANDER",
+    "move": "RAND50"
+  },
+  "ORACLE": {
+    "sprite": "O|white",
+    "flavor": "an oracle",
+    "ai": "shopkeeper"
+  },
+  "PEASANT": {
+    "sprite": "P|brown",
+    "flavor": "a townsperson",
+    "ai": "RANDOM_WANDER"
+  },
+  "THIEF": {
+    "sprite": "T|gray",
+    "flavor": "a thief"
+  },
+  "TIME_LORD": {
+    "sprite": "L|white|lightest_blue",
+    "flavor": "an image of the Time Lord"
+  },
+  "WEAPONER": {
+    "sprite": "N|gray",
+    "flavor": "a weaponsmith",
+    "ai": "shopkeeper"
+  },
+  "WIZARD": {
+    "sprite": "W|purple",
+    "flavor": "a wizard"
+  },
+  "DEMON": {
+    "sprite": "D|red",
+    "flavor": "a demon"
+  },
+  "WHIRLPOOL": {
+    "sprite": "*|white",
+    "flavor": "a whirlpool"
+  }
+}

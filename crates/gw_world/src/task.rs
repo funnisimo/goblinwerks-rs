@@ -2,7 +2,8 @@ use std::fmt::Debug;
 
 use crate::{
     action::{dead::DeadAction, idle::IdleAction, ActionResult, BoxedAction},
-    actor::Actor,
+    ai::Actor,
+    being::Being,
     hero::Hero,
     level::{get_current_level_mut, with_current_level, with_current_level_mut},
 };

@@ -4,7 +4,7 @@ use gw_app::{
     loader::{LoadError, LoadHandler, Loader},
     // log,
 };
-use gw_world::{actor::ActorKindsLoader, level::Levels, tile::TilesLoader};
+use gw_world::{being::BeingKindsLoader, level::Levels, tile::TilesLoader};
 
 pub struct GameConfigLoader;
 
@@ -60,13 +60,13 @@ impl LoadHandler for GameConfigLoader {
             }
         }
 
-        // Load ACTORS
-        if let Some(actor_value) = table.get(&"actors".into()) {
+        // Load BEINGS
+        if let Some(actor_value) = table.get(&"beings".into()) {
             if actor_value.is_string() {
                 let filename = actor_value.to_string();
                 loader
-                    .load_file(&filename, Box::new(ActorKindsLoader::new()))
-                    .expect("Failed to load actors file!");
+                    .load_file(&filename, Box::new(BeingKindsLoader::new()))
+                    .expect("Failed to load beings file!");
             }
         }
 

@@ -37,7 +37,7 @@ pub struct Map {
     pub ground: Vec<Arc<Tile>>,
     pub fixture: Vec<Arc<Tile>>,
     pub blocked: Vec<bool>, // TODO - Move to flag
-    pub actors: Vec<Vec<(Entity, bool)>>,
+    pub beings: Vec<Vec<(Entity, bool)>>,
     pub items: Vec<Vec<(Entity, bool)>>,
     cell_flags: Vec<CellFlags>,
 }
@@ -71,7 +71,7 @@ impl Map {
             flavors: HashMap::new(),
 
             blocked: vec![false; count],
-            actors: vec![Vec::new(); count],
+            beings: vec![Vec::new(); count],
             items: vec![Vec::new(); count],
 
             cell_flags: flags,
@@ -343,24 +343,24 @@ impl Map {
         self.ground[idx].blocks()
     }
 
-    pub fn iter_actors(&self, idx: usize) -> impl Iterator<Item = Entity> + '_ {
+    pub fn iter_beings(&self, idx: usize) -> impl Iterator<Item = Entity> + '_ {
         if !self.has_index(idx) {
             panic!("asked for actors at invalid index: {}", idx);
         }
-        self.actors[idx].iter().map(|(a, _)| *a)
+        self.beings[idx].iter().map(|(a, _)| *a)
     }
 
-    pub fn remove_actor(&mut self, idx: usize, entity: Entity) {
+    pub fn remove_being(&mut self, idx: usize, entity: Entity) {
         if !self.has_index(idx) {
             return;
         }
 
         self.mark_entity_changed(idx);
-        match self.actors[idx].iter().position(|e| e.0 == entity) {
+        match self.beings[idx].iter().position(|e| e.0 == entity) {
             None => {}
             Some(found_idx) => {
-                self.actors[idx].remove(found_idx);
-                self.blocked[idx] = self.actors[idx]
+                self.beings[idx].remove(found_idx);
+                self.blocked[idx] = self.beings[idx]
                     .iter()
                     .fold(false, |out: bool, ent| out || ent.1)
                     || self.items[idx].iter().fold(false, |out, ent| out || ent.1);
@@ -368,14 +368,14 @@ impl Map {
         }
     }
 
-    pub fn add_actor(&mut self, idx: usize, entity: Entity, blocks: bool) {
+    pub fn add_being(&mut self, idx: usize, entity: Entity, blocks: bool) {
         if !self.has_index(idx) {
             return;
         }
 
-        match self.actors[idx].iter().position(|e| e.0 == entity) {
+        match self.beings[idx].iter().position(|e| e.0 == entity) {
             None => {
-                self.actors[idx].push((entity, blocks));
+                self.beings[idx].push((entity, blocks));
                 self.mark_entity_changed(idx);
                 if blocks {
                     self.blocked[idx] = true;
@@ -402,7 +402,7 @@ impl Map {
             Some(found_idx) => {
                 self.mark_entity_changed(idx);
                 self.items[idx].remove(found_idx);
-                self.blocked[idx] = self.actors[idx]
+                self.blocked[idx] = self.beings[idx]
                     .iter()
                     .fold(false, |out: bool, ent| out || ent.1)
                     || self.items[idx].iter().fold(false, |out, ent| out || ent.1);
@@ -534,7 +534,7 @@ impl Map {
             content.clear();
         }
 
-        for content in self.actors.iter_mut() {
+        for content in self.beings.iter_mut() {
             content.clear();
         }
     }

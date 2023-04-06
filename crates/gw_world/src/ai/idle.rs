@@ -1,5 +1,5 @@
+use super::Actor;
 use crate::action::{idle::IdleAction, BoxedAction};
-use crate::actor::Actor;
 use crate::level::get_current_level_mut;
 use gw_app::ecs::Entity;
 use gw_app::Ecs;

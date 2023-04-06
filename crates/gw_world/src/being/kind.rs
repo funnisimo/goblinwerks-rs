@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use super::{Actor, ActorKindBuilder, ActorKindFlags};
+use super::{Being, BeingKindBuilder, BeingKindFlags};
+use crate::ai::Actor;
 use crate::hero::Hero;
 use crate::level::Level;
 use crate::map::Map;
@@ -10,29 +11,31 @@ use gw_app::ecs::Entity;
 use gw_util::point::Point;
 
 #[derive(Debug, Clone)]
-pub struct ActorKind {
+pub struct BeingKind {
     pub id: String,
     pub sprite: Sprite,
-    pub info: Actor,
-    pub flags: ActorKindFlags,
+    pub being: Being,
+    pub flags: BeingKindFlags,
+    pub actor: Actor,
 }
 
-impl ActorKind {
-    pub fn builder(id: &str) -> ActorKindBuilder {
-        ActorKindBuilder::new(id)
+impl BeingKind {
+    pub fn builder(id: &str) -> BeingKindBuilder {
+        BeingKindBuilder::new(id)
     }
 
-    pub(super) fn new(builder: ActorKindBuilder) -> Self {
-        ActorKind {
+    pub(super) fn new(builder: BeingKindBuilder) -> Self {
+        BeingKind {
             id: builder.id,
             sprite: builder.sprite,
-            info: builder.info,
+            being: builder.info,
             flags: builder.flags,
+            actor: builder.actor,
         }
     }
 }
 
-pub fn spawn_actor(kind: &Arc<ActorKind>, level: &mut Level, point: Point) -> Entity {
+pub fn spawn_actor(kind: &Arc<BeingKind>, level: &mut Level, point: Point) -> Entity {
     let index = level
         .resources
         .get::<Map>()
@@ -41,21 +44,22 @@ pub fn spawn_actor(kind: &Arc<ActorKind>, level: &mut Level, point: Point) -> En
     if let Some(idx) = index {
         let pos = Position::from(point).with_blocking(true);
         let entity = level.world.push((
-            kind.info.clone(),
+            kind.being.clone(),
             pos,
-            kind.sprite.clone(), /* kind.clone() */
+            kind.sprite.clone(),
+            kind.actor.clone(),
         ));
 
-        if kind.flags.contains(ActorKindFlags::HERO) {
+        if kind.flags.contains(BeingKindFlags::HERO) {
             level.resources.insert(Hero::new(entity));
         }
 
         // make map aware of actor
         let mut map = level.resources.get_mut::<Map>().unwrap();
-        map.add_actor(idx, entity, true);
+        map.add_being(idx, entity, true);
 
         // Add to schedule
-        level.executor.insert_actor(entity, kind.info.act_time);
+        level.executor.insert_actor(entity, kind.actor.act_time);
 
         return entity;
     }

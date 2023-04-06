@@ -1,31 +1,37 @@
-use super::{Actor, ActorKind, ActorKindFlags};
-use crate::sprite::{Sprite, SpriteParseError};
+use super::{Being, BeingKind, BeingKindFlags};
+use crate::{
+    ai::Actor,
+    sprite::{Sprite, SpriteParseError},
+};
 use gw_app::{Glyph, RGBA};
 use gw_util::value::Value;
 use std::sync::Arc;
 
-pub struct ActorKindBuilder {
+pub struct BeingKindBuilder {
     pub(super) id: String,
     pub(super) sprite: Sprite,
-    pub(super) info: Actor,
-    pub(super) flags: ActorKindFlags,
+    pub(super) info: Being,
+    pub(super) flags: BeingKindFlags,
+    pub(super) actor: Actor,
 }
 
-impl ActorKindBuilder {
+impl BeingKindBuilder {
     pub(super) fn new(id: &str) -> Self {
-        ActorKindBuilder {
+        BeingKindBuilder {
             id: id.to_string(),
             sprite: Sprite::default(),
-            info: Actor::new(id.to_string()),
-            flags: ActorKindFlags::empty(),
+            info: Being::new(id.to_string()),
+            flags: BeingKindFlags::empty(),
+            actor: Actor::new("IDLE".to_string()),
         }
     }
 
     /// need to call this first
-    pub fn extend(&mut self, kind: &Arc<ActorKind>) -> &mut Self {
+    pub fn extend(&mut self, kind: &Arc<BeingKind>) -> &mut Self {
         self.sprite = kind.sprite.clone();
-        self.info = kind.info.clone();
+        self.info = kind.being.clone();
         self.flags = kind.flags.clone();
+        self.actor = kind.actor.clone();
         self
     }
 
@@ -50,12 +56,12 @@ impl ActorKindBuilder {
     }
 
     pub fn ai(&mut self, ai: &str) -> &mut Self {
-        self.info.ai.reset(ai);
+        self.actor.ai.reset(ai);
         self
     }
 
     pub fn hero(&mut self) -> &mut Self {
-        self.flags.insert(ActorKindFlags::HERO);
+        self.flags.insert(BeingKindFlags::HERO);
         self
     }
 
@@ -84,8 +90,8 @@ impl ActorKindBuilder {
         self
     }
 
-    pub fn build(self) -> Arc<ActorKind> {
-        Arc::new(ActorKind::new(self))
+    pub fn build(self) -> Arc<BeingKind> {
+        Arc::new(BeingKind::new(self))
     }
 }
 
@@ -110,7 +116,7 @@ pub enum BuilderError {
 }
 
 pub fn set_field(
-    builder: &mut ActorKindBuilder,
+    builder: &mut BeingKindBuilder,
     field: &str,
     value: &Value,
 ) -> Result<(), BuilderError> {

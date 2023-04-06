@@ -1,6 +1,7 @@
 use crate::action::idle::IdleAction;
 use crate::action::{Action, ActionResult};
-use crate::actor::Actor;
+use crate::ai::Actor;
+use crate::being::Being;
 use crate::effect::fire_cell_action;
 use crate::hero::Hero;
 use crate::level::{get_current_level, get_current_level_mut, Level};
@@ -88,12 +89,12 @@ impl MoveStepAction {
 
         if map.is_blocked(idx) {
             // Check for actor at location...
-            if let Some(entity) = map.iter_actors(idx).next() {
+            if let Some(entity) = map.iter_beings(idx).next() {
                 if let Some(entity) = world.entry(entity) {
                     // Check for shopkeeper (Really only possible for horses)
 
                     // Check for talk...
-                    if let Ok(other_actor) = entity.get_component::<Actor>() {
+                    if let Ok(other_actor) = entity.get_component::<Being>() {
                         if let Some(ref talk) = other_actor.talk {
                             if actor_is_hero {
                                 log(format!("{} says: '{}'", other_actor.name(), talk));
@@ -174,8 +175,8 @@ impl MoveStepAction {
         {
             let level = get_current_level_mut(ecs);
             let mut map = level.resources.get_mut::<Map>().unwrap();
-            map.remove_actor(old_idx, self.entity);
-            map.add_actor(new_idx, self.entity, blocks_move);
+            map.remove_being(old_idx, self.entity);
+            map.add_being(new_idx, self.entity, blocks_move);
         }
 
         // TODO - How to check for permission to enter?

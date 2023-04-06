@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gw_app::{ecs::World, log};
 
 use crate::{
-    actor::Actor,
+    being::Being,
     level::Level,
     sprite::Sprite,
     tile::{tile_is_none, Tile, TileFlags, TileMove, TileSet},
@@ -150,9 +150,9 @@ impl<'m> Cell for CellMut<'m> {
 ///////////////////
 
 pub fn cell_flavor(map: &Map, world: &mut World, index: usize) -> String {
-    if let Some(actor_entity) = map.iter_actors(index).next() {
+    if let Some(actor_entity) = map.iter_beings(index).next() {
         if let Some(entry) = world.entry(actor_entity) {
-            if let Ok(actor) = entry.get_component::<Actor>() {
+            if let Ok(actor) = entry.get_component::<Being>() {
                 if let Some(ref flavor) = actor.flavor {
                     return flavor.clone();
                 }

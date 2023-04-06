@@ -18,7 +18,7 @@
     "D": { "fixture": "DUNGEON" },
     "S": { "fixture": "Serpent", "tile": "~" },
 
-    "*": { "actor": "Whirlpool", "tile": "~" },
+    "*": { "being": "Whirlpool", "tile": "~" },
 
     "@": { "location": "START" },
     "0": { "location": "MOON_0" },

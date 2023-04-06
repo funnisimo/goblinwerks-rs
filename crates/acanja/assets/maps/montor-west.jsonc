@@ -35,20 +35,20 @@
       }
     },
 
-    "a": { "actor": "Bartender", "tile": "-" },
-    "b": { "actor": "Armorer", "tile": "-" },
-    "c": { "actor": "Weaponer", "tile": "-" },
-    "d": { "actor": "Grocer", "tile": "-" },
+    "a": { "being": "Bartender", "tile": "-" },
+    "b": { "being": "Armorer", "tile": "-" },
+    "c": { "being": "Weaponer", "tile": "-" },
+    "d": { "being": "Grocer", "tile": "-" },
 
-    "g": { "actor": { "kind": "Guard" }, "tile": "-" },
-    "h": { "actor": { "kind": "Guard", "ai": "ANCHORED_WANDER" }, "tile": "-" },
+    "g": { "being": { "kind": "Guard" }, "tile": "-" },
+    "h": { "being": { "kind": "Guard", "ai": "ANCHORED_WANDER" }, "tile": "-" },
     "i": {
-      "actor": { "kind": "Guard", "talk": "None shall pass!" },
+      "being": { "kind": "Guard", "talk": "None shall pass!" },
       "tile": "-"
     },
 
     "m": {
-      "actor": {
+      "being": {
         "kind": "Fighter",
         "talk": "Seek the Jester in castle Fire!",
         "ai": "RANDOM_WANDER"
@@ -56,7 +56,7 @@
       "tile": "-"
     },
     "n": {
-      "actor": {
+      "being": {
         "kind": "Fighter",
         "name": "Sentri",
         "talk": "Good grog!",
@@ -65,7 +65,7 @@
       "tile": "-"
     },
     "o": {
-      "actor": {
+      "being": {
         "kind": "Fighter",
         "name": "Shamino",
         "talk": "Good food!",
@@ -75,15 +75,15 @@
     },
 
     "t": {
-      "actor": { "kind": "Thief", "talk": "<Search> the Shrines!" },
+      "being": { "kind": "Thief", "talk": "<Search> the Shrines!" },
       "tile": "-"
     },
     "u": {
-      "actor": { "kind": "Thief", "talk": "<Search> for cards!" },
+      "being": { "kind": "Thief", "talk": "<Search> for cards!" },
       "tile": "-"
     },
     "v": {
-      "actor": { "kind": "Thief", "talk": "Good stuff, eh?" },
+      "being": { "kind": "Thief", "talk": "Good stuff, eh?" },
       "tile": "-"
     }
   },

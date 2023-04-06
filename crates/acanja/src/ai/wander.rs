@@ -2,7 +2,7 @@ use gw_app::{ecs::Entity, log, Ecs};
 use gw_util::point::{Point, DIRS};
 use gw_world::{
     action::{move_step::MoveStepAction, BoxedAction},
-    actor::{Actor, MoveFlags},
+    being::{Being, MoveFlags},
     level::get_current_level_mut,
     position::Position,
 };
@@ -18,7 +18,7 @@ pub fn anchored_wander(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
 
     let chance = {
         let entry = level.world.entry(entity).unwrap();
-        let actor = entry.get_component::<Actor>().unwrap();
+        let actor = entry.get_component::<Being>().unwrap();
         if actor.move_flags.contains(MoveFlags::RAND100) {
             100
         } else {
@@ -89,7 +89,7 @@ pub fn random_wander(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
 
     let chance = {
         let entry = level.world.entry(entity).unwrap();
-        let actor = entry.get_component::<Actor>().unwrap();
+        let actor = entry.get_component::<Being>().unwrap();
         if actor.move_flags.contains(MoveFlags::RAND100) {
             100
         } else {

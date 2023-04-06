@@ -1,6 +1,6 @@
 use gw_app::{color::init_colors, Ecs};
 use gw_world::{
-    actor::{load_actor_kinds_file, Actor},
+    being::{load_being_kinds_file, Being},
     effect::register_effect_parser,
     fov::{get_fov_mask, FovSource},
     map::Map,
@@ -22,7 +22,7 @@ fn fov_10_26() {
     register_effect_parser("mark", parse_mark);
 
     let tiles = load_tiles_file("assets/tiles.jsonc");
-    let actor_kinds = load_actor_kinds_file("assets/actors.jsonc");
+    let actor_kinds = load_being_kinds_file("assets/actors.jsonc");
     let mut level = load_level_file("assets/maps/sosaria.jsonc", &tiles, &actor_kinds);
 
     {
@@ -34,7 +34,7 @@ fn fov_10_26() {
 
     let entity = level
         .world
-        .push((Position::new(10, 26), Actor::new("HERO".to_string())));
+        .push((Position::new(10, 26), Being::new("HERO".to_string())));
 
     let mut ecs = Ecs::new();
     ecs.resources.insert(tiles);

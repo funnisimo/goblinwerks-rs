@@ -1,8 +1,8 @@
 use std::fs::read_to_string;
 
 use super::set_field;
-use super::ActorKindBuilder;
-use super::ActorKinds;
+use super::BeingKindBuilder;
+use super::BeingKinds;
 use gw_app::ecs::Ecs;
 use gw_app::loader::{LoadError, LoadHandler};
 use gw_app::log;
@@ -11,18 +11,21 @@ use gw_util::value::Value;
 /*
    JSON format:
    "ID": {
-       "sprite": <SPRITE_CONFIG>,
-       --or--
-       "glyph" | "ch": <char> || <int>
-       "fg": <RGBA_CONFIG>,
-       "bg": <RGBA_CONFIG>,
+        "sprite": <SPRITE_CONFIG>,
+        --or--
+        "glyph" | "ch": <char> || <int>
+        "fg": <RGBA_CONFIG>,
+        "bg": <RGBA_CONFIG>,
 
-       "flavor": <STRING>,
-       "description": <STRING>
+        "name": <STRING>,
+        "flavor": <STRING>,
+        "description": <STRING>,
+
+        "ai": <STRING>,
    }
 */
 
-pub fn load_actor_data(dest: &mut ActorKinds, data: Value) -> Result<u32, String> {
+pub fn load_being_data(dest: &mut BeingKinds, data: Value) -> Result<u32, String> {
     let map = match data.to_map() {
         None => return Err("Actor Kind data must be a map.".to_string()),
         Some(v) => v,
@@ -36,7 +39,7 @@ pub fn load_actor_data(dest: &mut ActorKinds, data: Value) -> Result<u32, String
             Some(v) => v,
         };
 
-        let mut builder = ActorKindBuilder::new(&name.to_string());
+        let mut builder = BeingKindBuilder::new(&name.to_string());
 
         for (key, value) in data_table.iter() {
             if let Err(e) = set_field(&mut builder, &key.to_string(), value) {
@@ -50,13 +53,13 @@ pub fn load_actor_data(dest: &mut ActorKinds, data: Value) -> Result<u32, String
     Ok(count)
 }
 
-pub struct ActorKindsLoader {
+pub struct BeingKindsLoader {
     dump: bool,
 }
 
-impl ActorKindsLoader {
-    pub fn new() -> ActorKindsLoader {
-        ActorKindsLoader { dump: false }
+impl BeingKindsLoader {
+    pub fn new() -> BeingKindsLoader {
+        BeingKindsLoader { dump: false }
     }
 
     pub fn with_dump(mut self) -> Self {
@@ -65,7 +68,7 @@ impl ActorKindsLoader {
     }
 }
 
-impl LoadHandler for ActorKindsLoader {
+impl LoadHandler for BeingKindsLoader {
     fn file_loaded(&mut self, path: &str, data: Vec<u8>, ecs: &mut Ecs) -> Result<(), LoadError> {
         let string = match String::from_utf8(data) {
             Err(e) => {
@@ -104,27 +107,27 @@ impl LoadHandler for ActorKindsLoader {
             ));
         };
 
-        let mut actor_kinds = ecs
+        let mut being_kinds = ecs
             .resources
-            .get_mut_or_insert_with(|| ActorKinds::default());
+            .get_mut_or_insert_with(|| BeingKinds::default());
 
-        match load_actor_data(&mut actor_kinds, string_table) {
+        match load_being_data(&mut being_kinds, string_table) {
             Err(e) => return Err(LoadError::ProcessError(e)),
             Ok(count) => {
                 log(format!("Loaded {} actor kinds", count));
-                actor_kinds.dump();
+                being_kinds.dump();
             }
         }
 
         if self.dump {
-            actor_kinds.dump();
+            being_kinds.dump();
         }
 
         Ok(())
     }
 }
 
-pub fn load_actor_kinds_file(filename: &str) -> ActorKinds {
+pub fn load_being_kinds_file(filename: &str) -> BeingKinds {
     let file_text = read_to_string(filename).expect(&format!("Failed to open {filename}"));
 
     let value = if filename.ends_with(".toml") {
@@ -147,9 +150,9 @@ pub fn load_actor_kinds_file(filename: &str) -> ActorKinds {
             );
     };
 
-    let mut kinds = ActorKinds::default();
+    let mut kinds = BeingKinds::default();
 
-    match load_actor_data(&mut kinds, value) {
+    match load_being_data(&mut kinds, value) {
         Err(e) => panic!("{}", e),
         Ok(count) => {
             log(format!("Loaded {} actors", count));

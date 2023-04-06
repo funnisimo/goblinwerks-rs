@@ -1,4 +1,5 @@
-use crate::{actor::Actor, log::Logger, task::Executor};
+use crate::ai::Actor;
+use crate::{being::Being, log::Logger, task::Executor};
 use gw_app::ecs::query::IntoQuery;
 use gw_app::ecs::{self, EntityStore};
 use gw_app::ecs::{Entity, Resources, World};

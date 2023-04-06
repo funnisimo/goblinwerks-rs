@@ -1,5 +1,5 @@
-mod actor;
-pub use actor::*;
+mod being;
+pub use being::*;
 
 mod builder;
 pub use builder::*;
@@ -13,11 +13,11 @@ pub use kinds::*;
 mod load;
 pub use load::*;
 
-mod actor_kind_flags;
-pub use actor_kind_flags::*;
+mod being_kind_flags;
+pub use being_kind_flags::*;
 
-mod actor_flags;
-pub use actor_flags::*;
+mod being_flags;
+pub use being_flags::*;
 
 mod move_flags;
 pub use move_flags::*;

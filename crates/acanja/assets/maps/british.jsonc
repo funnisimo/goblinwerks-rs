@@ -34,7 +34,7 @@
     },
 
     "t": {
-      "actor": {
+      "being": {
         "kind": "Thief",
         "talk": "West 8, South 35 and await the Dawn!",
         "ai": "RANDOM_WANDER"
@@ -42,7 +42,7 @@
       "tile": "."
     },
     "o": {
-      "actor": {
+      "being": {
         "kind": "Peasant",
         "name": "Cookie",
         "talk": "Like the food?",
@@ -50,21 +50,21 @@
       }
     },
     "k": {
-      "actor": {
+      "being": {
         "kind": "Jester",
         "name": "Iolo",
         "talk": "Ho Eyo He Hum!"
       }
     },
     "l": {
-      "actor": {
+      "being": {
         "kind": "Jester",
         "name": "Gwino",
         "talk": "Muh Eh Oye Oh!"
       }
     },
     "m": {
-      "actor": {
+      "being": {
         "kind": "Peasant",
         "name": "Phantom Fighter",
         "talk": "The food sucks!",
@@ -72,16 +72,16 @@
       }
     },
     "c": {
-      "actor": {
+      "being": {
         "kind": "Cleric",
         "name": "Wise Cleric",
         "talk": "The Wise Cleric: 4 cards, 4 slots",
         "ai": "RANDOM_WANDER"
       }
     },
-    "h": { "actor": { "kind": "Guard", "talk": "Enter if you dare!" } },
+    "h": { "being": { "kind": "Guard", "talk": "Enter if you dare!" } },
     "j": {
-      "actor": {
+      "being": {
         "kind": "Jester",
         "name": "Chuckles",
         "talk": "Welcome All!"
@@ -89,23 +89,23 @@
     },
 
     "b": {
-      "actor": { "kind": "British", "talk": "Welcome to my realm!" },
+      "being": { "kind": "British", "talk": "Welcome to my realm!" },
       "tile": " "
     },
-    "f": { "actor": { "kind": "Guard", "talk": "Good day!" }, "tile": "." },
-    "g": { "actor": { "kind": "Guard", "talk": "Good day!" } },
+    "f": { "being": { "kind": "Guard", "talk": "Good day!" }, "tile": "." },
+    "g": { "being": { "kind": "Guard", "talk": "Good day!" } },
     "i": {
-      "actor": { "kind": "Guard", "talk": "Good day!", "ai": "ANCHORED_WANDER" }
+      "being": { "kind": "Guard", "talk": "Good day!", "ai": "ANCHORED_WANDER" }
     },
     "n": {
-      "actor": {
+      "being": {
         "kind": "Cleric",
         "ai": "RANDOM_WANDER",
         "talk": "Howdy stranger!"
       }
     },
-    "p": { "actor": { "kind": "Healer", "ai": "SHOPKEEPER" } },
-    "r": { "actor": "Oracle", "ai": "SHOPKEEPER" },
+    "p": { "being": { "kind": "Healer", "ai": "SHOPKEEPER" } },
+    "r": { "being": "Oracle", "ai": "SHOPKEEPER" },
 
     "@": { "location": "START", "tile": "=" }
   },

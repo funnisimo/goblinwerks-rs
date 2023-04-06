@@ -11,7 +11,7 @@ use std::str::FromStr;
 
 bitflags! {
     #[derive(Default, Serialize, Deserialize)]
-    pub struct ActorFlags: u32 {
+    pub struct BeingFlags: u32 {
 
         // !!!!!!!!!!!!!!!!!!!!!
         // NOTE - If you add anything, you must add to FromStr impl below!!!!
@@ -77,19 +77,19 @@ bitflags! {
     }
 }
 
-impl FromStr for ActorFlags {
+impl FromStr for BeingFlags {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut result = ActorFlags::empty();
+        let mut result = BeingFlags::empty();
         for val in s.split("|") {
             match val.trim().to_uppercase().as_ref() {
                 // "EXAMPLE" => result |= ActorFlags::EXAMPLE,
-                "DESTROYED" => result |= ActorFlags::DESTROYED,
+                "DESTROYED" => result |= BeingFlags::DESTROYED,
                 // "SECRETLY_PASSABLE" => result |= ActorFlags::SECRETLY_PASSABLE,
 
                 // "BLOCKS_MOVE" => result |= ActorFlags::BLOCKS_MOVE,
-                "BLOCKS_VISION" => result |= ActorFlags::BLOCKS_VISION,
+                "BLOCKS_VISION" => result |= BeingFlags::BLOCKS_VISION,
                 // "BLOCKS_SURFACE" => result |= ActorFlags::BLOCKS_SURFACE,
                 // "BLOCKS_LIQUID" => result |= ActorFlags::BLOCKS_LIQUID,
                 // "BLOCKS_GAS" => result |= ActorFlags::BLOCKS_GAS,
@@ -97,20 +97,20 @@ impl FromStr for ActorFlags {
                 // "BLOCKS_ACTORS" => result |= ActorFlags::BLOCKS_ACTORS,
                 // "BLOCKS_EFFECTS" => result |= ActorFlags::BLOCKS_EFFECTS,
                 // "BLOCKS_DIAGONAL" => result |= ActorFlags::BLOCKS_DIAGONAL,
-                "INTERRUPT_WHEN_SEEN" => result |= ActorFlags::INTERRUPT_WHEN_SEEN,
-                "NO_SIDEBAR" => result |= ActorFlags::NO_SIDEBAR,
-                "VISUALLY_DISTINCT" => result |= ActorFlags::VISUALLY_DISTINCT,
-                "BRIGHT_MEMORY" => result |= ActorFlags::BRIGHT_MEMORY,
-                "INVERT_WHEN_HIGHLIGHTED" => result |= ActorFlags::INVERT_WHEN_HIGHLIGHTED,
+                "INTERRUPT_WHEN_SEEN" => result |= BeingFlags::INTERRUPT_WHEN_SEEN,
+                "NO_SIDEBAR" => result |= BeingFlags::NO_SIDEBAR,
+                "VISUALLY_DISTINCT" => result |= BeingFlags::VISUALLY_DISTINCT,
+                "BRIGHT_MEMORY" => result |= BeingFlags::BRIGHT_MEMORY,
+                "INVERT_WHEN_HIGHLIGHTED" => result |= BeingFlags::INVERT_WHEN_HIGHLIGHTED,
 
-                "ON_MAP" => result |= ActorFlags::ON_MAP,
-                "IN_SIDEBAR" => result |= ActorFlags::IN_SIDEBAR,
+                "ON_MAP" => result |= BeingFlags::ON_MAP,
+                "IN_SIDEBAR" => result |= BeingFlags::IN_SIDEBAR,
 
-                "FORMAL_NAME" => result |= ActorFlags::FORMAL_NAME,
-                "ALWAYS_PLURAL" => result |= ActorFlags::ALWAYS_PLURAL,
+                "FORMAL_NAME" => result |= BeingFlags::FORMAL_NAME,
+                "ALWAYS_PLURAL" => result |= BeingFlags::ALWAYS_PLURAL,
 
-                "DEFAULT_ACTOR" => result |= ActorFlags::DEFAULT_ACTOR,
-                "DEFAULT_ITEM" => result |= ActorFlags::DEFAULT_ITEM,
+                "DEFAULT_ACTOR" => result |= BeingFlags::DEFAULT_ACTOR,
+                "DEFAULT_ITEM" => result |= BeingFlags::DEFAULT_ITEM,
 
                 // "BLOCKED_BY_STAIRS" => result |= ActorFlags::BLOCKED_BY_STAIRS,
 
@@ -129,7 +129,7 @@ impl FromStr for ActorFlags {
     }
 }
 
-impl ActorFlags {
+impl BeingFlags {
     pub fn apply(&mut self, flags: &str) {
         for val in flags.split("|") {
             if val.trim().starts_with("!") {
@@ -147,7 +147,7 @@ impl ActorFlags {
     }
 }
 
-impl From<&str> for ActorFlags {
+impl From<&str> for BeingFlags {
     fn from(s: &str) -> Self {
         match Self::from_str(s) {
             Ok(flag) => flag,
@@ -156,7 +156,7 @@ impl From<&str> for ActorFlags {
     }
 }
 
-impl fmt::Display for ActorFlags {
+impl fmt::Display for BeingFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }

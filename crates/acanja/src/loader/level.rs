@@ -12,7 +12,7 @@ use gw_util::{
     xy::{Lock, Wrap},
 };
 use gw_world::{
-    actor::{spawn_actor, ActorKind, ActorKinds},
+    being::{spawn_actor, BeingKind, BeingKinds},
     camera::Camera,
     effect::{parse_effects, BoxedEffect, Message, Portal},
     fov::FOV,
@@ -41,7 +41,7 @@ pub struct Cell {
     location: Option<String>,                   // ground, fixture, location name
     effects: HashMap<String, Vec<BoxedEffect>>, // action effects
     flavor: Option<String>,
-    actor: Option<Arc<ActorKind>>, // actor kind id
+    being: Option<Arc<BeingKind>>, // actor kind id
 }
 
 impl Cell {
@@ -116,7 +116,7 @@ impl LoadHandler for LevelLoader {
         ecs.resources.get_mut_or_insert_with(|| Tiles::default());
         ecs.resources.get_mut_or_insert_with(|| Levels::default());
         let (tiles, mut loader, mut levels, actor_kinds) =
-            <(Read<Tiles>, Write<Loader>, Write<Levels>, Read<ActorKinds>)>::fetch_mut(
+            <(Read<Tiles>, Write<Loader>, Write<Levels>, Read<BeingKinds>)>::fetch_mut(
                 &mut ecs.resources,
             );
 
@@ -159,7 +159,7 @@ impl LoadHandler for LevelLoader {
 }
 
 ////////////////////////////////////////////////////////////
-pub fn load_level_data(tiles: &Tiles, actor_kinds: &ActorKinds, json: Value) -> LevelData {
+pub fn load_level_data(tiles: &Tiles, being_kinds: &BeingKinds, json: Value) -> LevelData {
     // let path = "./assets/maps/";
     // let json_file = "sosaria.jsonc";
 
@@ -245,24 +245,29 @@ pub fn load_level_data(tiles: &Tiles, actor_kinds: &ActorKinds, json: Value) -> 
                 }
 
                 // actor
-                if let Some(actor_value) = info.get(&"actor".into()) {
-                    log(format!("Actor - {:?}", actor_value));
-                    if actor_value.is_string() {
-                        cell.actor = match actor_kinds.get(&actor_value.to_string().to_uppercase())
+                if let Some(being_value) = info.get(&"being".into()) {
+                    log(format!("Being - {:?}", being_value));
+                    if being_value.is_string() {
+                        cell.being = match being_kinds.get(&being_value.to_string().to_uppercase())
                         {
-                            None => panic!("Actor kind is unknown = {}", actor_value.to_string()),
+                            None => panic!("Being kind is unknown = {}", being_value.to_string()),
                             Some(k) => Some(k),
                         };
-                    } else if actor_value.is_map() {
-                        let map = actor_value.as_map().unwrap();
+                    } else if being_value.is_map() {
+                        let map = being_value.as_map().unwrap();
 
                         if let Some(kind_value) = map.get(&"kind".into()) {
-                            let id = format!("{}@{}", kind_value.to_string().to_uppercase(), ch);
-                            let mut builder = ActorKind::builder(&id);
+                            let id = format!(
+                                "{}@{}-{}",
+                                map_id,
+                                ch,
+                                kind_value.to_string().to_uppercase()
+                            );
+                            let mut builder = BeingKind::builder(&id);
 
-                            match actor_kinds.get(&kind_value.to_string().to_uppercase()) {
+                            match being_kinds.get(&kind_value.to_string().to_uppercase()) {
                                 None => panic!(
-                                    "Actor kind extends missing actor - {}",
+                                    "Being kind extends missing being - {}",
                                     kind_value.to_string()
                                 ),
                                 Some(base) => {
@@ -288,12 +293,14 @@ pub fn load_level_data(tiles: &Tiles, actor_kinds: &ActorKinds, json: Value) -> 
                                 }
                             }
 
-                            cell.actor = Some(builder.build());
+                            let new_being = builder.build();
+                            println!("CUSTOM BEING - {:?}", new_being);
+                            cell.being = Some(new_being);
                         } else {
-                            panic!("Actor with no kind information - {:?}", actor_value);
+                            panic!("Being with no kind information - {:?}", being_value);
                         }
                     } else {
-                        panic!("Invalid actor data type = {:?}", actor_value);
+                        panic!("Invalid being data type = {:?}", being_value);
                     };
                 }
 
@@ -653,8 +660,11 @@ pub fn make_level(mut level_data: LevelData) -> Level {
             match cell_lookup.get(&char) {
                 None => panic!("Unknown tile in map data - {}", char),
                 Some(place) => {
-                    if let Some(ref kind) = place.actor {
-                        log(format!("Spawn Actor - {} @ {},{}", kind.id, x, y));
+                    if let Some(ref kind) = place.being {
+                        log(format!(
+                            "Spawn Actor - {} @ {},{} - actor: {:?}",
+                            kind.id, x, y, kind.actor
+                        ));
                         spawn_actor(kind, &mut level, Point::new(x, y));
                     }
                 }
@@ -778,7 +788,7 @@ fn resolve_references(tiles: &Tiles, map: &HashMap<String, Cell>) -> HashMap<Str
     result
 }
 
-pub fn load_level_file(filename: &str, tiles: &Tiles, actor_kinds: &ActorKinds) -> Level {
+pub fn load_level_file(filename: &str, tiles: &Tiles, actor_kinds: &BeingKinds) -> Level {
     let file_text = read_to_string(filename).expect(&format!("Failed to open {filename}"));
 
     let json = parse_string(&file_text).expect(&format!("Failed to parse level file - {filename}"));

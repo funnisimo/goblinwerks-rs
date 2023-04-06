@@ -1,31 +1,35 @@
-use super::ActorKind;
+use super::BeingKind;
 use gw_app::log;
 use std::{collections::HashMap, sync::Arc};
 
 #[derive(Debug, Default)]
-pub struct ActorKinds {
-    kinds: HashMap<String, Arc<ActorKind>>,
+pub struct BeingKinds {
+    kinds: HashMap<String, Arc<BeingKind>>,
 }
 
-impl ActorKinds {
+impl BeingKinds {
     pub fn new() -> Self {
         Self::default()
     }
 
     pub fn empty() -> Self {
-        ActorKinds {
+        BeingKinds {
             kinds: HashMap::new(),
         }
     }
 
-    pub fn get(&self, name: &str) -> Option<Arc<ActorKind>> {
+    pub fn len(&self) -> usize {
+        self.kinds.len()
+    }
+
+    pub fn get(&self, name: &str) -> Option<Arc<BeingKind>> {
         match self.kinds.get(name) {
             None => None,
             Some(tile) => Some(tile.clone()),
         }
     }
 
-    pub fn insert(&mut self, kind: Arc<ActorKind>) {
+    pub fn insert(&mut self, kind: Arc<BeingKind>) {
         self.kinds.insert(kind.id.clone(), kind);
     }
 
