@@ -1,4 +1,4 @@
-use gw_app::{ecs::Entity, log, Ecs};
+use gw_app::{ecs::Entity, Ecs};
 use gw_world::{
     action::{move_step::MoveStepAction, BoxedAction},
     hero::Hero,

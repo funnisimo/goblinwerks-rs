@@ -3,11 +3,14 @@ use std::fmt::Debug;
 use crate::{
     action::{dead::DeadAction, idle::IdleAction, ActionResult, BoxedAction},
     ai::Actor,
-    being::Being,
     hero::Hero,
     level::{get_current_level_mut, with_current_level, with_current_level_mut},
 };
-use gw_app::{ecs::Entity, screen::BoxedScreen, Ecs};
+use gw_app::{
+    ecs::{Entity, EntityStore},
+    screen::BoxedScreen,
+    Ecs,
+};
 
 pub enum DoNextActionResult {
     Hero,
@@ -137,10 +140,10 @@ impl Executor {
         self.tasks.len()
     }
 
-    pub fn insert_actor(&mut self, entity: Entity, in_time: u32) {
-        let task = Box::new(move |ecs: &mut Ecs| do_entity_action(entity, ecs));
-        self.tasks.insert(task, in_time)
-    }
+    // pub fn insert_actor(&mut self, entity: Entity, in_time: u32) {
+    //     let task = Box::new(move |ecs: &mut Ecs| do_entity_action(entity, ecs));
+    //     self.tasks.insert(task, in_time)
+    // }
 
     pub fn insert(&mut self, task: BoxedTask, in_time: u32) {
         self.tasks.insert(task, in_time)
@@ -286,7 +289,7 @@ pub fn do_next_action(ecs: &mut Ecs) -> DoNextActionResult {
     }
 }
 
-fn do_entity_action(entity: Entity, ecs: &mut Ecs) -> DoNextActionResult {
+pub(crate) fn do_entity_action(entity: Entity, ecs: &mut Ecs) -> DoNextActionResult {
     let hero_entity = with_current_level(ecs, |level| {
         let entity = level.resources.get::<Hero>().unwrap().entity;
         entity
@@ -308,7 +311,9 @@ fn do_entity_action(entity: Entity, ecs: &mut Ecs) -> DoNextActionResult {
             ActionResult::Done(time) => {
                 // do_debug!("{} - Done result : {}", entity, time);
                 with_current_level_mut(ecs, |level| {
-                    level.executor.insert_actor(entity, time);
+                    let entry = level.world.entry_ref(entity).unwrap();
+                    let actor = entry.get_component::<Actor>().unwrap();
+                    level.executor.insert(actor.next_task(entity), time);
                 });
 
                 break 'inner;
@@ -316,8 +321,9 @@ fn do_entity_action(entity: Entity, ecs: &mut Ecs) -> DoNextActionResult {
             ActionResult::Fail(msg) => {
                 with_current_level_mut(ecs, |level| {
                     level.logger.debug(format!("#[violetred]{}", msg));
-                    let task: BoxedTask = Box::new(move |ecs| do_entity_action(entity, ecs));
-                    level.executor.unpop(task);
+                    let entry = level.world.entry_ref(entity).unwrap();
+                    let actor = entry.get_component::<Actor>().unwrap();
+                    level.executor.unpop(actor.next_task(entity));
                 });
                 break 'inner;
             }
@@ -328,23 +334,25 @@ fn do_entity_action(entity: Entity, ecs: &mut Ecs) -> DoNextActionResult {
             ActionResult::WaitForInput => {
                 // debug_msg(format!("{} - Wait for input", entity));
                 with_current_level_mut(ecs, |level| {
-                    let ent = entity;
-                    let task: BoxedTask = Box::new(move |ecs_a| do_entity_action(ent, ecs_a));
-                    level.executor.unpop(task);
+                    let entry = level.world.entry_ref(entity).unwrap();
+                    let actor = entry.get_component::<Actor>().unwrap();
+                    level.executor.unpop(actor.next_task(entity));
                 });
                 return DoNextActionResult::Done;
             }
             ActionResult::Retry => {
                 with_current_level_mut(ecs, |level| {
-                    let task: BoxedTask = Box::new(move |ecs_a| do_entity_action(entity, ecs_a));
-                    level.executor.unpop(task);
+                    let entry = level.world.entry_ref(entity).unwrap();
+                    let actor = entry.get_component::<Actor>().unwrap();
+                    level.executor.unpop(actor.next_task(entity));
                 });
                 break 'inner;
             }
             ActionResult::PushMode(mode) => {
                 with_current_level_mut(ecs, |level| {
-                    let task: BoxedTask = Box::new(move |ecs_a| do_entity_action(entity, ecs_a));
-                    level.executor.unpop(task);
+                    let entry = level.world.entry_ref(entity).unwrap();
+                    let actor = entry.get_component::<Actor>().unwrap();
+                    level.executor.unpop(actor.next_task(entity));
                 });
                 return DoNextActionResult::PushMode(mode);
             }

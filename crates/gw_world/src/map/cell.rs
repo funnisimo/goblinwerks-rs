@@ -4,7 +4,7 @@ use gw_app::{ecs::World, log};
 
 use crate::{
     being::Being,
-    level::Level,
+    // level::Level,
     sprite::Sprite,
     tile::{tile_is_none, Tile, TileFlags, TileMove, TileSet},
 };

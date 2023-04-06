@@ -33,5 +33,6 @@
       "time.jsonc"
     ]
   },
-  "start": "SOSARIA"
+  "start": "SOSARIA" // Make this also allow: { "map": "SOSARIA", "location": "LOCATION" }
+  // "hero": "HERO", // And... { "kind": "HERO", ... }
 }

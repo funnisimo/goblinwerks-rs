@@ -35,7 +35,7 @@ impl BeingKind {
     }
 }
 
-pub fn spawn_actor(kind: &Arc<BeingKind>, level: &mut Level, point: Point) -> Entity {
+pub fn spawn_being(kind: &Arc<BeingKind>, level: &mut Level, point: Point) -> Entity {
     let index = level
         .resources
         .get::<Map>()
@@ -59,7 +59,9 @@ pub fn spawn_actor(kind: &Arc<BeingKind>, level: &mut Level, point: Point) -> En
         map.add_being(idx, entity, true);
 
         // Add to schedule
-        level.executor.insert_actor(entity, kind.actor.act_time);
+        level
+            .executor
+            .insert(kind.actor.next_task(entity), kind.actor.act_time);
 
         return entity;
     }

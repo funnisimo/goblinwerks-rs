@@ -7,7 +7,7 @@ use gw_util::point::Point;
 use gw_world::action::idle::IdleAction;
 use gw_world::action::move_step::MoveStepAction;
 use gw_world::ai::{register_ai, Actor};
-use gw_world::being::{spawn_actor, Being, BeingKinds};
+use gw_world::being::{spawn_being, Being, BeingKinds};
 use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::effect::{register_effect_parser, BoxedEffect};
 use gw_world::fov::update_fov;
@@ -71,15 +71,13 @@ impl Screen for MainScreen {
         let hero_kind = actor_kinds.get("HERO").unwrap();
         log(format!("HERO - {:?}", hero_kind));
 
-        let entity = spawn_actor(&hero_kind, level, start_pos);
+        let entity = spawn_being(&hero_kind, level, start_pos);
 
-        // let entity = level.world.push((
-        //     Position::new(start_pos.x, start_pos.y),
-        //     Sprite::new('@' as Glyph, WHITE.into(), RGBA::new()),
-        //     // UserControl, // Do we need this?
-        //     Actor::new().with_ai("USER_CONTROL"),
-        // ));
-        // level.resources.insert(Hero::new(entity));
+        ///////////////////////////////////////////
+
+        // SPAWN MOONGATES...
+
+        ///////////////////////////////////////////
 
         {
             let mut camera = level

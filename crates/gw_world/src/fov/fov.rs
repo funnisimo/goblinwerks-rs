@@ -1,9 +1,4 @@
-use crate::{
-    hero::Hero,
-    level::{get_current_level_mut, Level},
-    map::Map,
-    position::Position,
-};
+use crate::{hero::Hero, level::get_current_level_mut, map::Map, position::Position};
 
 use super::{goblin::calculate_fov, FovTarget};
 use bitflags::bitflags;

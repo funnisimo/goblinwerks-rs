@@ -1,4 +1,8 @@
-use crate::action::BoxedAction;
+use crate::{
+    action::BoxedAction,
+    task::{do_entity_action, BoxedTask},
+};
+use gw_app::ecs::Entity;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
@@ -24,6 +28,10 @@ impl Actor {
             next_action: None,
             ai: AI::new(ai),
         }
+    }
+
+    pub fn next_task(&self, entity: Entity) -> BoxedTask {
+        Box::new(move |ecs| do_entity_action(entity, ecs))
     }
 }
 

@@ -12,7 +12,7 @@ use gw_util::{
     xy::{Lock, Wrap},
 };
 use gw_world::{
-    being::{spawn_actor, BeingKind, BeingKinds},
+    being::{spawn_being, BeingKind, BeingKinds},
     camera::Camera,
     effect::{parse_effects, BoxedEffect, Message, Portal},
     fov::FOV,
@@ -665,7 +665,7 @@ pub fn make_level(mut level_data: LevelData) -> Level {
                             "Spawn Actor - {} @ {},{} - actor: {:?}",
                             kind.id, x, y, kind.actor
                         ));
-                        spawn_actor(kind, &mut level, Point::new(x, y));
+                        spawn_being(kind, &mut level, Point::new(x, y));
                     }
                 }
             }

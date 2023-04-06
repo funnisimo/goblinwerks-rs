@@ -1,5 +1,5 @@
 use crate::ai::Actor;
-use crate::{being::Being, log::Logger, task::Executor};
+use crate::{log::Logger, task::Executor};
 use gw_app::ecs::query::IntoQuery;
 use gw_app::ecs::{self, EntityStore};
 use gw_app::ecs::{Entity, Resources, World};
@@ -69,7 +69,7 @@ impl Level {
 
         // you can then iterate through the components found in the world
         for (entity, actor) in query.iter(world) {
-            executor.insert_actor(*entity, actor.act_time);
+            executor.insert(actor.next_task(*entity), actor.act_time);
         }
     }
 }
@@ -85,7 +85,8 @@ pub fn move_entity(entity: Entity, src: &mut Level, dest: &mut Level) -> Entity 
         .unwrap()
         .get_component::<Actor>()
     {
-        dest.executor.insert_actor(new_entity, actor.act_time);
+        dest.executor
+            .insert(actor.next_task(new_entity), actor.act_time);
     }
 
     new_entity
