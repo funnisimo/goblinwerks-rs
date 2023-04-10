@@ -1,4 +1,4 @@
-use acanja::effect::{parse_gremlins, parse_mark, parse_winds};
+use acanja::effect::{parse_gremlins, parse_mark, parse_moongate_travel, parse_winds};
 use acanja::loader::GameConfigLoader;
 use gw_app::ecs::IntoQuery;
 use gw_app::ecs::{Entity, Read, ResourceSet, Write};
@@ -11,16 +11,12 @@ use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::effect::{register_effect_parser, BoxedEffect};
 use gw_world::fov::update_fov;
 use gw_world::hero::Hero;
-use gw_world::level::{get_current_level, get_current_level_mut, with_current_level, Levels};
+use gw_world::level::{get_current_level_mut, with_current_level, Levels};
 use gw_world::map::{Cell, Map};
 use gw_world::position::Position;
-use gw_world::task::{do_next_task, DoNextTaskResult, UserAction};
+use gw_world::task::{do_next_task, DoNextTaskResult, Task, UserAction};
 use gw_world::task::{get_hero_entity, register_task};
 use gw_world::widget::Viewport;
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct UserControl;
 
 const CAMERA_WIDTH: u32 = 1024 / 32;
 const CAMERA_HEIGHT: u32 = 768 / 32;
@@ -65,7 +61,7 @@ impl Screen for MainScreen {
             let map = level.resources.get::<Map>().unwrap();
             // dump_map(&*map);
             // log(format!("map size = {:?}", map.get_size()));
-            map.to_point(*map.get_location("START").unwrap())
+            map.to_point(map.get_location("START").unwrap())
         };
 
         let hero_kind = actor_kinds.get("HERO").unwrap();
@@ -86,7 +82,10 @@ impl Screen for MainScreen {
             camera.set_follows(entity);
         }
 
-        level.reset_tasks();
+        let moongate = level.world.push((Task::new("MOVE_MOONGATE"),));
+        level.executor.insert(moongate, 0);
+
+        // level.reset_tasks();
 
         log(format!("STARTING TASKS = {:?}", level.executor));
     }
@@ -240,6 +239,8 @@ fn main() {
     register_effect_parser("winds", parse_winds);
     register_effect_parser("gremlins", parse_gremlins);
     register_effect_parser("mark", parse_mark);
+    register_effect_parser("moongate_travel", parse_moongate_travel);
+    register_effect_parser("moongate", parse_moongate_travel);
 
     let app = AppBuilder::new(1024, 768)
         .title("Acanja - World Viewer")
@@ -248,13 +249,13 @@ fn main() {
             registry.register::<gw_world::position::Position>("Position".to_string());
             registry.register::<gw_world::sprite::Sprite>("Sprite".to_string());
             registry.register::<gw_world::being::Being>("Being".to_string());
-            registry.register::<UserControl>("UserControl".to_string());
             registry.register::<gw_world::task::Task>("Task".to_string());
         })
         .startup(Box::new(|_ecs: &mut Ecs| {
             register_task("ANCHORED_WANDER", acanja::ai::anchored_wander);
             register_task("RANDOM_WANDER", acanja::ai::random_wander);
             register_task("SHOPKEEPER", acanja::ai::shopkeeper);
+            register_task("MOVE_MOONGATE", acanja::ai::move_moongate);
             log("REGISTERED SOSARIA AI FUNCTIONS");
         }))
         .file("assets/game_config.jsonc", Box::new(GameConfigLoader))

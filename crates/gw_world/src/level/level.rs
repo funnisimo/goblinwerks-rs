@@ -58,7 +58,7 @@ impl Level {
     //     }
     // }
 
-    pub fn reset_tasks(&mut self) {
+    fn reset_tasks(&mut self) {
         let mut query = <(Entity, &Being)>::query();
 
         let Level {

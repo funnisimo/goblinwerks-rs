@@ -66,7 +66,8 @@ impl MainScreen {
         level.resources.insert(camera);
 
         level.resources.insert(Hero::new(entity));
-        level.reset_tasks();
+        // level.reset_tasks();
+        level.executor.insert(entity, 0);
 
         ecs.resources.insert(level);
     }

@@ -65,5 +65,6 @@
     "A": { "descend": "Time", "location": "Time", "fixture": "D" },
     "I": { "descend": "Dardins", "location": "Dardins", "fixture": "D" },
     "P": { "descend": "Depths", "location": "Depths", "fixture": "D" }
-  }
+  },
+  "tasks": ["MOVE_MOONGATE"]
 }

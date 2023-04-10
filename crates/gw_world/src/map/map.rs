@@ -162,8 +162,8 @@ impl Map {
 
     ///// Everything from here on should use index...
 
-    pub fn get_location(&self, id: &str) -> Option<&usize> {
-        self.locations.get(id)
+    pub fn get_location(&self, id: &str) -> Option<usize> {
+        self.locations.get(id).map(|v| *v)
     }
 
     pub fn set_location(&mut self, id: &str, index: usize) {

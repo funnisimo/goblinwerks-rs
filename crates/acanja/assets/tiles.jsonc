@@ -79,9 +79,10 @@
   },
   "MOONGATE": {
     "ch": 368,
-    "fg": "blue",
+    "fg": "teal",
     "layer": "FIXTURE",
-    "flavor": "a moongate"
+    "flavor": "a moongate",
+    "descend": { "moongate": true }
   },
 
   /* GROUND - TOWN */

@@ -2,7 +2,7 @@ use acanja::map::prefab::{PrefabFileLoader, Prefabs};
 use acanja::map::town::build_town_map;
 use acanja::map::world::build_world_map;
 use gw_app::ecs::*;
-use gw_app::ecs::{systems::ResourceSet, Deserialize, Read, Serialize};
+use gw_app::ecs::{systems::ResourceSet, Read};
 use gw_app::*;
 use gw_util::point::Point;
 use gw_world::action::move_step::MoveStepAction;
@@ -17,9 +17,6 @@ use gw_world::sprite::Sprite;
 use gw_world::task::{do_next_task, DoNextTaskResult, Task, UserAction};
 use gw_world::tile::{Tiles, TilesLoader};
 use gw_world::widget::Viewport;
-
-#[derive(Serialize, Deserialize)]
-struct UserControl;
 
 struct MainScreen {
     viewport: Viewport,
@@ -53,17 +50,18 @@ impl MainScreen {
         let entity = level.world.push((
             Position::new(start_loc.x, start_loc.y),
             Sprite::new('@' as Glyph, WHITE.into(), RGBA::new()),
-            UserControl, // Do we need this?
             Being::new("HERO".to_string()),
             Task::new("USER_CONTROL"),
         ));
+
+        level.executor.insert(entity, 0);
 
         let mut camera = Camera::new(80, 50);
         camera.set_follows(entity);
         level.resources.insert(camera);
 
         level.resources.insert(Hero::new(entity));
-        level.reset_tasks();
+        // level.reset_tasks();
 
         level
     }
@@ -284,7 +282,6 @@ fn main() {
             registry.register::<gw_world::position::Position>("Position".to_string());
             registry.register::<gw_world::sprite::Sprite>("Sprite".to_string());
             registry.register::<gw_world::being::Being>("Being".to_string());
-            registry.register::<UserControl>("UserControl".to_string());
             registry.register::<gw_world::task::Task>("Task".to_string());
         })
         .vsync(false)
