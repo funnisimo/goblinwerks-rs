@@ -1,7 +1,6 @@
 use super::{Cell, CellMut, CellRef};
 use super::{CellFlags, MapFlags};
 use crate::effect::BoxedEffect;
-// use crate::fov::FovSource;
 use crate::tile::Tile;
 use crate::tile::TileLayer;
 use crate::tile::NO_TILE;
@@ -606,47 +605,6 @@ impl Map {
 // impl BaseMap for Map {
 //     fn is_opaque(&self, idx: usize) -> bool {
 //         self.opaque_idx(idx)
-//     }
-// }
-
-// impl PathfindingSource for Map {
-//     // Handled in default for Trait
-//     // fn estimate_pathing_distance(&self, a: Point, b: Point) -> f32 {
-//     //     DistanceAlg::Pythagoras.distance2d(a, b)
-//     // }
-
-//     fn move_cost(&self, x: i32, y: i32) -> Option<f32> {
-//         if !self.has_xy(x, y) {
-//             return None;
-//         }
-//         let idx = self.to_idx(x, y);
-//         let tile_idx = self.tiles[idx];
-
-//         match get_tile(tile_idx) {
-//             Some(tile) => {
-//                 if tile.blocks() {
-//                     return None;
-//                 }
-//             }
-//             None => return None,
-//         }
-
-//         if self.blocked[idx] {
-//             // TODO - Allies?  Enemies?  Fixture?
-//             return Some(5.0);
-//         }
-
-//         Some(1.0)
-//     }
-
-//     fn get_size(&self) -> (usize, usize) {
-//         (self.width, self.height)
-//     }
-// }
-
-// impl Algorithm2D for Map {
-//     fn dimensions(&self) -> Point {
-//         Point::new(self.width, self.height)
 //     }
 // }
 

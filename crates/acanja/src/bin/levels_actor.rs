@@ -6,7 +6,6 @@ use gw_app::ecs::{systems::ResourceSet, Deserialize, Read, Serialize};
 use gw_app::*;
 use gw_util::point::Point;
 use gw_world::action::move_step::MoveStepAction;
-use gw_world::ai::Actor;
 use gw_world::being::Being;
 use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::effect::BoxedEffect;
@@ -15,7 +14,7 @@ use gw_world::level::{Level, Levels};
 use gw_world::map::{cell_flavor, Map};
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
-use gw_world::task::{do_next_action, DoNextActionResult};
+use gw_world::task::{do_next_task, DoNextTaskResult, Task, UserAction};
 use gw_world::tile::{Tiles, TilesLoader};
 use gw_world::widget::Viewport;
 
@@ -56,7 +55,7 @@ impl MainScreen {
             Sprite::new('@' as Glyph, WHITE.into(), RGBA::new()),
             UserControl, // Do we need this?
             Being::new("HERO".to_string()),
-            Actor::new("USER_CONTROL".to_string()),
+            Task::new("USER_CONTROL"),
         ));
 
         let mut camera = Camera::new(80, 50);
@@ -213,19 +212,19 @@ impl Screen for MainScreen {
             // } else if !world.animations().is_empty() {
             //     return ScreenResult::Continue;
             // }
-            let res = do_next_action(ecs);
+            let res = do_next_task(ecs);
             self.post_action(ecs);
             match res {
-                DoNextActionResult::Done => {
+                DoNextTaskResult::Done => {
                     return ScreenResult::Continue;
                 }
-                DoNextActionResult::Mob | DoNextActionResult::Other => {
+                DoNextTaskResult::Other => {
                     continue;
                 }
-                DoNextActionResult::Hero => {
+                DoNextTaskResult::Hero => {
                     return ScreenResult::Continue;
                 }
-                DoNextActionResult::PushMode(mode) => return ScreenResult::Push(mode),
+                DoNextTaskResult::PushMode(mode) => return ScreenResult::Push(mode),
             }
         }
         // })
@@ -286,7 +285,7 @@ fn main() {
             registry.register::<gw_world::sprite::Sprite>("Sprite".to_string());
             registry.register::<gw_world::being::Being>("Being".to_string());
             registry.register::<UserControl>("UserControl".to_string());
-            registry.register::<gw_world::ai::Actor>("Actor".to_string());
+            registry.register::<gw_world::task::Task>("Task".to_string());
         })
         .vsync(false)
         .build();
@@ -304,9 +303,13 @@ fn move_camera(levels: &mut Levels, dx: i32, dy: i32) {
 fn move_hero(level: &mut Level, dx: i32, dy: i32) {
     let hero_entity = level.resources.get::<Hero>().unwrap().entity;
 
-    let mut entry = level.world.entry(hero_entity).unwrap();
-    let actor = entry.get_component_mut::<Actor>().unwrap();
-    actor.next_action = Some(Box::new(MoveStepAction::new(hero_entity, dx, dy)));
+    level
+        .resources
+        .insert(UserAction::new(Box::new(MoveStepAction::new(
+            hero_entity,
+            dx,
+            dy,
+        ))));
 }
 
 fn get_hero_action_effects(

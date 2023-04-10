@@ -10,5 +10,5 @@ fn main() {
     kinds.dump();
 
     let kind = kinds.get("PEASANT").unwrap();
-    println!("Peasant Actor Clone: {:?}", kind.actor.clone());
+    println!("Peasant Being Clone: {:?}", kind.being.clone());
 }

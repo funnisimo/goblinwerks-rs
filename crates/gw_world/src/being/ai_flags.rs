@@ -1,5 +1,6 @@
 use bitflags::bitflags;
 use gw_util::fl;
+use serde::{Deserialize, Serialize};
 use std::convert::From;
 use std::fmt;
 use std::str::FromStr;
@@ -8,7 +9,7 @@ use std::str::FromStr;
 // AI Flags
 
 bitflags! {
-    #[derive(Default)]
+    #[derive(Default, Deserialize, Serialize)]
     pub struct AIFlags: u32 {
 
         // !!!!!!!!!!!!!!!!!!!!!

@@ -5,6 +5,7 @@ pub mod formula;
 pub mod grid;
 pub mod json;
 pub mod noise;
+pub mod path;
 pub mod point;
 pub mod rect;
 pub mod rng;

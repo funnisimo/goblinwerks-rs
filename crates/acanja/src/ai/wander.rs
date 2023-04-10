@@ -1,17 +1,18 @@
 use gw_app::{ecs::Entity, Ecs};
 use gw_util::point::{Point, DIRS};
 use gw_world::{
-    action::{move_step::MoveStepAction, BoxedAction},
-    being::{Being, MoveFlags},
+    action::move_step::MoveStepAction,
+    being::{do_being_action, Being, MoveFlags},
     level::get_current_level_mut,
     position::Position,
+    task::TaskResult,
 };
 
 #[derive(Clone, Debug)]
 pub struct AnchorPos(pub Point);
 
 /// Try to wander around anchor point - which is usually the point that the actor was created at
-pub fn anchored_wander(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
+pub fn anchored_wander(ecs: &mut Ecs, entity: Entity) -> TaskResult {
     let mut level = get_current_level_mut(ecs);
 
     // log(format!("ANCHORED WANDER - {:?}", entity));
@@ -40,7 +41,7 @@ pub fn anchored_wander(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
     };
 
     if level.rng.chance(100 - chance) {
-        return None;
+        return TaskResult::Success(100);
     }
 
     let mut entry = level.world.entry(entity).unwrap();
@@ -48,7 +49,7 @@ pub fn anchored_wander(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
     let entity_point = match entry.get_component::<Position>() {
         Err(_) => {
             // log("- no entity point");
-            return None;
+            return TaskResult::Success(100);
         }
         Ok(pos) => pos.point(),
     };
@@ -64,6 +65,8 @@ pub fn anchored_wander(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
     // log(format!("- entity_point={:?}", entity_point));
     // log(format!("- anchor_point={:?}", anchor_point));
 
+    drop(entry);
+
     let dir = if level.rng.chance_in(1, 4) {
         // 25% chance - move towards anchor
         (anchor_point - entity_point).as_dir()
@@ -76,13 +79,19 @@ pub fn anchored_wander(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
         }
     };
 
+    drop(level);
+
     // Set action time to be 3-5 x act time so there is a delay before next action
 
-    Some(Box::new(MoveStepAction::new(entity, dir.x, dir.y)))
+    do_being_action(
+        Box::new(MoveStepAction::new(entity, dir.x, dir.y)),
+        ecs,
+        entity,
+    )
 }
 
 /// Just move randomly every now and then...
-pub fn random_wander(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
+pub fn random_wander(ecs: &mut Ecs, entity: Entity) -> TaskResult {
     let mut level = get_current_level_mut(ecs);
 
     // log(format!("RANDOM WANDER - {:?}", entity));
@@ -111,7 +120,7 @@ pub fn random_wander(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
     };
 
     if level.rng.chance(100 - chance) {
-        return None;
+        return TaskResult::Success(100);
     }
 
     // Otherwise pick a random (of 8) direction to move
@@ -123,5 +132,11 @@ pub fn random_wander(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
 
     // Set action time to be 3-5 x act time so there is a delay before next action
 
-    Some(Box::new(MoveStepAction::new(entity, dir.x, dir.y)))
+    drop(level);
+
+    do_being_action(
+        Box::new(MoveStepAction::new(entity, dir.x, dir.y)),
+        ecs,
+        entity,
+    )
 }

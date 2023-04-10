@@ -1061,6 +1061,7 @@ dependencies = [
 name = "gw_world"
 version = "0.1.0"
 dependencies = [
+ "assert_approx_eq",
  "bitflags",
  "enum-utils",
  "gw_app",

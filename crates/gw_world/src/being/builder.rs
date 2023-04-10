@@ -1,8 +1,5 @@
 use super::{Being, BeingKind, BeingKindFlags};
-use crate::{
-    ai::Actor,
-    sprite::{Sprite, SpriteParseError},
-};
+use crate::sprite::{Sprite, SpriteParseError};
 use gw_app::{Glyph, RGBA};
 use gw_util::value::Value;
 use std::sync::Arc;
@@ -12,7 +9,7 @@ pub struct BeingKindBuilder {
     pub(super) sprite: Sprite,
     pub(super) info: Being,
     pub(super) flags: BeingKindFlags,
-    pub(super) actor: Actor,
+    pub(super) task: String,
 }
 
 impl BeingKindBuilder {
@@ -22,7 +19,7 @@ impl BeingKindBuilder {
             sprite: Sprite::default(),
             info: Being::new(id.to_string()),
             flags: BeingKindFlags::empty(),
-            actor: Actor::new("IDLE".to_string()),
+            task: "IDLE".to_string(),
         }
     }
 
@@ -31,7 +28,7 @@ impl BeingKindBuilder {
         self.sprite = kind.sprite.clone();
         self.info = kind.being.clone();
         self.flags = kind.flags.clone();
-        self.actor = kind.actor.clone();
+        self.task = kind.task.clone();
         self
     }
 
@@ -56,7 +53,7 @@ impl BeingKindBuilder {
     }
 
     pub fn ai(&mut self, ai: &str) -> &mut Self {
-        self.actor.ai.reset(ai);
+        self.task = ai.to_string();
         self
     }
 
@@ -167,6 +164,11 @@ pub fn set_field(
         }
         "ai" => {
             // {"ai": <STRING>}
+            builder.ai(&value.to_string().to_uppercase());
+            Ok(())
+        }
+        "task" => {
+            // {"task": <STRING>}
             builder.ai(&value.to_string().to_uppercase());
             Ok(())
         }

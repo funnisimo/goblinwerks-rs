@@ -7,7 +7,6 @@ use gw_app::*;
 use gw_util::point::Point;
 use gw_util::xy::Lock;
 use gw_world::action::move_step::MoveStepAction;
-use gw_world::ai::Actor;
 use gw_world::being::Being;
 use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::hero::Hero;
@@ -15,7 +14,7 @@ use gw_world::level::{get_current_level_mut, Level};
 use gw_world::map::Map;
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
-use gw_world::task::{do_next_action, DoNextActionResult};
+use gw_world::task::{do_next_task, DoNextTaskResult, Task, UserAction};
 use gw_world::tile::{Tiles, TilesLoader};
 use gw_world::widget::Viewport;
 
@@ -59,7 +58,7 @@ impl MainScreen {
             Sprite::new('@' as Glyph, WHITE.into(), RGBA::new()),
             UserControl, // Do we need this?
             Being::new("HERO".to_string()),
-            Actor::new("USER_CONTROL".to_string()),
+            Task::new("USER_CONTROL".to_string()),
         ));
 
         let mut camera = Camera::new(80, 50);
@@ -158,19 +157,19 @@ impl Screen for MainScreen {
             //     return ScreenResult::Continue;
             // }
             // let res = executor.do_next_action(&mut *level);
-            let res = do_next_action(ecs);
+            let res = do_next_task(ecs);
             self.post_action(ecs);
             match res {
-                DoNextActionResult::Done => {
+                DoNextTaskResult::Done => {
                     return ScreenResult::Continue;
                 }
-                DoNextActionResult::Mob | DoNextActionResult::Other => {
+                DoNextTaskResult::Other => {
                     continue;
                 }
-                DoNextActionResult::Hero => {
+                DoNextTaskResult::Hero => {
                     return ScreenResult::Continue;
                 }
-                DoNextActionResult::PushMode(mode) => return ScreenResult::Push(mode),
+                DoNextTaskResult::PushMode(mode) => return ScreenResult::Push(mode),
             }
         }
         // })
@@ -220,7 +219,11 @@ fn main() {
 fn move_hero(level: &mut Level, dx: i32, dy: i32) {
     let hero_entity = level.resources.get::<Hero>().unwrap().entity;
 
-    let mut entry = level.world.entry(hero_entity).unwrap();
-    let actor = entry.get_component_mut::<Actor>().unwrap();
-    actor.next_action = Some(Box::new(MoveStepAction::new(hero_entity, dx, dy)));
+    level
+        .resources
+        .insert(UserAction::new(Box::new(MoveStepAction::new(
+            hero_entity,
+            dx,
+            dy,
+        ))));
 }

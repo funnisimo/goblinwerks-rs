@@ -1,6 +1,5 @@
 use crate::action::idle::IdleAction;
 use crate::action::{Action, ActionResult};
-use crate::ai::Actor;
 use crate::being::Being;
 use crate::effect::fire_cell_action;
 use crate::hero::Hero;
@@ -38,7 +37,7 @@ impl MoveStepAction {
 
         let entry = world.entry_mut(self.entity).unwrap();
 
-        let actor = match entry.get_component::<Actor>() {
+        let actor = match entry.get_component::<Being>() {
             Err(_) => return Some(ActionResult::Dead(self.entity)),
             Ok(a) => a,
         };
@@ -201,7 +200,7 @@ impl MoveStepAction {
 
         let mut level = get_current_level_mut(ecs);
         let entry = level.world.entry(self.entity).unwrap();
-        let actor = entry.get_component::<Actor>().unwrap();
+        let actor = entry.get_component::<Being>().unwrap();
 
         let mut move_time = actor.act_time;
         if self.dx != 0 && self.dy != 0 {

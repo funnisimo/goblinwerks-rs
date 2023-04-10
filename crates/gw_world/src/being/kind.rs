@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use super::{Being, BeingKindBuilder, BeingKindFlags};
-use crate::ai::Actor;
 use crate::hero::Hero;
 use crate::level::Level;
 use crate::map::Map;
 use crate::position::Position;
 use crate::sprite::Sprite;
+use crate::task::Task;
 use gw_app::ecs::Entity;
 use gw_util::point::Point;
 
@@ -16,7 +16,7 @@ pub struct BeingKind {
     pub sprite: Sprite,
     pub being: Being,
     pub flags: BeingKindFlags,
-    pub actor: Actor,
+    pub task: String,
 }
 
 impl BeingKind {
@@ -30,7 +30,7 @@ impl BeingKind {
             sprite: builder.sprite,
             being: builder.info,
             flags: builder.flags,
-            actor: builder.actor,
+            task: builder.task,
         }
     }
 }
@@ -43,11 +43,14 @@ pub fn spawn_being(kind: &Arc<BeingKind>, level: &mut Level, point: Point) -> En
         .get_index(point.x, point.y);
     if let Some(idx) = index {
         let pos = Position::from(point).with_blocking(true);
+
+        println!("spawn being({}) - task={}", kind.id, kind.task);
+
         let entity = level.world.push((
             kind.being.clone(),
             pos,
             kind.sprite.clone(),
-            kind.actor.clone(),
+            Task::new(kind.task.clone()),
         ));
 
         if kind.flags.contains(BeingKindFlags::HERO) {
@@ -59,9 +62,7 @@ pub fn spawn_being(kind: &Arc<BeingKind>, level: &mut Level, point: Point) -> En
         map.add_being(idx, entity, true);
 
         // Add to schedule
-        level
-            .executor
-            .insert(kind.actor.next_task(entity), kind.actor.act_time);
+        level.executor.insert(entity, kind.being.act_time as u64);
 
         return entity;
     }

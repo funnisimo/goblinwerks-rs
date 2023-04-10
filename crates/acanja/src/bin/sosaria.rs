@@ -6,16 +6,16 @@ use gw_app::*;
 use gw_util::point::Point;
 use gw_world::action::idle::IdleAction;
 use gw_world::action::move_step::MoveStepAction;
-use gw_world::ai::{register_ai, Actor};
 use gw_world::being::{spawn_being, Being, BeingKinds};
 use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::effect::{register_effect_parser, BoxedEffect};
 use gw_world::fov::update_fov;
 use gw_world::hero::Hero;
-use gw_world::level::{get_current_level_mut, with_current_level, Levels};
+use gw_world::level::{get_current_level, get_current_level_mut, with_current_level, Levels};
 use gw_world::map::{Cell, Map};
 use gw_world::position::Position;
-use gw_world::task::{do_next_action, DoNextActionResult};
+use gw_world::task::{do_next_task, DoNextTaskResult, UserAction};
+use gw_world::task::{get_hero_entity, register_task};
 use gw_world::widget::Viewport;
 use serde::{Deserialize, Serialize};
 
@@ -137,7 +137,7 @@ impl Screen for MainScreen {
                     println!("TASKS = {:?}", level.executor);
                 }),
                 'a' => with_current_level(ecs, |level| {
-                    let mut query = <&Actor>::query();
+                    let mut query = <&Being>::query();
 
                     // you can then iterate through the components found in the world
                     for actor in query.iter(&level.world) {
@@ -184,7 +184,7 @@ impl Screen for MainScreen {
                     let entry = level.world.entry(entity).unwrap();
                     let being = entry.get_component::<Being>().unwrap();
                     log(format!("BEING({:?}) = {:?}", entity, being));
-                    let actor = entry.get_component::<Actor>().unwrap();
+                    let actor = entry.get_component::<Being>().unwrap();
                     log(format!("ACTOR({:?}) = {:?}", entity, actor));
                 }
             }
@@ -208,19 +208,19 @@ impl Screen for MainScreen {
             //     return ScreenResult::Continue;
             // }
             // let res = executor.do_next_action(&mut *level);
-            let res = do_next_action(ecs);
+            let res = do_next_task(ecs);
             self.post_action(ecs);
             match res {
-                DoNextActionResult::Done => {
+                DoNextTaskResult::Done => {
                     return ScreenResult::Continue;
                 }
-                DoNextActionResult::Mob | DoNextActionResult::Other => {
+                DoNextTaskResult::Other => {
                     continue;
                 }
-                DoNextActionResult::Hero => {
+                DoNextTaskResult::Hero => {
                     return ScreenResult::Continue;
                 }
-                DoNextActionResult::PushMode(mode) => return ScreenResult::Push(mode),
+                DoNextTaskResult::PushMode(mode) => return ScreenResult::Push(mode),
             }
         }
         // })
@@ -249,12 +249,12 @@ fn main() {
             registry.register::<gw_world::sprite::Sprite>("Sprite".to_string());
             registry.register::<gw_world::being::Being>("Being".to_string());
             registry.register::<UserControl>("UserControl".to_string());
-            registry.register::<gw_world::ai::Actor>("Actor".to_string());
+            registry.register::<gw_world::task::Task>("Task".to_string());
         })
         .startup(Box::new(|_ecs: &mut Ecs| {
-            register_ai("ANCHORED_WANDER", acanja::ai::anchored_wander);
-            register_ai("RANDOM_WANDER", acanja::ai::random_wander);
-            register_ai("SHOPKEEPER", acanja::ai::shopkeeper);
+            register_task("ANCHORED_WANDER", acanja::ai::anchored_wander);
+            register_task("RANDOM_WANDER", acanja::ai::random_wander);
+            register_task("SHOPKEEPER", acanja::ai::shopkeeper);
             log("REGISTERED SOSARIA AI FUNCTIONS");
         }))
         .file("assets/game_config.jsonc", Box::new(GameConfigLoader))
@@ -265,25 +265,39 @@ fn main() {
 }
 
 fn move_hero(ecs: &mut Ecs, dx: i32, dy: i32) {
-    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-    let level = levels.current_mut();
+    let hero_entity = get_hero_entity(ecs);
 
-    let hero_entity = level.resources.get::<Hero>().unwrap().entity;
-
-    let mut entry = level.world.entry(hero_entity).unwrap();
-    let actor = entry.get_component_mut::<Actor>().unwrap();
-    actor.next_action = Some(Box::new(MoveStepAction::new(hero_entity, dx, dy)));
+    let mut level = get_current_level_mut(ecs);
+    level
+        .resources
+        .insert(UserAction::new(Box::new(MoveStepAction::new(
+            hero_entity,
+            dx,
+            dy,
+        ))));
 }
 
 fn hero_idle(ecs: &mut Ecs) {
-    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-    let level = levels.current_mut();
+    let (hero_entity, act_time) = {
+        let mut level = get_current_level_mut(ecs);
 
-    let hero_entity = level.resources.get::<Hero>().unwrap().entity;
+        let hero_entity = level.resources.get::<Hero>().unwrap().entity;
 
-    let mut entry = level.world.entry(hero_entity).unwrap();
-    let actor = entry.get_component_mut::<Actor>().unwrap();
-    actor.next_action = Some(Box::new(IdleAction::new(hero_entity, actor.act_time)));
+        let act_time = {
+            let mut entry = level.world.entry(hero_entity).unwrap();
+            let actor = entry.get_component_mut::<Being>().unwrap();
+            actor.act_time
+        };
+        (hero_entity, act_time)
+    };
+
+    let mut level = get_current_level_mut(ecs);
+    level
+        .resources
+        .insert(UserAction::new(Box::new(IdleAction::new(
+            hero_entity,
+            act_time,
+        ))));
 }
 
 fn get_hero_action_effects(
@@ -291,9 +305,8 @@ fn get_hero_action_effects(
     action: &str,
 ) -> Option<(Entity, Point, Vec<BoxedEffect>)> {
     let action = action.to_uppercase();
-    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-    let level = levels.current_mut();
-    let hero_entity = level.resources.get::<Hero>().unwrap().entity;
+    let hero_entity = get_hero_entity(ecs);
+    let mut level = get_current_level_mut(ecs);
 
     let hero_point = level
         .world

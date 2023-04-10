@@ -21,3 +21,9 @@ pub use being_flags::*;
 
 mod move_flags;
 pub use move_flags::*;
+
+mod ai_flags;
+pub use ai_flags::*;
+
+mod task;
+pub use task::*;

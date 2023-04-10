@@ -1,4 +1,4 @@
-use crate::ai::Actor;
+use crate::being::Being;
 use crate::{log::Logger, task::Executor};
 use gw_app::ecs::query::IntoQuery;
 use gw_app::ecs::{self, EntityStore};
@@ -59,7 +59,7 @@ impl Level {
     // }
 
     pub fn reset_tasks(&mut self) {
-        let mut query = <(Entity, &Actor)>::query();
+        let mut query = <(Entity, &Being)>::query();
 
         let Level {
             executor, world, ..
@@ -68,8 +68,8 @@ impl Level {
         executor.clear();
 
         // you can then iterate through the components found in the world
-        for (entity, actor) in query.iter(world) {
-            executor.insert(actor.next_task(*entity), actor.act_time);
+        for (entity, being) in query.iter(world) {
+            executor.insert(*entity, being.act_time as u64);
         }
     }
 }
@@ -79,14 +79,13 @@ pub fn move_entity(entity: Entity, src: &mut Level, dest: &mut Level) -> Entity 
 
     // src.executor.remove(entity);
 
-    if let Ok(actor) = dest
+    if let Ok(being) = dest
         .world
         .entry_ref(new_entity)
         .unwrap()
-        .get_component::<Actor>()
+        .get_component::<Being>()
     {
-        dest.executor
-            .insert(actor.next_task(new_entity), actor.act_time);
+        dest.executor.insert(new_entity, being.act_time as u64);
     }
 
     new_entity

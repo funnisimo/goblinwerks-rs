@@ -1,14 +1,11 @@
 use gw_app::{ecs::Entity, Ecs};
 use gw_world::{
-    action::{move_step::MoveStepAction, BoxedAction},
-    hero::Hero,
-    level::get_current_level_mut,
-    map::Map,
-    position::Position,
+    action::move_step::MoveStepAction, being::do_being_action, hero::Hero,
+    level::get_current_level_mut, map::Map, position::Position, task::TaskResult,
 };
 
 /// Try to move toward the hero - will be stopped by the counters.
-pub fn shopkeeper(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
+pub fn shopkeeper(ecs: &mut Ecs, entity: Entity) -> TaskResult {
     let mut level = get_current_level_mut(ecs);
 
     let hero_entity = level.resources.get::<Hero>().unwrap().entity;
@@ -23,7 +20,7 @@ pub fn shopkeeper(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
     {
         Err(_) => {
             // log("- no hero_point");
-            return None;
+            return TaskResult::Success(100);
         }
         Ok(pos) => pos.point(),
     };
@@ -36,7 +33,7 @@ pub fn shopkeeper(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
     {
         Err(_) => {
             // log("- no entity point");
-            return None;
+            return TaskResult::Success(100);
         }
         Ok(pos) => pos.point(),
     };
@@ -65,7 +62,7 @@ pub fn shopkeeper(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
                     move_dir.y.signum()
                 }
             }
-            None => return None,
+            None => return TaskResult::Success(100),
         }
     };
 
@@ -73,7 +70,7 @@ pub fn shopkeeper(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
 
     if dx == 0 && dy == 0 {
         // log("- no dx,dy");
-        return None;
+        return TaskResult::Success(100);
     }
 
     // what about constantly trying to bump diagonally???
@@ -81,5 +78,7 @@ pub fn shopkeeper(ecs: &mut Ecs, entity: Entity) -> Option<BoxedAction> {
 
     // log(format!("- move: {},{}", dx, dy));
 
-    Some(Box::new(MoveStepAction::new(entity, dx, dy)))
+    drop(level);
+
+    do_being_action(Box::new(MoveStepAction::new(entity, dx, dy)), ecs, entity)
 }

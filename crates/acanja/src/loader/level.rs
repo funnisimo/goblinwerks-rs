@@ -662,8 +662,8 @@ pub fn make_level(mut level_data: LevelData) -> Level {
                 Some(place) => {
                     if let Some(ref kind) = place.being {
                         log(format!(
-                            "Spawn Actor - {} @ {},{} - actor: {:?}",
-                            kind.id, x, y, kind.actor
+                            "Spawn Actor - {} @ {},{} - being: {:?}",
+                            kind.id, x, y, kind.being
                         ));
                         spawn_being(kind, &mut level, Point::new(x, y));
                     }

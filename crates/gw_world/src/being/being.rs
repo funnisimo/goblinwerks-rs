@@ -1,3 +1,4 @@
+use super::AIFlags;
 use super::MoveFlags;
 use serde::{Deserialize, Serialize};
 
@@ -6,6 +7,9 @@ pub struct Being {
     pub id: String,
 
     pub move_flags: MoveFlags,
+    pub ai_flags: AIFlags,
+    pub act_time: u32,
+
     pub name: Option<String>,
     pub talk: Option<String>,
     pub flavor: Option<String>,
@@ -17,7 +21,10 @@ impl Being {
         Being {
             id,
 
+            act_time: 100,
             move_flags: MoveFlags::empty(),
+            ai_flags: AIFlags::empty(),
+
             name: None,
             talk: None,
             flavor: None,

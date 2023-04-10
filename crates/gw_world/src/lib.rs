@@ -1,5 +1,4 @@
 pub mod action;
-pub mod ai;
 pub mod being;
 pub mod camera;
 pub mod effect;
