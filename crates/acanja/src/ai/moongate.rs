@@ -38,6 +38,7 @@ pub fn move_moongate(ecs: &mut Ecs, _entity: Entity) -> TaskResult {
     let location = moons.location();
     moons.increment();
     let new_location = moons.location();
+    let new_dest = moons.destination();
     drop(moons);
 
     let moongate = {
@@ -54,7 +55,10 @@ pub fn move_moongate(ecs: &mut Ecs, _entity: Entity) -> TaskResult {
     let new_idx = map.get_location(new_location).unwrap();
     map.place_fixture(new_idx, moongate);
 
-    log(format!("Moongate location = {}", new_location));
+    log(format!(
+        "Moongate location = {} -> {}",
+        new_location, new_dest
+    ));
 
     TaskResult::Success(500)
 }

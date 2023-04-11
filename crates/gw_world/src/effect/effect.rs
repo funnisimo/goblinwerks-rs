@@ -14,6 +14,7 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 pub enum EffectResult {
+    Nothing, // Effect did not do anything
     Success,
     Fail,
     Stop,
