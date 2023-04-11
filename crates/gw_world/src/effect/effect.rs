@@ -85,12 +85,12 @@ pub fn register_effect_parser(id: &str, parser: EffectParseFn) {
     EFFECT_PARSERS
         .lock()
         .unwrap()
-        .insert(id.to_string(), parser);
+        .insert(id.to_string().to_lowercase(), parser);
 }
 
 pub fn parse_effect(id: &str, value: &Value) -> Result<BoxedEffect, String> {
     let parsers = EFFECT_PARSERS.lock().unwrap();
-    match parsers.get(id) {
+    match parsers.get(id.to_string().to_lowercase().as_str()) {
         None => Err(format!("No parser found for effect: {}", id)),
         Some(parser) => parser(value),
     }
@@ -104,7 +104,7 @@ pub fn parse_effects(value: &Value) -> Result<Vec<BoxedEffect>, String> {
     let map = value.as_map().unwrap();
     let mut output = Vec::new();
     for (key, val) in map.iter() {
-        let id = key.to_string();
+        let id = key.to_string().to_lowercase();
         match parsers.get(&id) {
             None => return Err(format!("No parser found for effect: {}", id)),
             Some(parser) => match parser(val) {

@@ -312,13 +312,29 @@ impl Map {
     }
 
     pub fn get_cell_effects(&self, index: usize, action: &str) -> Option<Vec<BoxedEffect>> {
+        let mut effects: Vec<BoxedEffect> = Vec::new();
         match self.cell_effects.get(&index) {
-            None => None,
+            None => {}
             Some(all) => match all.get(action) {
-                None => None,
-                Some(data) => Some(data.clone()),
+                None => {}
+                Some(data) => effects.extend_from_slice(data),
             },
         }
+
+        if let Some(tile) = self.ground.get(index) {
+            if let Some(ground_effects) = tile.effects.get(action) {
+                effects.extend_from_slice(ground_effects);
+            }
+        }
+
+        if let Some(tile) = self.fixture.get(index) {
+            if let Some(fixture_effects) = tile.effects.get(action) {
+                log("Fixture has effects");
+                effects.extend_from_slice(fixture_effects);
+            }
+        }
+
+        Some(effects)
     }
 
     pub fn set_flavor(&mut self, index: usize, text: String) {

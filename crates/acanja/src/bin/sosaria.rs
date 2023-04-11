@@ -321,12 +321,9 @@ fn get_hero_action_effects(
 
     let index = map.get_index(hero_point.x, hero_point.y).unwrap();
 
-    match map.cell_effects.get(&index) {
+    match map.get_cell_effects(index, &action) {
         None => None,
-        Some(effect_map) => match effect_map.get(&action) {
-            None => None,
-            Some(effects) => Some((hero_entity, hero_point, effects.clone())),
-        },
+        Some(effects) => Some((hero_entity, hero_point, effects)),
     }
 }
 
