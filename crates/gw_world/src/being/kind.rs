@@ -1,13 +1,14 @@
 use std::sync::Arc;
 
-use super::{Being, BeingKindBuilder, BeingKindFlags};
+use super::{Being, BeingKindBuilder, BeingKindFlags, Stats};
+use crate::combat::Melee;
 use crate::hero::Hero;
 use crate::level::Level;
 use crate::map::Map;
 use crate::position::Position;
 use crate::sprite::Sprite;
 use crate::task::Task;
-use gw_app::ecs::Entity;
+use gw_app::{ecs::Entity, log};
 use gw_util::point::Point;
 
 #[derive(Debug, Clone)]
@@ -16,6 +17,8 @@ pub struct BeingKind {
     pub sprite: Sprite,
     pub being: Being,
     pub task: String,
+    pub melee: Option<Melee>,
+    pub stats: Stats,
 }
 
 impl BeingKind {
@@ -29,6 +32,8 @@ impl BeingKind {
             sprite: builder.sprite,
             being: builder.being,
             task: builder.task,
+            melee: builder.melee,
+            stats: builder.stats,
         }
     }
 }
@@ -49,7 +54,17 @@ pub fn spawn_being(kind: &Arc<BeingKind>, level: &mut Level, point: Point) -> En
             pos,
             kind.sprite.clone(),
             Task::new(kind.task.clone()),
+            kind.stats.clone(),
         ));
+
+        if let Some(ref melee) = kind.melee {
+            level
+                .world
+                .entry(entity)
+                .unwrap()
+                .add_component(melee.clone());
+            log(format!("SPAWN MELEE!!!"));
+        }
 
         if kind.being.kind_flags.contains(BeingKindFlags::HERO) {
             level.resources.insert(Hero::new(entity));

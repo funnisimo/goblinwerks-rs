@@ -157,7 +157,7 @@
   "CUTPURSE": {
     "sprite": "C|gray",
     "flavor": "a cutpurse",
-    "health": "140",
+    "health": 140,
     "xp": 7,
     "mp": 5,
     "melee": { "damage": "1d8+2", "chance": 50 },

@@ -1,4 +1,4 @@
-use super::{Being, BeingKind, BeingKindFlags};
+use super::{Being, BeingKind, BeingKindFlags, Stat, Stats};
 use crate::{
     combat::{parse_melee, Melee},
     sprite::{Sprite, SpriteParseError},
@@ -13,6 +13,7 @@ pub struct BeingKindBuilder {
     pub(super) being: Being,
     pub(super) task: String,
     pub(super) melee: Option<Melee>,
+    pub(super) stats: Stats,
 }
 
 impl BeingKindBuilder {
@@ -23,6 +24,7 @@ impl BeingKindBuilder {
             being: Being::new(id.to_string()),
             task: "IDLE".to_string(),
             melee: None,
+            stats: Stats::new(),
         }
     }
 
@@ -31,6 +33,8 @@ impl BeingKindBuilder {
         self.sprite = kind.sprite.clone();
         self.being = kind.being.clone();
         self.task = kind.task.clone();
+        self.melee = kind.melee.clone();
+        self.stats = kind.stats.clone();
         self
     }
 
@@ -103,6 +107,11 @@ impl BeingKindBuilder {
 
     pub fn melee(&mut self, melee: Melee) -> &mut Self {
         self.melee = Some(melee);
+        self
+    }
+
+    pub fn no_melee(&mut self) -> &mut Self {
+        self.melee = None;
         self
     }
 
@@ -213,15 +222,40 @@ pub fn set_field(
             }
         },
         "ranged" => Ok(()),
-        "melee" => match parse_melee(value) {
-            Err(_) => Err(BuilderError::BadField("melee".to_string(), value.clone())),
-            Ok(melee) => {
-                builder.melee(melee);
+        "melee" => {
+            if value.is_bool() {
+                if value.as_bool().unwrap() == false {
+                    builder.no_melee();
+                }
                 Ok(())
+            } else {
+                match parse_melee(value) {
+                    Err(_) => Err(BuilderError::BadField("melee".to_string(), value.clone())),
+                    Ok(melee) => {
+                        builder.melee(melee);
+                        Ok(())
+                    }
+                }
             }
-        },
-        "health" => Ok(()),
-        "mp" => Ok(()),
+        }
+        "health" => {
+            if value.is_int() {
+                let value = value.as_int().unwrap();
+                builder.stats.set(Stat::HEALTH, value as i32);
+                Ok(())
+            } else {
+                Err(BuilderError::BadField("health".to_string(), value.clone()))
+            }
+        }
+        "mp" => {
+            if value.is_int() {
+                let value = value.as_int().unwrap();
+                builder.stats.set(Stat::MAGIC, value as i32);
+                Ok(())
+            } else {
+                Err(BuilderError::BadField("mp".to_string(), value.clone()))
+            }
+        }
         _ => Err(BuilderError::UnknownField(field.to_string())),
     }
 }

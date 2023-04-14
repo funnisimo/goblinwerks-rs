@@ -55,7 +55,8 @@
     "p": {
       "being": {
         "kind": "Thief",
-        "talk": "Exodus lies beyond the Silver Snake!"
+        "talk": "Exodus lies beyond the Silver Snake!",
+        "melee": false
       },
       "tile": "."
     },

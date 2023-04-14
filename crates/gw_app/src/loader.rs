@@ -120,13 +120,13 @@ pub(crate) fn load_files(ecs: &mut Ecs) -> bool {
         if info.file.is_ready() {
             match info.file.read_binary() {
                 Err(e) => {
-                    println!("Failed to read file - {:?}", e);
+                    panic!("\x1b[31mFailed to read file\x1b[0m - {:?}", e);
                 }
                 Ok(data) => {
                     let mut cb = info.cb.take().unwrap();
                     match cb.file_loaded(&info.path, data, ecs) {
                         Err(e) => {
-                            println!(
+                            panic!(
                                 "\x1b[31mError processing file({})\x1b[0m - {:?}",
                                 &info.path, e
                             );

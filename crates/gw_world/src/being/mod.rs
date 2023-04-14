@@ -27,3 +27,6 @@ pub use ai_flags::*;
 
 mod task;
 pub use task::*;
+
+mod stats;
+pub use stats::*;

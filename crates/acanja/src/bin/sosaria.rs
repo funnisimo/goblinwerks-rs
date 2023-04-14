@@ -6,7 +6,7 @@ use gw_app::*;
 use gw_util::point::Point;
 use gw_world::action::idle::IdleAction;
 use gw_world::action::move_step::MoveStepAction;
-use gw_world::being::{spawn_being, Being, BeingKinds};
+use gw_world::being::{spawn_being, Being, BeingKinds, Stats};
 use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::combat::Melee;
 use gw_world::effect::{register_effect_parser, BoxedEffect};
@@ -187,6 +187,9 @@ impl Screen for MainScreen {
                     if let Ok(melee) = entry.get_component::<Melee>() {
                         log(format!("MELEE({:?}) = {:?}", entity, melee));
                     }
+                    if let Ok(stats) = entry.get_component::<Stats>() {
+                        log(format!("STATS - {:?}", *stats));
+                    }
                 }
             }
             _ => {}
@@ -252,6 +255,7 @@ fn main() {
             registry.register::<gw_world::sprite::Sprite>("Sprite".to_string());
             registry.register::<gw_world::being::Being>("Being".to_string());
             registry.register::<gw_world::task::Task>("Task".to_string());
+            registry.register::<gw_world::being::Stats>("Stats".to_string());
         })
         .startup(Box::new(|_ecs: &mut Ecs| {
             register_task("ANCHORED_WANDER", acanja::ai::anchored_wander);
