@@ -38,11 +38,17 @@
     },
 
     "m": {
-      "being": { "kind": "Cleric", "talk": "Is it not lovely?" },
+      "being": {
+        "kind": "Cleric",
+        "talk": "Is it not lovely?"
+      },
       "tile": ":"
     },
     "n": {
-      "being": { "kind": "Wizard", "talk": "Quest ye unto Lost Ambrosia!" },
+      "being": {
+        "kind": "Wizard",
+        "talk": "Quest ye unto Lost Ambrosia!"
+      },
       "tile": "%"
     },
     "o": {
@@ -55,8 +61,7 @@
     "p": {
       "being": {
         "kind": "Thief",
-        "talk": "Exodus lies beyond the Silver Snake!",
-        "melee": false
+        "talk": "Exodus lies beyond the Silver Snake!"
       },
       "tile": "."
     },
@@ -111,61 +116,13 @@
     }
   },
   "objects": [],
-  "kinds": {
-    "NPC": {
-      "flags": "B_CANNOT_BE_ATTACKED",
-      "behaviors": ["BB_CANNOT_ATTACK", "BB_TALKS"],
-      "ai": "NPC",
-      "speed": 1500
+  "groups": {
+    "BEING": {
+      // common settings for all beings (this is automagic)
+      "flags": "CANNOT_BE_ATTACKED | WILL_NOT_ATTACK" // no combat
     },
-    "STILL_NPC": {
-      "flags": "B_CANNOT_BE_ATTACKED",
-      "behaviors": ["BB_CANNOT_ATTACK", "BB_TALKS", "BB_IMMOBILE"],
-      "ai": "NPC",
-      "speed": 1500
-    },
-    "SHOPKEEP": {
-      "flags": "B_CANNOT_BE_ATTACKED",
-      "behaviors": ["BB_CANNOT_ATTACK", "BB_ACTIVATE_ON_TALK", "BB_TALKS"],
-      "ai": "FollowPlayer",
-      "speed": 1500,
-      "feature": "SHOW_STORE"
-    },
-    "CLERIC": {
-      "ch": "C",
-      "fg": "purple",
-      "kind": "STILL_NPC"
-    },
-    "WIZARD": {
-      "ch": "W",
-      "fg": "blue",
-      "kind": "STILL_NPC"
-    },
-    "FIGHTER": {
-      "ch": "F",
-      "fg": "grey",
-      "kind": "STILL_NPC"
-    },
-    "THIEF": {
-      "ch": "T",
-      "fg": "teal",
-      "kind": "STILL_NPC"
-    },
-    "PEASANT": {
-      "ch": "P",
-      "fg": "brown",
-      "kind": "STILL_NPC"
-    },
-    "JESTER": {
-      "ch": "J",
-      "fg": "pink",
-      "kind": "NPC"
-    },
-    "ARMORER": {
-      "ch": "A",
-      "fg": "light_grey",
-      "kind": "SHOPKEEP",
-      "store": "ARMORY"
+    "GUARD": {
+      // overrides for everyone with the "GUARD" group
     }
   }
 }

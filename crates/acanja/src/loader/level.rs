@@ -8,11 +8,11 @@ use gw_util::{
     json::parse_string,
     point::Point,
     rect::Rect,
-    value::Value,
+    value::{Key, Value},
     xy::{Lock, Wrap},
 };
 use gw_world::{
-    being::{spawn_being, BeingKind, BeingKinds},
+    being::{set_field, spawn_being, BeingKind, BeingKinds},
     camera::Camera,
     effect::{parse_effects, BoxedEffect, Message, Portal},
     fov::FOV,
@@ -61,6 +61,7 @@ pub struct LevelData {
     pub camera_size: (u32, u32),
     pub region: Option<Rect>,
     pub fov: Option<u32>,
+    pub groups: HashMap<String, HashMap<String, Value>>,
 }
 
 impl LevelData {
@@ -76,6 +77,7 @@ impl LevelData {
             camera_size: (11, 11),
             region: None,
             fov: None,
+            groups: HashMap::new(),
         }
     }
 }
@@ -176,6 +178,37 @@ pub fn load_level_data(tiles: &Tiles, being_kinds: &BeingKinds, json: Value) -> 
         Some(val) => val.to_string().to_uppercase(),
     };
 
+    let group_info_map: HashMap<String, HashMap<String, Value>> = match root.get(&"groups".into()) {
+        None => HashMap::new(),
+        Some(info) => {
+            if !info.is_map() {
+                panic!("groups section must be object type");
+            }
+            let info_map = info.as_map().unwrap();
+            let mut result = HashMap::new();
+
+            for (section, fields) in info_map.iter() {
+                if !fields.is_map() {
+                    panic!("each entry in groups section must be object.");
+                }
+
+                let fields_map = HashMap::<String, Value>::from_iter(
+                    fields
+                        .clone()
+                        .to_map()
+                        .unwrap()
+                        .iter()
+                        .map(|(k, v)| (k.to_string(), v.clone())),
+                );
+                result.insert(section.to_string(), fields_map);
+            }
+
+            result
+        }
+    };
+
+    println!("GROUPS = {:?}", group_info_map);
+
     let tile_info = root.get(&"tiles".into()).unwrap().as_map().unwrap();
     for (ch, info) in tile_info.iter() {
         let glyphs = ch.to_string();
@@ -259,9 +292,9 @@ pub fn load_level_data(tiles: &Tiles, being_kinds: &BeingKinds, json: Value) -> 
                         if let Some(kind_value) = map.get(&"kind".into()) {
                             let id = format!(
                                 "{}@{}-{}",
+                                kind_value.to_string().to_uppercase(),
                                 map_id,
                                 ch,
-                                kind_value.to_string().to_uppercase()
                             );
                             let mut builder = BeingKind::builder(&id);
 
@@ -272,6 +305,33 @@ pub fn load_level_data(tiles: &Tiles, being_kinds: &BeingKinds, json: Value) -> 
                                 ),
                                 Some(base) => {
                                     builder.extend(&base);
+                                }
+                            }
+
+                            // ALL BEINGS HAVE THESE VALUES
+                            if let Some(group_values) = group_info_map.get("BEING") {
+                                for (k, v) in group_values.iter() {
+                                    set_field(&mut builder, k, v);
+                                }
+                            }
+
+                            // ANY CUSTOM GROUP VALUES
+                            if let Some(groups) = map.get(&"groups".into()) {
+                                for group in
+                                    groups.to_string().split(&['|', ',', ':']).map(|v| v.trim())
+                                {
+                                    if let Some(group_values) = group_info_map.get(group) {
+                                        for (k, v) in group_values.iter() {
+                                            set_field(&mut builder, k, v);
+                                        }
+                                    }
+                                }
+                            } else if let Some(group) = map.get(&"group".into()) {
+                                let group = group.to_string();
+                                if let Some(group_values) = group_info_map.get(group.trim()) {
+                                    for (k, v) in group_values.iter() {
+                                        set_field(&mut builder, k, v);
+                                    }
                                 }
                             }
 
