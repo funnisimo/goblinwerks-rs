@@ -21,7 +21,7 @@ bitflags! {
         const DESTROYED = fl!(1); // has been destroyed
         // const SECRETLY_PASSABLE = fl!(2); // will become passable if discovered/activated/etc...
 
-        // const BLOCKS_MOVE = fl!(3); // cannot be walked through
+        const ALLOWS_MOVE = fl!(3); // can be walked through
         const BLOCKS_VISION = fl!(4); // blocks line of sight
         // const BLOCKS_SURFACE = fl!(6); // grass, blood, etc. cannot exist on this tile
         // const BLOCKS_LIQUID = fl!(8);
@@ -87,8 +87,7 @@ impl FromStr for BeingFlags {
                 // "EXAMPLE" => result |= ActorFlags::EXAMPLE,
                 "DESTROYED" => result |= BeingFlags::DESTROYED,
                 // "SECRETLY_PASSABLE" => result |= ActorFlags::SECRETLY_PASSABLE,
-
-                // "BLOCKS_MOVE" => result |= ActorFlags::BLOCKS_MOVE,
+                "ALLOWS_MOVE" => result |= BeingFlags::ALLOWS_MOVE,
                 "BLOCKS_VISION" => result |= BeingFlags::BLOCKS_VISION,
                 // "BLOCKS_SURFACE" => result |= ActorFlags::BLOCKS_SURFACE,
                 // "BLOCKS_LIQUID" => result |= ActorFlags::BLOCKS_LIQUID,

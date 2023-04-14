@@ -378,6 +378,13 @@ impl<'b, T: ?Sized> Deref for AtomicRef<'b, T> {
     }
 }
 
+impl<'a, T: ?Sized> AsRef<T> for AtomicRef<'a, T> {
+    #[inline]
+    fn as_ref(&self) -> &T {
+        self.value
+    }
+}
+
 impl<'b, T: ?Sized> AtomicRef<'b, T> {
     /// Destructures Ref so you can use it in a layered ref
     pub(crate) fn destructure(self) -> (&'b T, AtomicBorrowRef<'b>) {
@@ -418,11 +425,47 @@ impl<'b, T: ?Sized> AtomicRef<'b, T> {
     }
 }
 
+/// A wrapper type for a mutably borrowed value from an `AtomicRefCell<T>`.
+pub struct AtomicRefMut<'b, T: ?Sized + 'b> {
+    value: &'b mut T,
+    borrow: AtomicBorrowRefMut<'b>,
+}
+
+impl<'b, T: ?Sized> Deref for AtomicRefMut<'b, T> {
+    type Target = T;
+
+    #[inline]
+    fn deref(&self) -> &T {
+        self.value
+    }
+}
+
+impl<'b, T: ?Sized> DerefMut for AtomicRefMut<'b, T> {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut T {
+        self.value
+    }
+}
+
+impl<'a, T: ?Sized> AsRef<T> for AtomicRefMut<'a, T> {
+    #[inline]
+    fn as_ref(&self) -> &T {
+        self.value
+    }
+}
+
+impl<'a, T: ?Sized> AsMut<T> for AtomicRefMut<'a, T> {
+    #[inline]
+    fn as_mut(&mut self) -> &mut T {
+        self.value
+    }
+}
+
 impl<'b, T: ?Sized> AtomicRefMut<'b, T> {
     /// Destructures Ref so you can use it in a layered ref
-    pub(crate) fn destructure(self) -> (&'b mut T, AtomicBorrowRefMut<'b>) {
-        (self.value, self.borrow)
-    }
+    // pub(crate) fn destructure(self) -> (&'b mut T, AtomicBorrowRefMut<'b>) {
+    //     (self.value, self.borrow)
+    // }
 
     /// Make a new `AtomicRefMut` for a component of the borrowed data, e.g. an enum
     /// variant.
@@ -450,28 +493,6 @@ impl<'b, T: ?Sized> AtomicRefMut<'b, T> {
     }
 }
 
-/// A wrapper type for a mutably borrowed value from an `AtomicRefCell<T>`.
-pub struct AtomicRefMut<'b, T: ?Sized + 'b> {
-    value: &'b mut T,
-    borrow: AtomicBorrowRefMut<'b>,
-}
-
-impl<'b, T: ?Sized> Deref for AtomicRefMut<'b, T> {
-    type Target = T;
-
-    #[inline]
-    fn deref(&self) -> &T {
-        self.value
-    }
-}
-
-impl<'b, T: ?Sized> DerefMut for AtomicRefMut<'b, T> {
-    #[inline]
-    fn deref_mut(&mut self) -> &mut T {
-        self.value
-    }
-}
-
 impl<'b, T: ?Sized + Debug + 'b> Debug for AtomicRef<'b, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.value.fmt(f)
@@ -486,6 +507,6 @@ impl<'b, T: ?Sized + Debug + 'b> Debug for AtomicRefMut<'b, T> {
 
 impl<T: ?Sized + Debug> Debug for AtomicRefCell<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "AtomicRefCell {{ ... }}")
+        write!(f, "AtomicRefCell {{ .. }}")
     }
 }

@@ -126,7 +126,10 @@ pub(crate) fn load_files(ecs: &mut Ecs) -> bool {
                     let mut cb = info.cb.take().unwrap();
                     match cb.file_loaded(&info.path, data, ecs) {
                         Err(e) => {
-                            println!("Error processing file({}) - {:?}", &info.path, e);
+                            println!(
+                                "\x1b[31mError processing file({})\x1b[0m - {:?}",
+                                &info.path, e
+                            );
                         }
                         Ok(_) => {
                             println!("Processed file({})", &info.path);

@@ -15,7 +15,6 @@ pub struct BeingKind {
     pub id: String,
     pub sprite: Sprite,
     pub being: Being,
-    pub flags: BeingKindFlags,
     pub task: String,
 }
 
@@ -28,8 +27,7 @@ impl BeingKind {
         BeingKind {
             id: builder.id,
             sprite: builder.sprite,
-            being: builder.info,
-            flags: builder.flags,
+            being: builder.being,
             task: builder.task,
         }
     }
@@ -53,7 +51,7 @@ pub fn spawn_being(kind: &Arc<BeingKind>, level: &mut Level, point: Point) -> En
             Task::new(kind.task.clone()),
         ));
 
-        if kind.flags.contains(BeingKindFlags::HERO) {
+        if kind.being.kind_flags.contains(BeingKindFlags::HERO) {
             level.resources.insert(Hero::new(entity));
         }
 

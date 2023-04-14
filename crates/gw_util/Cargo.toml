@@ -17,7 +17,7 @@ ecs     = ["dep:legion"]
 
 [dependencies]
 lazy_static          = "1.4"
-regex                = "1.6"
+regex                = "1.7.3"
 toml                 = "0.7.2"
 pest                 = "2.5.3"
 pest_derive          = "2.5.3"
@@ -41,5 +41,5 @@ legion = { version = "0.4", default-features = false, optional = true, features 
 ] }
 
 [dev-dependencies]
-gw_app               = { path = "../gw_app" }
-pest-language-server = "0.2"                  # Trying to get pest ide integration, but...
+gw_app = { path = "../gw_app" }
+# pest-language-server = "0.2"                  # Trying to get pest ide integration, but...

@@ -1,5 +1,8 @@
 use super::{Being, BeingKind, BeingKindFlags};
-use crate::sprite::{Sprite, SpriteParseError};
+use crate::{
+    combat::{parse_melee, Melee},
+    sprite::{Sprite, SpriteParseError},
+};
 use gw_app::{Glyph, RGBA};
 use gw_util::value::Value;
 use std::sync::Arc;
@@ -7,9 +10,9 @@ use std::sync::Arc;
 pub struct BeingKindBuilder {
     pub(super) id: String,
     pub(super) sprite: Sprite,
-    pub(super) info: Being,
-    pub(super) flags: BeingKindFlags,
+    pub(super) being: Being,
     pub(super) task: String,
+    pub(super) melee: Option<Melee>,
 }
 
 impl BeingKindBuilder {
@@ -17,17 +20,16 @@ impl BeingKindBuilder {
         BeingKindBuilder {
             id: id.to_string(),
             sprite: Sprite::default(),
-            info: Being::new(id.to_string()),
-            flags: BeingKindFlags::empty(),
+            being: Being::new(id.to_string()),
             task: "IDLE".to_string(),
+            melee: None,
         }
     }
 
     /// need to call this first
     pub fn extend(&mut self, kind: &Arc<BeingKind>) -> &mut Self {
         self.sprite = kind.sprite.clone();
-        self.info = kind.being.clone();
-        self.flags = kind.flags.clone();
+        self.being = kind.being.clone();
         self.task = kind.task.clone();
         self
     }
@@ -58,32 +60,49 @@ impl BeingKindBuilder {
     }
 
     pub fn hero(&mut self) -> &mut Self {
-        self.flags.insert(BeingKindFlags::HERO);
+        self.being.kind_flags.insert(BeingKindFlags::HERO);
         self
     }
 
     pub fn talk(&mut self, talk: &str) -> &mut Self {
-        self.info.talk = Some(talk.to_string());
+        self.being.talk = Some(talk.to_string());
         self
     }
 
     pub fn name(&mut self, name: &str) -> &mut Self {
-        self.info.name = Some(name.to_string());
+        self.being.name = Some(name.to_string());
         self
     }
 
     pub fn flavor(&mut self, flavor: &str) -> &mut Self {
-        self.info.flavor = Some(flavor.to_string());
+        self.being.flavor = Some(flavor.to_string());
         self
     }
 
     pub fn description(&mut self, description: &str) -> &mut Self {
-        self.info.description = Some(description.to_string());
+        self.being.description = Some(description.to_string());
         self
     }
 
     pub fn move_flags(&mut self, flag_string: &str) -> &mut Self {
-        self.info.move_flags.apply(flag_string);
+        self.being.move_flags.apply(flag_string);
+        self
+    }
+
+    pub fn apply_flags(&mut self, flag_string: &str) -> &mut Self {
+        self.being.kind_flags.apply(flag_string);
+        self.being.move_flags.apply(flag_string);
+        self.being.ai_flags.apply(flag_string);
+        self
+    }
+
+    pub fn xp(&mut self, xp: u32) -> &mut Self {
+        self.being.xp = xp;
+        self
+    }
+
+    pub fn melee(&mut self, melee: Melee) -> &mut Self {
+        self.melee = Some(melee);
         self
     }
 
@@ -110,6 +129,7 @@ impl BeingKindBuilder {
 pub enum BuilderError {
     BadSprite(SpriteParseError),
     UnknownField(String),
+    BadField(String, Value),
 }
 
 pub fn set_field(
@@ -181,6 +201,27 @@ pub fn set_field(
             builder.move_flags(&value.to_string());
             Ok(())
         }
+        "flags" => {
+            builder.apply_flags(&value.to_string());
+            Ok(())
+        }
+        "xp" => match value.as_int() {
+            None => Err(BuilderError::BadField("xp".to_string(), value.clone())),
+            Some(c) => {
+                builder.xp(c as u32);
+                Ok(())
+            }
+        },
+        "ranged" => Ok(()),
+        "melee" => match parse_melee(value) {
+            Err(_) => Err(BuilderError::BadField("melee".to_string(), value.clone())),
+            Ok(melee) => {
+                builder.melee(melee);
+                Ok(())
+            }
+        },
+        "health" => Ok(()),
+        "mp" => Ok(()),
         _ => Err(BuilderError::UnknownField(field.to_string())),
     }
 }

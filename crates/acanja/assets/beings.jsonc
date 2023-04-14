@@ -63,7 +63,11 @@
   },
   "THIEF": {
     "sprite": "T|gray",
-    "flavor": "a thief"
+    "flavor": "a thief",
+    "health": 70,
+    "xp": 5,
+    "melee": { "chance": 40, "damage": "1d8" },
+    "flags": "CAN_STEAL_ITEMS"
   },
   "TIME_LORD": {
     "sprite": "L|white|lightest_blue",
@@ -85,5 +89,79 @@
   "WHIRLPOOL": {
     "sprite": "*|white",
     "flavor": "a whirlpool"
+  },
+
+  // MONSTERS
+
+  "ORC": {
+    "sprite": "o|green",
+    "flavor": "an orc",
+    "health": 30,
+    "xp": 3,
+    "melee": { "chance": 30, "damage": "1d6" },
+    "flags": "CAN_BE_REPELLED"
+  },
+  "GOBLIN": {
+    "sprite": "g|green",
+    "flavor": "a goblin",
+    "health": 35,
+    "xp": 4,
+    "melee": { "chance": 35, "damage": "1d6+1" },
+    "flags": "CAN_BE_REPELLED"
+  },
+  "TROLL": {
+    "sprite": "t|green",
+    "flavor": "a troll",
+    "health": 40,
+    "xp": 5,
+    "melee": { "chance": 40, "damage": "1d6+2" },
+    "flags": "CAN_BE_REPELLED"
+  },
+
+  "SKELETON": {
+    "sprite": "s|white",
+    "flavor": "a skeleton",
+    "health": 50,
+    "xp": 4,
+    "melee": { "chance": 30, "damage": "1d6" },
+    "flags": "CAN_BE_TURNED"
+  },
+  "GHOUL": {
+    "sprite": "g|white",
+    "flavor": "a ghoul",
+    "health": 55,
+    "xp": 5,
+    "melee": { "chance": 35, "damage": "1d6+1" },
+    "flags": "CAN_BE_TURNED"
+  },
+  "ZOMBIE": {
+    "sprite": "z|white",
+    "flavor": "a zombie",
+    "health": 60,
+    "xp": 6,
+    "melee": { "chance": 40, "damage": "1d6+2" },
+    "flags": "CAN_BE_TURNED"
+  },
+
+  // THIEF - see above
+  "BRIGAND": {
+    "sprite": "B|gray",
+    "flavor": "a brigand",
+    "health": 80,
+    "xp": 6,
+    "mp": 5,
+    "melee": { "damage": "1d8+1", "chance": 45 },
+    "ranged": { "name": "blowgun", "damage": "1d4", "chance": 45, "mp": 1 },
+    "flags": "CAN_STEAL_ITEMS"
+  },
+  "CUTPURSE": {
+    "sprite": "C|gray",
+    "flavor": "a cutpurse",
+    "health": "140",
+    "xp": 7,
+    "mp": 5,
+    "melee": { "damage": "1d8+2", "chance": 50 },
+    "ranged": { "name": "bow", "damage": "1d6", "chance": 50, "mp": 1 },
+    "flags": "CAN_STEAL_ITEMS"
   }
 }

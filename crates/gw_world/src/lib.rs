@@ -1,6 +1,7 @@
 pub mod action;
 pub mod being;
 pub mod camera;
+pub mod combat;
 pub mod effect;
 pub mod fov;
 pub mod hero;

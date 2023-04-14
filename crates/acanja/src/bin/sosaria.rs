@@ -8,6 +8,7 @@ use gw_world::action::idle::IdleAction;
 use gw_world::action::move_step::MoveStepAction;
 use gw_world::being::{spawn_being, Being, BeingKinds};
 use gw_world::camera::{update_camera_follows, Camera};
+use gw_world::combat::Melee;
 use gw_world::effect::{register_effect_parser, BoxedEffect};
 use gw_world::fov::update_fov;
 use gw_world::hero::Hero;
@@ -183,8 +184,9 @@ impl Screen for MainScreen {
                     let entry = level.world.entry(entity).unwrap();
                     let being = entry.get_component::<Being>().unwrap();
                     log(format!("BEING({:?}) = {:?}", entity, being));
-                    let actor = entry.get_component::<Being>().unwrap();
-                    log(format!("ACTOR({:?}) = {:?}", entity, actor));
+                    if let Ok(melee) = entry.get_component::<Melee>() {
+                        log(format!("MELEE({:?}) = {:?}", entity, melee));
+                    }
                 }
             }
             _ => {}

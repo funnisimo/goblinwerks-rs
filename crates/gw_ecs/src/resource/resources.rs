@@ -133,6 +133,10 @@ impl Resources {
     //     &self.internal
     // }
 
+    pub fn new() -> Self {
+        Default::default()
+    }
+
     /// Creates an accessor to resources which are Send and Sync, which itself can be sent
     /// between threads.
     pub fn sync(&mut self) -> SyncResources {

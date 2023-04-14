@@ -157,8 +157,8 @@ impl<'t> Builder<'t> {
         let tile = self.tiles.get(name).unwrap();
 
         for _i in 0..count {
-            let x = self.rng.roll_dice(1, 79);
-            let y = self.rng.roll_dice(1, 49);
+            let x = self.rng.roll_dice(1, 79) as i32;
+            let y = self.rng.roll_dice(1, 49) as i32;
             let index = map.get_wrapped_index(x, y).unwrap();
             map.reset_tiles(index, tile.clone());
         }
@@ -234,8 +234,16 @@ impl<'t> Builder<'t> {
         for _ in 0..max_count {
             let w = self.rng.range(min_size, max_size);
             let h = self.rng.range(min_size, max_size);
-            let x = self.rng.roll_dice(1, self.map.width as i32 - w - 1) - 1;
-            let y = self.rng.roll_dice(1, self.map.height as i32 - h - 1) - 1;
+            let x = self
+                .rng
+                .roll_dice(1, self.map.width.saturating_sub(w as u32).saturating_sub(1))
+                as i32
+                - 1;
+            let y = self.rng.roll_dice(
+                1,
+                self.map.height.saturating_sub(h as u32).saturating_sub(1),
+            ) as i32
+                - 1;
             let room = Rect::with_size(x, y, w as u32, h as u32);
 
             if self.try_add_room(room, floor) {

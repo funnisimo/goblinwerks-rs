@@ -8,31 +8,33 @@
       // ambrosia
 
       // CASTLES
-      "british.jsonc"
+      "british.jsonc",
       // exodus
 
       // TOWNS
-      // "dawn.jsonc",
-      // "devil-guard.jsonc",
-      // "fawn.jsonc",
-      // "grey.jsonc",
-      // "montor-east.jsonc",
-      // "montor-west.jsonc",
-      // "moon.jsonc",
-      // "tlb.jsonc",
-      // "yew.jsonc",
+      "dawn.jsonc",
+      "devil-guard.jsonc",
+      "fawn.jsonc",
+      "grey.jsonc",
+      "montor-east.jsonc",
+      "montor-west.jsonc",
+      "moon.jsonc",
+      "tlb.jsonc",
+      "yew.jsonc",
       // death gultch
 
       // DUNGEONS
-      // "clues.jsonc",
-      // "dardins.jsonc",
-      // "depths.jsonc",
-      // "doom.jsonc",
-      // "hell.jsonc",
-      // "morinia.jsonc",
-      // "time.jsonc"
+      "clues.jsonc",
+      "dardins.jsonc",
+      "depths.jsonc",
+      "doom.jsonc",
+      "hell.jsonc",
+      "morinia.jsonc",
+      "time.jsonc"
     ]
   },
   "start": "SOSARIA" // Make this also allow: { "map": "SOSARIA", "location": "LOCATION" }
+  //                    What about "SOSARIA@LOCATION" or "SOSARIA.LOCATION" or "SOSARIA#LOCATION" ??
+
   // "hero": "HERO", // And... { "kind": "HERO", ... }
 }

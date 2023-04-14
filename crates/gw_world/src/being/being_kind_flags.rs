@@ -21,6 +21,9 @@ bitflags! {
         const FEMALE = fl!(5);      /* Can be Female gender */
         const OBJECT = fl!(6);      /* Uses "it" pronouns */
 
+        const CAN_BE_REPELLED = fl!(7);
+        const CAN_BE_TURNED = fl!(8);
+
         const FORCE_DEPTH = fl!(10);      /* Start at "correct" depth */
         const FORCE_MAXHP = fl!(11);      /* Start with max hitpoints */
         const FORCE_SLEEP = fl!(12);      /* Start out sleeping */
@@ -78,6 +81,9 @@ impl FromStr for BeingKindFlags {
                 "MALE" => result |= BeingKindFlags::MALE,
                 "FEMALE" => result |= BeingKindFlags::FEMALE,
                 "OBJECT" => result |= BeingKindFlags::OBJECT,
+
+                "CAN_BE_REPELLED" => result |= BeingKindFlags::CAN_BE_REPELLED,
+                "CAN_BE_TURNED" => result |= BeingKindFlags::CAN_BE_TURNED,
 
                 "FORCE_DEPTH" => result |= BeingKindFlags::FORCE_DEPTH,
                 "FORCE_MAXHP" => result |= BeingKindFlags::FORCE_MAXHP,

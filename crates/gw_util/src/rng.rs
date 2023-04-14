@@ -75,8 +75,12 @@ impl RandomNumberGenerator {
     }
 
     /// Rolls dice, using the classic 3d6 type of format: count is the number of dice, sides is the max number on each die [1-sides].
-    pub fn roll_dice(&mut self, count: i32, sides: i32) -> i32 {
-        (0..count).map(|_| self.range(1, sides + 1)).sum()
+    pub fn roll_dice(&mut self, count: u32, sides: u32) -> u32 {
+        let mut r = 0;
+        for _ in 0..count {
+            r += self.range(1, sides as i32 + 1);
+        }
+        r as u32
     }
 
     // /// Rolls dice based on a DiceType struct, including application of the bonus
