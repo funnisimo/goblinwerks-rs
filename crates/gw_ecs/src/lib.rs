@@ -9,6 +9,7 @@ mod levels;
 pub mod refcell;
 pub mod resource;
 mod storage;
+pub mod system;
 mod view;
 
 pub use component::Component;

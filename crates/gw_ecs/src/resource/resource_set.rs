@@ -1,5 +1,5 @@
 use super::{ResourceTypeId, Resources, UnsafeResources};
-use crate::{view::ReadOnly, Ecs};
+use crate::view::ReadOnly;
 
 /// Trait which is implemented for tuples of resources and singular resources. This abstracts
 /// fetching resources to allow for ergonomic fetching.
@@ -11,18 +11,18 @@ use crate::{view::ReadOnly, Ecs};
 ///
 /// # use gw_ecs::*;
 /// # use gw_ecs::ResourceSet;
-/// let mut resources = Resources::default();
-/// resources.insert(TypeA(55));
-/// resources.insert(TypeB(12));
+/// let mut ecs = Ecs::new();
+/// ecs.insert_global(TypeA(55));
+/// ecs.insert_global(TypeB(12));
 ///
 /// {
-///     let (a, mut b) = <(Res<TypeA>, ResMut<TypeB>)>::fetch(&resources);
+///     let (a, mut b) = ecs.fetch_mut::<(Global<TypeA>, GlobalMut<TypeB>)>::();
 ///     assert_ne!(a.0, b.0);
 ///     b.0 = a.0;
 /// }
 ///
 /// {
-///     let (a, b) = <(Res<TypeA>, Res<TypeB>)>::fetch(&resources);
+///     let (a, b) = ecs.fetch::<(Global<TypeA>, Global<TypeB>)>();
 ///     assert_eq!(a.0, b.0);
 /// }
 /// ```
@@ -53,7 +53,7 @@ pub trait ResourceSet<'a> {
 impl<'a> ResourceSet<'a> for () {
     type Result = ();
 
-    fn fetch_unchecked(_: &UnsafeResources) -> Self::Result {}
+    fn fetch_unchecked(_: &'a UnsafeResources) -> Self::Result {}
 }
 
 pub(crate) fn panic_nonexistent_resource(type_id: &ResourceTypeId) -> ! {
