@@ -311,7 +311,7 @@ pub fn load_level_data(tiles: &Tiles, being_kinds: &BeingKinds, json: Value) -> 
                             // ALL BEINGS HAVE THESE VALUES
                             if let Some(group_values) = group_info_map.get("BEING") {
                                 for (k, v) in group_values.iter() {
-                                    set_field(&mut builder, k, v);
+                                    set_field(&mut builder, k, v).unwrap();
                                 }
                             }
 
@@ -322,7 +322,7 @@ pub fn load_level_data(tiles: &Tiles, being_kinds: &BeingKinds, json: Value) -> 
                                 {
                                     if let Some(group_values) = group_info_map.get(group) {
                                         for (k, v) in group_values.iter() {
-                                            set_field(&mut builder, k, v);
+                                            set_field(&mut builder, k, v).unwrap();
                                         }
                                     }
                                 }
@@ -330,7 +330,7 @@ pub fn load_level_data(tiles: &Tiles, being_kinds: &BeingKinds, json: Value) -> 
                                 let group = group.to_string();
                                 if let Some(group_values) = group_info_map.get(group.trim()) {
                                     for (k, v) in group_values.iter() {
-                                        set_field(&mut builder, k, v);
+                                        set_field(&mut builder, k, v).unwrap();
                                     }
                                 }
                             }
