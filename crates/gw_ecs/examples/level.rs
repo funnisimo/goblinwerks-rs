@@ -1,11 +1,12 @@
-use gw_ecs::{Ecs, LevelRef, Levels, LevelsMut, LevelsRef, UniqueMut, UniqueRef};
-
+use gw_ecs::Ecs;
+use gw_ecs::{BorrowMut, BorrowRef};
+use gw_ecs::{LevelRef, LevelsMut, LevelsRef, Unique, UniqueMut};
 // struct Info(u32);
 
 struct Age(u32);
 
 fn main() {
-    let mut ecs = Ecs::new();
+    let ecs = Ecs::new();
 
     {
         // Build 2 levels
@@ -14,7 +15,9 @@ fn main() {
         let mut level = levels.create();
         println!("Create level = {}", level.index());
         level.insert_unique(Age(10));
+        let index = level.index();
         drop(level);
+        levels.select(index);
 
         let mut level = levels.create();
         println!("Create level = {}", level.index());
@@ -47,14 +50,14 @@ fn main() {
 
     {
         // Change to next level
-        let mut levels = ecs.get_global_mut::<Levels>().unwrap();
+        let mut levels = <LevelsMut>::borrow_mut(&ecs);
         println!("Change current level - 1");
         levels.select(1);
     }
 
     {
         // age is 20
-        let (level, age) = ecs.fetch::<(LevelRef, UniqueRef<Age>)>();
+        let (level, age) = <(LevelRef, Unique<Age>)>::borrow(&ecs);
         println!("Current Level - index({})", level.index());
         println!(" - Age: {}", age.0);
     }

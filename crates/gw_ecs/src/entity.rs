@@ -24,7 +24,7 @@ impl Entity {
     }
 
     pub fn is_alive(&self) -> bool {
-        (self.gen | DEAD) > 0
+        (self.gen & DEAD) == 0
     }
 
     pub fn is_dead(&self) -> bool {
