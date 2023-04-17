@@ -1,12 +1,14 @@
 use crate::Ecs;
 
-pub trait BorrowRef<'a> {
-    fn borrow(source: &'a Ecs) -> Self;
+pub trait BorrowRef<'e> {
+    type Output: 'e;
+    fn borrow(source: &'e Ecs) -> Self::Output;
 }
 
 // This may be unnecessary -
-pub trait BorrowMut<'a> {
-    fn borrow_mut(source: &'a Ecs) -> Self;
+pub trait BorrowMut<'e> {
+    type Output: 'e;
+    fn borrow_mut(source: &'e Ecs) -> Self::Output;
 }
 
 pub trait ReadOnly {}
@@ -24,18 +26,26 @@ pub use unique::*;
 macro_rules! impl_make_borrow {
     ($(($component: ident, $index: tt))+) => {
 
-        impl<'a, $($component: BorrowRef<'a>,)+> BorrowRef<'a> for ($($component,)+)
+        impl<'e, $($component,)+> BorrowRef<'e> for ($($component,)+)
+        where
+        $($component: for<'a> BorrowRef<'e>,)+
         {
-            fn borrow(source: &'a Ecs) -> Self {
+            type Output = ($(<$component as BorrowRef<'e>>::Output,)+);
+
+            fn borrow(source: &'e Ecs) -> Self::Output {
                 ($(<$component>::borrow(source),)+)
             }
         }
 
-        impl<'a, $($component: BorrowRef<'a>,)+> ReadOnly for ($($component,)+) {}
+        impl<'e, $($component: BorrowRef<'e>,)+> ReadOnly for ($($component,)+) {}
 
-        impl<'a, $($component: BorrowMut<'a>,)+> BorrowMut<'a> for ($($component,)+)
+        impl<'e, $($component,)+> BorrowMut<'e> for ($($component,)+)
+        where
+        $($component: for<'a> BorrowMut<'e>,)+
         {
-            fn borrow_mut(source: &'a Ecs) -> Self {
+            type Output = ($(<$component as BorrowMut<'e>>::Output,)+);
+
+            fn borrow_mut(source: &'e Ecs) -> Self::Output {
                 ($(<$component>::borrow_mut(source),)+)
             }
         }

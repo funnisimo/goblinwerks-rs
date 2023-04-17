@@ -1,7 +1,7 @@
 // pub mod entities;
 // mod internal;
 
-mod borrow;
+pub mod borrow;
 mod component;
 mod ecs;
 mod entity;
@@ -9,7 +9,7 @@ mod level;
 mod levels;
 pub mod refcell;
 pub mod resource;
-mod storage;
+pub mod storage;
 pub mod system;
 // mod view;
 

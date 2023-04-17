@@ -75,20 +75,28 @@ where
     }
 }
 
-impl<'a, T> BorrowRef<'a> for Unique<'a, T>
+impl<'e, T> BorrowRef<'e> for Unique<'e, T>
 where
     T: Resource,
 {
-    fn borrow(ecs: &'a Ecs) -> Self {
-        ecs.get_unique::<T>().unwrap()
+    type Output = Unique<'e, T>;
+
+    fn borrow(ecs: &'e Ecs) -> Self::Output {
+        let (levels, root) = ecs.levels().destructure();
+        let (level, parent) = levels.current().destructure();
+        let borrow = level.get_unique::<T>().unwrap();
+        Unique::new(root, parent, borrow)
+
+        // ecs.get_unique::<T>().unwrap()
     }
 }
 
-impl<'a, T> BorrowMut<'a> for Unique<'a, T>
+impl<'e, T> BorrowMut<'e> for Unique<'e, T>
 where
     T: Resource,
 {
-    fn borrow_mut(ecs: &'a Ecs) -> Self {
+    type Output = Unique<'e, T>;
+    fn borrow_mut(ecs: &'e Ecs) -> Self::Output {
         ecs.get_unique::<T>().unwrap()
     }
 }
@@ -96,20 +104,24 @@ where
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-impl<'a, T> BorrowRef<'a> for Option<Unique<'a, T>>
+impl<'e, T> BorrowRef<'e> for Option<Unique<'e, T>>
 where
     T: Resource,
 {
-    fn borrow(ecs: &'a Ecs) -> Self {
+    type Output = Option<Unique<'e, T>>;
+
+    fn borrow(ecs: &'e Ecs) -> Self::Output {
         ecs.get_unique::<T>()
     }
 }
 
-impl<'a, T> BorrowMut<'a> for Option<Unique<'a, T>>
+impl<'e, T> BorrowMut<'e> for Option<Unique<'e, T>>
 where
     T: Resource,
 {
-    fn borrow_mut(ecs: &'a Ecs) -> Self {
+    type Output = Option<Unique<'e, T>>;
+
+    fn borrow_mut(ecs: &'e Ecs) -> Self::Output {
         ecs.get_unique::<T>()
     }
 }
@@ -191,11 +203,12 @@ where
     }
 }
 
-impl<'a, T> BorrowMut<'a> for UniqueMut<'a, T>
+impl<'e, T> BorrowMut<'e> for UniqueMut<'e, T>
 where
     T: Resource,
 {
-    fn borrow_mut(ecs: &'a Ecs) -> Self {
+    type Output = UniqueMut<'e, T>;
+    fn borrow_mut(ecs: &'e Ecs) -> Self::Output {
         ecs.get_unique_mut::<T>().unwrap()
     }
 }
@@ -203,11 +216,12 @@ where
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-impl<'a, T> BorrowMut<'a> for Option<UniqueMut<'a, T>>
+impl<'e, T> BorrowMut<'e> for Option<UniqueMut<'e, T>>
 where
     T: Resource,
 {
-    fn borrow_mut(ecs: &'a Ecs) -> Self {
+    type Output = Option<UniqueMut<'e, T>>;
+    fn borrow_mut(ecs: &'e Ecs) -> Self::Output {
         ecs.get_unique_mut::<T>()
     }
 }

@@ -187,7 +187,8 @@ impl<T: ?Sized> AtomicRefCell<T> {
 const HIGH_BIT: usize = !(::core::usize::MAX >> 1);
 const MAX_FAILED_BORROWS: usize = HIGH_BIT + (HIGH_BIT >> 1);
 
-pub(crate) struct AtomicBorrowRef<'b> {
+// TODO - pub(crate)
+pub struct AtomicBorrowRef<'b> {
     borrow: &'b AtomicUsize,
 }
 
@@ -387,7 +388,8 @@ impl<'a, T: ?Sized> AsRef<T> for AtomicRef<'a, T> {
 
 impl<'b, T: ?Sized> AtomicRef<'b, T> {
     /// Destructures Ref so you can use it in a layered ref
-    pub(crate) fn destructure(self) -> (&'b T, AtomicBorrowRef<'b>) {
+    /// TODO - pub(crate)
+    pub fn destructure(self) -> (&'b T, AtomicBorrowRef<'b>) {
         (self.value, self.borrow)
     }
 

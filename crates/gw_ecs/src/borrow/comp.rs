@@ -9,23 +9,23 @@ use std::ops::{Deref, DerefMut};
 /////////////////////////////////////////////////////////////////////
 
 /// Reference to a level's unique value
-pub struct Comp<'a, T>
+pub struct Comp<'b, T>
 where
     T: Component,
 {
-    _levels: AtomicBorrowRef<'a>,
-    _level: AtomicBorrowRef<'a>,
-    borrow: AtomicRef<'a, SparseSet<T>>,
+    _levels: AtomicBorrowRef<'b>,
+    _level: AtomicBorrowRef<'b>,
+    borrow: AtomicRef<'b, SparseSet<T>>,
 }
 
-impl<'a, T> Comp<'a, T>
+impl<'b, T> Comp<'b, T>
 where
     T: Component,
 {
     pub(crate) fn new(
-        levels: AtomicBorrowRef<'a>,
-        level: AtomicBorrowRef<'a>,
-        borrow: AtomicRef<'a, SparseSet<T>>,
+        levels: AtomicBorrowRef<'b>,
+        level: AtomicBorrowRef<'b>,
+        borrow: AtomicRef<'b, SparseSet<T>>,
     ) -> Self {
         Comp {
             _levels: levels,
@@ -35,7 +35,7 @@ where
     }
 }
 
-impl<'a, T> Clone for Comp<'a, T>
+impl<'b, T> Clone for Comp<'b, T>
 where
     T: Component,
 {
@@ -48,12 +48,12 @@ where
     }
 }
 
-impl<'a, T> ReadOnly for Comp<'a, T> where T: Component {}
+impl<'b, T> ReadOnly for Comp<'b, T> where T: Component {}
 
 // unsafe impl<T> Send for Res<T> {}
 // unsafe impl<T: Sync> Sync for Res<T> {}
 
-impl<'a, T> Deref for Comp<'a, T>
+impl<'b, T> Deref for Comp<'b, T>
 where
     T: Component,
 {
@@ -65,7 +65,7 @@ where
     }
 }
 
-impl<'a, T> AsRef<SparseSet<T>> for Comp<'a, T>
+impl<'b, T> AsRef<SparseSet<T>> for Comp<'b, T>
 where
     T: Component,
 {
@@ -75,20 +75,24 @@ where
     }
 }
 
-impl<'a, T> BorrowRef<'a> for Comp<'a, T>
+impl<'e, T> BorrowRef<'e> for Comp<'e, T>
 where
     T: Component,
 {
-    fn borrow(ecs: &'a Ecs) -> Self {
+    type Output = Comp<'e, T>;
+
+    fn borrow(ecs: &'e Ecs) -> Self::Output {
         ecs.get_component::<T>().unwrap()
     }
 }
 
-impl<'a, T> BorrowMut<'a> for Comp<'a, T>
+impl<'e, T> BorrowMut<'e> for Comp<'e, T>
 where
     T: Component,
 {
-    fn borrow_mut(ecs: &'a Ecs) -> Self {
+    type Output = Comp<'e, T>;
+
+    fn borrow_mut(ecs: &'e Ecs) -> Self::Output {
         ecs.get_component::<T>().unwrap()
     }
 }
@@ -96,48 +100,52 @@ where
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-impl<'a, T> BorrowRef<'a> for Option<Comp<'a, T>>
+impl<'e, T> BorrowRef<'e> for Option<Comp<'e, T>>
 where
     T: Component,
 {
-    fn borrow(ecs: &'a Ecs) -> Self {
+    type Output = Option<Comp<'e, T>>;
+
+    fn borrow(ecs: &'e Ecs) -> Self::Output {
         ecs.get_component::<T>()
     }
 }
 
-impl<'a, T> BorrowMut<'a> for Option<Comp<'a, T>>
+impl<'e, T> BorrowMut<'e> for Option<Comp<'e, T>>
 where
     T: Component,
 {
-    fn borrow_mut(ecs: &'a Ecs) -> Self {
+    type Output = Option<Comp<'e, T>>;
+
+    fn borrow_mut(ecs: &'e Ecs) -> Self::Output {
         ecs.get_component::<T>()
     }
 }
 
-pub type TryComp<'a, T> = Option<Comp<'a, T>>;
+pub type TryComp<'b, T> = Option<Comp<'b, T>>;
 
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
 /// Reference to a global value
 
-pub struct CompMut<'a, T>
+pub struct CompMut<'b, T>
 where
     T: Component,
 {
-    _levels: AtomicBorrowRef<'a>,
-    _level: AtomicBorrowRef<'a>,
-    borrow: AtomicRefMut<'a, SparseSet<T>>,
+    _levels: AtomicBorrowRef<'b>,
+    _level: AtomicBorrowRef<'b>,
+    borrow: AtomicRefMut<'b, SparseSet<T>>,
 }
 
-impl<'a, T> CompMut<'a, T>
+impl<'b, T> CompMut<'b, T>
 where
     T: Component,
 {
     pub(crate) fn new(
-        levels: AtomicBorrowRef<'a>,
-        level: AtomicBorrowRef<'a>,
-        borrow: AtomicRefMut<'a, SparseSet<T>>,
+        levels: AtomicBorrowRef<'b>,
+        level: AtomicBorrowRef<'b>,
+        borrow: AtomicRefMut<'b, SparseSet<T>>,
     ) -> Self {
         CompMut {
             _levels: levels,
@@ -150,7 +158,7 @@ where
 // unsafe impl<T> Send for Res<T> {}
 // unsafe impl<T: Sync> Sync for Res<T> {}
 
-impl<'a, T> Deref for CompMut<'a, T>
+impl<'b, T> Deref for CompMut<'b, T>
 where
     T: Component,
 {
@@ -162,7 +170,7 @@ where
     }
 }
 
-impl<'a, T> DerefMut for CompMut<'a, T>
+impl<'b, T> DerefMut for CompMut<'b, T>
 where
     T: Component,
 {
@@ -172,7 +180,7 @@ where
     }
 }
 
-impl<'a, T> AsRef<SparseSet<T>> for CompMut<'a, T>
+impl<'b, T> AsRef<SparseSet<T>> for CompMut<'b, T>
 where
     T: Component,
 {
@@ -182,7 +190,7 @@ where
     }
 }
 
-impl<'a, T> AsMut<SparseSet<T>> for CompMut<'a, T>
+impl<'b, T> AsMut<SparseSet<T>> for CompMut<'b, T>
 where
     T: Component,
 {
@@ -191,11 +199,13 @@ where
     }
 }
 
-impl<'a, T> BorrowMut<'a> for CompMut<'a, T>
+impl<'e, T> BorrowMut<'e> for CompMut<'e, T>
 where
     T: Component,
 {
-    fn borrow_mut(ecs: &'a Ecs) -> Self {
+    type Output = CompMut<'e, T>;
+
+    fn borrow_mut(ecs: &'e Ecs) -> Self::Output {
         ecs.get_component_mut::<T>().unwrap()
     }
 }
@@ -203,13 +213,15 @@ where
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-impl<'a, T> BorrowMut<'a> for Option<CompMut<'a, T>>
+impl<'e, T> BorrowMut<'e> for Option<CompMut<'e, T>>
 where
     T: Component,
 {
-    fn borrow_mut(ecs: &'a Ecs) -> Self {
+    type Output = Option<CompMut<'e, T>>;
+
+    fn borrow_mut(ecs: &'e Ecs) -> Self::Output {
         ecs.get_component_mut::<T>()
     }
 }
 
-pub type TryCompMut<'a, T> = Option<CompMut<'a, T>>;
+pub type TryCompMut<'b, T> = Option<CompMut<'b, T>>;

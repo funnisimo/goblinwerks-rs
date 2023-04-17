@@ -68,20 +68,24 @@ where
     }
 }
 
-impl<'a, T> BorrowRef<'a> for Global<'a, T>
+impl<'e, T> BorrowRef<'e> for Global<'e, T>
 where
     T: Resource,
 {
-    fn borrow(ecs: &'a Ecs) -> Self {
+    type Output = Global<'e, T>;
+
+    fn borrow(ecs: &'e Ecs) -> Self::Output {
         ecs.get_global::<T>().unwrap()
     }
 }
 
-impl<'a, T> BorrowMut<'a> for Global<'a, T>
+impl<'e, T> BorrowMut<'e> for Global<'e, T>
 where
     T: Resource,
 {
-    fn borrow_mut(ecs: &'a Ecs) -> Self {
+    type Output = Global<'e, T>;
+
+    fn borrow_mut(ecs: &'e Ecs) -> Self::Output {
         ecs.get_global::<T>().unwrap()
     }
 }
@@ -89,20 +93,24 @@ where
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-impl<'a, T> BorrowRef<'a> for Option<Global<'a, T>>
+impl<'e, T> BorrowRef<'e> for Option<Global<'e, T>>
 where
     T: Resource,
 {
-    fn borrow(ecs: &'a Ecs) -> Self {
+    type Output = Option<Global<'e, T>>;
+
+    fn borrow(ecs: &'e Ecs) -> Self::Output {
         ecs.get_global::<T>()
     }
 }
 
-impl<'a, T> BorrowMut<'a> for Option<Global<'a, T>>
+impl<'e, T> BorrowMut<'e> for Option<Global<'e, T>>
 where
     T: Resource,
 {
-    fn borrow_mut(ecs: &'a Ecs) -> Self {
+    type Output = Option<Global<'e, T>>;
+
+    fn borrow_mut(ecs: &'e Ecs) -> Self::Output {
         ecs.get_global::<T>()
     }
 }
@@ -174,11 +182,13 @@ where
     }
 }
 
-impl<'a, T> BorrowMut<'a> for GlobalMut<'a, T>
+impl<'e, T> BorrowMut<'e> for GlobalMut<'e, T>
 where
     T: Resource,
 {
-    fn borrow_mut(ecs: &'a Ecs) -> Self {
+    type Output = GlobalMut<'e, T>;
+
+    fn borrow_mut(ecs: &'e Ecs) -> Self::Output {
         ecs.get_global_mut::<T>().unwrap()
     }
 }
@@ -186,11 +196,13 @@ where
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-impl<'a, T> BorrowMut<'a> for Option<GlobalMut<'a, T>>
+impl<'e, T> BorrowMut<'e> for Option<GlobalMut<'e, T>>
 where
     T: Resource,
 {
-    fn borrow_mut(ecs: &'a Ecs) -> Self {
+    type Output = Option<GlobalMut<'e, T>>;
+
+    fn borrow_mut(ecs: &'e Ecs) -> Self::Output {
         ecs.get_global_mut::<T>()
     }
 }

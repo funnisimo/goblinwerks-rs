@@ -49,14 +49,18 @@ impl<'a> AsRef<Level> for LevelRef<'a> {
     }
 }
 
-impl<'a> BorrowRef<'a> for LevelRef<'a> {
-    fn borrow(ecs: &'a Ecs) -> Self {
+impl<'e> BorrowRef<'e> for LevelRef<'e> {
+    type Output = LevelRef<'e>;
+
+    fn borrow(ecs: &'e Ecs) -> Self::Output {
         ecs.level()
     }
 }
 
-impl<'a> BorrowMut<'a> for LevelRef<'a> {
-    fn borrow_mut(ecs: &'a Ecs) -> Self {
+impl<'e> BorrowMut<'e> for LevelRef<'e> {
+    type Output = LevelRef<'e>;
+
+    fn borrow_mut(ecs: &'e Ecs) -> Self::Output {
         ecs.level()
     }
 }
@@ -109,8 +113,10 @@ impl<'a> AsMut<Level> for LevelMut<'a> {
     }
 }
 
-impl<'a> BorrowMut<'a> for LevelMut<'a> {
-    fn borrow_mut(ecs: &'a Ecs) -> Self {
+impl<'e> BorrowMut<'e> for LevelMut<'e> {
+    type Output = LevelMut<'e>;
+
+    fn borrow_mut(ecs: &'e Ecs) -> Self::Output {
         ecs.level_mut()
     }
 }

@@ -1,64 +1,96 @@
+use crate::borrow::BorrowRef;
 use crate::Ecs;
 
-pub trait System {
-    fn run(&mut self, ecs: &mut Ecs) -> ();
+type SystemFunc = dyn Fn(&mut Ecs) -> () + 'static;
+
+pub struct System {
+    func: Box<SystemFunc>,
 }
 
-impl<F> System for F
-where
-    F: FnMut(&mut Ecs) -> (),
-{
-    fn run(&mut self, ecs: &mut Ecs) -> () {
-        (self)(ecs)
+impl System {
+    pub fn run(&self, ecs: &mut Ecs) -> () {
+        (self.func)(ecs);
     }
 }
 
-// /// Allows a type to be borrowed by [`World::borrow`], [`World::run`] and workloads.
-// pub trait WorldBorrow<'a> {
-//     #[allow(missing_docs)]
-//     type Borrow: 'a;
+pub trait IntoSystem<D> {
+    fn into_system(self) -> System;
+}
 
-//     /// This function is where the actual borrowing happens.
-//     fn world_borrow(world: &'a mut Ecs) -> Option<Self::Borrow>;
-// }
+impl<F> IntoSystem<&mut Ecs> for F
+where
+    F: Fn(&mut Ecs) -> () + 'static,
+{
+    fn into_system(self) -> System {
+        System {
+            func: Box::new(move |ecs| (self)(ecs)),
+        }
+    }
+}
 
-// impl<'a, T> WorldBorrow<'a> for Global<T>
+// impl<A, Func> IntoSystem<(A,)> for Func
 // where
-//     T: Resource,
+//     A: for<'e> BorrowRef<'e>,
+//     Func: for<'e> Fn(<A as BorrowRef<'e>>::Output) -> (),
+//     Func: 'static,
 // {
-//     type Borrow = AtomicRef<'a, T>;
-
-//     fn world_borrow(world: &'a mut Ecs) -> Option<Self::Borrow> {
-//         world.get_global::<T>()
-//     }
-// }
-
-// pub struct WorkloadSystem {
-//     pub(crate) system_fn: Box<dyn Fn(&mut Ecs) -> Result<(), ()> + Send + Sync + 'static>,
-// }
-
-// impl WorkloadSystem {
-//     pub fn call(&mut self, ecs: &mut Ecs) {
-//         (self.system_fn)(ecs);
-//     }
-// }
-
-// pub trait IntoSystem {
-//     /// Wraps a function in a struct containing all information required by a workload.
-//     fn into_system(self) -> Result<WorkloadSystem, ()>;
-// }
-
-// impl<Func, A> IntoSystem for Func
-// where
-//     for<'a> A: WorldBorrow<'a>,
-//     for<'a> Func: Fn(A) -> () + 'static + Send + Sync,
-// {
-//     fn into_system(self) -> Result<WorkloadSystem, ()> {
-//         Ok(WorkloadSystem {
-//             system_fn: Box::new(|ecs| {
-//                 let mut r = A::world_borrow(ecs).unwrap();
-//                 Ok((self)(r))
+//     fn into_system(self) -> System {
+//         System {
+//             func: Box::new(move |ecs: &mut Ecs| {
+//                 let data = <A>::borrow(ecs);
+//                 (self)(data);
 //             }),
-//         })
+//         }
 //     }
 // }
+
+// impl<A, B, Func> IntoSystem<(A, B)> for Func
+// where
+//     A: for<'e> BorrowRef<'e>,
+//     B: for<'e> BorrowRef<'e>,
+//     Func: for<'e> Fn(<A as BorrowRef<'e>>::Output, <B as BorrowRef<'e>>::Output) -> (),
+//     Func: 'static,
+// {
+//     fn into_system(self) -> System {
+//         System {
+//             func: Box::new(move |ecs: &mut Ecs| {
+//                 let data_0 = <A>::borrow(ecs);
+//                 let data_1 = <B>::borrow(ecs);
+//                 (self)(data_0, data_1)
+//             }),
+//         }
+//     }
+// }
+
+// macro_rules! impl_make_system_fn {
+//     ($(($component: ident, $index: tt))+) => {
+
+//         impl< $($component,)+ Func> IntoSystem<($($component,)+)> for Func
+//         where
+//             $(for<'a> $component: BorrowRef<'a>,)+
+//             Func: FnMut($($component,)+) -> () + 'static,
+//         {
+//             fn into_system(mut self) -> System {
+//                 System {
+//                     func: Box::new(move |ecs: &mut Ecs| {
+//                         let data = <($($component,)+)>::borrow(ecs);
+//                         (self)($(data.$index,)+)
+//                     }),
+//                 }
+//             }
+//         }
+
+//     }
+// }
+
+// macro_rules! make_system_fn {
+//     ($(($component: ident, $index: tt))+; ($component1: ident, $index1: tt) $(($queue_component: ident, $queue_index: tt))*) => {
+//         impl_make_system_fn![$(($component, $index))*];
+//         make_system_fn![$(($component, $index))* ($component1, $index1); $(($queue_component, $queue_index))*];
+//     };
+//     ($(($component: ident, $index: tt))+;) => {
+//         impl_make_system_fn![$(($component, $index))*];
+//     }
+// }
+
+// make_system_fn![(A, 0); (B, 1) (C, 2) (D, 3) (E, 4) (F, 5) (G, 6) (H, 7) (I, 8) (J, 9)];
