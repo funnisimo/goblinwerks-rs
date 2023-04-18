@@ -1,7 +1,7 @@
 use crate::component::{Component, ComponentSet};
 use crate::fetch::{
-    Comp, CompMut, Fetch, Global, GlobalMut, LevelMut, LevelRef, LevelsMut, LevelsRef, ReadOnly,
-    Unique, UniqueMut,
+    Comp, CompMut, Fetch, Global, GlobalMut, LevelMut, LevelRef, LevelsMut, LevelsRef, Unique,
+    UniqueMut,
 };
 use crate::levels::Levels;
 use crate::resource::{Resource, Resources};
@@ -60,7 +60,7 @@ impl Ecs {
     }
 
     // spawn
-    pub fn spawn<'a, S: ComponentSet<'a>>(&mut self, comps: S) -> Entity {
+    pub fn spawn<'a, S: ComponentSet<'a>>(&self, comps: S) -> Entity {
         let mut level = self.level_mut();
         level.spawn(comps)
     }
@@ -79,8 +79,6 @@ impl Ecs {
         Some(UniqueMut::new(root, parent, borrow))
     }
 
-    // // entities
-    // // entities_mut -- ???
     pub fn register_component<C: Component>(&mut self) {
         // Store in registry
         // Add to every level
@@ -106,13 +104,13 @@ impl Ecs {
     where
         B: Fetch, // + ReadOnly,
     {
-        B::fetch(&self)
+        B::fetch(self)
     }
 
     pub fn fetch_mut<B>(&self) -> <B as Fetch>::Output<'_>
     where
         B: Fetch,
     {
-        B::fetch(&self)
+        B::fetch(self)
     }
 }

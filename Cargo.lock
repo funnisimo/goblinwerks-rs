@@ -819,6 +819,7 @@ name = "gw_ecs"
 version = "0.1.0"
 dependencies = [
  "downcast-rs",
+ "gw_macro",
  "gw_util",
 ]
 

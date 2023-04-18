@@ -30,3 +30,6 @@ gw_util = { path = "../gw_util" }
 
 # [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 # legion = { version = "0.4" }
+
+[dev-dependencies]
+gw_macro = { path = "../gw_macro" }
