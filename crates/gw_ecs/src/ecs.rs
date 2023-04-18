@@ -1,7 +1,7 @@
 use crate::component::{Component, ComponentSet};
 use crate::fetch::{
-    Comp, CompMut, Fetch, Global, GlobalMut, LevelMut, LevelRef, LevelsMut, LevelsRef,
-    MaybeBorrowed, ReadOnly, Unique, UniqueMut,
+    Comp, CompMut, Fetch, Global, GlobalMut, LevelMut, LevelRef, LevelsMut, LevelsRef, ReadOnly,
+    Unique, UniqueMut,
 };
 use crate::levels::Levels;
 use crate::resource::{Resource, Resources};
@@ -102,14 +102,14 @@ impl Ecs {
         Some(CompMut::new(root, parent, borrow))
     }
 
-    pub fn fetch<B>(&self) -> <B as MaybeBorrowed>::Output<'_>
+    pub fn fetch<B>(&self) -> <B as Fetch>::Output<'_>
     where
         B: Fetch, // + ReadOnly,
     {
         B::fetch(&self)
     }
 
-    pub fn fetch_mut<B>(&self) -> <B as MaybeBorrowed>::Output<'_>
+    pub fn fetch_mut<B>(&self) -> <B as Fetch>::Output<'_>
     where
         B: Fetch,
     {

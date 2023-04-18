@@ -1,19 +1,21 @@
 use crate::Ecs;
 
-pub trait MaybeBorrowed {
+// pub trait MaybeBorrowed {
+//     type Output<'a>;
+// }
+
+pub trait Fetch {
     type Output<'a>;
+    fn fetch(ecs: &Ecs) -> Self::Output<'_>;
 }
 
-pub trait Fetch: MaybeBorrowed {
-    fn fetch(ecs: &Ecs) -> <Self as MaybeBorrowed>::Output<'_>;
-}
-
-impl MaybeBorrowed for &Ecs {
-    type Output<'a> = &'a Ecs;
-}
+// impl MaybeBorrowed for &Ecs {
+//     type Output<'a> = &'a Ecs;
+// }
 
 impl Fetch for &Ecs {
-    fn fetch(ecs: &Ecs) -> <Self as MaybeBorrowed>::Output<'_> {
+    type Output<'a> = &'a Ecs;
+    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
         ecs
     }
 }
@@ -33,17 +35,19 @@ pub use unique::*;
 macro_rules! impl_make_fetch {
     ($(($component: ident, $index: tt))+) => {
 
-        impl<$($component,)+> MaybeBorrowed for ($($component,)+)
-        where
-            $($component: MaybeBorrowed,)+
-        {
-            type Output<'a> = ($(<$component as MaybeBorrowed>::Output<'a>,)+);
-        }
+        // impl<$($component,)+> MaybeBorrowed for ($($component,)+)
+        // where
+        //     $($component: MaybeBorrowed,)+
+        // {
+        //     type Output<'a> = ($(<$component as MaybeBorrowed>::Output<'a>,)+);
+        // }
         impl<$($component,)+> Fetch for ($($component,)+)
         where
             $($component: Fetch,)+
         {
-            fn fetch(ecs: &Ecs) -> <Self as MaybeBorrowed>::Output<'_> {
+            type Output<'a> = ($(<$component as Fetch>::Output<'a>,)+);
+
+            fn fetch(ecs: &Ecs) -> Self::Output<'_> {
                  ($(<$component>::fetch(ecs),)+)
             }
         }

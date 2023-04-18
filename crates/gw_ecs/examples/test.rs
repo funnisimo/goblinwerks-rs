@@ -16,16 +16,27 @@ use std::{
 //     type Output<'a>;
 // }
 
-// trait Fetch: MaybeBorrowed {
-//     fn fetch(source: &Ecs) -> <Self as MaybeBorrowed>::Output<'_>;
+// trait Fetch {
+//     type Output<'a>;
+//     fn fetch(source: &Ecs) -> Self::Output<'_>;
 // }
 
-// impl MaybeBorrowed for &Ecs {
-//     type Output<'a> = &'a Ecs;
-// }
+// // impl MaybeBorrowed for &Ecs {
+// //     type Output<'a> = &'a Ecs;
+// // }
 // impl Fetch for &Ecs {
-//     fn fetch(source: &Ecs) -> <Self as MaybeBorrowed>::Output<'_> {
+//     type Output<'a> = &'a Ecs;
+
+//     fn fetch(source: &Ecs) -> Self::Output<'_> {
 //         source
+//     }
+// }
+
+// impl<T> Fetch for Global<'_, T> {
+//     type Output<'a> = Global<'a, T>;
+
+//     fn fetch(source: &Ecs) -> Self::Output<'_> {
+//         ecs.get_global::<T>().unwrap()
 //     }
 // }
 

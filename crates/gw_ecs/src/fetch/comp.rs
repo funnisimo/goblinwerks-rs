@@ -1,5 +1,5 @@
+use super::Fetch;
 use super::ReadOnly;
-use super::{Fetch, MaybeBorrowed};
 use crate::refcell::{AtomicBorrowRef, AtomicRef, AtomicRefMut};
 use crate::storage::SparseSet;
 use crate::{Component, Ecs};
@@ -75,18 +75,19 @@ where
     }
 }
 
-impl<T> MaybeBorrowed for Comp<'_, T>
-where
-    T: Component,
-{
-    type Output<'a> = Comp<'a, T>;
-}
+// impl<T> MaybeBorrowed for Comp<'_, T>
+// where
+//     T: Component,
+// {
+//     type Output<'a> = Comp<'a, T>;
+// }
 
 impl<T> Fetch for Comp<'_, T>
 where
     T: Component,
 {
-    fn fetch(ecs: &Ecs) -> Comp<'_, T> {
+    type Output<'a> = Comp<'a, T>;
+    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
         ecs.get_component::<T>().unwrap()
     }
 }
@@ -94,18 +95,19 @@ where
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-impl<T> MaybeBorrowed for Option<Comp<'_, T>>
+// impl<T> MaybeBorrowed for Option<Comp<'_, T>>
+// where
+//     T: Component,
+// {
+//     type Output<'a> = Option<Comp<'a, T>>;
+// }
+
+impl<T> Fetch for Option<Comp<'_, T>>
 where
     T: Component,
 {
     type Output<'a> = Option<Comp<'a, T>>;
-}
-
-impl<'a, T> Fetch for Option<Comp<'a, T>>
-where
-    T: Component,
-{
-    fn fetch(ecs: &Ecs) -> Option<Comp<'_, T>> {
+    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
         ecs.get_component::<T>()
     }
 }
@@ -187,18 +189,19 @@ where
     }
 }
 
-impl<T> MaybeBorrowed for CompMut<'_, T>
-where
-    T: Component,
-{
-    type Output<'a> = CompMut<'a, T>;
-}
+// impl<T> MaybeBorrowed for CompMut<'_, T>
+// where
+//     T: Component,
+// {
+//     type Output<'a> = CompMut<'a, T>;
+// }
 
 impl<T> Fetch for CompMut<'_, T>
 where
     T: Component,
 {
-    fn fetch(ecs: &Ecs) -> CompMut<'_, T> {
+    type Output<'a> = CompMut<'a, T>;
+    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
         ecs.get_component_mut::<T>().unwrap()
     }
 }
@@ -206,18 +209,20 @@ where
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-impl<T> MaybeBorrowed for Option<CompMut<'_, T>>
+// impl<T> MaybeBorrowed for Option<CompMut<'_, T>>
+// where
+//     T: Component,
+// {
+//     type Output<'a> = Option<CompMut<'a, T>>;
+// }
+
+impl<T> Fetch for Option<CompMut<'_, T>>
 where
     T: Component,
 {
     type Output<'a> = Option<CompMut<'a, T>>;
-}
 
-impl<'a, T> Fetch for Option<CompMut<'a, T>>
-where
-    T: Component,
-{
-    fn fetch(ecs: &Ecs) -> Option<CompMut<'_, T>> {
+    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
         ecs.get_component_mut::<T>()
     }
 }

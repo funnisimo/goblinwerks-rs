@@ -1,5 +1,5 @@
+use super::Fetch;
 use super::ReadOnly;
-use super::{Fetch, MaybeBorrowed};
 use crate::refcell::{AtomicBorrowRef, AtomicRef, AtomicRefMut};
 use crate::resource::Resource;
 use crate::Ecs;
@@ -75,18 +75,19 @@ where
     }
 }
 
-impl<T> MaybeBorrowed for Unique<'_, T>
-where
-    T: Resource,
-{
-    type Output<'a> = Unique<'a, T>;
-}
+// impl<T> MaybeBorrowed for Unique<'_, T>
+// where
+//     T: Resource,
+// {
+//     type Output<'a> = Unique<'a, T>;
+// }
 
 impl<T> Fetch for Unique<'_, T>
 where
     T: Resource,
 {
-    fn fetch(ecs: &Ecs) -> Unique<'_, T> {
+    type Output<'a> = Unique<'a, T>;
+    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
         ecs.get_unique::<T>().unwrap()
     }
 }
@@ -94,18 +95,19 @@ where
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-impl<T> MaybeBorrowed for Option<Unique<'_, T>>
+// impl<T> MaybeBorrowed for Option<Unique<'_, T>>
+// where
+//     T: Resource,
+// {
+//     type Output<'a> = Option<Unique<'a, T>>;
+// }
+
+impl<T> Fetch for Option<Unique<'_, T>>
 where
     T: Resource,
 {
     type Output<'a> = Option<Unique<'a, T>>;
-}
-
-impl<'a, T> Fetch for Option<Unique<'a, T>>
-where
-    T: Resource,
-{
-    fn fetch(ecs: &Ecs) -> Option<Unique<'_, T>> {
+    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
         ecs.get_unique::<T>()
     }
 }
@@ -187,18 +189,19 @@ where
     }
 }
 
-impl<T> MaybeBorrowed for UniqueMut<'_, T>
-where
-    T: Resource,
-{
-    type Output<'a> = UniqueMut<'a, T>;
-}
+// impl<T> MaybeBorrowed for UniqueMut<'_, T>
+// where
+//     T: Resource,
+// {
+//     type Output<'a> = UniqueMut<'a, T>;
+// }
 
 impl<T> Fetch for UniqueMut<'_, T>
 where
     T: Resource,
 {
-    fn fetch(ecs: &Ecs) -> UniqueMut<'_, T> {
+    type Output<'a> = UniqueMut<'a, T>;
+    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
         ecs.get_unique_mut().unwrap()
     }
 }
@@ -206,18 +209,19 @@ where
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-impl<T> MaybeBorrowed for Option<UniqueMut<'_, T>>
+// impl<T> MaybeBorrowed for Option<UniqueMut<'_, T>>
+// where
+//     T: Resource,
+// {
+//     type Output<'a> = Option<UniqueMut<'a, T>>;
+// }
+
+impl<T> Fetch for Option<UniqueMut<'_, T>>
 where
     T: Resource,
 {
     type Output<'a> = Option<UniqueMut<'a, T>>;
-}
-
-impl<'a, T> Fetch for Option<UniqueMut<'a, T>>
-where
-    T: Resource,
-{
-    fn fetch(ecs: &Ecs) -> Option<UniqueMut<'_, T>> {
+    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
         ecs.get_unique_mut::<T>()
     }
 }

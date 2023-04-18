@@ -1,5 +1,5 @@
 use super::ReadOnly;
-use super::{Fetch, Global, GlobalMut, MaybeBorrowed};
+use super::{Fetch, Global, GlobalMut};
 use crate::{
     refcell::{AtomicBorrowRef, AtomicRef, AtomicRefMut},
     Ecs, Level, Levels,
@@ -49,12 +49,13 @@ impl<'a> AsRef<Level> for LevelRef<'a> {
     }
 }
 
-impl MaybeBorrowed for LevelRef<'_> {
-    type Output<'a> = LevelRef<'a>;
-}
+// impl MaybeBorrowed for LevelRef<'_> {
+//     type Output<'a> = LevelRef<'a>;
+// }
 
 impl Fetch for LevelRef<'_> {
-    fn fetch(ecs: &Ecs) -> LevelRef<'_> {
+    type Output<'a> = LevelRef<'a>;
+    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
         ecs.level()
     }
 }
@@ -107,12 +108,13 @@ impl<'a> AsMut<Level> for LevelMut<'a> {
     }
 }
 
-impl MaybeBorrowed for LevelMut<'_> {
-    type Output<'a> = LevelMut<'a>;
-}
+// impl MaybeBorrowed for LevelMut<'_> {
+//     type Output<'a> = LevelMut<'a>;
+// }
 
 impl Fetch for LevelMut<'_> {
-    fn fetch(ecs: &Ecs) -> LevelMut<'_> {
+    type Output<'a> = LevelMut<'a>;
+    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
         ecs.level_mut()
     }
 }

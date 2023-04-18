@@ -1,5 +1,5 @@
+use super::Fetch;
 use super::ReadOnly;
-use super::{Fetch, MaybeBorrowed};
 use crate::refcell::{AtomicBorrowRef, AtomicRef, AtomicRefMut};
 use crate::resource::Resource;
 use crate::Ecs;
@@ -24,22 +24,6 @@ where
 
     pub(crate) fn destructure(self) -> (&'a T, AtomicBorrowRef<'a>) {
         self.borrow.destructure()
-    }
-}
-
-impl<'b, T> MaybeBorrowed for Global<'b, T>
-where
-    T: Resource,
-{
-    type Output<'a> = Global<'a, T>;
-}
-
-impl<'a, T> Fetch for Global<'a, T>
-where
-    T: Resource,
-{
-    fn fetch(ecs: &Ecs) -> Global<'_, T> {
-        ecs.get_global::<T>().unwrap()
     }
 }
 
@@ -81,21 +65,39 @@ where
     }
 }
 
+// impl<'b, T> MaybeBorrowed for Global<'b, T>
+// where
+//     T: Resource,
+// {
+//     type Output<'a> = Global<'a, T>;
+// }
+
+impl<T> Fetch for Global<'_, T>
+where
+    T: Resource,
+{
+    type Output<'a> = Global<'a, T>;
+    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
+        ecs.get_global::<T>().unwrap()
+    }
+}
+
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-impl<T> MaybeBorrowed for Option<Global<'_, T>>
+// impl<T> MaybeBorrowed for Option<Global<'_, T>>
+// where
+//     T: Resource,
+// {
+//     type Output<'a> = Option<Global<'a, T>>;
+// }
+
+impl<T> Fetch for Option<Global<'_, T>>
 where
     T: Resource,
 {
     type Output<'a> = Option<Global<'a, T>>;
-}
-
-impl<'a, T> Fetch for Option<Global<'a, T>>
-where
-    T: Resource,
-{
-    fn fetch(ecs: &Ecs) -> Option<Global<'_, T>> {
+    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
         ecs.get_global::<T>()
     }
 }
@@ -117,22 +119,6 @@ where
 {
     pub(crate) fn new(borrow: AtomicRefMut<'a, T>) -> Self {
         GlobalMut { borrow }
-    }
-}
-
-impl<'b, T> MaybeBorrowed for GlobalMut<'b, T>
-where
-    T: Resource,
-{
-    type Output<'a> = GlobalMut<'a, T>;
-}
-
-impl<'a, T> Fetch for GlobalMut<'a, T>
-where
-    T: Resource,
-{
-    fn fetch(ecs: &Ecs) -> GlobalMut<'_, T> {
-        ecs.get_global_mut::<T>().unwrap()
     }
 }
 
@@ -179,21 +165,39 @@ where
     }
 }
 
+// impl<'b, T> MaybeBorrowed for GlobalMut<'b, T>
+// where
+//     T: Resource,
+// {
+//     type Output<'a> = GlobalMut<'a, T>;
+// }
+
+impl<T> Fetch for GlobalMut<'_, T>
+where
+    T: Resource,
+{
+    type Output<'a> = GlobalMut<'a, T>;
+    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
+        ecs.get_global_mut::<T>().unwrap()
+    }
+}
+
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-impl<T> MaybeBorrowed for Option<GlobalMut<'_, T>>
+// impl<T> MaybeBorrowed for Option<GlobalMut<'_, T>>
+// where
+//     T: Resource,
+// {
+//     type Output<'a> = Option<GlobalMut<'a, T>>;
+// }
+
+impl<T> Fetch for Option<GlobalMut<'_, T>>
 where
     T: Resource,
 {
     type Output<'a> = Option<GlobalMut<'a, T>>;
-}
-
-impl<'a, T> Fetch for Option<GlobalMut<'a, T>>
-where
-    T: Resource,
-{
-    fn fetch(ecs: &Ecs) -> Option<GlobalMut<'_, T>> {
+    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
         ecs.get_global_mut::<T>()
     }
 }
