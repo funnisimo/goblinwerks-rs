@@ -46,7 +46,7 @@ fn setup(ecs: &mut Ecs) {
 }
 
 fn update(ecs: &mut Ecs) {
-    let (mut rng, mut time, mut stocks) = ecs.fetch_mut::<(
+    let (mut rng, mut time, mut stocks) = ecs.fetch::<(
         GlobalMut<RandomNumberGenerator>,
         GlobalMut<Time>,
         CompMut<Stock>,

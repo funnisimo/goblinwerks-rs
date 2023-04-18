@@ -107,10 +107,10 @@ impl Ecs {
         B::fetch(self)
     }
 
-    pub fn fetch_mut<B>(&self) -> <B as Fetch>::Output<'_>
-    where
-        B: Fetch,
-    {
-        B::fetch(self)
-    }
+    // pub fn fetch_mut<B>(&self) -> <B as Fetch>::Output<'_>
+    // where
+    //     B: Fetch,
+    // {
+    //     B::fetch(self)
+    // }
 }

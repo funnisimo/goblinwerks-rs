@@ -10,7 +10,7 @@ fn main() {
 
     {
         // Build 2 levels
-        let mut levels = ecs.fetch_mut::<LevelsMut>();
+        let mut levels = ecs.fetch::<LevelsMut>();
 
         let mut level = levels.create();
         println!("Create level = {}", level.index());
@@ -33,7 +33,7 @@ fn main() {
 
     {
         // Increment age
-        let mut age = ecs.fetch_mut::<UniqueMut<Age>>();
+        let mut age = ecs.fetch::<UniqueMut<Age>>();
         println!("Direct Unique Fetch: Age: {}", age.0);
         age.0 += 1;
         println!(" - Increment");
