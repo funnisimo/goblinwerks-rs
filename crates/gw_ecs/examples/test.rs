@@ -1,6 +1,9 @@
 #![allow(dead_code, unused_imports, unused_variables)]
 
-use std::cell::{Ref, RefCell, RefMut};
+use std::{
+    cell::{Ref, RefCell, RefMut},
+    marker::PhantomData,
+};
 
 /// This is our system
 #[derive(Default)]
@@ -83,6 +86,45 @@ where
     }
 }
 
+/// A function that operates on a Source
+struct System {
+    func: Box<dyn Fn(&Source) -> ()>,
+}
+
+impl System {
+    /// Construct a new System with the given work function
+    fn new(func: Box<dyn Fn(&Source) -> ()>) -> Self {
+        System { func }
+    }
+
+    /// Run the system's work function
+    fn run(&self, source: &Source) {
+        (self.func)(source);
+    }
+}
+
+/// Converts a type into a system
+trait IntoSystem {
+    fn into_system(self) -> System;
+}
+
+/// Make a system for a Source level func
+impl<F> IntoSystem for F
+where
+    F: Fn(&Source) -> () + 'static,
+{
+    fn into_system(self) -> System {
+        System::new(Box::new(move |source| {
+            (self)(source);
+        }))
+    }
+}
+
+fn test_sys(source: &Source) {
+    let a = u32::fetch(source);
+    println!("sys = {}", a);
+}
+
 fn main() {
     let source = Source::default();
     *source.age.borrow_mut() = 4;
@@ -105,4 +147,7 @@ fn main() {
 
     let (a, b) = <(u32, u32)>::fetch(&source);
     println!("dual fetch = {}, {}", a, b);
+
+    let system: System = test_sys.into_system();
+    system.run(&source);
 }
