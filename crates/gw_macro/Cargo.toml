@@ -1,0 +1,18 @@
+[package]
+name    = "gw_macro"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name       = "gw_macro"
+path       = "src/lib.rs"
+proc-macro = true
+
+[dependencies]
+# https://github.com/dtolnay/proc-macro-workshop#debugging-tips
+syn         = { version = "*", features = ["extra-traits", "full"] }
+quote       = "1.0.26"
+proc-macro2 = "1.0.56"
+gw_ecs      = { path = "../gw_ecs" }

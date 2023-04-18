@@ -1,9 +1,9 @@
 #![allow(dead_code, unused_imports)]
 
-use gw_ecs::borrow::{Global, GlobalMut, Unique, UniqueMut};
-use gw_ecs::system::{IntoSystem, System};
+use gw_ecs::fetch::{Global, GlobalMut, Unique, UniqueMut};
+use gw_ecs::system::System;
 use gw_ecs::Ecs;
-use gw_ecs::{BorrowMut, BorrowRef};
+use gw_ecs::Fetch;
 use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
 use std::ops::Deref;
@@ -25,24 +25,24 @@ fn main() {
         let source_gl = ecs.get_global::<Data>().unwrap();
         println!("source = {:?}", source_gl.0);
 
-        let global_ref = Global::<Data>::borrow(&ecs);
+        let global_ref = Global::<Data>::fetch(&ecs);
         println!("borrowed = {:?}", global_ref.0);
 
-        let (gl, un) = <(Global<Data>, Unique<Data>)>::borrow(&ecs);
+        let (gl, un) = <(Global<Data>, Unique<Data>)>::fetch(&ecs);
         println!("borrowed = {:?} {:?}", gl.0, un.0);
 
         let (gl, un) = ecs.fetch::<(Global<Data>, Unique<Data>)>();
         println!("fetched = {:?} {:?}", gl.0, un.0);
     }
 
-    let system_fn = |_source: &mut Ecs| {
-        println!("Hello from System!");
-    };
-    let system = system_fn.into_system();
-    system.run(&mut ecs);
+    // let system_fn = |_source: &mut Ecs| {
+    //     println!("Hello from System!");
+    // };
+    // let system = system_fn.into_system();
+    // system.run(&mut ecs);
 
-    let system = simple_system.into_system();
-    system.run(&mut ecs);
+    // let system = simple_system.into_system();
+    // system.run(&mut ecs);
 
     // let system_fn = |entity: Global<Data>| {
     //     println!("Hello from Global Data System - {}!", entity.0);

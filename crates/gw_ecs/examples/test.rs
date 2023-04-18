@@ -1,153 +1,176 @@
 #![allow(dead_code, unused_imports, unused_variables)]
 
+use gw_ecs::{Ecs, Fetch, Global, GlobalMut};
+
 use std::{
     cell::{Ref, RefCell, RefMut},
     marker::PhantomData,
 };
 
-/// This is our system
-#[derive(Default)]
-struct Source {
-    age: RefCell<u32>,
-}
-
 //////////////////////////////////////////////////////
 // Got MaybeBorrowed from:
 // https://users.rust-lang.org/t/problems-matching-up-lifetimes-between-various-traits-and-closure-parameters/71994
+// https://users.rust-lang.org/t/into-like-trait-cant-infer-types-even-with-result-type/92672/5
 
-trait MaybeBorrowed<'a> {
-    type Output: 'a + Sized;
-}
+// trait MaybeBorrowed {
+//     type Output<'a>;
+// }
 
-/// Retrieve/borrow value from container
-trait Fetch: for<'a> MaybeBorrowed<'a> {
-    fn fetch(source: &Source) -> <Self as MaybeBorrowed<'_>>::Output;
-}
+// trait Fetch: MaybeBorrowed {
+//     fn fetch(source: &Ecs) -> <Self as MaybeBorrowed>::Output<'_>;
+// }
 
-impl<'a> MaybeBorrowed<'a> for u32 {
-    type Output = u32;
-}
-impl Fetch for u32 {
-    fn fetch(source: &Source) -> <Self as MaybeBorrowed<'_>>::Output {
-        *source.age.borrow()
-    }
-}
+// impl MaybeBorrowed for &Ecs {
+//     type Output<'a> = &'a Ecs;
+// }
+// impl Fetch for &Ecs {
+//     fn fetch(source: &Ecs) -> <Self as MaybeBorrowed>::Output<'_> {
+//         source
+//     }
+// }
 
-impl<'a> MaybeBorrowed<'a> for Ref<'_, u32> {
-    type Output = Ref<'a, u32>;
-}
-impl Fetch for Ref<'_, u32> {
-    fn fetch(source: &Source) -> <Self as MaybeBorrowed<'_>>::Output {
-        source.age.borrow()
-    }
-}
+// impl MaybeBorrowed for u32 {
+//     type Output<'a> = u32;
+// }
+// impl Fetch for u32 {
+//     fn fetch(source: &Ecs) -> <Self as MaybeBorrowed>::Output<'_> {
+//         *source.age.borrow()
+//     }
+// }
 
-impl<'a> MaybeBorrowed<'a> for RefMut<'_, u32> {
-    type Output = RefMut<'a, u32>;
-}
-impl Fetch for RefMut<'_, u32> {
-    fn fetch(source: &Source) -> <Self as MaybeBorrowed<'_>>::Output {
-        source.age.borrow_mut()
-    }
-}
+// impl MaybeBorrowed for Ref<'_, u32> {
+//     type Output<'a> = Ref<'a, u32>;
+// }
+// impl Fetch for Ref<'_, u32> {
+//     fn fetch(source: &Ecs) -> <Self as MaybeBorrowed>::Output<'_> {
+//         source.age.borrow()
+//     }
+// }
 
-impl<'a, A> MaybeBorrowed<'a> for (A,)
-where
-    A: MaybeBorrowed<'a>,
-{
-    type Output = (<A as MaybeBorrowed<'a>>::Output,);
-}
-impl<A> Fetch for (A,)
-where
-    A: Fetch,
-{
-    fn fetch(source: &Source) -> <Self as MaybeBorrowed<'_>>::Output {
-        (A::fetch(source),)
-    }
-}
+// impl MaybeBorrowed for RefMut<'_, u32> {
+//     type Output<'a> = RefMut<'a, u32>;
+// }
+// impl Fetch for RefMut<'_, u32> {
+//     fn fetch(source: &Ecs) -> <Self as MaybeBorrowed>::Output<'_> {
+//         source.age.borrow_mut()
+//     }
+// }
 
-impl<'a, A, B> MaybeBorrowed<'a> for (A, B)
-where
-    A: MaybeBorrowed<'a>,
-    B: MaybeBorrowed<'a>,
-{
-    type Output = (
-        <A as MaybeBorrowed<'a>>::Output,
-        <B as MaybeBorrowed<'a>>::Output,
-    );
-}
-impl<A, B> Fetch for (A, B)
-where
-    A: Fetch,
-    B: Fetch,
-{
-    fn fetch(source: &Source) -> <Self as MaybeBorrowed<'_>>::Output {
-        (A::fetch(source), B::fetch(source))
-    }
-}
+// impl<A> MaybeBorrowed for (A,)
+// where
+//     A: MaybeBorrowed,
+// {
+//     type Output<'a> = (<A as MaybeBorrowed>::Output<'a>,);
+// }
+// impl<A> Fetch for (A,)
+// where
+//     A: Fetch,
+// {
+//     fn fetch(source: &Ecs) -> <Self as MaybeBorrowed>::Output<'_> {
+//         (A::fetch(source),)
+//     }
+// }
 
-/// A function that operates on a Source
+// impl<A, B> MaybeBorrowed for (A, B)
+// where
+//     A: MaybeBorrowed,
+//     B: MaybeBorrowed,
+// {
+//     type Output<'a> = (
+//         <A as MaybeBorrowed>::Output<'a>,
+//         <B as MaybeBorrowed>::Output<'a>,
+//     );
+// }
+// impl<A, B> Fetch for (A, B)
+// where
+//     A: Fetch,
+//     B: Fetch,
+// {
+//     fn fetch(source: &Ecs) -> <Self as MaybeBorrowed>::Output<'_> {
+//         (A::fetch(source), B::fetch(source))
+//     }
+// }
+
+/// A function that operates on a Ecs
 struct System {
-    func: Box<dyn Fn(&Source) -> ()>,
+    func: Box<dyn Fn(&Ecs) -> ()>,
 }
 
 impl System {
     /// Construct a new System with the given work function
-    fn new(func: Box<dyn Fn(&Source) -> ()>) -> Self {
+    fn new(func: Box<dyn Fn(&Ecs) -> ()>) -> Self {
         System { func }
     }
 
     /// Run the system's work function
-    fn run(&self, source: &Source) {
+    fn run(&self, source: &Ecs) {
         (self.func)(source);
     }
 }
 
-/// Converts a type into a system
-trait IntoSystem {
-    fn into_system(self) -> System;
-}
-
-/// Make a system for a Source level func
-impl<F> IntoSystem for F
+impl<F> From<F> for System
 where
-    F: Fn(&Source) -> () + 'static,
+    F: Fn(&Ecs) -> () + 'static,
 {
-    fn into_system(self) -> System {
-        System::new(Box::new(move |source| {
-            (self)(source);
-        }))
+    fn from(value: F) -> Self {
+        System::new(Box::new(value))
     }
 }
 
-fn test_sys(source: &Source) {
-    let a = u32::fetch(source);
-    println!("sys = {}", a);
+fn test_sys(source: &Ecs) {
+    let a = <Global<u32>>::fetch(source);
+    println!("sys = {}", *a);
+}
+
+fn test_sys_system(source: &Ecs) {
+    let data = <(&Ecs,)>::fetch(source);
+    test_sys(data.0);
+}
+
+fn val_sys(val: Global<u32>) {
+    println!("u32 sys = {}", *val);
+}
+
+fn val_sys_system(source: &Ecs) {
+    let data = <(Global<u32>,)>::fetch(source);
+    val_sys(data.0);
+}
+
+fn ref_sys(val: Global<u32>) {
+    println!("u32 sys = {}", *val);
+}
+
+fn ref_sys_system(source: &Ecs) {
+    let data = <(Global<u32>,)>::fetch(source);
+    ref_sys(data.0);
 }
 
 fn main() {
-    let source = Source::default();
-    *source.age.borrow_mut() = 4;
-
-    let a = u32::fetch(&source);
-    println!("u32 = {}", a);
+    let mut source = Ecs::new();
+    source.insert_global(4u32);
 
     {
-        let ref_a = Ref::<u32>::fetch(&source);
-        println!("ref_u32 = {}", *ref_a);
+        let a = <Global<u32>>::fetch(&source);
+        println!("u32 = {}", *a);
     }
     {
-        let mut mut_a = RefMut::<u32>::fetch(&source);
+        let mut mut_a = <GlobalMut<u32>>::fetch(&source);
         *mut_a = 10;
         println!("mut_u32 = {}", *mut_a);
     }
 
-    let (a,) = <(u32,)>::fetch(&source);
-    println!("u32 = {}", a);
+    let (a,) = <(Global<u32>,)>::fetch(&source);
+    println!("u32 = {}", *a);
 
-    let (a, b) = <(u32, u32)>::fetch(&source);
-    println!("dual fetch = {}, {}", a, b);
+    let (a, b) = <(Global<u32>, Global<u32>)>::fetch(&source);
+    println!("dual fetch = {}, {}", *a, *b);
 
-    let system: System = test_sys.into_system();
+    let system: System = val_sys_system.into();
+    system.run(&source);
+
+    let system: System = ref_sys_system.into();
+    system.run(&source);
+
+    let system: System = test_sys_system.into();
     system.run(&source);
 }

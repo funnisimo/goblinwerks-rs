@@ -1,4 +1,4 @@
-use crate::borrow::BorrowRef;
+// use crate::fetch::{Fetch, MaybeBorrowed};
 use crate::Ecs;
 
 type SystemFunc = dyn Fn(&mut Ecs) -> () + 'static;
@@ -13,20 +13,20 @@ impl System {
     }
 }
 
-pub trait IntoSystem<D> {
-    fn into_system(self) -> System;
-}
+// pub trait IntoSystem<D> {
+//     fn into_system(self) -> System;
+// }
 
-impl<F> IntoSystem<&mut Ecs> for F
-where
-    F: Fn(&mut Ecs) -> () + 'static,
-{
-    fn into_system(self) -> System {
-        System {
-            func: Box::new(move |ecs| (self)(ecs)),
-        }
-    }
-}
+// impl<F> IntoSystem<&mut Ecs> for F
+// where
+//     F: Fn(&mut Ecs) -> () + 'static,
+// {
+//     fn into_system(self) -> System {
+//         System {
+//             func: Box::new(move |ecs| (self)(ecs)),
+//         }
+//     }
+// }
 
 // impl<A, Func> IntoSystem<(A,)> for Func
 // where

@@ -1,5 +1,5 @@
 use gw_ecs::Ecs;
-use gw_ecs::{BorrowMut, BorrowRef, Global, GlobalMut};
+use gw_ecs::{Fetch, Global, GlobalMut};
 
 struct Info(u32);
 
@@ -18,14 +18,14 @@ fn main() {
     {
         // Insert another
         ecs.insert_global(Age(5));
-        let age = Global::<Age>::borrow(&mut ecs);
+        let age = Global::<Age>::fetch(&mut ecs);
         println!("Age = {}", age.0);
     }
 
     {
         // // Increment the info
         // let (mut info, age) = ecs.fetch_mut::<(GlobalMut<Info>, Global<Age>)>();
-        let mut info = GlobalMut::<Info>::borrow_mut(&ecs);
+        let mut info = GlobalMut::<Info>::fetch(&ecs);
         info.0 = info.0 + 1;
 
         println!("After increment: Info({})", info.0);

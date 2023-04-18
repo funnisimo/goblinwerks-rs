@@ -1,5 +1,5 @@
 use gw_ecs::Ecs;
-use gw_ecs::{BorrowMut, BorrowRef};
+use gw_ecs::Fetch;
 use gw_ecs::{LevelRef, LevelsMut, LevelsRef, Unique, UniqueMut};
 // struct Info(u32);
 
@@ -50,14 +50,14 @@ fn main() {
 
     {
         // Change to next level
-        let mut levels = <LevelsMut>::borrow_mut(&ecs);
+        let mut levels = <LevelsMut>::fetch(&ecs);
         println!("Change current level - 1");
         levels.select(1);
     }
 
     {
         // age is 20
-        let (level, age) = <(LevelRef, Unique<Age>)>::borrow(&ecs);
+        let (level, age) = <(LevelRef, Unique<Age>)>::fetch(&ecs);
         println!("Current Level - index({})", level.index());
         println!(" - Age: {}", age.0);
     }

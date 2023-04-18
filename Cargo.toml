@@ -9,9 +9,10 @@ exclude = ["resources/", ".github/", "wasmi/", "crates/"]
 [workspace]
 members = ["crates/*"]
 
-[dependencies]
-gw_app   = { path = "crates/gw_app" }
-gw_ui    = { path = "crates/gw_ui" }
-gw_util  = { path = "crates/gw_util" }
-gw_world = { path = "crates/gw_world" }
-acanja   = { path = "crates/acanja" }
+# [dependencies]
+# gw_app   = { path = "crates/gw_app" }
+# gw_ecs   = { path = "crates/gw_ecs" }
+# gw_macro = { path = "crates/gw_macro" }
+# gw_ui    = { path = "crates/gw_ui" }
+# gw_util  = { path = "crates/gw_util" }
+# gw_world = { path = "crates/gw_world" }
