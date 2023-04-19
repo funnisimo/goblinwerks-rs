@@ -1,6 +1,8 @@
 // use chrono::{DateTime, FixedOffset};
 pub use crate::value::Value;
 
+use super::calculate_formula;
+
 /// Defines Excel Functions.
 #[derive(Debug, Clone)]
 pub enum Function {
@@ -192,6 +194,23 @@ pub enum Formula {
     Reference(String),
     Iterator(Vec<Formula>),
     Error(Error),
+}
+
+impl Formula {
+    pub fn calculate(
+        &self,
+        f: Option<&impl Fn(String, Vec<Value>) -> Result<Value, Error>>,
+        r: Option<&impl Fn(String) -> Option<Value>>,
+    ) -> Result<Value, Error> {
+        calculate_formula(self.clone(), f, r)
+    }
+
+    pub fn is_err(&self) -> bool {
+        match self {
+            Formula::Error(_) => true,
+            _ => false,
+        }
+    }
 }
 
 /// Struct that holds a parsed string. Formula enum and Expression Struct are defined recursively.

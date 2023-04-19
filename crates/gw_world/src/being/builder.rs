@@ -1,11 +1,11 @@
-use super::{Being, BeingKind, BeingKindFlags, Stat, Stats};
+use super::{Being, BeingKind, BeingKindFlags, BeingKinds, Stat, Stats};
 use crate::{
     combat::{parse_melee, Melee},
     sprite::{Sprite, SpriteParseError},
 };
-use gw_app::{Glyph, RGBA};
+use gw_app::{log, Glyph, RGBA};
 use gw_util::value::Value;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 pub struct BeingKindBuilder {
     pub(super) id: String,
@@ -257,5 +257,97 @@ pub fn set_field(
             }
         }
         _ => Err(BuilderError::UnknownField(field.to_string())),
+    }
+}
+
+#[derive(Debug)]
+pub enum BeingKindError {
+    UnknownId(String),
+    MissingKind,
+    InvalidValueType(Value),
+}
+
+pub fn from_value(
+    value: &Value,
+    being_kinds: &BeingKinds,
+    suffix: &str,
+    group_info: Option<&HashMap<String, HashMap<String, Value>>>,
+) -> Result<Arc<BeingKind>, BeingKindError> {
+    log(format!("Being - {:?}", value));
+    if value.is_string() {
+        match being_kinds.get(&value.to_string().to_uppercase()) {
+            None => return Err(BeingKindError::UnknownId(value.to_string())),
+            Some(k) => return Ok(k),
+        };
+    } else if value.is_map() {
+        let map = value.as_map().unwrap();
+
+        if let Some(kind_value) = map.get(&"kind".into()) {
+            let id = format!("{}_{}", kind_value.to_string().to_uppercase(), suffix);
+            let mut builder = BeingKind::builder(&id);
+
+            match being_kinds.get(&kind_value.to_string().to_uppercase()) {
+                None => panic!(
+                    "Being kind extends missing being - {}",
+                    kind_value.to_string()
+                ),
+                Some(base) => {
+                    builder.extend(&base);
+                }
+            }
+
+            if let Some(group_info) = group_info {
+                // // ALL BEINGS HAVE THESE VALUES
+                if let Some(group_values) = group_info.get("BEING") {
+                    for (k, v) in group_values.iter() {
+                        set_field(&mut builder, k, v).unwrap();
+                    }
+                }
+
+                // ANY CUSTOM GROUP VALUES
+                if let Some(groups) = map.get(&"groups".into()) {
+                    for group in groups.to_string().split(&['|', ',', ':']).map(|v| v.trim()) {
+                        if let Some(group_values) = group_info.get(group) {
+                            for (k, v) in group_values.iter() {
+                                set_field(&mut builder, k, v).unwrap();
+                            }
+                        }
+                    }
+                } else if let Some(group) = map.get(&"group".into()) {
+                    let group = group.to_string();
+                    if let Some(group_values) = group_info.get(group.trim()) {
+                        for (k, v) in group_values.iter() {
+                            set_field(&mut builder, k, v).unwrap();
+                        }
+                    }
+                }
+            }
+
+            if let Some(talk) = map.get(&"talk".into()) {
+                builder.talk(&talk.to_string());
+            }
+
+            if let Some(name) = map.get(&"name".into()) {
+                builder.name(&name.to_string());
+            }
+
+            if let Some(ai) = map.get(&"ai".into()) {
+                if ai.is_string() {
+                    builder.ai(&ai.to_string());
+                } else if ai.is_bool() {
+                    if !ai.as_bool().unwrap() {
+                        builder.ai("IDLE");
+                    }
+                }
+            }
+
+            let new_being = builder.build();
+            println!("CUSTOM BEING - {:?}", new_being);
+            Ok(new_being)
+        } else {
+            Err(BeingKindError::MissingKind)
+        }
+    } else {
+        Err(BeingKindError::InvalidValueType(value.clone()))
     }
 }

@@ -220,6 +220,13 @@ impl Value {
         }
     }
 
+    pub fn as_str(&self) -> Option<&str> {
+        match self {
+            Value::String(v) => Some(v),
+            _ => None,
+        }
+    }
+
     pub fn as_bool(&self) -> Option<bool> {
         match self.clone().try_into() {
             Ok(v) => Some(v),

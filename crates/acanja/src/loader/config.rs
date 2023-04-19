@@ -4,7 +4,7 @@ use gw_app::{
     loader::{LoadError, LoadHandler, Loader},
     // log,
 };
-use gw_world::{being::BeingKindsLoader, level::Levels, tile::TilesLoader};
+use gw_world::{being::BeingKindsLoader, horde::HordesLoader, level::Levels, tile::TilesLoader};
 
 pub struct GameConfigLoader;
 
@@ -67,6 +67,16 @@ impl LoadHandler for GameConfigLoader {
                 loader
                     .load_file(&filename, Box::new(BeingKindsLoader::new()))
                     .expect("Failed to load beings file!");
+            }
+        }
+
+        // Load HORDES
+        if let Some(horde_value) = table.get(&"hordes".into()) {
+            if horde_value.is_string() {
+                let filename = horde_value.to_string();
+                loader
+                    .load_file(&filename, Box::new(HordesLoader::new()))
+                    .expect("Failed to load hordes file!");
             }
         }
 

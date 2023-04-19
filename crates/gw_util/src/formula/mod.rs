@@ -304,5 +304,9 @@ pub type NoReference<'a> = &'a fn(String) -> Option<types::Value>;
 pub type NoCustomFunction<'a> =
     &'a fn(String, Vec<types::Value>) -> Result<types::Value, types::Error>;
 
+pub use calculate::calculate_formula;
+pub use parse_formula::parse_string_to_formula;
+pub use types::Formula;
+
 #[cfg(test)]
 mod test;

@@ -1,6 +1,8 @@
 {
+  // TODO - All paths should be relative to where this one is...
   "tiles": "./assets/tiles.jsonc",
   "beings": "./assets/beings.jsonc",
+  "hordes": "./assets/hordes.jsonc",
   "levels": {
     "dir": "./assets/maps",
     "files": [

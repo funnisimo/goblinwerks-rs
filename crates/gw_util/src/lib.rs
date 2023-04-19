@@ -3,6 +3,7 @@ pub mod dice;
 pub mod extents;
 pub mod flags;
 pub mod formula;
+pub mod frequency;
 pub mod grid;
 pub mod json;
 pub mod noise;

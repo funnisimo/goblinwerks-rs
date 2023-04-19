@@ -1,0 +1,23 @@
+// Hordes are an array of entry objects
+[
+  {
+    "leader": "ORC", // ID of the leader being
+    "frequency": { "1-5": 100 }, // frequency for weighted picking
+    "members": ["ORC"], // other members
+    "counts": [5], // count of other members
+    "tile": false, // tile (if any) that this horde must spawn into
+    "machine": false, // machine (if any) that this horde must spawn into
+    "flags": 0, // Any horde flags
+    "tags": "SOSARIA" // tags (can be matched on)
+  },
+  {
+    "leader": "SKELETON", // ID of the leader being
+    "frequency": { "1-5": 100 }, // frequency for weighted picking
+    "members": ["SKELETON"], // other members
+    "counts": [5], // count of other members
+    "tile": false, // tile (if any) that this horde must spawn into
+    "machine": false, // machine (if any) that this horde must spawn into
+    "flags": 0, // Any horde flags
+    "tags": "SOSARIA" // tags (can be matched on)
+  }
+]

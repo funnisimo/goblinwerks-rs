@@ -80,6 +80,13 @@ impl Key {
         }
     }
 
+    pub fn as_str(&self) -> Option<&str> {
+        match self {
+            Key::String(v) => Some(v),
+            _ => None,
+        }
+    }
+
     pub fn as_point(&self) -> Option<Point> {
         match self {
             Key::Point(x, y) => Some(Point::new(*x, *y)),

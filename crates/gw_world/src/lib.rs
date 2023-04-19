@@ -5,6 +5,7 @@ pub mod combat;
 pub mod effect;
 pub mod fov;
 pub mod hero;
+pub mod horde;
 pub mod level;
 pub mod log;
 pub mod map;

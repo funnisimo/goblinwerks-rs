@@ -52,7 +52,7 @@ pub enum Stat {
     MAGIC,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Stats {
     data: HashMap<Stat, StatValue>,
 }

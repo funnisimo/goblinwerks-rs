@@ -3,7 +3,7 @@ use super::BeingKindFlags;
 use super::MoveFlags;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Being {
     pub id: String,
 
