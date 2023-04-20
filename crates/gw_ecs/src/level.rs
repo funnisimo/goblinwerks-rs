@@ -34,6 +34,11 @@ impl Level {
     }
 
     // spawn
+    pub fn spawn_empty(&mut self) -> Entity {
+        let mut entities = self.get_unique_mut::<Entities>().unwrap();
+        entities.spawn()
+    }
+
     pub fn spawn<'a, S: ComponentSet<'a>>(&mut self, comps: S) -> Entity {
         let entity = {
             let mut entities = self.get_unique_mut::<Entities>().unwrap();

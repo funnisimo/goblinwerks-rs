@@ -60,6 +60,11 @@ impl Ecs {
     }
 
     // spawn
+    pub fn spawn_empty(&self) -> Entity {
+        let mut level = self.level_mut();
+        level.spawn_empty()
+    }
+
     pub fn spawn<'a, S: ComponentSet<'a>>(&self, comps: S) -> Entity {
         let mut level = self.level_mut();
         level.spawn(comps)

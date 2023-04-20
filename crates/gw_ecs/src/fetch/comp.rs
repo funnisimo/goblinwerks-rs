@@ -15,7 +15,7 @@ where
 {
     _levels: AtomicBorrowRef<'b>,
     _level: AtomicBorrowRef<'b>,
-    borrow: AtomicRef<'b, SparseSet<T>>,
+    pub(crate) borrow: AtomicRef<'b, SparseSet<T>>,
 }
 
 impl<'b, T> Comp<'b, T>
@@ -125,7 +125,7 @@ where
 {
     _levels: AtomicBorrowRef<'b>,
     _level: AtomicBorrowRef<'b>,
-    borrow: AtomicRefMut<'b, SparseSet<T>>,
+    pub(crate) borrow: AtomicRefMut<'b, SparseSet<T>>,
 }
 
 impl<'b, T> CompMut<'b, T>

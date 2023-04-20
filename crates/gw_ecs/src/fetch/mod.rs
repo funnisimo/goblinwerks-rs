@@ -13,6 +13,13 @@ pub trait Fetch {
 //     type Output<'a> = &'a Ecs;
 // }
 
+impl Fetch for () {
+    type Output<'a> = ();
+    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
+        ()
+    }
+}
+
 impl Fetch for &Ecs {
     type Output<'a> = &'a Ecs;
     fn fetch(ecs: &Ecs) -> Self::Output<'_> {

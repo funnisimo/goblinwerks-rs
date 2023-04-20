@@ -100,12 +100,12 @@ impl Entities {
         }
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Entity> {
+    pub fn iter(&self) -> EntityIter<'_> {
         EntityIter::new(self.data.iter())
     }
 }
 
-struct EntityIter<'e> {
+pub struct EntityIter<'e> {
     iter: Iter<'e, Entity>,
 }
 

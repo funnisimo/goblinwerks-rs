@@ -4,6 +4,7 @@ mod entity;
 pub mod fetch;
 mod level;
 mod levels;
+pub mod query;
 pub mod refcell;
 pub mod resource;
 pub mod storage;
