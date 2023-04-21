@@ -1,4 +1,5 @@
 use super::AIFlags;
+use super::BeingFlags;
 use super::BeingKindFlags;
 use super::MoveFlags;
 use serde::{Deserialize, Serialize};
@@ -7,6 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct Being {
     pub id: String,
 
+    pub flags: BeingFlags,
     pub move_flags: MoveFlags,
     pub ai_flags: AIFlags,
     pub kind_flags: BeingKindFlags,
@@ -25,6 +27,8 @@ impl Being {
             id,
 
             act_time: 100,
+
+            flags: BeingFlags::empty(),
             move_flags: MoveFlags::empty(),
             ai_flags: AIFlags::empty(),
             kind_flags: BeingKindFlags::empty(),
@@ -45,5 +49,17 @@ impl Being {
             },
             Some(ref name) => name,
         }
+    }
+
+    pub fn has_flag(&self, flag: BeingFlags) -> bool {
+        self.flags.contains(flag)
+    }
+
+    pub fn set_flag(&mut self, flag: BeingFlags) {
+        self.flags.insert(flag);
+    }
+
+    pub fn clear_flag(&mut self, flag: BeingFlags) {
+        self.flags.remove(flag);
     }
 }

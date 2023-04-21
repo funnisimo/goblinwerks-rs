@@ -79,6 +79,13 @@ impl Entities {
         self.data.len()
     }
 
+    pub fn contains(&self, entity: Entity) -> bool {
+        if entity.is_dead() {
+            return false;
+        }
+        self.data.contains(&entity)
+    }
+
     pub fn spawn(&mut self) -> Entity {
         for entry in self.data.iter_mut() {
             if entry.is_alive() {

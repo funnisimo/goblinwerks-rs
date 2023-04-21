@@ -29,7 +29,7 @@ impl Horde {
         }
     }
 
-    pub fn frequency(&self) -> &Frequency {
+    pub fn frequency(&self, level: u32) -> u32 {
         // if (typeof horde.frequency == 'number') return horde.frequency;
         // if (Array.isArray(horde.frequency)) {
         //   const delta = Math.max(0, depth - horde.levelRange[0]);
@@ -37,104 +37,9 @@ impl Horde {
         // }
         // return 1;
 
-        &self.frequency
+        self.frequency.get_weight(level)
     }
 }
-
-// pub fn pick_horde(depth: u32, forbiddenFlags: HordeFlags, requiredFlags: HordeFlags, summonerKind: String) -> Option<Horde> {
-// 	let possCount = 0;
-
-//   if (typeof summonerKind == 'string') {
-//     summonerKind = RUT.Monsters.get(summonerKind);
-//   }
-
-// 	for (let i=0; i<RUT.Hordes.all.length; i++) {
-//     const horde = RUT.Hordes.all[i];
-// 		if (horde.flags & forbiddenFlags) continue;
-// 		if (~(horde.flags) & requiredFlags) continue;
-//     const levelOk = (!summonerKind && horde.levelRange[0] <= depth && horde.levelRange[1] >= depth);
-//     if (levelOk) {
-//       possCount += RUT.Horde.frequency(horde, depth);
-//     }
-//     else if (summonerKind && horde.leaderKind) {
-//       const leaderKind = RUT.Monsters.get(horde.leaderKind);
-//       if (leaderKind === summonerKind) {
-//         possCount += horde.frequency;
-//       }
-//     }
-// 	}
-
-// 	if (possCount == 0) {
-// 		return undefined;
-// 	}
-
-// 	let index = RUT.RNG.inRange(1, possCount);
-
-// 	for (let i=0; i<RUT.Hordes.all.length; i++) {
-//     const horde = RUT.Hordes.all[i];
-// 		if (horde.flags & forbiddenFlags) continue;
-// 		if (~(horde.flags) & requiredFlags) continue;
-
-//     const frequency = RUT.Horde.frequency(horde, depth);
-//     const levelOk = (!summonerKind && horde.levelRange[0] <= depth && horde.levelRange[1] >= depth);
-//     if (levelOk) {
-//       if (index <= frequency) {
-//         return horde;
-//       }
-//       index -= frequency;
-//     }
-//     else if (summonerKind && horde.leaderKind) {
-//       const leaderKind = RUT.Monsters.get(horde.leaderKind);
-//       if (leaderKind === summonerKind) {
-//         if (index <= frequency) {
-// 					return horde;
-// 				}
-// 				index -= frequency;
-//       }
-//     }
-// 	}
-// 	return undefined; // should never happen
-// }
-
-// // If hordeID is 0, it's randomly assigned based on the depth, with a 10% chance of an out-of-depth spawn from 1-5 levels deeper.
-// // If x is negative, location is random.
-// // Returns a pointer to the leader.
-// pub fn spawn_random(map, blockedFov, forbiddenFlags=0, requiredFlags=0)
-// {
-//   let failsafe;
-//   let horde;
-//   let depth = map.level || 0;
-
-// 	if ((depth > 1) && (RUT.RNG.rollDie(100) < 10)) {
-// 		depth = map.level + RUT.RNG.inRange(1, Math.min(5, Math.round(map.level / 2)));
-// 		if (depth > DEEPEST_LEVEL) {
-// 			depth = DEEPEST_LEVEL; // Math.max(map.level, AMULET_LEVEL);
-// 		}
-//     forbiddenFlags |= HordeFlags.HORDE_NEVER_OOD;
-// 	}
-
-// 	horde = RUT.Horde.pick(depth, forbiddenFlags, requiredFlags);
-// 	if (!horde) {
-//     console.log('No qualifying hordes.', depth, forbiddenFlags, requiredFlags);
-// 		return undefined;
-// 	}
-
-//   const xy = RUT.Map.randomXy(map, {
-//     tile: horde.spawnTile,
-//     test: (x, y) => {
-//       const inHallway = (RUT.Map.passableArcCount(map, x, y) > 1);
-//       if (inHallway) return false;
-//       // This is supposed to keep monsters from being spawned in front of the player or near the stairs (at generation time)
-//       const isBlocked = blockedFov && RUT.FOV.canSeeOrSense(blockedFov, x, y);
-//       if (isBlocked) return false;
-
-//       return true;
-//     }
-//   });
-
-//   if (!xy) return undefined;
-//   return RUT.Horde.spawn(horde, map, xy.x, xy.y);
-// }
 
 // pub fn spawn(horde, map, x, y) {
 

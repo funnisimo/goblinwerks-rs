@@ -1,18 +1,20 @@
 use acanja::effect::{parse_gremlins, parse_mark, parse_moongate_travel, parse_winds};
 use acanja::loader::GameConfigLoader;
-use gw_app::ecs::IntoQuery;
+use gw_app::ecs::systems::CommandBuffer;
 use gw_app::ecs::{Entity, Read, ResourceSet, Write};
+use gw_app::ecs::{IntoQuery, Query};
 use gw_app::*;
 use gw_util::point::Point;
 use gw_world::action::idle::IdleAction;
 use gw_world::action::move_step::MoveStepAction;
-use gw_world::being::{spawn_being, Being, BeingKinds, Stats};
+use gw_world::being::{spawn_being, Being, BeingFlags, BeingKinds, Stats};
 use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::combat::Melee;
 use gw_world::effect::{register_effect_parser, BoxedEffect};
 use gw_world::fov::update_fov;
 use gw_world::hero::Hero;
-use gw_world::level::{get_current_level_mut, with_current_level, Levels};
+use gw_world::horde::{pick_random_horde, HordeSpawn};
+use gw_world::level::{get_current_level, get_current_level_mut, with_current_level, Levels};
 use gw_world::map::{Cell, Map};
 use gw_world::position::Position;
 use gw_world::task::{do_next_task, DoNextTaskResult, Task, UserAction};
@@ -36,6 +38,11 @@ impl MainScreen {
             .build();
 
         Box::new(MainScreen { viewport })
+    }
+
+    fn pre_update(&mut self, ecs: &mut Ecs) {
+        // spawn stuff?
+        spawn_hordes(ecs);
     }
 
     fn post_action(&mut self, ecs: &mut Ecs) {
@@ -200,6 +207,9 @@ impl Screen for MainScreen {
     fn update(&mut self, ecs: &mut Ecs) -> ScreenResult {
         // Pre Update
 
+        // spawn things?
+        self.pre_update(ecs);
+
         // let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
         // let level = levels.current_mut();
 
@@ -346,106 +356,39 @@ fn try_fire_hero_action(ecs: &mut Ecs, action: &str) -> bool {
     }
 }
 
-/*
-fn get_hero_point(ecs: &mut Ecs) -> Point {
-    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-    let level = levels.current_mut();
-    let hero_entity = level.resources.get::<Hero>().unwrap().entity;
+fn spawn_hordes(ecs: &mut Ecs) {
+    let current_time = { get_current_level(ecs).executor.time() };
+    let depth = 1;
 
-    level
-        .world
-        .entry(hero_entity)
-        .unwrap()
-        .get_component::<Position>()
-        .unwrap()
-        .point()
-}
-
-fn try_move_hero_world(ecs: &mut Ecs, pt: &Point, flag: PortalFlags) -> bool {
-    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-    let level = levels.current_mut();
-
-    let hero_entity = level.resources.get::<Hero>().unwrap().entity;
-
-    let map = level.resources.get_mut::<Map>().unwrap();
-    let index = map.get_wrapped_index(pt.x, pt.y).unwrap();
-
-    log(format!("CLICK = {:?}", pt));
-
-    let (new_map_id, location) = {
-        match map.get_portal(index) {
-            None => return false,
-            Some(info) => {
-                if !info.flags().contains(flag) {
-                    return false;
-                }
-
-                log(format!(
-                    "Enter Portal = {} - {}::{}",
-                    info.flavor().as_ref().unwrap_or(&"UNKNOWN".to_string()),
-                    info.map_id(),
-                    info.location()
-                ));
-
-                (info.map_id().to_string(), info.location().to_string())
-            }
+    let max_alive = {
+        let level = get_current_level_mut(ecs);
+        let mut info = match level.resources.get_mut::<HordeSpawn>() {
+            None => return,
+            Some(info) => info,
+        };
+        if info.next_time > current_time {
+            return;
         }
+        info.next_time += info.check_delay;
+        info.max_alive
     };
 
-    let current_pt = level
-        .world
-        .entry(hero_entity)
-        .unwrap()
-        .get_component::<Position>()
-        .unwrap()
-        .point();
-
-    drop(map);
-    drop(level);
-
-    let level = levels.current_mut();
-    let mut map = level.resources.get_mut::<Map>().unwrap();
-    let index = map.get_wrapped_index(current_pt.x, current_pt.y).unwrap();
-
-    map.remove_actor(index, hero_entity);
-
-    drop(map);
-    drop(level);
-
-    log("Moving hero to new world");
-    let new_entity = levels.move_current_entity(hero_entity, &new_map_id);
-    log("Changing current world");
-    if levels.set_current(&new_map_id).is_err() {
-        panic!("Failed to change to world - {}", new_map_id);
-    }
-
-    let level = levels.current_mut();
-    level.resources.insert(Hero::new(hero_entity));
-
     {
-        let mut camera = level
-            .resources
-            .get_mut_or_insert_with(|| Camera::new(CAMERA_WIDTH, CAMERA_HEIGHT));
-        camera.set_follows(new_entity);
-    }
+        let level = get_current_level(ecs);
 
-    let new_pt = {
-        let mut map = level.resources.get_mut::<Map>().unwrap();
-        let pt = map.locations.get(&location).unwrap().clone();
-        map.add_actor(pt, new_entity, true);
-        map.to_point(pt)
-    };
-    {
-        let mut entry = level.world.entry(new_entity).unwrap();
-        let pos = entry.get_component_mut::<Position>().unwrap();
-        pos.set(new_pt.x, new_pt.y);
-    }
-    {
-        let map = level.resources.get::<Map>().unwrap();
-        if let Some(ref welcome) = map.welcome {
-            level.logger.log(welcome);
+        let mut beings = <&Being>::query();
+
+        let count = beings
+            .iter(&level.world)
+            .filter(|b| b.has_flag(BeingFlags::SPAWNED))
+            .count() as u32;
+        if count >= max_alive {
+            return;
         }
     }
-    true
+
+    // We got to here so we need to spawn a horde...
+    if let Some(horde) = pick_random_horde(ecs, depth) {
+        log(format!("SPAWN - {:?}", horde));
+    }
 }
-*/

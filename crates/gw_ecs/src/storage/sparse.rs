@@ -99,6 +99,10 @@ where
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
         SparseSetIterMut::new(self.dense.iter_mut())
     }
+
+    pub fn entities(&self) -> impl Iterator<Item = &Entity> {
+        SparseSetEntities::new(self.dense.iter())
+    }
 }
 
 struct SparseSetIter<'s, T>
@@ -168,6 +172,34 @@ where
                 Some(SparseEntry::Used(ent, val)) => {
                     if ent.is_alive() {
                         return Some(val);
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct SparseSetEntities<'s, T> {
+    iter: Iter<'s, SparseEntry<T>>,
+}
+
+impl<'s, T> SparseSetEntities<'s, T> {
+    pub fn new(iter: Iter<'s, SparseEntry<T>>) -> Self {
+        SparseSetEntities { iter }
+    }
+}
+
+impl<'s, T> Iterator for SparseSetEntities<'s, T> {
+    type Item = &'s Entity;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            match self.iter.next() {
+                None => return None,
+                Some(SparseEntry::Empty) => {}
+                Some(SparseEntry::Used(ent, val)) => {
+                    if ent.is_alive() {
+                        return Some(ent);
                     }
                 }
             }

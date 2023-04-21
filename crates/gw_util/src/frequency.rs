@@ -93,13 +93,13 @@ impl Frequency {
         self.entries.sort_by(sort_entries);
     }
 
-    pub fn get_weight(&self, level: u32) -> Option<u32> {
+    pub fn get_weight(&self, level: u32) -> u32 {
         for entry in self.entries.iter() {
             if let Some(v) = entry.get_weight(level) {
-                return Some(v);
+                return v;
             }
         }
-        None
+        0
     }
 }
 
@@ -230,10 +230,10 @@ mod test {
         let mut freq = Frequency::new();
         freq.push(FreqEntry::Const(Formula::Value(100.into())));
 
-        assert_eq!(freq.get_weight(0), Some(100));
-        assert_eq!(freq.get_weight(10), Some(100));
-        assert_eq!(freq.get_weight(100), Some(100));
-        assert_eq!(freq.get_weight(1000), Some(100));
+        assert_eq!(freq.get_weight(0), 100);
+        assert_eq!(freq.get_weight(10), 100);
+        assert_eq!(freq.get_weight(100), 100);
+        assert_eq!(freq.get_weight(1000), 100);
     }
 
     #[test]
@@ -241,9 +241,9 @@ mod test {
         let mut freq = Frequency::new();
         freq.push(FreqEntry::Level(5, Formula::Value(100.into())));
 
-        assert_eq!(freq.get_weight(0), None);
-        assert_eq!(freq.get_weight(5), Some(100));
-        assert_eq!(freq.get_weight(10), None);
+        assert_eq!(freq.get_weight(0), 0);
+        assert_eq!(freq.get_weight(5), 100);
+        assert_eq!(freq.get_weight(10), 0);
     }
 
     #[test]
@@ -251,11 +251,11 @@ mod test {
         let mut freq = Frequency::new();
         freq.push(FreqEntry::Range(5, 10, Formula::Value(100.into())));
 
-        assert_eq!(freq.get_weight(4), None);
-        assert_eq!(freq.get_weight(5), Some(100));
-        assert_eq!(freq.get_weight(7), Some(100));
-        assert_eq!(freq.get_weight(10), Some(100));
-        assert_eq!(freq.get_weight(11), None);
+        assert_eq!(freq.get_weight(4), 0);
+        assert_eq!(freq.get_weight(5), 100);
+        assert_eq!(freq.get_weight(7), 100);
+        assert_eq!(freq.get_weight(10), 100);
+        assert_eq!(freq.get_weight(11), 0);
     }
 
     #[test]
@@ -263,11 +263,11 @@ mod test {
         let mut freq = Frequency::new();
         freq.push(FreqEntry::Over(5, Formula::Value(100.into())));
 
-        assert_eq!(freq.get_weight(4), None);
-        assert_eq!(freq.get_weight(5), Some(100));
-        assert_eq!(freq.get_weight(7), Some(100));
-        assert_eq!(freq.get_weight(10), Some(100));
-        assert_eq!(freq.get_weight(11), Some(100));
+        assert_eq!(freq.get_weight(4), 0);
+        assert_eq!(freq.get_weight(5), 100);
+        assert_eq!(freq.get_weight(7), 100);
+        assert_eq!(freq.get_weight(10), 100);
+        assert_eq!(freq.get_weight(11), 100);
     }
 
     #[test]
@@ -277,13 +277,13 @@ mod test {
         freq.push(FreqEntry::Over(5, Formula::Value(100.into())));
         freq.push(FreqEntry::Level(7, Formula::Value(10.into())));
 
-        assert_eq!(freq.get_weight(4), None);
-        assert_eq!(freq.get_weight(5), Some(100));
-        assert_eq!(freq.get_weight(6), Some(20));
-        assert_eq!(freq.get_weight(7), Some(10));
-        assert_eq!(freq.get_weight(8), Some(20));
-        assert_eq!(freq.get_weight(9), Some(100));
-        assert_eq!(freq.get_weight(11), Some(100));
+        assert_eq!(freq.get_weight(4), 0);
+        assert_eq!(freq.get_weight(5), 100);
+        assert_eq!(freq.get_weight(6), 20);
+        assert_eq!(freq.get_weight(7), 10);
+        assert_eq!(freq.get_weight(8), 20);
+        assert_eq!(freq.get_weight(9), 100);
+        assert_eq!(freq.get_weight(11), 100);
     }
 
     #[test]
@@ -291,37 +291,37 @@ mod test {
         let value: Value = 100.into();
 
         let freq: Frequency = from_value(&value).unwrap();
-        assert_eq!(freq.get_weight(0), Some(100));
-        assert_eq!(freq.get_weight(10), Some(100));
-        assert_eq!(freq.get_weight(100), Some(100));
-        assert_eq!(freq.get_weight(1000), Some(100));
+        assert_eq!(freq.get_weight(0), 100);
+        assert_eq!(freq.get_weight(10), 100);
+        assert_eq!(freq.get_weight(100), 100);
+        assert_eq!(freq.get_weight(1000), 100);
 
         // formula
         let value: Value = "=100".into();
 
         let freq: Frequency = from_value(&value).unwrap();
-        assert_eq!(freq.get_weight(0), Some(100));
-        assert_eq!(freq.get_weight(10), Some(100));
-        assert_eq!(freq.get_weight(100), Some(100));
-        assert_eq!(freq.get_weight(1000), Some(100));
+        assert_eq!(freq.get_weight(0), 100);
+        assert_eq!(freq.get_weight(10), 100);
+        assert_eq!(freq.get_weight(100), 100);
+        assert_eq!(freq.get_weight(1000), 100);
 
         // formula with Level
         let value: Value = "=1 + level".into();
 
         let freq: Frequency = from_value(&value).unwrap();
-        assert_eq!(freq.get_weight(0), Some(1));
-        assert_eq!(freq.get_weight(10), Some(11));
-        assert_eq!(freq.get_weight(100), Some(101));
-        assert_eq!(freq.get_weight(1000), Some(1001));
+        assert_eq!(freq.get_weight(0), 1);
+        assert_eq!(freq.get_weight(10), 11);
+        assert_eq!(freq.get_weight(100), 101);
+        assert_eq!(freq.get_weight(1000), 1001);
 
         // formula with Level and float
         let value: Value = "=2.5 * level".into();
 
         let freq: Frequency = from_value(&value).unwrap();
-        assert_eq!(freq.get_weight(0), Some(0));
-        assert_eq!(freq.get_weight(1), Some(2));
-        assert_eq!(freq.get_weight(2), Some(5));
-        assert_eq!(freq.get_weight(10), Some(25));
+        assert_eq!(freq.get_weight(0), 0);
+        assert_eq!(freq.get_weight(1), 2);
+        assert_eq!(freq.get_weight(2), 5);
+        assert_eq!(freq.get_weight(10), 25);
     }
 
     #[test]
@@ -330,22 +330,22 @@ mod test {
         let json = json::parse_string(text).unwrap();
 
         let freq: Frequency = from_value(&json).unwrap();
-        assert_eq!(freq.get_weight(0), None);
-        assert_eq!(freq.get_weight(1), Some(10));
-        assert_eq!(freq.get_weight(2), Some(20));
-        assert_eq!(freq.get_weight(3), Some(30));
-        assert_eq!(freq.get_weight(4), None);
+        assert_eq!(freq.get_weight(0), 0);
+        assert_eq!(freq.get_weight(1), 10);
+        assert_eq!(freq.get_weight(2), 20);
+        assert_eq!(freq.get_weight(3), 30);
+        assert_eq!(freq.get_weight(4), 0);
 
         // we will add the '=' automagically to formulas
         let text = r#"{ 1: "10", 2: "2 + level", 3: 30 }"#;
         let json = json::parse_string(text).unwrap();
 
         let freq: Frequency = from_value(&json).unwrap();
-        assert_eq!(freq.get_weight(0), None);
-        assert_eq!(freq.get_weight(1), Some(10));
-        assert_eq!(freq.get_weight(2), Some(4));
-        assert_eq!(freq.get_weight(3), Some(30));
-        assert_eq!(freq.get_weight(4), None);
+        assert_eq!(freq.get_weight(0), 0);
+        assert_eq!(freq.get_weight(1), 10);
+        assert_eq!(freq.get_weight(2), 4);
+        assert_eq!(freq.get_weight(3), 30);
+        assert_eq!(freq.get_weight(4), 0);
     }
 
     #[test]
@@ -355,12 +355,12 @@ mod test {
         let json = json::parse_string(text).unwrap();
 
         let freq: Frequency = from_value(&json).unwrap();
-        assert_eq!(freq.get_weight(0), None);
-        assert_eq!(freq.get_weight(1), Some(10));
-        assert_eq!(freq.get_weight(3), Some(10));
-        assert_eq!(freq.get_weight(4), Some(20));
-        assert_eq!(freq.get_weight(6), Some(20));
-        assert_eq!(freq.get_weight(7), Some(30));
-        assert_eq!(freq.get_weight(17), Some(30));
+        assert_eq!(freq.get_weight(0), 0);
+        assert_eq!(freq.get_weight(1), 10);
+        assert_eq!(freq.get_weight(3), 10);
+        assert_eq!(freq.get_weight(4), 20);
+        assert_eq!(freq.get_weight(6), 20);
+        assert_eq!(freq.get_weight(7), 30);
+        assert_eq!(freq.get_weight(17), 30);
     }
 }

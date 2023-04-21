@@ -19,6 +19,8 @@ bitflags! {
         // const HERO = fl!(0);
 
         const DESTROYED = fl!(1); // has been destroyed
+        const SPAWNED = fl!(2);
+
         // const SECRETLY_PASSABLE = fl!(2); // will become passable if discovered/activated/etc...
 
         const ALLOWS_MOVE = fl!(3); // can be walked through
@@ -86,6 +88,8 @@ impl FromStr for BeingFlags {
             match val.trim().to_uppercase().as_ref() {
                 // "EXAMPLE" => result |= ActorFlags::EXAMPLE,
                 "DESTROYED" => result |= BeingFlags::DESTROYED,
+                "SPAWNED" => result |= BeingFlags::SPAWNED,
+
                 // "SECRETLY_PASSABLE" => result |= ActorFlags::SECRETLY_PASSABLE,
                 "ALLOWS_MOVE" => result |= BeingFlags::ALLOWS_MOVE,
                 "BLOCKS_VISION" => result |= BeingFlags::BLOCKS_VISION,
