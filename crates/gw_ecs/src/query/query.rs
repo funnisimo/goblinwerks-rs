@@ -62,20 +62,21 @@ where
     type Item = T::Item<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if self.index >= self.entities.len() {
-                return None;
-            }
-            match self.entities.data.get(self.index) {
-                None => return None,
-                Some(e) => {
-                    self.index += 1;
-                    if e.is_alive() {
-                        return T::get(&self.data, *e);
-                    }
-                }
-            }
-        }
+        // loop {
+        //     if self.index >= self.entities.len() {
+        //         return None;
+        //     }
+        //     match self.entities.data.get(self.index) {
+        //         None => return None,
+        //         Some(e) => {
+        //             self.index += 1;
+        //             if e.is_alive() {
+        //                 return T::get(&self.data, *e);
+        //             }
+        //         }
+        //     }
+        // }
+        None
     }
 }
 
