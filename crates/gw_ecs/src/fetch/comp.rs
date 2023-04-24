@@ -2,6 +2,7 @@ use super::Fetch;
 use super::ReadOnly;
 use crate::refcell::{AtomicBorrowRef, AtomicRef, AtomicRefMut};
 use crate::storage::SparseSet;
+use crate::Entity;
 use crate::{Component, Ecs};
 use std::ops::{Deref, DerefMut};
 
@@ -102,17 +103,17 @@ where
 //     type Output<'a> = Option<Comp<'a, T>>;
 // }
 
-impl<T> Fetch for Option<Comp<'_, T>>
-where
-    T: Component,
-{
-    type Output<'a> = Option<Comp<'a, T>>;
-    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
-        ecs.get_component::<T>()
-    }
-}
+// impl<T> Fetch for Option<Comp<'_, T>>
+// where
+//     T: Component,
+// {
+//     type Output<'a> = Option<Comp<'a, T>>;
+//     fn fetch(ecs: &Ecs) -> Self::Output<'_> {
+//         ecs.get_component::<T>()
+//     }
+// }
 
-pub type TryComp<'a, T> = Option<Comp<'a, T>>;
+// pub type TryComp<'a, T> = Option<Comp<'a, T>>;
 
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
@@ -216,15 +217,78 @@ where
 //     type Output<'a> = Option<CompMut<'a, T>>;
 // }
 
-impl<T> Fetch for Option<CompMut<'_, T>>
-where
-    T: Component,
-{
-    type Output<'a> = Option<CompMut<'a, T>>;
+// impl<T> Fetch for Option<CompMut<'_, T>>
+// where
+//     T: Component,
+// {
+//     type Output<'a> = Option<CompMut<'a, T>>;
 
-    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
-        ecs.get_component_mut::<T>()
+//     fn fetch(ecs: &Ecs) -> Self::Output<'_> {
+//         ecs.get_component_mut::<T>()
+//     }
+// }
+
+// pub type TryCompMut<'a, T> = Option<CompMut<'a, T>>;
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::Ecs;
+
+    struct Age(u32);
+    struct Rings(u32);
+
+    #[test]
+    fn comp_mut_basic() {
+        let mut ecs = Ecs::new();
+
+        ecs.register_component::<Age>();
+
+        let a = ecs.spawn((Age(20),));
+        let b = ecs.spawn((Age(21),));
+        let c = ecs.spawn_empty();
+
+        let mut ages = <CompMut<Age>>::fetch(&ecs);
+
+        for age in ages.iter_mut() {
+            age.0 += 1;
+        }
+
+        let mut count = 0;
+        for age in ages.iter() {
+            println!("age - {}", age.0);
+            count += 1;
+        }
+        assert_eq!(count, 2);
+
+        let age_a = ages.get(a).unwrap();
+        assert_eq!(age_a.0, 21);
+
+        let age_b = ages.get(b).unwrap();
+        assert_eq!(age_b.0, 22);
+
+        ages.remove(a);
+        assert!(ages.get(a).is_none());
+
+        ages.insert(c, Age(50));
+        let age_c = ages.get(c).unwrap();
+        assert_eq!(age_c.0, 50);
+    }
+
+    #[test]
+    fn multi_mut() {
+        let mut ecs = Ecs::new();
+
+        ecs.register_component::<Age>();
+        ecs.register_component::<Rings>();
+
+        let _a = ecs.spawn((Age(20), Rings(1)));
+        let _b = ecs.spawn((Age(21), Rings(2)));
+        let _c = ecs.spawn_empty();
+
+        let (ages, rings) = <(CompMut<Age>, CompMut<Rings>)>::fetch(&ecs);
+
+        assert_eq!(ages.iter().count(), 2);
+        assert_eq!(rings.iter().count(), 2);
     }
 }
-
-pub type TryCompMut<'a, T> = Option<CompMut<'a, T>>;

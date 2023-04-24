@@ -1,4 +1,4 @@
-use std::{fmt::Display, hash::Hash, slice::Iter};
+use std::{fmt::Display, hash::Hash};
 
 const DEAD: u32 = 0x80000000;
 
@@ -67,7 +67,7 @@ impl Display for Entity {
 }
 
 pub struct Entities {
-    data: Vec<Entity>,
+    pub(crate) data: Vec<Entity>,
 }
 
 impl Entities {
@@ -108,17 +108,18 @@ impl Entities {
     }
 
     pub fn iter(&self) -> EntityIter<'_> {
-        EntityIter::new(self.data.iter())
+        EntityIter::new(self)
     }
 }
 
 pub struct EntityIter<'e> {
-    iter: Iter<'e, Entity>,
+    data: &'e Entities,
+    index: usize,
 }
 
 impl<'e> EntityIter<'e> {
-    pub fn new(iter: Iter<'e, Entity>) -> Self {
-        EntityIter { iter }
+    pub fn new(data: &'e Entities) -> Self {
+        EntityIter { data, index: 0 }
     }
 }
 
@@ -127,9 +128,13 @@ impl<'e> Iterator for EntityIter<'e> {
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            match self.iter.next() {
+            if self.index >= self.data.len() {
+                return None;
+            }
+            match self.data.data.get(self.index) {
                 None => return None,
                 Some(e) => {
+                    self.index += 1;
                     if e.is_alive() {
                         return Some(e);
                     }

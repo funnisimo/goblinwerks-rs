@@ -15,7 +15,7 @@ where
 {
     _levels: AtomicBorrowRef<'a>,
     _level: AtomicBorrowRef<'a>,
-    borrow: AtomicRef<'a, T>,
+    pub(crate) borrow: AtomicRef<'a, T>,
 }
 
 impl<'a, T> Unique<'a, T>

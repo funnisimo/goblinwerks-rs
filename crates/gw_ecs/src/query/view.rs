@@ -1,284 +1,174 @@
-use crate::{
-    fetch::{Comp, CompMut},
-    Component, Ecs, Entity,
-};
+use crate::CompMut;
+use crate::Component;
+use crate::Ecs;
+use crate::Entities;
+use crate::Entity;
+use crate::Fetch;
+use crate::{Comp, Unique};
 
-pub struct View<'a, T>
-where
-    T: ViewTuple,
-{
-    data: T::Output<'a>,
-}
+use super::Query;
 
-impl<'a, T> View<'a, T>
-where
-    T: ViewTuple,
-{
-    fn new(ecs: &'a Ecs) -> Self {
-        View {
-            data: T::fetch(ecs),
-        }
-    }
+pub trait View: Fetch {
+    type Data<'a>;
+    type Item<'a>;
 
-    fn get(
-        &mut self,
-        entity: Entity,
-    ) -> Option<<<T as ViewTuple>::Output<'a> as ViewSource>::Item<'_>> {
-        self.data.get(entity)
-    }
-}
-
-pub struct EntityView;
-
-//////////////////////////////////////////////////////////
-// VIEW SOURCE
-//////////////////////////////////////////////////////////
-
-pub trait ViewSource {
-    type Item<'a>
+    fn join() -> Query<Self>
     where
-        Self: 'a;
-
-    fn get(&mut self, entity: Entity) -> Option<Self::Item<'_>>;
-}
-
-impl<T> ViewSource for Comp<'_, T>
-where
-    T: Component,
-{
-    type Item<'a> = &'a T where Self: 'a;
-
-    fn get(&mut self, entity: Entity) -> Option<Self::Item<'_>> {
-        self.borrow.get(entity)
+        Self: Sized,
+    {
+        Query::new()
     }
+
+    fn data<'a>(ecs: &'a Ecs) -> Self::Data<'a>;
+
+    fn get<'a, 'b>(data: &'a Self::Data<'b>, entity: Entity) -> Option<Self::Item<'a>>;
 }
 
-impl<T> ViewSource for CompMut<'_, T>
-where
-    T: Component,
-{
-    type Item<'a> = &'a mut T where Self: 'a;
-
-    fn get(&mut self, entity: Entity) -> Option<Self::Item<'_>> {
-        self.borrow.get_mut(entity)
-    }
-}
-
-impl ViewSource for EntityView {
+impl View for Entities {
+    type Data<'a> = Unique<'a, Entities>;
     type Item<'a> = Entity;
 
-    fn get(&mut self, entity: Entity) -> Option<Self::Item<'_>> {
-        Some(entity)
+    fn data<'a>(ecs: &'a Ecs) -> Self::Data<'a> {
+        ecs.get_unique::<Entities>().unwrap()
+    }
+
+    fn get<'a, 'b>(data: &'a Self::Data<'b>, entity: Entity) -> Option<Self::Item<'a>> {
+        match data.contains(entity) {
+            true => Some(entity),
+            false => None,
+        }
     }
 }
 
-impl ViewSource for () {
+// COMP
+
+impl<'c, T> View for Comp<'c, T>
+where
+    T: Component,
+{
+    type Data<'b> = Comp<'b, T>;
+    type Item<'a> = &'a T;
+
+    fn data<'a>(ecs: &'a Ecs) -> Self::Data<'a> {
+        ecs.get_component::<T>().unwrap()
+    }
+
+    fn get<'a, 'b>(data: &'a Self::Data<'b>, entity: Entity) -> Option<Self::Item<'a>> {
+        data.as_ref().get(entity)
+    }
+}
+
+// impl<'a, T> View for Option<Comp<'a, T>>
+// where
+//     T: Component,
+// {
+//     type Data<'b> = Comp<'b, T>;
+//     type Item = Option<T>;
+
+//     fn join(ecs: &Ecs) -> Self::Data<'_> {
+//         ecs.get_component::<T>().unwrap()
+//     }
+
+//     fn get(data: &Self::Data<'a>, entity: Entity) -> Option<&'a Self::Item> {
+//         Some(data.borrow.get(entity))
+//     }
+// }
+
+// COMP MUT
+
+impl<'c, T> View for CompMut<'c, T>
+where
+    T: Component,
+{
+    type Data<'b> = CompMut<'b, T>;
+    type Item<'b> = &'b T;
+
+    fn data<'a>(ecs: &'a Ecs) -> Self::Data<'a> {
+        ecs.get_component_mut::<T>().unwrap()
+    }
+
+    fn get<'a, 'b>(data: &'a Self::Data<'b>, entity: Entity) -> Option<Self::Item<'a>> {
+        data.as_ref().get(entity)
+    }
+}
+
+// impl<T> View for Option<CompMut<'_, T>>
+// where
+//     T: Component,
+// {
+//     type Data<'a> = CompMut<'a, T>;
+//     type Item<'a> = Option<<Comp<'a, T> as Fetch>::Output<'a>>;
+
+//     fn join(ecs: &Ecs) -> Self::Data<'_> {
+//         ecs.get_component_mut::<T>().unwrap()
+//     }
+
+//     fn get(&self, entity: Entity) -> Option<Self::Item<'_>> {
+//         self.borrow.get(entity)
+//     }
+// }
+
+// TUPLES
+
+// TODO - Just don't have this - why is it here anyway?
+impl View for () {
+    type Data<'a> = ();
     type Item<'a> = ();
 
-    fn get(&mut self, _entity: Entity) -> Option<Self::Item<'_>> {
+    fn data<'a>(_ecs: &'a Ecs) -> Self::Data<'a> {
+        ()
+    }
+
+    fn get<'a, 'b>(_data: &'a Self::Data<'b>, _entity: Entity) -> Option<Self::Item<'a>> {
         None
     }
 }
 
-impl<A> ViewSource for (A,)
-where
-    A: ViewSource,
-{
-    type Item<'a> = (A::Item<'a>,) where Self: 'a;
+macro_rules! impl_make_view {
+    ($(($component: ident, $index: tt))+) => {
 
-    fn get(&mut self, entity: Entity) -> Option<Self::Item<'_>> {
-        Some((match self.0.get(entity) {
-            None => return None,
-            Some(v) => v,
-        },))
+        // impl<$($component,)+> MaybeBorrowed for ($($component,)+)
+        // where
+        //     $($component: MaybeBorrowed,)+
+        // {
+        //     type Output<'a> = ($(<$component as MaybeBorrowed>::Output<'a>,)+);
+        // }
+        impl<$($component,)+> View for ($($component,)+)
+        where
+            $($component: View,)+
+        {
+            type Data<'a> = ($(<$component as View>::Data<'a>,)+);
+            type Item<'a> = ($(<$component as View>::Item<'a>,)+);
+
+            fn data<'a>(ecs: &'a Ecs) -> Self::Data<'a> {
+                ($(<$component>::data(ecs),)+)
+            }
+
+            fn get<'a, 'b>(data: &'a Self::Data<'b>, entity: Entity) -> Option<Self::Item<'a>>
+            {
+                Some((
+                    $(
+                        match $component::get(&data.$index, entity) {
+                            None => return None,
+                            Some(d) => d,
+                        },
+                    )+
+                ))
+            }
+
+        }
+
     }
 }
 
-impl<A, B> ViewSource for (A, B)
-where
-    A: ViewSource,
-    B: ViewSource,
-{
-    type Item<'a> = (A::Item<'a>, B::Item<'a>) where Self: 'a;
-
-    fn get(&mut self, entity: Entity) -> Option<Self::Item<'_>> {
-        Some((
-            match self.0.get(entity) {
-                None => return None,
-                Some(v) => v,
-            },
-            match self.1.get(entity) {
-                None => return None,
-                Some(v) => v,
-            },
-        ))
+macro_rules! make_view {
+    ($(($component: ident, $index: tt))+; ($component1: ident, $index1: tt) $(($queue_component: ident, $queue_index: tt))*) => {
+        impl_make_view![$(($component, $index))*];
+        make_view![$(($component, $index))* ($component1, $index1); $(($queue_component, $queue_index))*];
+    };
+    ($(($component: ident, $index: tt))+;) => {
+        impl_make_view![$(($component, $index))*];
     }
 }
 
-impl<A, B, C> ViewSource for (A, B, C)
-where
-    A: ViewSource,
-    B: ViewSource,
-    C: ViewSource,
-{
-    type Item<'a> = (A::Item<'a>, B::Item<'a>, C::Item<'a>) where Self: 'a;
-
-    fn get(&mut self, entity: Entity) -> Option<Self::Item<'_>> {
-        Some((
-            match self.0.get(entity) {
-                None => return None,
-                Some(v) => v,
-            },
-            match self.1.get(entity) {
-                None => return None,
-                Some(v) => v,
-            },
-            match self.2.get(entity) {
-                None => return None,
-                Some(v) => v,
-            },
-        ))
-    }
-}
-//////////////////////////////////////////////////////////
-// VIEW TUPLE
-//////////////////////////////////////////////////////////
-
-pub trait ViewTuple {
-    // type Output: for<'a> View<'a> + 'static;
-    type Output<'a>: ViewSource;
-
-    fn fetch(ecs: &Ecs) -> Self::Output<'_>;
-}
-
-impl<T: Component> ViewTuple for &T {
-    type Output<'a> = Comp<'a, T>;
-
-    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
-        ecs.get_component::<T>().unwrap()
-    }
-}
-
-impl<T: Component> ViewTuple for &mut T {
-    type Output<'a> = CompMut<'a, T>;
-
-    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
-        ecs.get_component_mut::<T>().unwrap()
-    }
-}
-
-// impl<T: Component> ViewTuple for Option<&T> {
-//     type Output<'a> = TryComp<'a, T>;
-// }
-
-// impl<T: Component> ViewTuple for Option<&mut T> {
-//     type Output<'a> = TryCompMut<'a, T>;
-// }
-
-impl<A> ViewTuple for (A,)
-where
-    A: ViewTuple,
-{
-    type Output<'a> = (A::Output<'a>,);
-
-    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
-        (A::fetch(ecs),)
-    }
-}
-
-impl<A, B> ViewTuple for (A, B)
-where
-    A: ViewTuple,
-    B: ViewTuple,
-{
-    type Output<'a> = (A::Output<'a>, B::Output<'a>);
-
-    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
-        (A::fetch(ecs), B::fetch(ecs))
-    }
-}
-
-impl<A, B, C> ViewTuple for (A, B, C)
-where
-    A: ViewTuple,
-    B: ViewTuple,
-    C: ViewTuple,
-{
-    type Output<'a> = (A::Output<'a>, B::Output<'a>, C::Output<'a>);
-
-    fn fetch(ecs: &Ecs) -> Self::Output<'_> {
-        (A::fetch(ecs), B::fetch(ecs), C::fetch(ecs))
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use crate::Ecs;
-
-    #[derive(Debug, PartialEq)]
-    struct Age(u32);
-
-    #[test]
-    fn basic_comp() {
-        let mut ecs = Ecs::new();
-        ecs.register_component::<Age>();
-
-        let a = ecs.spawn((Age(20),));
-        // let b = ecs.spawn((Age(10),));
-        let c = ecs.spawn_empty();
-
-        let mut view = View::<&Age>::new(&ecs);
-
-        assert_eq!(*view.get(a).unwrap(), Age(20));
-        assert_eq!(view.get(c), None);
-    }
-
-    #[test]
-    fn basic_comp_mut() {
-        let mut ecs = Ecs::new();
-        ecs.register_component::<Age>();
-
-        let a = ecs.spawn((Age(20),));
-        // let b = ecs.spawn((Age(10),));
-        let c = ecs.spawn_empty();
-
-        let mut view = View::<&mut Age>::new(&ecs);
-
-        view.get(a).unwrap().0 = 21;
-
-        assert_eq!(*view.get(a).unwrap(), Age(21));
-        assert_eq!(view.get(c), None);
-    }
-
-    #[test]
-    fn basic_tuple() {
-        let mut ecs = Ecs::new();
-        ecs.register_component::<Age>();
-
-        let a = ecs.spawn((Age(20),));
-        // let b = ecs.spawn((Age(10),));
-        let c = ecs.spawn_empty();
-
-        let mut view = View::<(&Age,)>::new(&ecs);
-
-        assert_eq!(*view.get(a).unwrap().0, Age(20));
-        assert_eq!(view.get(c), None);
-    }
-
-    #[test]
-    fn basic_tuple_2() {
-        let mut ecs = Ecs::new();
-        ecs.register_component::<Age>();
-
-        let a = ecs.spawn((Age(20),));
-        // let b = ecs.spawn((Age(10),));
-        let c = ecs.spawn_empty();
-
-        let mut view = View::<(&Age, &Age)>::new(&ecs);
-
-        assert_eq!(*view.get(a).unwrap().0, Age(20));
-        assert_eq!(*view.get(a).unwrap().1, Age(20));
-        assert_eq!(view.get(c), None);
-    }
-}
+make_view![(A, 0); (B, 1) (C, 2) (D, 3) (E, 4) (F, 5) (G, 6) (H, 7) (I, 8) (J, 9)];
