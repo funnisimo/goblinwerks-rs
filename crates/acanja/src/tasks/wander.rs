@@ -91,7 +91,7 @@ pub fn anchored_wander(ecs: &mut Ecs, entity: Entity) -> TaskResult {
 }
 
 /// Just move randomly every now and then...
-pub fn random_wander(ecs: &mut Ecs, entity: Entity) -> TaskResult {
+pub fn random_move(ecs: &mut Ecs, entity: Entity) -> TaskResult {
     let mut level = get_current_level_mut(ecs);
 
     // log(format!("RANDOM WANDER - {:?}", entity));

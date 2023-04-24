@@ -59,7 +59,7 @@
   "PEASANT": {
     "sprite": "P|brown",
     "flavor": "a townsperson",
-    "ai": "RANDOM_WANDER"
+    "ai": "RANDOM_MOVE"
   },
   "THIEF": {
     "sprite": "T|gray",

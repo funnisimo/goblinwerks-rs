@@ -268,10 +268,10 @@ fn main() {
             registry.register::<gw_world::being::Stats>("Stats".to_string());
         })
         .startup(Box::new(|_ecs: &mut Ecs| {
-            register_task("ANCHORED_WANDER", acanja::ai::anchored_wander);
-            register_task("RANDOM_WANDER", acanja::ai::random_wander);
-            register_task("SHOPKEEPER", acanja::ai::shopkeeper);
-            register_task("MOVE_MOONGATE", acanja::ai::move_moongate);
+            register_task("ANCHORED_WANDER", acanja::tasks::anchored_wander);
+            register_task("RANDOM_MOVE", acanja::tasks::random_move);
+            register_task("SHOPKEEPER", acanja::tasks::shopkeeper);
+            register_task("MOVE_MOONGATE", acanja::tasks::move_moongate);
             log("REGISTERED SOSARIA AI FUNCTIONS");
         }))
         .file("assets/game_config.jsonc", Box::new(GameConfigLoader))

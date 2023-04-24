@@ -37,7 +37,7 @@
       "being": {
         "kind": "Thief",
         "talk": "West 8, South 35 and await the Dawn!",
-        "ai": "RANDOM_WANDER"
+        "ai": "RANDOM_MOVE"
       },
       "tile": "."
     },
@@ -76,7 +76,7 @@
         "kind": "Cleric",
         "name": "Wise Cleric",
         "talk": "The Wise Cleric: 4 cards, 4 slots",
-        "ai": "RANDOM_WANDER"
+        "ai": "RANDOM_MOVE"
       }
     },
     "h": { "being": { "kind": "Guard", "talk": "Enter if you dare!" } },
@@ -100,7 +100,7 @@
     "n": {
       "being": {
         "kind": "Cleric",
-        "ai": "RANDOM_WANDER",
+        "ai": "RANDOM_MOVE",
         "talk": "Howdy stranger!"
       }
     },

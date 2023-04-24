@@ -53,7 +53,7 @@
     "h": { "being": { "kind": "Guard", "talk": "Good day!" }, "tile": "%" },
     "i": { "being": { "kind": "Guard", "talk": "Good day!" }, "tile": "-" },
 
-    "f": { "tile": ":", "being": { "kind": "Fighter", "ai": "RANDOM_WANDER" } },
+    "f": { "tile": ":", "being": { "kind": "Fighter", "ai": "RANDOM_MOVE" } },
     "j": {
       "tile": ":",
       "being": { "kind": "Jester", "ai": "ANCHORED_WANDER" }

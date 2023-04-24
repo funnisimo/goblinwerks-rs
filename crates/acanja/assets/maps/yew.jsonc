@@ -40,7 +40,7 @@
     "b": {
       "being": {
         "kind": "Cleric",
-        "ai": "RANDOM_WANDER",
+        "ai": "RANDOM_MOVE",
         "talk": "Know ye well thy foes!!"
       },
       "tile": "%"
@@ -48,7 +48,7 @@
     "c": {
       "being": {
         "kind": "Cleric",
-        "ai": "RANDOM_WANDER",
+        "ai": "RANDOM_MOVE",
         "talk": "Peace be with you"
       },
       "tile": "%"
@@ -56,17 +56,17 @@
     "d": {
       "being": {
         "kind": "Cleric",
-        "ai": "RANDOM_WANDER",
+        "ai": "RANDOM_MOVE",
         "talk": "I've been beyond the whirlpool!"
       },
       "tile": "%"
     },
     "e": {
-      "being": { "kind": "Cleric", "ai": "RANDOM_WANDER", "talk": null },
+      "being": { "kind": "Cleric", "ai": "RANDOM_MOVE", "talk": null },
       "tile": "%"
     },
     "f": {
-      "being": { "kind": "Cleric", "ai": "RANDOM_WANDER", "talk": null },
+      "being": { "kind": "Cleric", "ai": "RANDOM_MOVE", "talk": null },
       "tile": "%"
     },
 

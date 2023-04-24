@@ -51,7 +51,7 @@
       "being": {
         "kind": "Fighter",
         "talk": "Seek the Jester in castle Fire!",
-        "ai": "RANDOM_WANDER"
+        "ai": "RANDOM_MOVE"
       },
       "tile": "-"
     },
@@ -60,7 +60,7 @@
         "kind": "Fighter",
         "name": "Sentri",
         "talk": "Good grog!",
-        "ai": "RANDOM_WANDER"
+        "ai": "RANDOM_MOVE"
       },
       "tile": "-"
     },
@@ -69,7 +69,7 @@
         "kind": "Fighter",
         "name": "Shamino",
         "talk": "Good food!",
-        "ai": "RANDOM_WANDER"
+        "ai": "RANDOM_MOVE"
       },
       "tile": "-"
     },

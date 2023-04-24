@@ -44,21 +44,21 @@
       "being": {
         "kind": "Fighter",
         "talk": "<Bribe> guards! They will leave!",
-        "ai": "RANDOM_WANDER"
+        "ai": "RANDOM_MOVE"
       }
     },
     "f": {
       "being": {
         "kind": "Fighter",
         "talk": "To arms! and To battle!",
-        "ai": "RANDOM_WANDER"
+        "ai": "RANDOM_MOVE"
       }
     },
     "d": {
       "being": {
         "kind": "Cleric",
         "talk": "Peace be with you",
-        "ai": "RANDOM_WANDER"
+        "ai": "RANDOM_MOVE"
       }
     },
     "c": {
@@ -87,7 +87,7 @@
     "v": { "being": "Guard", "tile": "-" },
     "y": { "being": "Guard", "tile": ":" },
 
-    "z": { "being": { "kind": "Wizard", "ai": "RANDOM_WANDER" } },
+    "z": { "being": { "kind": "Wizard", "ai": "RANDOM_MOVE" } },
     "j": { "being": { "kind": "Jester", "ai": "ANCHORED_WANDER" } },
 
     "r": { "being": "Healer" },

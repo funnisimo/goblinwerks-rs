@@ -55,7 +55,7 @@
         "kind": "Fighter",
         "name": "Baby Bob",
         "talk": "Bring me bucks!",
-        "ai": "RANDOM_WANDER"
+        "ai": "RANDOM_MOVE"
       },
       "tile": "-"
     },
@@ -63,7 +63,7 @@
       "being": {
         "kind": "Fighter",
         "talk": "'Cards' are useful!",
-        "ai": "RANDOM_WANDER"
+        "ai": "RANDOM_MOVE"
       },
       "tile": "-"
     },
@@ -71,7 +71,7 @@
       "being": {
         "kind": "Fighter",
         "talk": "'Marks' are useful!",
-        "ai": "RANDOM_WANDER"
+        "ai": "RANDOM_MOVE"
       },
       "tile": "-"
     },
@@ -79,7 +79,7 @@
       "being": {
         "kind": "Fighter",
         "talk": "'Exotics' are useful!",
-        "ai": "RANDOM_WANDER"
+        "ai": "RANDOM_MOVE"
       },
       "tile": "-"
     },

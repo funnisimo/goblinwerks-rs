@@ -49,7 +49,7 @@
       "being": {
         "kind": "Wizard",
         "talk": "Dawn last but a brief moment.",
-        "ai": "RANDOM_WANDER"
+        "ai": "RANDOM_MOVE"
       },
       "tile": "."
     },
@@ -65,7 +65,7 @@
       "being": {
         "kind": "Fighter",
         "talk": "Jolly good day.",
-        "ai": "RANDOM_WANDER"
+        "ai": "RANDOM_MOVE"
       },
       "tile": "-"
     },

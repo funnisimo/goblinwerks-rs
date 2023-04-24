@@ -6,7 +6,7 @@ use gw_world::level::{get_current_level_mut, Level};
 use gw_world::map::Map;
 use gw_world::position::Position;
 
-use crate::ai::Moons;
+use crate::tasks::Moons;
 
 ////////////////////////
 

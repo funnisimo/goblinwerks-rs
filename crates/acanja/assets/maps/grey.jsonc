@@ -58,7 +58,7 @@
       "being": {
         "kind": "Thief",
         "talk": "Yo! ho! ho! and a bottle of rum!!!",
-        "ai": "RANDOM_WANDER"
+        "ai": "RANDOM_MOVE"
       }
     },
     "u": {
@@ -66,7 +66,7 @@
       "being": {
         "kind": "Thief",
         "talk": "Ever seen Exotic arms?",
-        "ai": "RANDOM_WANDER"
+        "ai": "RANDOM_MOVE"
       }
     },
 
