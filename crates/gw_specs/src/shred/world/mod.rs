@@ -14,9 +14,12 @@ use std::{
 
 use ahash::AHashMap as HashMap;
 
-use crate::shred::{
-    cell::{Ref, RefMut, TrustCell},
-    SystemData,
+use crate::{
+    atomic_refcell::AtomicBorrowRef,
+    shred::{
+        cell::{Ref, RefMut, TrustCell},
+        SystemData,
+    },
 };
 
 use self::entry::create_entry;
@@ -37,6 +40,17 @@ mod setup;
 pub struct Fetch<'a, T: 'a> {
     inner: Ref<'a, dyn Resource>,
     phantom: PhantomData<&'a T>,
+}
+
+impl<'a, T: 'a> Fetch<'a, T>
+where
+    T: Resource,
+{
+    /// destructures the fetch to allow repackaging with Globals borrow.
+    pub(crate) fn destructure(self) -> (&'a T, AtomicBorrowRef<'a>) {
+        let (ptr, borrow) = self.inner.destructure();
+        (unsafe { ptr.downcast_ref_unchecked() }, borrow)
+    }
 }
 
 impl<'a, T> Deref for Fetch<'a, T>

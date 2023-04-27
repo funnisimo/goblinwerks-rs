@@ -257,7 +257,7 @@ impl<'a, 'b> DispatcherBuilder<'a, 'b> {
     pub fn add_batch<T>(
         &mut self,
         controller: T,
-        mut dispatcher_builder: DispatcherBuilder<'a, 'b>,
+        dispatcher_builder: DispatcherBuilder<'a, 'b>,
         name: &str,
         dep: &[&str],
     ) where

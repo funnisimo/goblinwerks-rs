@@ -19,8 +19,7 @@ impl<'a> System<'a> for PrintSystem {
     fn run(&mut self, data: Self::SystemData) {
         let (a, mut b) = data;
 
-        println!("{:?}", &*a);
-        println!("{:?}", &*b);
+        println!("PrintSystem = {:?} + {:?}", &*a, &*b);
 
         *b = UniqueB; // We can mutate UniqueB here
                       // because it's `Write`.

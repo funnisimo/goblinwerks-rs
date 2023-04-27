@@ -82,7 +82,7 @@
 //! virtual function calls.
 
 #![deny(unused_must_use, clippy::disallowed_types)]
-#![warn(missing_docs)]
+// #![warn(missing_docs)]
 
 pub mod cell;
 
