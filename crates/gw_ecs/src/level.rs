@@ -1,6 +1,6 @@
 use crate::{
     component::{Component, ComponentSet},
-    entity::Entities,
+    entity::EntityStore,
     refcell::{AtomicRef, AtomicRefMut},
     resource::{Resource, Resources},
     storage::SparseSet,
@@ -21,7 +21,7 @@ pub struct Level {
 impl Level {
     pub fn new() -> Self {
         let mut res = Resources::default();
-        res.insert(Entities::new());
+        res.insert(EntityStore::new());
 
         Level {
             index: 0,
@@ -35,13 +35,13 @@ impl Level {
 
     // spawn
     pub fn spawn_empty(&mut self) -> Entity {
-        let mut entities = self.get_unique_mut::<Entities>().unwrap();
+        let mut entities = self.get_unique_mut::<EntityStore>().unwrap();
         entities.spawn()
     }
 
     pub fn spawn<'a, S: ComponentSet<'a>>(&mut self, comps: S) -> Entity {
         let entity = {
-            let mut entities = self.get_unique_mut::<Entities>().unwrap();
+            let mut entities = self.get_unique_mut::<EntityStore>().unwrap();
             entities.spawn()
         };
         comps.spawn(self, entity);

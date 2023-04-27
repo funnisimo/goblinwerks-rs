@@ -8,7 +8,12 @@
     "tile": false, // tile (if any) that this horde must spawn into
     "machine": false, // machine (if any) that this horde must spawn into
     "flags": 0, // Any horde flags
-    "tags": "SOSARIA" // tags (can be matched on)
+    "tags": "SOSARIA", // tags (can be matched on by map spawner)
+    "map_tags": false // These are tags that have to match the map tags to be eligible to be matched
+    // A match means the map has ALL of the required flags and NONE of the forbidden flags
+    // "A" means "A" is required in map tags, "!A" means "A" is forbidden in map tags
+    // Can be string - e.g. "A" or "A !B" or "A, !B" or "A + B" -- valid separators = ",|+" or just a space
+    // Can be array of strings - e.g. ["A", "!B"]
   },
   {
     "leader": "SKELETON", // ID of the leader being

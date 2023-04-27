@@ -5,11 +5,12 @@ use super::Key;
 use legion::Entity;
 use std::collections::HashMap;
 use std::fmt::Display;
+use std::fmt::{Debug, Formatter};
 
 ///////////////////////////////////////////////////
 
 /// The result of an evaluation.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Value {
     Empty,
     Index(usize),
@@ -719,6 +720,12 @@ impl Display for Value {
                 write!(f, "{:?}", entity)
             }
         }
+    }
+}
+
+impl Debug for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
     }
 }
 

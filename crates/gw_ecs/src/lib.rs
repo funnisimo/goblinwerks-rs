@@ -12,7 +12,7 @@ pub mod system;
 
 pub use component::Component;
 pub use ecs::*;
-pub use entity::{Entities, Entity};
+pub use entity::{Entity, EntityStore};
 pub use fetch::*;
 pub use level::*;
 pub use levels::*;

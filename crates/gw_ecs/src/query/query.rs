@@ -5,7 +5,7 @@
 use std::marker::PhantomData;
 
 use super::View;
-use crate::{entity::EntityIter, Ecs, Entities, Unique};
+use crate::{entity::EntityIter, Ecs, EntityStore, Unique};
 
 pub struct Query<T>
 where
@@ -25,7 +25,7 @@ where
     }
 
     pub fn iter<'a>(&self, ecs: &'a Ecs) -> QueryIter<'a, T> {
-        let entities = ecs.get_unique::<Entities>().unwrap();
+        let entities = ecs.get_unique::<EntityStore>().unwrap();
         let data = T::data(ecs);
         QueryIter::new(entities, data)
     }
@@ -38,7 +38,7 @@ where
     T: View,
 {
     data: <T as View>::Data<'a>,
-    entities: Unique<'a, Entities>,
+    entities: Unique<'a, EntityStore>,
     index: usize,
 }
 
@@ -46,7 +46,7 @@ impl<'a, T> QueryIter<'a, T>
 where
     T: View,
 {
-    pub fn new(entities: Unique<'a, Entities>, data: <T as View>::Data<'a>) -> Self {
+    pub fn new(entities: Unique<'a, EntityStore>, data: <T as View>::Data<'a>) -> Self {
         QueryIter {
             data,
             entities,
@@ -102,7 +102,7 @@ where
 //         }
 //     }
 
-//     pub fn iter(&mut self, entities: &'a Unique<Entities>) -> QueryMutIter<'a, T> {
+//     pub fn iter(&mut self, entities: &'a Unique<EntityStore>) -> QueryMutIter<'a, T> {
 //         QueryMutIter::new(&mut self.view, entities)
 //     }
 // }
@@ -112,7 +112,7 @@ where
 //     T: ViewMut<'a>,
 // {
 //     view: &'a mut T,
-//     entities: &'a Unique<'a, Entities>,
+//     entities: &'a Unique<'a, EntityStore>,
 //     iter: EntityIter<'a>,
 // }
 
@@ -120,7 +120,7 @@ where
 // where
 //     T: ViewMut<'a>,
 // {
-//     pub fn new(view: &'a mut T, entities: &'a Unique<'a, Entities>) -> Self {
+//     pub fn new(view: &'a mut T, entities: &'a Unique<'a, EntityStore>) -> Self {
 //         let iter = entities.iter();
 //         QueryMutIter {
 //             view,
@@ -149,7 +149,7 @@ mod test {
     use super::*;
     use crate::fetch::Fetch;
     use crate::Ecs;
-    use crate::Entities;
+    use crate::EntityStore;
     use crate::{Comp, CompMut};
 
     struct Age(u32);
@@ -166,7 +166,7 @@ mod test {
     //         level.spawn((Age(20),));
     //     }
 
-    //     let (entities, ages) = <(Entities, Comp<Age>)>::fetch(&ecs);
+    //     let (entities, ages) = <(EntityStore, Comp<Age>)>::fetch(&ecs);
 
     //     let query = (&entities, &ages).join();
 
@@ -187,7 +187,7 @@ mod test {
         ecs.spawn((Age(10),));
         ecs.spawn((Age(20),));
 
-        let query = <(Entities, Comp<Age>)>::join();
+        let query = <(EntityStore, Comp<Age>)>::join();
 
         let mut total_age = 0;
         for (_entity, age) in query.iter(&ecs) {
@@ -206,7 +206,7 @@ mod test {
     //     ecs.spawn((Age(10),));
     //     ecs.spawn((Age(20),));
 
-    //     let mut query = <(Entities, CompMut<Age>)>::join(&ecs);
+    //     let mut query = <(EntityStore, CompMut<Age>)>::join(&ecs);
     //     // let filter = <(WithComp<Address>,)>::filter(&ecs);
 
     //     let mut total_age = 0;

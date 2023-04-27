@@ -1,5 +1,12 @@
+use crate::level::get_current_level_mut;
+
 use super::{Cell, Map};
-use gw_util::path::{BlockedSource, PathfindingSource};
+use gw_app::Ecs;
+use gw_util::{
+    grid::Grid,
+    mask::get_area_mask,
+    path::{BlockedSource, PathfindingSource},
+};
 
 impl PathfindingSource for Map {
     // Handled in default for Trait
@@ -27,8 +34,12 @@ impl PathfindingSource for Map {
         Some(1.0)
     }
 
-    fn get_size(&self) -> (u32, u32) {
-        self.size()
+    fn size(&self) -> (u32, u32) {
+        Map::size(self)
+    }
+
+    fn wrap(&self) -> gw_util::xy::Wrap {
+        self.wrap
     }
 }
 
@@ -58,3 +69,32 @@ impl BlockedSource for Map {
 //         Point::new(self.width, self.height)
 //     }
 // }
+
+pub struct AreaGrid(Grid<u8>);
+
+impl AreaGrid {
+    pub fn new(grid: Grid<u8>) -> Self {
+        AreaGrid(grid)
+    }
+
+    pub fn grid(&self) -> &Grid<u8> {
+        &self.0
+    }
+
+    pub fn get(&self, x: i32, y: i32) -> Option<u8> {
+        match self.0.get(x, y) {
+            None => None,
+            Some(v) => Some(*v),
+        }
+    }
+}
+
+pub fn ensure_area_grid(ecs: &mut Ecs) {
+    let mut level = get_current_level_mut(ecs);
+    if !level.resources.contains::<AreaGrid>() {
+        let map = level.resources.get::<Map>().unwrap();
+        let grid = get_area_mask(&*map);
+        drop(map);
+        level.resources.insert(AreaGrid(grid));
+    }
+}

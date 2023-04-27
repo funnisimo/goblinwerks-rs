@@ -179,6 +179,10 @@ pub fn set_field(
                 Ok(())
             }
         },
+        "map_tags" => {
+            // TODO
+            Ok(())
+        }
         _ => Err(BuilderError::UnknownField(field.to_string())),
     }
 }

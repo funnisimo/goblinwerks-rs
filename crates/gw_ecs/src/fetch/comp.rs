@@ -1,9 +1,11 @@
 use super::Fetch;
 use super::ReadOnly;
 use crate::refcell::{AtomicBorrowRef, AtomicRef, AtomicRefMut};
+use crate::storage::SparseEntry;
 use crate::storage::SparseSet;
 use crate::Entity;
 use crate::{Component, Ecs};
+use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
 /////////////////////////////////////////////////////////////////////
@@ -32,6 +34,58 @@ where
             _levels: levels,
             _level: level,
             borrow,
+        }
+    }
+
+    pub fn iter(&self) -> CompIter<'_, T> {
+        CompIter::new(self)
+    }
+}
+
+pub struct CompIter<'b, T>
+where
+    T: Component,
+{
+    inner: Option<&'b [SparseEntry<T>]>,
+}
+
+impl<'b, T> CompIter<'b, T>
+where
+    T: Component,
+{
+    fn new(comp: &'b Comp<'b, T>) -> Self {
+        CompIter {
+            inner: Some(comp.borrow.as_slice()),
+        }
+    }
+}
+
+impl<'b, T> Iterator for CompIter<'b, T>
+where
+    T: Component,
+{
+    type Item = &'b T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            match self.inner.take() {
+                Some(slice) => match slice {
+                    [] => return None,
+                    [_, ..] => {
+                        let (head, tail) = slice.split_at(1);
+                        self.inner.replace(tail);
+                        match &head[0] {
+                            SparseEntry::Empty => {}
+                            SparseEntry::Used(entity, data) => {
+                                if entity.is_alive() {
+                                    return Some(data);
+                                }
+                            }
+                        }
+                    }
+                },
+                None => return None,
+            }
         }
     }
 }
@@ -142,6 +196,58 @@ where
             _levels: levels,
             _level: level,
             borrow,
+        }
+    }
+
+    // pub fn iter_mut(&mut self) -> CompIterMut<'_, T> {
+    //     CompIterMut::new(self)
+    // }
+}
+
+pub struct CompIterMut<'b, T>
+where
+    T: Component,
+{
+    inner: Option<&'b mut [SparseEntry<T>]>,
+}
+
+impl<'b, T> CompIterMut<'b, T>
+where
+    T: Component,
+{
+    fn new(comp: &'b mut CompMut<'b, T>) -> Self {
+        CompIterMut {
+            inner: Some(comp.borrow.as_mut_slice()),
+        }
+    }
+}
+
+impl<'b, T> Iterator for CompIterMut<'b, T>
+where
+    T: Component,
+{
+    type Item = &'b mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            match self.inner.take() {
+                Some(slice) => match slice {
+                    [] => return None,
+                    [_, ..] => {
+                        let (head, tail) = slice.split_at_mut(1);
+                        self.inner.replace(tail);
+                        match &mut head[0] {
+                            SparseEntry::Empty => {}
+                            SparseEntry::Used(entity, data) => {
+                                if entity.is_alive() {
+                                    return Some(data);
+                                }
+                            }
+                        }
+                    }
+                },
+                None => return None,
+            }
         }
     }
 }

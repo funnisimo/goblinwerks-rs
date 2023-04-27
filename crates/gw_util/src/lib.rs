@@ -6,6 +6,7 @@ pub mod formula;
 pub mod frequency;
 pub mod grid;
 pub mod json;
+pub mod mask;
 pub mod noise;
 pub mod path;
 pub mod point;

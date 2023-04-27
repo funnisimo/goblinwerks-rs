@@ -145,7 +145,7 @@ impl Map {
     }
 
     pub fn try_wrap_xy(&self, x: i32, y: i32) -> Option<(i32, i32)> {
-        self.wrap.try_wrap(x, y, &self.region)
+        self.wrap.try_wrap_in_rect(x, y, &self.region)
     }
 
     // pub fn has_xy(&self, x: i32, y: i32) -> bool {

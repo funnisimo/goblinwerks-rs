@@ -4,6 +4,7 @@ use gw_app::ecs::systems::CommandBuffer;
 use gw_app::ecs::{Entity, Read, ResourceSet, Write};
 use gw_app::ecs::{IntoQuery, Query};
 use gw_app::*;
+use gw_util::grid::{dump_grid, random_point_with};
 use gw_util::point::Point;
 use gw_world::action::idle::IdleAction;
 use gw_world::action::move_step::MoveStepAction;
@@ -13,13 +14,16 @@ use gw_world::combat::Melee;
 use gw_world::effect::{register_effect_parser, BoxedEffect};
 use gw_world::fov::update_fov;
 use gw_world::hero::Hero;
-use gw_world::horde::{pick_random_horde, HordeSpawn};
-use gw_world::level::{get_current_level, get_current_level_mut, with_current_level, Levels};
-use gw_world::map::{Cell, Map};
+use gw_world::horde::{pick_random_horde, spawn_horde, HordeSpawn};
+use gw_world::level::{
+    get_current_level, get_current_level_mut, with_current_level, Level, Levels,
+};
+use gw_world::map::{ensure_area_grid, AreaGrid, Cell, Map};
 use gw_world::position::Position;
 use gw_world::task::{do_next_task, DoNextTaskResult, Task, UserAction};
 use gw_world::task::{get_hero_entity, register_task};
 use gw_world::widget::Viewport;
+use std::ops::DerefMut;
 
 const CAMERA_WIDTH: u32 = 1024 / 32;
 const CAMERA_HEIGHT: u32 = 768 / 32;
@@ -363,7 +367,9 @@ fn spawn_hordes(ecs: &mut Ecs) {
     let max_alive = {
         let level = get_current_level_mut(ecs);
         let mut info = match level.resources.get_mut::<HordeSpawn>() {
-            None => return,
+            None => {
+                return;
+            }
             Some(info) => info,
         };
         if info.next_time > current_time {
@@ -383,6 +389,10 @@ fn spawn_hordes(ecs: &mut Ecs) {
             .filter(|b| b.has_flag(BeingFlags::SPAWNED))
             .count() as u32;
         if count >= max_alive {
+            log(format!(
+                "spawn_hordes - too many alive => count:{} > max_alive:{}",
+                count, max_alive
+            ));
             return;
         }
     }
@@ -390,5 +400,38 @@ fn spawn_hordes(ecs: &mut Ecs) {
     // We got to here so we need to spawn a horde...
     if let Some(horde) = pick_random_horde(ecs, depth) {
         log(format!("SPAWN - {:?}", horde));
+
+        // need spawn point...
+
+        ensure_area_grid(ecs);
+        let mut level = get_current_level_mut(ecs);
+        let spawn_point = {
+            let Level { resources, rng, .. } = level.deref_mut();
+
+            let area_grid = resources.get::<AreaGrid>().unwrap();
+
+            let spawn_point = match random_point_with(&area_grid.grid(), |v, _, _| *v > 0, rng) {
+                None => {
+                    log(format!("Failed to find point to spawn horde"));
+                    dump_grid(area_grid.grid());
+                    return;
+                }
+                Some(point) => point,
+            };
+
+            let map = resources.get::<Map>().unwrap();
+            let map_idx = map.get_index(spawn_point.x, spawn_point.y).unwrap();
+            if map.is_blocked(map_idx) {
+                log(format!(
+                    "Not spawning - location blocked - {:?}",
+                    spawn_point
+                ));
+                return;
+            }
+            spawn_point
+        };
+
+        let entity = spawn_horde(&horde, level.deref_mut(), spawn_point);
+        log(format!("Spawned entity {:?} @ {:?}", entity, spawn_point));
     }
 }

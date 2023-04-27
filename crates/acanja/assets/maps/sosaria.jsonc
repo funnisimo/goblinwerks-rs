@@ -5,6 +5,7 @@
   "font": "DEFAULT",
   "camera": { "size": [11, 11] },
   "fov": 11,
+  "tags": ["SOSARIA"], // Map Id should auto be entered as tag << These are the map tags (can be matched/filtered on by hordes, etc...)
   "tiles": {
     ".": { "tile": "PLAINS", "default": true },
     ":": "TREES",
@@ -68,7 +69,8 @@
   },
   "tasks": ["MOVE_MOONGATE"],
   "spawn": {
-    "check_delay": 1000,
-    "max": 10
+    "check_delay": 1000, // How much turn time to elapsed between checks/spawns
+    "max": 10, // maximum number of spawned hordes (leaders) alive at a time
+    "tags": "SOSARIA" // Hordes have to match these tags to be spawned
   }
 }

@@ -126,6 +126,12 @@ impl RandomNumberGenerator {
         }
     }
 
+    pub fn sequence(&mut self, len: usize) -> Vec<usize> {
+        let mut vec: Vec<usize> = (0..len).collect();
+        vec.shuffle(self);
+        vec
+    }
+
     // /// Get underlying RNG implementation for use in traits / algorithms exposed by
     // /// other crates (eg. `rand` itself)
     // pub fn get_rng(&mut self) -> &mut XorShiftRng {

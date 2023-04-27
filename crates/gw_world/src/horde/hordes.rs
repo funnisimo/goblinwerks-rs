@@ -45,18 +45,20 @@ pub fn pick_random_horde(ecs: &Ecs, depth: u32) -> Option<Arc<Horde>> {
     let forbidden_flags = HordeFlags::empty();
     let required_flags = HordeFlags::empty();
 
-    let mut level = get_current_level_mut(ecs);
-    let hordes = match level.resources.get::<Hordes>() {
-        None => return None,
+    let hordes = match ecs.resources.get::<Hordes>() {
+        None => {
+            log("No hordes configured.");
+            return None;
+        }
         Some(h) => h,
     };
 
     let mut poss_count = 0;
     for horde in hordes.iter() {
-        if horde.flags.intersects(forbidden_flags) {
+        if forbidden_flags.is_empty() == false && horde.flags.intersects(forbidden_flags) {
             continue;
         }
-        if !horde.flags.contains(required_flags) {
+        if required_flags.is_empty() == false && !horde.flags.contains(required_flags) {
             continue;
         }
 
@@ -70,12 +72,14 @@ pub fn pick_random_horde(ecs: &Ecs, depth: u32) -> Option<Arc<Horde>> {
     drop(hordes);
 
     if poss_count == 0 {
+        log(format!("No hordes found for depth={}", depth));
         return None;
     }
 
+    let mut level = get_current_level_mut(ecs);
     let mut index = level.rng.range(1, poss_count as i32) as u32;
 
-    let hordes = level.resources.get::<Hordes>().unwrap();
+    let hordes = ecs.resources.get::<Hordes>().unwrap();
 
     for horde in hordes.iter() {
         if horde.flags.intersects(forbidden_flags) {

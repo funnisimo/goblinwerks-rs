@@ -5,12 +5,12 @@
 // And can have values for all levels above one: e.g. 10+: 200
 //
 
-use std::{cmp::Ordering, num::ParseIntError};
-
 use crate::{
     formula::{parse_string_to_formula, Formula, NoCustomFunction},
     value::{Key, Value},
 };
+use std::fmt::{Debug, Formatter};
+use std::{cmp::Ordering, num::ParseIntError};
 
 fn calc_formula(formula: &Formula, level: u32) -> Option<u32> {
     let ref_fn = |var: String| -> Option<Value> {
@@ -76,7 +76,7 @@ fn sort_entries(a: &FreqEntry, b: &FreqEntry) -> Ordering {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct Frequency {
     entries: Vec<FreqEntry>,
 }
@@ -100,6 +100,23 @@ impl Frequency {
             }
         }
         0
+    }
+}
+
+impl Debug for Frequency {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut s = f.debug_struct("Frequency");
+
+        for entry in self.entries.iter() {
+            match entry {
+                FreqEntry::Const(v) => s.field("*", v),
+                FreqEntry::Level(l, v) => s.field(&l.to_string(), v),
+                FreqEntry::Over(h, v) => s.field(&h.to_string(), v),
+                FreqEntry::Range(l, h, v) => s.field(&format!("{}-{}", l, h), v),
+            };
+        }
+
+        s.finish()
     }
 }
 

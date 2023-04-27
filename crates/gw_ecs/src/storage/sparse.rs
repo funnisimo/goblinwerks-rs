@@ -2,7 +2,7 @@ use crate::Component;
 use crate::Entity;
 use std::slice::{Iter, IterMut};
 
-enum SparseEntry<T> {
+pub(crate) enum SparseEntry<T> {
     Empty,
     Used(Entity, T),
 }
@@ -102,6 +102,14 @@ where
 
     pub fn entities(&self) -> impl Iterator<Item = &Entity> {
         SparseSetEntities::new(self.dense.iter())
+    }
+
+    pub(crate) fn as_slice(&self) -> &[SparseEntry<T>] {
+        self.dense.as_slice()
+    }
+
+    pub(crate) fn as_mut_slice(&mut self) -> &mut [SparseEntry<T>] {
+        self.dense.as_mut_slice()
     }
 }
 

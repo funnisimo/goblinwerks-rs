@@ -37,7 +37,7 @@ impl MoveStepAction {
 
         let entry = world.entry_mut(self.entity).unwrap();
 
-        let actor = match entry.get_component::<Being>() {
+        let being = match entry.get_component::<Being>() {
             Err(_) => return Some(ActionResult::Dead(self.entity)),
             Ok(a) => a,
         };
@@ -45,7 +45,7 @@ impl MoveStepAction {
         if self.dx == 0 && self.dy == 0 {
             return Some(ActionResult::Replace(Box::new(IdleAction::new(
                 self.entity,
-                actor.act_time,
+                being.act_time,
             ))));
         }
 
@@ -61,7 +61,7 @@ impl MoveStepAction {
                 log("Bump edge of world");
                 return Some(ActionResult::Replace(Box::new(IdleAction::new(
                     self.entity,
-                    actor.act_time,
+                    being.act_time,
                 ))));
             }
             Some(idx) => idx,
@@ -83,8 +83,8 @@ impl MoveStepAction {
         // }
 
         let actor_is_hero = self.entity == hero.entity;
-        let act_time = actor.act_time;
-        drop(actor);
+        let act_time = being.act_time;
+        drop(being);
 
         if map.is_blocked(idx) {
             // Check for actor at location...
@@ -93,10 +93,10 @@ impl MoveStepAction {
                     // Check for shopkeeper (Really only possible for horses)
 
                     // Check for talk...
-                    if let Ok(other_actor) = entity.get_component::<Being>() {
-                        if let Some(ref talk) = other_actor.talk {
+                    if let Ok(other_being) = entity.get_component::<Being>() {
+                        if let Some(ref talk) = other_being.talk {
                             if actor_is_hero {
-                                log(format!("{} says: '{}'", other_actor.name(), talk));
+                                log(format!("{} says: '{}'", other_being.name(), talk));
                                 return Some(ActionResult::Replace(Box::new(IdleAction::new(
                                     self.entity,
                                     act_time,
@@ -108,7 +108,7 @@ impl MoveStepAction {
 
                         // Should this be a different thing?
                         if actor_is_hero {
-                            log(format!("{} says: 'Hello'", other_actor.name()));
+                            log(format!("{} says: 'Hello'", other_being.name()));
                             return Some(ActionResult::Replace(Box::new(IdleAction::new(
                                 self.entity,
                                 act_time,

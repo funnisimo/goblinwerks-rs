@@ -16,6 +16,7 @@ use gw_world::{
     camera::Camera,
     effect::{parse_effects, BoxedEffect, Message, Portal},
     fov::FOV,
+    horde::{parse_spawn, HordeSpawn},
     level::{Level, Levels},
     map::Map,
     tile::{Tile, Tiles},
@@ -62,6 +63,7 @@ pub struct LevelData {
     pub region: Option<Rect>,
     pub fov: Option<u32>,
     pub groups: HashMap<String, HashMap<String, Value>>,
+    pub spawn: Option<Vec<HordeSpawn>>,
 }
 
 impl LevelData {
@@ -78,6 +80,7 @@ impl LevelData {
             region: None,
             fov: None,
             groups: HashMap::new(),
+            spawn: None,
         }
     }
 }
@@ -614,6 +617,17 @@ pub fn load_level_data(tiles: &Tiles, being_kinds: &BeingKinds, json: Value) -> 
         panic!("Map has no data!");
     };
 
+    // spawn
+    if let Some(spawn_value) = root.get(&"spawn".into()) {
+        match parse_spawn(spawn_value) {
+            Ok(info) => {
+                log(format!("Parsed spawn info - {:?}", info));
+                level_data.spawn = Some(info);
+            }
+            Err(e) => panic!("spawn has invalid value - {:?}", e),
+        }
+    }
+
     level_data
 }
 
@@ -743,6 +757,13 @@ pub fn make_level(mut level_data: LevelData) -> Level {
     if let Some(range) = level_data.fov {
         level.resources.insert(FOV::new(range));
         log(format!("[[[[ FOV ]]]] = {}", range));
+    }
+
+    if let Some(mut spawn) = level_data.spawn {
+        if let Some(first) = spawn.drain(0..1).next() {
+            log(format!("CONFIGURED SPAWN - {:?}", first));
+            level.resources.insert(first);
+        }
     }
 
     level

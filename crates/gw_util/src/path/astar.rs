@@ -65,7 +65,7 @@ where
     /// Performs an A-Star search
     fn search(self, start: Point, end: Point, allow_diagonal: bool) -> Option<Vec<Point>> {
         // println!("astar: {} -> {}", start, end);
-        let (width, height) = self.source.get_size();
+        let (width, height) = self.source.size();
         let mut cost_map = SearchGrid::new(width, height);
 
         cost_map.set_goal_xy(end.x, end.y);

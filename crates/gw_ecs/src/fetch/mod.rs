@@ -1,4 +1,4 @@
-use crate::{entity::Entities, Ecs};
+use crate::{entity::EntityStore, Ecs};
 
 // pub trait MaybeBorrowed {
 //     type Output<'a>;
@@ -27,10 +27,10 @@ impl Fetch for &Ecs {
     }
 }
 
-impl Fetch for Entities {
-    type Output<'a> = Unique<'a, Entities>;
+impl Fetch for EntityStore {
+    type Output<'a> = Unique<'a, EntityStore>;
     fn fetch(ecs: &Ecs) -> Self::Output<'_> {
-        ecs.get_unique::<Entities>().unwrap()
+        ecs.get_unique::<EntityStore>().unwrap()
     }
 }
 

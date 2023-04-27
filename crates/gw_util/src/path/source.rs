@@ -1,5 +1,8 @@
 // use crate::world::{global_world, EntityId};
-use crate::point::{distance, Point};
+use crate::{
+    point::{distance, Point},
+    xy::Wrap,
+};
 
 /// Implement this trait to support path-finding functions.
 pub trait PathfindingSource {
@@ -9,7 +12,11 @@ pub trait PathfindingSource {
         Some(1.0)
     }
 
-    fn get_size(&self) -> (u32, u32);
+    fn size(&self) -> (u32, u32);
+
+    fn wrap(&self) -> Wrap {
+        Wrap::None
+    }
 
     /// Return the distance you would like to use for path-finding. Generally, Pythagoras distance (implemented in geometry)
     /// is fine, but you might use Manhattan or any other heuristic that fits your problem.
@@ -185,7 +192,7 @@ impl TestSource {
 
 #[cfg(test)]
 impl PathfindingSource for TestSource {
-    fn get_size(&self) -> (u32, u32) {
+    fn size(&self) -> (u32, u32) {
         (self.width, self.height)
     }
 

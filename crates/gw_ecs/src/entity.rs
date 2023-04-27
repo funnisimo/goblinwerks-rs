@@ -66,13 +66,13 @@ impl Display for Entity {
     }
 }
 
-pub struct Entities {
+pub struct EntityStore {
     pub(crate) data: Vec<Entity>,
 }
 
-impl Entities {
+impl EntityStore {
     pub fn new() -> Self {
-        Entities { data: Vec::new() }
+        EntityStore { data: Vec::new() }
     }
 
     pub fn len(&self) -> usize {
@@ -113,12 +113,12 @@ impl Entities {
 }
 
 pub struct EntityIter<'e> {
-    data: &'e Entities,
+    data: &'e EntityStore,
     index: usize,
 }
 
 impl<'e> EntityIter<'e> {
-    pub fn new(data: &'e Entities) -> Self {
+    pub fn new(data: &'e EntityStore) -> Self {
         EntityIter { data, index: 0 }
     }
 }

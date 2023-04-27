@@ -10,7 +10,7 @@ pub fn get_cost_map<S: PathfindingSource + BlockedSource>(
     source: &S,
     allow_diagonal: bool,
 ) -> SearchGrid {
-    let (width, height) = source.get_size();
+    let (width, height) = source.size();
     let mut grid = SearchGrid::new(width, height);
     grid.set_goal_xy(goal.x, goal.y);
     calculate_costs(&mut grid, source, allow_diagonal);

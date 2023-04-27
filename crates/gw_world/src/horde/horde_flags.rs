@@ -25,18 +25,24 @@ bitflags! {
         const NO_PERIODIC_SPAWN = fl!(4);	    // can spawn only when the level begins -- not afterwards
         const ALLIED_WITH_PLAYER = fl!(5);
         const NEVER_OOD = fl!(6);              // Horde cannot be generated out of depth
+        const SPAWN_AS_AVATAR = fl!(7);
 
-        const MACHINE_BOSS = fl!(7);	          // used in machines for a boss challenge
-        const MACHINE_WATER_MONSTER = fl!(8);	// used in machines where the room floods with shallow water
-        const MACHINE_CAPTIVE = fl!(9);	      // powerful captive monsters without any captors
-        const MACHINE_STATUE = fl!(10);	        // the kinds of monsters that make sense in a statue
-        const MACHINE_TURRET = fl!(11);	        // turrets, for hiding in walls
-        const MACHINE_MUD = fl!(12);	          // bog monsters, for hiding in mud
-        const MACHINE_KENNEL = fl!(13);	        // monsters that can appear in cages in kennels
-        const VAMPIRE_FODDER = fl!(14);	        // monsters that are prone to capture and farming by vampires
-        const MACHINE_LEGENDARY_ALLY = fl!(15);	// legendary allies
-        const MACHINE_THIEF = fl!(16);          // monsters that can be generated in the key thief area machines
-        const MACHINE_GOBLIN_WARREN = fl!(17);  // can spawn in goblin warrens
+        const MEMBERS_IN_FRONT = fl!(10);       // Spawn the members between the leader and the heros
+        const MEMBERS_BEHIND = fl!(11);         // Spawn the members behind the leader (away from hero)
+        const MEMBERS_LOOSE = fl!(12);          // Spawn members with space between them
+
+        // These need to be converted to tags
+        const MACHINE_BOSS = fl!(20);	          // used in machines for a boss challenge
+        const MACHINE_WATER_MONSTER = fl!(21);	// used in machines where the room floods with shallow water
+        const MACHINE_CAPTIVE = fl!(22);	      // powerful captive monsters without any captors
+        const MACHINE_STATUE = fl!(23);	        // the kinds of monsters that make sense in a statue
+        const MACHINE_TURRET = fl!(24);	        // turrets, for hiding in walls
+        const MACHINE_MUD = fl!(25);	          // bog monsters, for hiding in mud
+        const MACHINE_KENNEL = fl!(26);	        // monsters that can appear in cages in kennels
+        const VAMPIRE_FODDER = fl!(27);	        // monsters that are prone to capture and farming by vampires
+        const MACHINE_LEGENDARY_ALLY = fl!(28);	// legendary allies
+        const MACHINE_THIEF = fl!(29);          // monsters that can be generated in the key thief area machines
+        const MACHINE_GOBLIN_WARREN = fl!(30);  // can spawn in goblin warrens
 
         const MACHINE_ONLY = Self::MACHINE_BOSS.bits() | Self::MACHINE_WATER_MONSTER.bits() |
             Self::MACHINE_CAPTIVE.bits() |  Self::MACHINE_STATUE.bits() |
@@ -82,6 +88,11 @@ impl FromStr for HordeFlags {
                 "NO_PERIODIC_SPAWN" => result |= HordeFlags::NO_PERIODIC_SPAWN,
                 "ALLIED_WITH_PLAYER" => result |= HordeFlags::ALLIED_WITH_PLAYER,
                 "NEVER_OOD" => result |= HordeFlags::NEVER_OOD,
+                "SPAWN_AS_AVATAR" | "AVATAR" => result |= HordeFlags::SPAWN_AS_AVATAR,
+
+                "MEMBERS_IN_FRONT" | "FRONT" => result |= HordeFlags::MEMBERS_IN_FRONT,
+                "MEMBERS_BEHIND" | "BEHIND" => result |= HordeFlags::MEMBERS_BEHIND,
+                "MEMBERS_LOOSE" | "LOOSE" => result |= HordeFlags::MEMBERS_LOOSE,
 
                 "MACHINE_BOSS" => result |= HordeFlags::MACHINE_BOSS,
                 "MACHINE_WATER_MONSTER" => result |= HordeFlags::MACHINE_WATER_MONSTER,

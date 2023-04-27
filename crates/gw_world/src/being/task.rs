@@ -23,7 +23,7 @@ use gw_app::{ecs::Entity, Ecs};
 //     ai_fn(ecs, entity).unwrap_or(Box::new(IdleAction::new(entity, idle_time)))
 // }
 
-pub fn do_being_action(action: BoxedAction, ecs: &mut Ecs, _entity: Entity) -> TaskResult {
+pub fn do_entity_action(action: BoxedAction, ecs: &mut Ecs, _entity: Entity) -> TaskResult {
     let mut action = action;
     loop {
         match action.execute(ecs) {

@@ -1,8 +1,8 @@
 use crate::CompMut;
 use crate::Component;
 use crate::Ecs;
-use crate::Entities;
 use crate::Entity;
+use crate::EntityStore;
 use crate::Fetch;
 use crate::{Comp, Unique};
 
@@ -24,12 +24,12 @@ pub trait View: Fetch {
     fn get<'a, 'b>(data: &'a Self::Data<'b>, entity: Entity) -> Option<Self::Item<'a>>;
 }
 
-impl View for Entities {
-    type Data<'a> = Unique<'a, Entities>;
+impl View for EntityStore {
+    type Data<'a> = Unique<'a, EntityStore>;
     type Item<'a> = Entity;
 
     fn data<'a>(ecs: &'a Ecs) -> Self::Data<'a> {
-        ecs.get_unique::<Entities>().unwrap()
+        ecs.get_unique::<EntityStore>().unwrap()
     }
 
     fn get<'a, 'b>(data: &'a Self::Data<'b>, entity: Entity) -> Option<Self::Item<'a>> {

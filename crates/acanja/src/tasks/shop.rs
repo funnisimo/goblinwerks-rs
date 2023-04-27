@@ -1,6 +1,6 @@
 use gw_app::{ecs::Entity, Ecs};
 use gw_world::{
-    action::move_step::MoveStepAction, being::do_being_action, hero::Hero,
+    action::move_step::MoveStepAction, being::do_entity_action, hero::Hero,
     level::get_current_level_mut, map::Map, position::Position, task::TaskResult,
 };
 
@@ -80,5 +80,5 @@ pub fn shopkeeper(ecs: &mut Ecs, entity: Entity) -> TaskResult {
 
     drop(level);
 
-    do_being_action(Box::new(MoveStepAction::new(entity, dx, dy)), ecs, entity)
+    do_entity_action(Box::new(MoveStepAction::new(entity, dx, dy)), ecs, entity)
 }
