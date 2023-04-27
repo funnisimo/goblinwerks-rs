@@ -1,20 +1,20 @@
-use gw_specs::dispatch::DispatcherBuilder;
 use gw_specs::ecs::Ecs;
-use gw_specs::system::System;
-use gw_specs::world::{Global, GlobalMut};
+use gw_specs::shred::DispatcherBuilder;
+use gw_specs::shred::System;
+use gw_specs::shred::{Read, Write};
 
 #[derive(Debug, Default)]
-struct GlobalA;
+struct UniqueA;
 
 // A resource usually has a `Default` implementation
 // which will be used if the resource has not been added.
 #[derive(Debug, Default)]
-struct GlobalB;
+struct UniqueB;
 
 struct PrintSystem;
 
 impl<'a> System<'a> for PrintSystem {
-    type SystemData = (Global<'a, GlobalA>, GlobalMut<'a, GlobalB>);
+    type SystemData = (Read<'a, UniqueA>, Write<'a, UniqueB>);
 
     fn run(&mut self, data: Self::SystemData) {
         let (a, mut b) = data;
@@ -22,7 +22,7 @@ impl<'a> System<'a> for PrintSystem {
         println!("{:?}", &*a);
         println!("{:?}", &*b);
 
-        *b = GlobalB; // We can mutate GlobalB here
+        *b = UniqueB; // We can mutate UniqueB here
                       // because it's `Write`.
     }
 }
@@ -32,10 +32,10 @@ fn main() {
     let mut dispatcher = DispatcherBuilder::new()
         .with(PrintSystem, "print", &[]) // Adds a system "print" without dependencies
         .build();
-    dispatcher.setup(&mut ecs);
+    dispatcher.setup(ecs.current_world_mut());
 
     // Dispatch as often as you want to
-    dispatcher.dispatch(&ecs);
-    dispatcher.dispatch(&ecs);
+    dispatcher.dispatch(ecs.current_world());
+    dispatcher.dispatch(ecs.current_world());
     // ...
 }

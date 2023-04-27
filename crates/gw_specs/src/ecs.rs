@@ -8,10 +8,13 @@ pub struct Ecs {
 
 impl Ecs {
     pub fn new() -> Self {
-        // TODO worlds needs the default world there...
+        let globals = Globals::new();
+        let mut world = World::empty();
+        world.insert(globals.clone());
+
         Ecs {
-            worlds: Vec::new(),
-            globals: Globals::new(),
+            worlds: vec![world],
+            globals,
         }
     }
 
