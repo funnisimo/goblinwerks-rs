@@ -1,0 +1,36 @@
+[package]
+name = "gw_specs"
+version = "0.1.0"
+edition = "2021"
+description = """
+Dispatches systems in parallel which need read access to some resources,
+and write access to others.
+"""
+readme = "README.md"
+documentation = "https://docs.rs/gw_specs"
+repository = "https://github.com/funnisimo/goblinwerks-rs"
+keywords = ["parallel", "systems", "resources", "ecs"]
+categories = ["concurrency"]
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+# specs = "0.18.0"
+# shred = "0.14.1"
+ahash        = "0.8.3"
+arrayvec     = "0.7.2"
+rayon        = { version = "1.5.0" }
+shred-derive = { version = "0.6.3" }
+smallvec     = "1.6.1"
+tynm         = "0.1.6"
+
+# [workspace]
+# members = ["shred-derive"]
+
+# [dev-dependencies]
+# cgmath = "0.18.0"
+# shred-derive = { path = "shred-derive", version = "0.6.3" }
+
+[features]
+# default  = ["parallel", "shred-derive"]
+# default  = ["parallel"]
+# parallel = ["rayon"]
