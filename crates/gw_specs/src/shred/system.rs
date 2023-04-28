@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, ops::Deref};
 
-use crate::shred::{ResourceId, World};
+use crate::{ResourceId, World};
 
 /// A trait for accessing read/write multiple resources from a system. This can
 /// be used to create dynamic systems that don't specify what they fetch at

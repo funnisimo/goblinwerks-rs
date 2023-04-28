@@ -1,12 +1,10 @@
-use std::borrow::Borrow;
-
-use rayon::{join, ThreadPool};
-
 use crate::shred::{
     dispatch::util::check_intersection,
     system::{RunNow, System},
-    world::{ResourceId, World},
 };
+use crate::{ResourceId, World};
+use rayon::{join, ThreadPool};
+use std::borrow::Borrow;
 
 /// The "leave node" for the `Par` / `Seq` list.
 pub struct Nil;

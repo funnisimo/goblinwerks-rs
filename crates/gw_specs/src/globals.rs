@@ -1,80 +1,77 @@
-use crate::atomic_refcell::AtomicBorrowRef;
+use crate::atomic_refcell::{AtomicBorrowRef, AtomicRefCell};
+use crate::shred::World as Resources;
 use crate::shred::{
     DefaultProvider, Fetch, FetchMut, PanicHandler, Resource, ResourceId, SetupHandler, SystemData,
-    World,
 };
+use crate::World;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
+use std::sync::Arc;
 
 pub struct Globals {
-    world: Option<Box<World>>,
+    resources: Arc<AtomicRefCell<Resources>>,
 }
 
 impl Globals {
-    pub fn empty() -> Self {
-        Globals { world: None } // Using shred world, not specs world (no components)
-    }
-
-    pub fn new() -> Self {
-        Globals {
-            world: Some(Box::new(World::empty())),
-        } // Using shred world, not specs world (no components)
-    }
-
-    pub fn setup(&mut self) {
-        self.world = Some(Box::new(World::empty()));
+    pub fn new(resources: Arc<AtomicRefCell<Resources>>) -> Self {
+        Globals { resources } // Using shred world, not specs world (no components)
     }
 
     pub fn has_value<G: Resource>(&self) -> bool {
-        match self.world.as_ref() {
-            None => false,
-            Some(world) => world.has_value::<G>(),
-        }
-    }
-
-    pub fn take(&mut self) -> Option<Box<World>> {
-        self.world.take()
-    }
-
-    pub fn replace(&mut self, world: Option<Box<World>>) {
-        self.world = world
+        self.resources.borrow().has_value::<G>()
     }
 
     /// Inserts a global
     pub fn insert<G: Resource>(&mut self, global: G) {
-        match self.world.as_mut() {
-            None => {}
-            Some(world) => world.insert(global),
-        }
+        self.resources.borrow_mut().insert(global);
     }
 
     /// Removes a global
     pub fn remove<G: Resource>(&mut self) -> Option<G> {
-        match self.world.as_mut() {
+        self.resources.borrow_mut().remove::<G>()
+    }
+
+    pub fn fetch<'b, G: Resource>(&'b self) -> GlobalFetch<'b, G> {
+        let (globals, borrow) = self.resources.borrow().destructure();
+        let fetch = globals.fetch::<G>();
+        GlobalFetch::new(borrow, fetch)
+    }
+
+    pub fn try_fetch<G: Resource>(&self) -> Option<GlobalFetch<G>> {
+        let (globals, borrow) = self.resources.borrow().destructure();
+        match globals.try_fetch::<G>() {
             None => None,
-            Some(world) => world.remove::<G>(),
+            Some(fetch) => Some(GlobalFetch::new(borrow, fetch)),
         }
     }
 
-    pub fn fetch<'b, G: Resource>(&'b self) -> Fetch<'b, G> {
-        self.try_fetch().unwrap()
+    pub fn fetch_mut<G: Resource>(&self) -> GlobalFetchMut<G> {
+        let (globals, borrow) = self.resources.borrow().destructure();
+        let fetch = globals.fetch_mut::<G>();
+        GlobalFetchMut::new(borrow, fetch)
     }
 
-    pub fn try_fetch<G: Resource>(&self) -> Option<Fetch<G>> {
-        match self.world.as_ref() {
+    pub fn try_fetch_mut<G: Resource>(&self) -> Option<GlobalFetchMut<G>> {
+        let (globals, borrow) = self.resources.borrow().destructure();
+        match globals.try_fetch_mut::<G>() {
             None => None,
-            Some(world) => world.try_fetch::<G>(),
+            Some(fetch) => Some(GlobalFetchMut::new(borrow, fetch)),
         }
     }
+}
 
-    pub fn fetch_mut<G: Resource>(&self) -> FetchMut<G> {
-        self.try_fetch_mut().unwrap()
+impl Default for Globals {
+    fn default() -> Self {
+        Globals {
+            resources: Arc::new(AtomicRefCell::new(Resources::empty())),
+        }
     }
+}
 
-    pub fn try_fetch_mut<G: Resource>(&self) -> Option<FetchMut<G>> {
-        match self.world.as_ref() {
-            None => None,
-            Some(world) => world.try_fetch_mut::<G>(),
+impl Clone for Globals {
+    fn clone(&self) -> Self {
+        Globals {
+            resources: Arc::clone(&self.resources),
         }
     }
 }
@@ -158,6 +155,7 @@ where
 }
 
 pub(crate) struct GlobalRes<T>(PhantomData<T>);
+pub(crate) struct GlobalSet;
 
 /// Allows to fetch a resource in a system immutably.
 ///
@@ -207,7 +205,7 @@ where
 
     fn reads() -> Vec<ResourceId> {
         vec![
-            ResourceId::new::<Globals>(),
+            ResourceId::new::<GlobalSet>(),
             ResourceId::new::<GlobalRes<T>>(),
         ]
     }
@@ -273,7 +271,7 @@ where
     }
 
     fn reads() -> Vec<ResourceId> {
-        vec![ResourceId::new::<Globals>()]
+        vec![ResourceId::new::<GlobalSet>()]
     }
 
     fn writes() -> Vec<ResourceId> {
@@ -295,7 +293,7 @@ where
 
     fn reads() -> Vec<ResourceId> {
         vec![
-            ResourceId::new::<Globals>(),
+            ResourceId::new::<GlobalSet>(),
             ResourceId::new::<GlobalRes<T>>(),
         ]
     }
@@ -316,7 +314,7 @@ where
     }
 
     fn reads() -> Vec<ResourceId> {
-        vec![ResourceId::new::<Globals>()]
+        vec![ResourceId::new::<GlobalSet>()]
     }
 
     fn writes() -> Vec<ResourceId> {
@@ -336,34 +334,34 @@ pub type WriteGlobalExpect<'a, T> = WriteGlobal<'a, T, PanicHandler>;
 
 /////////////////////////////////////////////////////////////
 
-pub trait WorldGlobals {
-    fn fetch_global<G: Resource>(&self) -> GlobalFetch<G> {
-        self.try_fetch_global::<G>().unwrap()
-    }
+// pub trait WorldGlobals {
+//     fn fetch_global<G: Resource>(&self) -> GlobalFetch<G> {
+//         self.try_fetch_global::<G>().unwrap()
+//     }
 
-    fn try_fetch_global<G: Resource>(&self) -> Option<GlobalFetch<G>>;
+//     fn try_fetch_global<G: Resource>(&self) -> Option<GlobalFetch<G>>;
 
-    fn fetch_global_mut<G: Resource>(&self) -> GlobalFetchMut<G> {
-        self.try_fetch_global_mut::<G>().unwrap()
-    }
+//     fn fetch_global_mut<G: Resource>(&self) -> GlobalFetchMut<G> {
+//         self.try_fetch_global_mut::<G>().unwrap()
+//     }
 
-    fn try_fetch_global_mut<G: Resource>(&self) -> Option<GlobalFetchMut<G>>;
-}
+//     fn try_fetch_global_mut<G: Resource>(&self) -> Option<GlobalFetchMut<G>>;
+// }
 
-impl WorldGlobals for World {
-    fn try_fetch_global<G: Resource>(&self) -> Option<GlobalFetch<G>> {
-        let (globals, borrow) = self.fetch::<Globals>().destructure();
-        match globals.try_fetch::<G>() {
-            None => None,
-            Some(fetch) => Some(GlobalFetch::new(borrow, fetch)),
-        }
-    }
+// impl WorldGlobals for World {
+//     fn try_fetch_global<G: Resource>(&self) -> Option<GlobalFetch<G>> {
+//         let (globals, borrow) = self.fetch::<Globals>().destructure();
+//         match globals.try_fetch::<G>() {
+//             None => None,
+//             Some(fetch) => Some(GlobalFetch::new(borrow, fetch)),
+//         }
+//     }
 
-    fn try_fetch_global_mut<G: Resource>(&self) -> Option<GlobalFetchMut<G>> {
-        let (globals, borrow) = self.fetch::<Globals>().destructure();
-        match globals.try_fetch_mut::<G>() {
-            None => None,
-            Some(fetch) => Some(GlobalFetchMut::new(borrow, fetch)),
-        }
-    }
-}
+//     fn try_fetch_global_mut<G: Resource>(&self) -> Option<GlobalFetchMut<G>> {
+//         let (globals, borrow) = self.fetch::<Globals>().destructure();
+//         match globals.try_fetch_mut::<G>() {
+//             None => None,
+//             Some(fetch) => Some(GlobalFetchMut::new(borrow, fetch)),
+//         }
+//     }
+// }

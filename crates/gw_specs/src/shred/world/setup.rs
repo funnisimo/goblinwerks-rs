@@ -1,4 +1,4 @@
-use crate::shred::{Resource, World};
+use crate::{Resource, World};
 
 macro_rules! fetch_panic {
     () => {{

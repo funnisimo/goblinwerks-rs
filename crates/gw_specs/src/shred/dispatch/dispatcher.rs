@@ -1,6 +1,6 @@
+use crate::shred::{dispatch::stage::Stage, system::RunNow};
+use crate::World;
 use smallvec::SmallVec;
-
-use crate::shred::{dispatch::stage::Stage, system::RunNow, world::World};
 
 /// This wrapper is used to share a replaceable ThreadPool with other
 /// dispatchers. Useful with batch dispatchers.
@@ -173,7 +173,8 @@ pub fn new_dispatcher<'a, 'b>(
 
 #[cfg(test)]
 mod tests {
-    use crate::shred::{dispatch::builder::DispatcherBuilder, system::*, world::*};
+    use crate::shred::{dispatch::builder::DispatcherBuilder, system::*, Write};
+    use crate::World;
 
     #[derive(Default)]
     struct Res(i32);

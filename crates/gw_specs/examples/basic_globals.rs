@@ -1,7 +1,8 @@
 use gw_specs::{
     ecs::Ecs,
     globals::ReadGlobal,
-    shred::{DispatcherBuilder, Read, System, World},
+    shred::{DispatcherBuilder, Read, System},
+    World,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
@@ -30,7 +31,7 @@ impl<'a> System<'a> for GlobalSystem {
     }
 }
 fn main() {
-    let mut ecs = Ecs::new();
+    let mut ecs = Ecs::default();
 
     assert!(ecs.try_fetch_global::<GlobalA>().is_none());
     assert!(!ecs.has_global::<GlobalA>());

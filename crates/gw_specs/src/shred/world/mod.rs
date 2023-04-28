@@ -5,21 +5,12 @@ pub use self::{
     entry::Entry,
     setup::{DefaultProvider, PanicHandler, SetupHandler},
 };
-
+use crate::shred::cell::{Ref, RefMut, TrustCell};
+use ahash::AHashMap as HashMap;
 use std::{
     any::{Any, TypeId},
     marker::PhantomData,
     ops::{Deref, DerefMut},
-};
-
-use ahash::AHashMap as HashMap;
-
-use crate::{
-    atomic_refcell::AtomicBorrowRef,
-    shred::{
-        cell::{Ref, RefMut, TrustCell},
-        SystemData,
-    },
 };
 
 use self::entry::create_entry;
@@ -40,17 +31,6 @@ mod setup;
 pub struct Fetch<'a, T: 'a> {
     inner: Ref<'a, dyn Resource>,
     phantom: PhantomData<&'a T>,
-}
-
-impl<'a, T: 'a> Fetch<'a, T>
-where
-    T: Resource,
-{
-    /// destructures the fetch to allow repackaging with Globals borrow.
-    pub(crate) fn destructure(self) -> (&'a T, AtomicBorrowRef<'a>) {
-        let (ptr, borrow) = self.inner.destructure();
-        (unsafe { ptr.downcast_ref_unchecked() }, borrow)
-    }
 }
 
 impl<'a, T> Deref for Fetch<'a, T>
@@ -218,6 +198,11 @@ impl World {
         Default::default()
     }
 
+    /// Returns whether or not the World has anything in it.
+    pub fn is_empty(&self) -> bool {
+        self.resources.is_empty()
+    }
+
     /// Inserts a resource into this container. If the resource existed before,
     /// it will be overwritten.
     ///
@@ -283,134 +268,134 @@ impl World {
         create_entry(self.resources.entry(ResourceId::new::<R>()))
     }
 
-    /// Gets `SystemData` `T` from the `World`. This can be used to retrieve
-    /// data just like in [System](crate::System)s.
-    ///
-    /// This will not setup the system data, i.e. resources fetched here must
-    /// exist already.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use shred::*;
-    /// # #[derive(Default)] struct Timer; #[derive(Default)] struct AnotherResource;
-    ///
-    /// // NOTE: If you use Specs, use `World::new` instead.
-    /// let mut world = World::empty();
-    /// world.insert(Timer);
-    /// world.insert(AnotherResource);
-    /// let system_data: (Read<Timer>, Read<AnotherResource>) = world.system_data();
-    /// ```
-    ///
-    /// # Panics
-    ///
-    /// * Panics if `T` is already borrowed in an incompatible way.
-    pub fn system_data<'a, T>(&'a self) -> T
-    where
-        T: SystemData<'a>,
-    {
-        SystemData::fetch(self)
-    }
+    // /// Gets `SystemData` `T` from the `World`. This can be used to retrieve
+    // /// data just like in [System](crate::System)s.
+    // ///
+    // /// This will not setup the system data, i.e. resources fetched here must
+    // /// exist already.
+    // ///
+    // /// # Examples
+    // ///
+    // /// ```
+    // /// # use shred::*;
+    // /// # #[derive(Default)] struct Timer; #[derive(Default)] struct AnotherResource;
+    // ///
+    // /// // NOTE: If you use Specs, use `World::new` instead.
+    // /// let mut world = World::empty();
+    // /// world.insert(Timer);
+    // /// world.insert(AnotherResource);
+    // /// let system_data: (Read<Timer>, Read<AnotherResource>) = world.system_data();
+    // /// ```
+    // ///
+    // /// # Panics
+    // ///
+    // /// * Panics if `T` is already borrowed in an incompatible way.
+    // pub fn system_data<'a, T>(&'a self) -> T
+    // where
+    //     T: SystemData<'a>,
+    // {
+    //     SystemData::fetch(self)
+    // }
 
-    /// Sets up system data `T` for fetching afterwards.
-    ///
-    /// Most `SystemData` implementations will insert a sensible default value,
-    /// by implementing [SystemData::setup]. However, it is not guaranteed to
-    /// do that; if there is no sensible default, `setup` might not do anything.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use shred::{Read, World};
-    ///
-    /// #[derive(Default)]
-    /// struct MyCounter(u32);
-    ///
-    /// // NOTE: If you use Specs, use `World::new` instead.
-    /// let mut world = World::empty();
-    /// assert!(!world.has_value::<MyCounter>());
-    ///
-    /// // `Read<MyCounter>` requires a `Default` implementation, and uses
-    /// // that to initialize the resource
-    /// world.setup::<Read<MyCounter>>();
-    /// assert!(world.has_value::<MyCounter>());
-    /// ```
-    ///
-    /// Here's another example, showing the case where no resource gets
-    /// initialized:
-    ///
-    /// ```
-    /// use shred::{ReadExpect, World};
-    ///
-    /// struct MyCounter(u32);
-    ///
-    /// // NOTE: If you use Specs, use `World::new` instead.
-    /// let mut world = World::empty();
-    ///
-    /// world.setup::<ReadExpect<MyCounter>>();
-    /// ```
-    pub fn setup<'a, T: SystemData<'a>>(&mut self) {
-        T::setup(self);
-    }
+    // /// Sets up system data `T` for fetching afterwards.
+    // ///
+    // /// Most `SystemData` implementations will insert a sensible default value,
+    // /// by implementing [SystemData::setup]. However, it is not guaranteed to
+    // /// do that; if there is no sensible default, `setup` might not do anything.
+    // ///
+    // /// # Examples
+    // ///
+    // /// ```
+    // /// use shred::{Read, World};
+    // ///
+    // /// #[derive(Default)]
+    // /// struct MyCounter(u32);
+    // ///
+    // /// // NOTE: If you use Specs, use `World::new` instead.
+    // /// let mut world = World::empty();
+    // /// assert!(!world.has_value::<MyCounter>());
+    // ///
+    // /// // `Read<MyCounter>` requires a `Default` implementation, and uses
+    // /// // that to initialize the resource
+    // /// world.setup::<Read<MyCounter>>();
+    // /// assert!(world.has_value::<MyCounter>());
+    // /// ```
+    // ///
+    // /// Here's another example, showing the case where no resource gets
+    // /// initialized:
+    // ///
+    // /// ```
+    // /// use shred::{ReadExpect, World};
+    // ///
+    // /// struct MyCounter(u32);
+    // ///
+    // /// // NOTE: If you use Specs, use `World::new` instead.
+    // /// let mut world = World::empty();
+    // ///
+    // /// world.setup::<ReadExpect<MyCounter>>();
+    // /// ```
+    // pub fn setup<'a, T: SystemData<'a>>(&mut self) {
+    //     T::setup(self);
+    // }
 
-    /// Executes `f` once, right now and with the specified system data.
-    ///
-    /// This sets up the system data `f` expects, fetches it and then
-    /// executes `f`. This is essentially like a one-time
-    /// [System](crate::System).
-    ///
-    /// This is especially useful if you either need a lot of system data or,
-    /// with Specs, if you want to build an entity and for that you need to
-    /// access resources first - just fetching the resources and building
-    /// the entity would cause a double borrow.
-    ///
-    /// **Calling this method is equivalent to:**
-    ///
-    /// ```
-    /// # use shred::*;
-    /// # struct MySystemData; impl MySystemData { fn do_something(&self) {} }
-    /// # impl<'a> SystemData<'a> for MySystemData {
-    /// #     fn fetch(res: &World) -> Self { MySystemData }
-    /// #     fn reads() -> Vec<ResourceId> { vec![] }
-    /// #     fn writes() -> Vec<ResourceId> { vec![] }
-    /// #     fn setup(res: &mut World) {}
-    /// # }
-    /// # let mut world = World::empty();
-    /// {
-    ///     // note the extra scope
-    ///     world.setup::<MySystemData>();
-    ///     let my_data: MySystemData = world.system_data();
-    ///     my_data.do_something();
-    /// }
-    /// ```
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use shred::*;
-    /// // NOTE: If you use Specs, use `World::new` instead.
-    /// let mut world = World::empty();
-    ///
-    /// #[derive(Default)]
-    /// struct MyRes {
-    ///     field: i32,
-    /// }
-    ///
-    /// world.exec(|(mut my_res,): (Write<MyRes>,)| {
-    ///     assert_eq!(my_res.field, 0);
-    ///     my_res.field = 5;
-    /// });
-    ///
-    /// assert_eq!(world.fetch::<MyRes>().field, 5);
-    /// ```
-    pub fn exec<'a, F, R, T>(&'a mut self, f: F) -> R
-    where
-        F: FnOnce(T) -> R,
-        T: SystemData<'a>,
-    {
-        self.setup::<T>();
-        f(self.system_data())
-    }
+    // /// Executes `f` once, right now and with the specified system data.
+    // ///
+    // /// This sets up the system data `f` expects, fetches it and then
+    // /// executes `f`. This is essentially like a one-time
+    // /// [System](crate::System).
+    // ///
+    // /// This is especially useful if you either need a lot of system data or,
+    // /// with Specs, if you want to build an entity and for that you need to
+    // /// access resources first - just fetching the resources and building
+    // /// the entity would cause a double borrow.
+    // ///
+    // /// **Calling this method is equivalent to:**
+    // ///
+    // /// ```
+    // /// # use shred::*;
+    // /// # struct MySystemData; impl MySystemData { fn do_something(&self) {} }
+    // /// # impl<'a> SystemData<'a> for MySystemData {
+    // /// #     fn fetch(res: &World) -> Self { MySystemData }
+    // /// #     fn reads() -> Vec<ResourceId> { vec![] }
+    // /// #     fn writes() -> Vec<ResourceId> { vec![] }
+    // /// #     fn setup(res: &mut World) {}
+    // /// # }
+    // /// # let mut world = World::empty();
+    // /// {
+    // ///     // note the extra scope
+    // ///     world.setup::<MySystemData>();
+    // ///     let my_data: MySystemData = world.system_data();
+    // ///     my_data.do_something();
+    // /// }
+    // /// ```
+    // ///
+    // /// # Examples
+    // ///
+    // /// ```
+    // /// # use shred::*;
+    // /// // NOTE: If you use Specs, use `World::new` instead.
+    // /// let mut world = World::empty();
+    // ///
+    // /// #[derive(Default)]
+    // /// struct MyRes {
+    // ///     field: i32,
+    // /// }
+    // ///
+    // /// world.exec(|(mut my_res,): (Write<MyRes>,)| {
+    // ///     assert_eq!(my_res.field, 0);
+    // ///     my_res.field = 5;
+    // /// });
+    // ///
+    // /// assert_eq!(world.fetch::<MyRes>().field, 5);
+    // /// ```
+    // pub fn exec<'a, F, R, T>(&'a mut self, f: F) -> R
+    // where
+    //     F: FnOnce(T) -> R,
+    //     T: SystemData<'a>,
+    // {
+    //     self.setup::<T>();
+    //     f(self.system_data())
+    // }
 
     /// Fetches the resource with the specified type `T` or panics if it doesn't
     /// exist.
@@ -588,30 +573,30 @@ impl World {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shred::{RunNow, System, SystemData};
+    // use crate::shred::{RunNow, System};
 
     #[derive(Default)]
     struct Res;
 
-    #[test]
-    fn fetch_aspects() {
-        assert_eq!(Read::<Res>::reads(), vec![ResourceId::new::<Res>()]);
-        assert_eq!(Read::<Res>::writes(), vec![]);
+    // #[test]
+    // fn fetch_aspects() {
+    //     assert_eq!(Read::<Res>::reads(), vec![ResourceId::new::<Res>()]);
+    //     assert_eq!(Read::<Res>::writes(), vec![]);
 
-        let mut world = World::empty();
-        world.insert(Res);
-        <Read<Res> as SystemData>::fetch(&world);
-    }
+    //     let mut world = World::empty();
+    //     world.insert(Res);
+    //     <Read<Res> as SystemData>::fetch(&world);
+    // }
 
-    #[test]
-    fn fetch_mut_aspects() {
-        assert_eq!(Write::<Res>::reads(), vec![]);
-        assert_eq!(Write::<Res>::writes(), vec![ResourceId::new::<Res>()]);
+    // #[test]
+    // fn fetch_mut_aspects() {
+    //     assert_eq!(Write::<Res>::reads(), vec![]);
+    //     assert_eq!(Write::<Res>::writes(), vec![ResourceId::new::<Res>()]);
 
-        let mut world = World::empty();
-        world.insert(Res);
-        <Write<Res> as SystemData>::fetch(&world);
-    }
+    //     let mut world = World::empty();
+    //     world.insert(Res);
+    //     <Write<Res> as SystemData>::fetch(&world);
+    // }
 
     #[test]
     fn fetch_by_id() {
@@ -643,61 +628,61 @@ mod tests {
         );
     }
 
-    #[test]
-    fn system_data() {
-        let mut world = World::empty();
+    // #[test]
+    // fn system_data() {
+    //     let mut world = World::empty();
 
-        world.insert(5u32);
-        let x = *world.system_data::<Read<u32>>();
-        assert_eq!(x, 5);
-    }
+    //     world.insert(5u32);
+    //     let x = *world.system_data::<Read<u32>>();
+    //     assert_eq!(x, 5);
+    // }
 
-    #[test]
-    fn setup() {
-        let mut world = World::empty();
+    // #[test]
+    // fn setup() {
+    //     let mut world = World::empty();
 
-        world.insert(5u32);
-        world.setup::<Read<u32>>();
-        let x = *world.system_data::<Read<u32>>();
-        assert_eq!(x, 5);
+    //     world.insert(5u32);
+    //     world.setup::<Read<u32>>();
+    //     let x = *world.system_data::<Read<u32>>();
+    //     assert_eq!(x, 5);
 
-        world.remove::<u32>();
-        world.setup::<Read<u32>>();
-        let x = *world.system_data::<Read<u32>>();
-        assert_eq!(x, 0);
-    }
+    //     world.remove::<u32>();
+    //     world.setup::<Read<u32>>();
+    //     let x = *world.system_data::<Read<u32>>();
+    //     assert_eq!(x, 0);
+    // }
 
-    #[test]
-    fn exec() {
-        #![allow(clippy::float_cmp)]
+    // #[test]
+    // fn exec() {
+    //     #![allow(clippy::float_cmp)]
 
-        let mut world = World::empty();
+    //     let mut world = World::empty();
 
-        world.exec(|(float, boolean): (Read<f32>, Read<bool>)| {
-            assert_eq!(*float, 0.0);
-            assert!(!*boolean);
-        });
+    //     world.exec(|(float, boolean): (Read<f32>, Read<bool>)| {
+    //         assert_eq!(*float, 0.0);
+    //         assert!(!*boolean);
+    //     });
 
-        world.exec(|(mut float, mut boolean): (Write<f32>, Write<bool>)| {
-            *float = 4.3;
-            *boolean = true;
-        });
+    //     world.exec(|(mut float, mut boolean): (Write<f32>, Write<bool>)| {
+    //         *float = 4.3;
+    //         *boolean = true;
+    //     });
 
-        world.exec(|(float, boolean): (Read<f32>, ReadExpect<bool>)| {
-            assert_eq!(*float, 4.3);
-            assert!(*boolean);
-        });
-    }
+    //     world.exec(|(float, boolean): (Read<f32>, ReadExpect<bool>)| {
+    //         assert_eq!(*float, 4.3);
+    //         assert!(*boolean);
+    //     });
+    // }
 
-    #[test]
-    #[should_panic]
-    fn exec_panic() {
-        let mut world = World::empty();
+    // #[test]
+    // #[should_panic]
+    // fn exec_panic() {
+    //     let mut world = World::empty();
 
-        world.exec(|(_float, _boolean): (Write<f32>, Write<bool>)| {
-            panic!();
-        });
-    }
+    //     world.exec(|(_float, _boolean): (Write<f32>, Write<bool>)| {
+    //         panic!();
+    //     });
+    // }
 
     #[test]
     #[should_panic]
@@ -771,29 +756,29 @@ mod tests {
         assert!(world.has_value::<Res>());
     }
 
-    #[test]
-    fn default_works() {
-        struct Sys;
+    // #[test]
+    // fn default_works() {
+    //     struct Sys;
 
-        impl<'a> System<'a> for Sys {
-            type SystemData = Write<'a, i32>;
+    //     impl<'a> System<'a> for Sys {
+    //         type SystemData = Write<'a, i32>;
 
-            fn run(&mut self, mut data: Self::SystemData) {
-                assert_eq!(*data, 0);
+    //         fn run(&mut self, mut data: Self::SystemData) {
+    //             assert_eq!(*data, 0);
 
-                *data = 33;
-            }
-        }
+    //             *data = 33;
+    //         }
+    //     }
 
-        let mut world = World::empty();
-        assert!(world.try_fetch::<i32>().is_none());
+    //     let mut world = World::empty();
+    //     assert!(world.try_fetch::<i32>().is_none());
 
-        let mut sys = Sys;
-        RunNow::setup(&mut sys, &mut world);
+    //     let mut sys = Sys;
+    //     RunNow::setup(&mut sys, &mut world);
 
-        sys.run_now(&world);
+    //     sys.run_now(&world);
 
-        assert!(world.try_fetch::<i32>().is_some());
-        assert_eq!(*world.fetch::<i32>(), 33);
-    }
+    //     assert!(world.try_fetch::<i32>().is_some());
+    //     assert_eq!(*world.fetch::<i32>(), 33);
+    // }
 }

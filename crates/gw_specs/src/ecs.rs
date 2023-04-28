@@ -1,26 +1,29 @@
 use crate::globals::{GlobalFetch, GlobalFetchMut, Globals};
-use crate::shred::{Fetch, FetchMut, Resource, World};
+use crate::shred::{Fetch, FetchMut, Resource};
+use crate::World;
 
 pub struct Ecs {
     pub(crate) worlds: Vec<World>,
     pub(crate) current: usize,
+    globals: Globals,
 }
 
 impl Ecs {
-    pub fn new() -> Self {
-        let globals = Globals::new();
-        let mut world = World::empty();
-        world.insert(globals);
+    pub fn new(world: World) -> Self {
+        let globals = Globals::default();
+        let mut world = world;
+        world.set_globals(globals.clone());
 
         Ecs {
             worlds: vec![world],
             current: 0,
+            globals,
         }
     }
 
     pub fn push_world(&mut self, world: World) -> usize {
         let mut world = world;
-        world.insert(Globals::empty());
+        world.set_globals(self.globals.clone());
         self.worlds.push(world);
         self.worlds.len() - 1
     }
@@ -32,10 +35,7 @@ impl Ecs {
 
     pub fn set_current_index(&mut self, index: usize) {
         // TODO - Safety: is index in bounds?
-        let globals = self.current_world().fetch_mut::<Globals>().take();
-        assert!(globals.is_some());
         self.current = index;
-        self.current_world().fetch_mut::<Globals>().replace(globals);
     }
 
     pub fn set_current_with<F>(&mut self, func: F) -> Option<usize>
@@ -59,41 +59,33 @@ impl Ecs {
     // GLOBALS
 
     pub fn has_global<G: Resource>(&self) -> bool {
-        self.current_world().fetch::<Globals>().has_value::<G>()
+        self.current_world().has_global::<G>()
     }
 
     /// Inserts a global
-    pub fn insert_global<G: Resource>(&self, global: G) {
-        self.current_world().fetch_mut::<Globals>().insert(global)
+    pub fn insert_global<G: Resource>(&mut self, global: G) {
+        self.current_world_mut().insert_global(global)
     }
 
     /// Removes a global
-    pub fn remove_global<G: Resource>(&self) -> Option<G> {
-        self.current_world().fetch_mut::<Globals>().remove::<G>()
+    pub fn remove_global<G: Resource>(&mut self) -> Option<G> {
+        self.current_world_mut().remove_global::<G>()
     }
 
     pub fn fetch_global<G: Resource>(&self) -> GlobalFetch<G> {
-        self.try_fetch_global::<G>().unwrap()
+        self.current_world().fetch_global::<G>()
     }
 
     pub fn try_fetch_global<G: Resource>(&self) -> Option<GlobalFetch<G>> {
-        let (globals, borrow) = self.current_world().fetch::<Globals>().destructure();
-        match globals.try_fetch::<G>() {
-            None => None,
-            Some(fetch) => Some(GlobalFetch::new(borrow, fetch)),
-        }
+        self.current_world().try_fetch_global::<G>()
     }
 
     pub fn fetch_global_mut<G: Resource>(&self) -> GlobalFetchMut<G> {
-        self.try_fetch_global_mut().unwrap()
+        self.current_world().fetch_global_mut::<G>()
     }
 
     pub fn try_fetch_global_mut<G: Resource>(&self) -> Option<GlobalFetchMut<G>> {
-        let (globals, borrow) = self.current_world().fetch::<Globals>().destructure();
-        match globals.try_fetch_mut::<G>() {
-            None => None,
-            Some(fetch) => Some(GlobalFetchMut::new(borrow, fetch)),
-        }
+        self.current_world().try_fetch_global_mut::<G>()
     }
 
     // UNIQUES
@@ -126,5 +118,11 @@ impl Ecs {
 
     pub fn try_fetch_unique_mut<G: Resource>(&self) -> Option<FetchMut<G>> {
         self.current_world().try_fetch_mut::<G>()
+    }
+}
+
+impl Default for Ecs {
+    fn default() -> Self {
+        Ecs::new(World::empty())
     }
 }

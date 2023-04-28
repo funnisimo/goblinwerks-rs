@@ -89,6 +89,7 @@ pub mod cell;
 mod dispatch;
 mod meta;
 mod system;
+#[macro_use]
 mod world;
 
 /// A reexport of the `#[derive(SystemData]` macro provided by `shred-derive`.

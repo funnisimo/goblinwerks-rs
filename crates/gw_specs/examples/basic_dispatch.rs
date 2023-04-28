@@ -27,7 +27,7 @@ impl<'a> System<'a> for PrintSystem {
 }
 
 fn main() {
-    let mut ecs = Ecs::new();
+    let mut ecs = Ecs::default();
     let mut dispatcher = DispatcherBuilder::new()
         .with(PrintSystem, "print", &[]) // Adds a system "print" without dependencies
         .build();

@@ -1,9 +1,5 @@
-use std::{collections::hash_map::Entry, fmt};
-
-use ahash::AHashMap as HashMap;
-
 #[cfg(feature = "parallel")]
-use crate::dispatch::dispatcher::ThreadPoolWrapper;
+use super::dispatcher::ThreadPoolWrapper;
 use crate::shred::{
     dispatch::{
         batch::BatchControllerSystem,
@@ -13,6 +9,8 @@ use crate::shred::{
     },
     system::{RunNow, System, SystemData},
 };
+use ahash::AHashMap as HashMap;
+use std::{collections::hash_map::Entry, fmt};
 
 /// Builder for the [`Dispatcher`].
 ///

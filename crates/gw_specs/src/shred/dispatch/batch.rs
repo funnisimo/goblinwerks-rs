@@ -1,7 +1,7 @@
 use crate::shred::{
-    dispatch::Dispatcher, world::ResourceId, Accessor, AccessorCow, DynamicSystemData, RunningTime,
-    System, SystemData, World,
+    dispatch::Dispatcher, Accessor, AccessorCow, DynamicSystemData, RunningTime, System, SystemData,
 };
+use crate::{ResourceId, World};
 
 /// The `BatchAccessor` is used to notify the main dispatcher of the read and
 /// write resources of the `System`s contained in the batch ("sub systems").
@@ -216,7 +216,8 @@ where
 #[cfg(test)]
 mod tests {
 
-    use crate::shred::{BatchController, Dispatcher, DispatcherBuilder, System, World, Write};
+    use crate::shred::{BatchController, Dispatcher, DispatcherBuilder, System, Write};
+    use crate::World;
 
     /// This test demonstrate that the batch system is able to correctly setup
     /// its resources to default datas.

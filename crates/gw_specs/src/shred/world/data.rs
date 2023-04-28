@@ -5,8 +5,8 @@ use std::{
 
 use crate::shred::{
     DefaultProvider, Fetch, FetchMut, PanicHandler, Resource, ResourceId, SetupHandler, SystemData,
-    World,
 };
+use crate::World;
 
 /// Allows to fetch a resource in a system immutably.
 ///

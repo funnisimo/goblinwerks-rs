@@ -1,16 +1,13 @@
+use crate::dispatch::{
+    dispatcher::{ThreadLocal, ThreadPoolWrapper},
+    stage::Stage,
+};
+use crate::World;
+use std::borrow::BorrowMut;
 use std::{
     borrow::Borrow,
     sync::{mpsc, Arc, RwLock},
 };
-
-use crate::{
-    dispatch::{
-        dispatcher::{ThreadLocal, ThreadPoolWrapper},
-        stage::Stage,
-    },
-    world::World,
-};
-use std::borrow::BorrowMut;
 
 pub fn new_async<'a, R>(
     world: R,

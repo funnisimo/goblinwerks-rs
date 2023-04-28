@@ -35,18 +35,17 @@
 
 use std::fmt;
 
+use super::{
+    dispatcher::{SystemExecSend, SystemId},
+    util::check_intersection,
+};
+use crate::{
+    shred::system::{RunningTime, System},
+    ResourceId, World,
+};
 use ahash::AHashMap as HashMap;
 use arrayvec::ArrayVec;
 use smallvec::SmallVec;
-
-use crate::shred::{
-    dispatch::{
-        dispatcher::{SystemExecSend, SystemId},
-        util::check_intersection,
-    },
-    system::{RunningTime, System},
-    world::{ResourceId, World},
-};
 
 const MAX_SYSTEMS_PER_GROUP: usize = 5;
 
