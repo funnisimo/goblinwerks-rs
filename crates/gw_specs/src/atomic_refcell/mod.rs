@@ -40,6 +40,8 @@
 //! have been removed. We segment the concurrency logic from the rest of the code to
 //! keep the tricky parts small and easy to audit.
 
+// Original - Copyright (c) 2022 Bobby Holley
+
 // #![no_std]
 #![allow(unsafe_code)]
 #![deny(missing_docs)]
@@ -400,11 +402,17 @@ impl<'b, T: ?Sized> AtomicRef<'b, T> {
         }
     }
 
+    // The concept for the destructure method below is taken from Shipyard Ecs.
+    // https://github.com/leudz/shipyard
+    // Version - 0.5.0
+    // Copyright 2019 Dylan Ancel
+
     /// Allow access to borrow and value separately.
     /// Lets you layer borrows on top of borrows.
     ///
     /// SAFETY:
     /// - We know the value is ok to dereference because it is procted by the borrow.
+    /// - The value and everything borrowing it must be dropped before `AtomicRefBorrow`.
     pub fn destructure(self) -> (&'b T, AtomicBorrowRef<'b>) {
         (unsafe { self.value.as_ref() }, self.borrow)
     }
