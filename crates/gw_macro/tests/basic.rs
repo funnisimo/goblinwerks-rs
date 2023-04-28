@@ -1,70 +1,30 @@
-use gw_ecs::{Ecs, Fetch, GlobalMut, TryGlobal};
-use gw_macro::system;
+use gw_macro::SystemData;
 
-struct Count(u32);
+use gw_specs::{Ecs, ReadGlobal, ResourceId, SystemData, World, Write};
 
-#[system]
-fn increment(ecs: &Ecs) {
-    let mut count = ecs.get_global_mut::<Count>().unwrap();
-    count.0 += 1;
+#[derive(Default, PartialEq, Debug)]
+pub struct Clock(u32);
+#[derive(Default, PartialEq, Debug)]
+pub struct Timer(u32);
+
+// This will implement `SystemData` for `MySystemData`.
+// Please note that this will only work if `SystemData`, `World` and `ResourceId` are included.
+#[derive(SystemData)]
+pub struct MySystemData<'a> {
+    pub clock: ReadGlobal<'a, Clock>,
+    pub timer: Write<'a, Timer>,
 }
 
 #[test]
-fn basic_ecs() {
-    let mut ecs = Ecs::new();
-    ecs.insert_global(Count(0));
+fn basic() {
+    let mut ecs = Ecs::default();
 
-    increment(&ecs);
+    ecs.current_world_mut().insert_global(Clock(5));
+    ecs.current_world_mut().insert(Timer(0));
 
-    {
-        let count = ecs.get_global::<Count>().unwrap();
-        assert_eq!(count.0, 1);
-    }
+    let mut data = ecs.current_world().system_data::<MySystemData>();
+    assert_eq!(data.clock.0, 5);
+    assert_eq!(data.timer.0, 0);
 
-    increment_system(&ecs);
-
-    {
-        let count = ecs.get_global::<Count>().unwrap();
-        assert_eq!(count.0, 2);
-    }
-}
-
-#[system]
-fn increment_global(mut global: GlobalMut<Count>) {
-    global.0 += 1;
-}
-
-#[test]
-fn basic_global() {
-    let mut ecs = Ecs::new();
-    ecs.insert_global(Count(0));
-
-    increment_global_system(&ecs);
-
-    {
-        let count = ecs.get_global::<Count>().unwrap();
-        assert_eq!(count.0, 1);
-    }
-}
-
-struct Age(u32);
-
-#[system]
-fn try_double(try_age: TryGlobal<Age>, mut count: GlobalMut<Count>) {
-    if try_age.is_none() {
-        count.0 += 1;
-    }
-}
-
-#[test]
-fn basic_double() {
-    let mut ecs = Ecs::new();
-    ecs.insert_global(Count(0));
-
-    try_double_system(&ecs);
-
-    {
-        let count = ecs.get_global::<Count>().unwrap();
-        assert_eq!(count.0, 1);
-    }
+    data.timer.0 = 1;
 }

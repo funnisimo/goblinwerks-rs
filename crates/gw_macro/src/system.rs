@@ -1,36 +1,127 @@
-use proc_macro::TokenStream;
-use quote::{format_ident, quote};
-use syn::{parse_macro_input, Type};
-use syn::{FnArg, ItemFn};
+use quote::quote;
+use syn::{
+    parse_quote, punctuated::Punctuated, token::Comma, Data, DataStruct, DeriveInput, Field,
+    Fields, FieldsNamed, FieldsUnnamed, Ident, Lifetime, Type, WhereClause, WherePredicate,
+};
 
-pub fn make_system_fn(_args: TokenStream, item: TokenStream) -> TokenStream {
-    let input_fn = parse_macro_input!(item as ItemFn);
+pub fn impl_system_data(ast: &DeriveInput) -> proc_macro2::TokenStream {
+    let name = &ast.ident;
+    let mut generics = ast.generics.clone();
 
-    let fn_ident = input_fn.sig.ident.clone();
-    let sys_fn_ident = format_ident!("{}_system", input_fn.sig.ident);
+    let (fetch_return, tys) = gen_from_body(&ast.data, name);
+    let tys = &tys;
+    // Assumes that the first lifetime is the fetch lt
+    let def_fetch_lt = ast
+        .generics
+        .lifetimes()
+        .next()
+        .expect("There has to be at least one lifetime");
+    let impl_fetch_lt = &def_fetch_lt.lifetime;
 
-    println!("=========== {} =============", sys_fn_ident);
-
-    let mut arg_types: Vec<Box<Type>> = Vec::new();
-    for arg in input_fn.sig.inputs.iter() {
-        match arg {
-            FnArg::Typed(t) => {
-                println!("Typed arg type = {:?}", t.ty);
-                arg_types.push(t.ty.clone());
-            }
-            FnArg::Receiver(r) => println!("Receiver Arg = {:?}", r),
-        }
+    {
+        let where_clause = generics.make_where_clause();
+        constrain_system_data_types(where_clause, impl_fetch_lt, tys);
     }
+    // Reads and writes are taken from the same types,
+    // but need to be cloned before.
 
-    let i = (0..arg_types.len()).map(syn::Index::from);
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     quote! {
-        #input_fn
+        impl #impl_generics
+            SystemData< #impl_fetch_lt >
+            for #name #ty_generics #where_clause
+        {
+            fn setup(world: &mut World) {
+                #(
+                    <#tys as SystemData> :: setup(world);
+                )*
+            }
 
-        fn #sys_fn_ident(ecs: &Ecs) {
-            let data = <(#(#arg_types),*,)>::fetch(ecs);
-            #fn_ident(#(data.#i ),*);
+            fn fetch(world: & #impl_fetch_lt World) -> Self {
+                #fetch_return
+            }
+
+            fn reads() -> Vec<ResourceId> {
+                let mut r = Vec::new();
+
+                #( {
+                        let mut reads = <#tys as SystemData> :: reads();
+                        r.append(&mut reads);
+                    } )*
+
+                r
+            }
+
+            fn writes() -> Vec<ResourceId> {
+                let mut r = Vec::new();
+
+                #( {
+                        let mut writes = <#tys as SystemData> :: writes();
+                        r.append(&mut writes);
+                    } )*
+
+                r
+            }
         }
     }
-    .into()
+}
+
+fn collect_field_types(fields: &Punctuated<Field, Comma>) -> Vec<Type> {
+    fields.iter().map(|x| x.ty.clone()).collect()
+}
+
+fn gen_identifiers(fields: &Punctuated<Field, Comma>) -> Vec<Ident> {
+    fields.iter().map(|x| x.ident.clone().unwrap()).collect()
+}
+
+/// Adds a `SystemData<'lt>` bound on each of the system data types.
+fn constrain_system_data_types(clause: &mut WhereClause, fetch_lt: &Lifetime, tys: &[Type]) {
+    for ty in tys.iter() {
+        let where_predicate: WherePredicate = parse_quote!(#ty : SystemData< #fetch_lt >);
+        clause.predicates.push(where_predicate);
+    }
+}
+
+fn gen_from_body(ast: &Data, name: &Ident) -> (proc_macro2::TokenStream, Vec<Type>) {
+    enum DataType {
+        Struct,
+        Tuple,
+    }
+
+    let (body, fields) = match *ast {
+        Data::Struct(DataStruct {
+            fields: Fields::Named(FieldsNamed { named: ref x, .. }),
+            ..
+        }) => (DataType::Struct, x),
+        Data::Struct(DataStruct {
+            fields: Fields::Unnamed(FieldsUnnamed { unnamed: ref x, .. }),
+            ..
+        }) => (DataType::Tuple, x),
+        _ => panic!("Enums are not supported"),
+    };
+
+    let tys = collect_field_types(fields);
+
+    let fetch_return = match body {
+        DataType::Struct => {
+            let identifiers = gen_identifiers(fields);
+
+            quote! {
+                #name {
+                    #( #identifiers: SystemData::fetch(world) ),*
+                }
+            }
+        }
+        DataType::Tuple => {
+            let count = tys.len();
+            let fetch = vec![quote! { SystemData::fetch(world) }; count];
+
+            quote! {
+                #name ( #( #fetch ),* )
+            }
+        }
+    };
+
+    (fetch_return, tys)
 }

@@ -845,7 +845,7 @@ dependencies = [
 name = "gw_macro"
 version = "0.1.0"
 dependencies = [
- "gw_ecs",
+ "gw_specs",
  "proc-macro2",
  "quote",
  "syn 2.0.12",

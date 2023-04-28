@@ -64,28 +64,28 @@ impl Ecs {
 
     /// Inserts a global
     pub fn insert_global<G: Resource>(&mut self, global: G) {
-        self.current_world_mut().insert_global(global)
+        self.globals.insert(global)
     }
 
     /// Removes a global
     pub fn remove_global<G: Resource>(&mut self) -> Option<G> {
-        self.current_world_mut().remove_global::<G>()
+        self.globals.remove::<G>()
     }
 
     pub fn fetch_global<G: Resource>(&self) -> GlobalFetch<G> {
-        self.current_world().fetch_global::<G>()
+        self.globals.fetch::<G>()
     }
 
     pub fn try_fetch_global<G: Resource>(&self) -> Option<GlobalFetch<G>> {
-        self.current_world().try_fetch_global::<G>()
+        self.globals.try_fetch::<G>()
     }
 
     pub fn fetch_global_mut<G: Resource>(&self) -> GlobalFetchMut<G> {
-        self.current_world().fetch_global_mut::<G>()
+        self.globals.fetch_mut::<G>()
     }
 
     pub fn try_fetch_global_mut<G: Resource>(&self) -> Option<GlobalFetchMut<G>> {
-        self.current_world().try_fetch_global_mut::<G>()
+        self.globals.try_fetch_mut::<G>()
     }
 
     // UNIQUES
@@ -105,7 +105,7 @@ impl Ecs {
     }
 
     pub fn fetch_unique<G: Resource>(&self) -> Fetch<G> {
-        self.try_fetch_unique::<G>().unwrap()
+        self.current_world().fetch::<G>()
     }
 
     pub fn try_fetch_unique<G: Resource>(&self) -> Option<Fetch<G>> {
@@ -113,7 +113,7 @@ impl Ecs {
     }
 
     pub fn fetch_unique_mut<G: Resource>(&self) -> FetchMut<G> {
-        self.try_fetch_unique_mut().unwrap()
+        self.current_world().fetch_mut::<G>()
     }
 
     pub fn try_fetch_unique_mut<G: Resource>(&self) -> Option<FetchMut<G>> {

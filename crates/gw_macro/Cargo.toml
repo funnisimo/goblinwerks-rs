@@ -15,4 +15,4 @@ proc-macro = true
 syn         = { version = "*", features = ["extra-traits", "full"] }
 quote       = "1.0.26"
 proc-macro2 = "1.0.56"
-gw_ecs      = { path = "../gw_ecs" }
+gw_specs    = { path = "../gw_specs" }
