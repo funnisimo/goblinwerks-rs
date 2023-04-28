@@ -383,18 +383,22 @@ impl World {
         self.globals.remove::<G>()
     }
 
+    /// Fetch a global value
     pub fn fetch_global<G: Resource>(&self) -> GlobalFetch<G> {
         self.globals.fetch::<G>()
     }
 
+    /// Fetch a global value as mutable
     pub fn fetch_global_mut<G: Resource>(&self) -> GlobalFetchMut<G> {
         self.globals.fetch_mut::<G>()
     }
 
+    /// Try to fetch a global value
     pub fn try_fetch_global<G: Resource>(&self) -> Option<GlobalFetch<G>> {
         self.globals.try_fetch::<G>()
     }
 
+    /// Try to fetch a global value mutably
     pub fn try_fetch_global_mut<G: Resource>(&self) -> Option<GlobalFetchMut<G>> {
         self.globals.try_fetch_mut::<G>()
     }
