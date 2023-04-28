@@ -1,3 +1,6 @@
+// This is an adapted version of shred-derive/src/mod.rs
+// It is adapted to handle the changes made in gw_specs to convert shred/specs to using globals and multiple worlds.
+
 use quote::quote;
 use syn::{
     parse_quote, punctuated::Punctuated, token::Comma, Data, DataStruct, DeriveInput, Field,
