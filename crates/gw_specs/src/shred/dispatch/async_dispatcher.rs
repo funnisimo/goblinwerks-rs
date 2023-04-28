@@ -1,4 +1,4 @@
-use crate::dispatch::{
+use crate::shred::dispatch::{
     dispatcher::{ThreadLocal, ThreadPoolWrapper},
     stage::Stage,
 };

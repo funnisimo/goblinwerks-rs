@@ -263,6 +263,8 @@ impl<'a, 'b> DispatcherBuilder<'a, 'b> {
         'b: 'a,
     {
         #[cfg(feature = "parallel")]
+        let mut dispatcher_builder = dispatcher_builder;
+        #[cfg(feature = "parallel")]
         {
             dispatcher_builder.thread_pool = self.thread_pool.clone();
         }
@@ -429,8 +431,8 @@ impl<'b> DispatcherBuilder<'static, 'b> {
     pub fn build_async<R>(
         self,
         world: R,
-    ) -> crate::dispatch::async_dispatcher::AsyncDispatcher<'b, R> {
-        use crate::dispatch::async_dispatcher::new_async;
+    ) -> crate::shred::dispatch::async_dispatcher::AsyncDispatcher<'b, R> {
+        use crate::shred::dispatch::async_dispatcher::new_async;
 
         self.thread_pool
             .write()

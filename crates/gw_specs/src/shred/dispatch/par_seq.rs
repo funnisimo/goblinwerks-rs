@@ -34,7 +34,7 @@ pub struct Nil;
 macro_rules! par {
     ($head:expr, $( $tail:expr ,)*) => {
         {
-            $crate::Par::new($head)
+            $crate::shred::Par::new($head)
                 $( .with($tail) )*
         }
     };
@@ -286,13 +286,13 @@ where
     }
 
     fn reads(&self, reads: &mut Vec<ResourceId>) {
-        use crate::system::Accessor;
+        use crate::shred::system::Accessor;
 
         reads.extend(self.accessor().reads())
     }
 
     fn writes(&self, writes: &mut Vec<ResourceId>) {
-        use crate::system::Accessor;
+        use crate::shred::system::Accessor;
 
         writes.extend(self.accessor().writes())
     }
