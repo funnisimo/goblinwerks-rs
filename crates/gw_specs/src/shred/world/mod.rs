@@ -33,6 +33,17 @@ pub struct Fetch<'a, T: 'a> {
     phantom: PhantomData<&'a T>,
 }
 
+// impl<'a, T: 'a> Fetch<'a, T>
+// where
+//     T: Resource,
+// {
+//     /// destructures the fetch to allow repackaging with Globals borrow.
+//     pub(crate) fn destructure(self) -> (&'a T, AtomicBorrowRef<'a>) {
+//         let (ptr, borrow) = self.inner.destructure();
+//         (unsafe { ptr.downcast_ref_unchecked() }, borrow)
+//     }
+// }
+
 impl<'a, T> Deref for Fetch<'a, T>
 where
     T: Resource,
