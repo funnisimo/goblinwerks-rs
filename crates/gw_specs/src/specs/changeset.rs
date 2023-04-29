@@ -174,7 +174,7 @@ mod tests {
     use crate::specs::{
         join::Join,
         storage::DenseVecStorage,
-        world::{Builder, Component, WorldExt},
+        world::{Builder, Component},
     };
     use crate::World;
 
@@ -197,10 +197,10 @@ mod tests {
             .iter()
             .cloned()
             .collect::<ChangeSet<i32>>();
-        for (health, modifier) in (&mut world.write_storage::<Health>(), &changeset).join() {
+        for (health, modifier) in (&mut world.write_component::<Health>(), &changeset).join() {
             health.0 -= modifier;
         }
-        let healths = world.read_storage::<Health>();
+        let healths = world.read_component::<Health>();
         assert_eq!(68, healths.get(a).unwrap().0);
         assert_eq!(175, healths.get(b).unwrap().0);
         assert_eq!(300, healths.get(c).unwrap().0);

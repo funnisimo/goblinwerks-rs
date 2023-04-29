@@ -1,5 +1,3 @@
-use gw_macro::SystemData;
-
 use gw_specs::{Ecs, ReadGlobal, ResourceId, SystemData, World, Write};
 
 #[derive(Default, PartialEq, Debug)]

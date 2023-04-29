@@ -41,7 +41,7 @@ mod tests {
         use crate::specs::{
             join::Join,
             storage::DenseVecStorage,
-            world::{Builder, Component, WorldExt},
+            world::{Builder, Component},
         };
         use crate::World;
 
@@ -61,7 +61,7 @@ mod tests {
         world.create_entity().build();
         let e = world.create_entity().with(Comp).build();
 
-        let mut comps = world.write_storage::<Comp>();
+        let mut comps = world.write_component::<Comp>();
         let entities = world.entities();
 
         {

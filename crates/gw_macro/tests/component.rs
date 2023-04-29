@@ -1,8 +1,6 @@
-use gw_macro::Component;
 use gw_specs::{
     specs::storage::{DenseVecStorage, VecStorage},
-    specs::Component,
-    Ecs,
+    Component, Ecs,
 };
 
 #[derive(Default, PartialEq, Debug, Component)]

@@ -368,13 +368,13 @@ impl LazyUpdate {
         LazyBuilder { entity, lazy: self }
     }
 
-    pub(super) fn clone(&self) -> Self {
+    pub(crate) fn clone(&self) -> Self {
         Self {
             queue: self.queue.clone(),
         }
     }
 
-    pub(super) fn maintain(&self, world: &mut World) {
+    pub(crate) fn maintain(&self, world: &mut World) {
         while let Some(l) = self.queue.0.pop() {
             l.update(world);
         }

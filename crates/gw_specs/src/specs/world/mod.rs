@@ -16,7 +16,7 @@ use crate::shred::{FetchMut, SystemData};
 use crate::specs::storage::WriteStorage;
 
 mod comp;
-mod entity;
+pub mod entity;
 mod lazy;
 #[cfg(test)]
 mod tests;
@@ -27,7 +27,7 @@ mod world_ext;
 /// it because iterators are lazy.
 ///
 /// Returned from `World::create_iter`.
-pub struct CreateIter<'a>(FetchMut<'a, EntitiesRes>);
+pub struct CreateIter<'a>(pub(crate) FetchMut<'a, EntitiesRes>);
 
 impl<'a> Iterator for CreateIter<'a> {
     type Item = Entity;
@@ -180,7 +180,7 @@ pub struct EntityBuilder<'a> {
     pub entity: Entity,
     /// A reference to the `World` for component insertions.
     pub world: &'a World,
-    built: bool,
+    pub(crate) built: bool,
 }
 
 impl<'a> Builder for EntityBuilder<'a> {
@@ -213,7 +213,7 @@ impl<'a> Drop for EntityBuilder<'a> {
     fn drop(&mut self) {
         if !self.built {
             self.world
-                .read_resource::<EntitiesRes>()
+                .fetch::<EntitiesRes>()
                 .delete(self.entity)
                 .unwrap();
         }

@@ -1,7 +1,7 @@
 use std::any::Any;
 
 use super::*;
-use crate::specs::world::{Component, Entity, Generation, Index, WorldExt};
+use crate::specs::world::{Component, Entity, Generation, Index};
 use crate::World;
 use std::mem::MaybeUninit;
 
@@ -11,7 +11,7 @@ where
 {
     world.register::<T>();
 
-    world.write_storage()
+    world.write_component()
 }
 
 mod map_test {
@@ -667,7 +667,7 @@ mod test {
         w.register::<Cnull>();
         let e = w.create_entity().build();
 
-        let mut null = w.write_storage::<Cnull>();
+        let mut null = w.write_component::<Cnull>();
 
         assert_eq!(null.get(e), None);
         match null.insert(e, Cnull) {
@@ -687,7 +687,7 @@ mod test {
 
         let mut w = World::default();
         w.register::<Cvec>();
-        let mut s1: Storage<Cvec, _> = w.write_storage();
+        let mut s1: Storage<Cvec, _> = w.write_component();
         let mut components = HashSet::new();
 
         for i in 0..50 {
@@ -727,7 +727,7 @@ mod test {
 
         let mut w = World::default();
         w.register::<Cvec>();
-        let mut s1: Storage<Cvec, _> = w.write_storage();
+        let mut s1: Storage<Cvec, _> = w.write_component();
         let mut components = HashSet::new();
 
         for i in 0..50 {
@@ -779,7 +779,7 @@ mod test {
         let e7 = w.create_entity().build();
         let e8 = w.create_entity().with(Cvec(10)).build();
 
-        let mut s1 = w.write_storage::<Cvec>();
+        let mut s1 = w.write_component::<Cvec>();
 
         // Basic entry usage.
         if let Ok(entry) = s1.entry(e1) {
@@ -862,7 +862,7 @@ mod test {
 
         let mut w = World::default();
         w.register::<CMarker>();
-        let mut s1: Storage<CMarker, _> = w.write_storage();
+        let mut s1: Storage<CMarker, _> = w.write_component();
 
         for i in 0..50 {
             if let Err(err) = s1.insert(Entity::new(i, Generation::new(1)), CMarker) {
@@ -889,7 +889,7 @@ mod test {
 
         let mut w = World::default();
         w.register::<CMarker>();
-        let mut s1: Storage<CMarker, _> = w.write_storage();
+        let mut s1: Storage<CMarker, _> = w.write_component();
 
         for i in 0..50 {
             if let Err(err) = s1.insert(Entity::new(i, Generation::new(1)), CMarker) {
@@ -907,7 +907,7 @@ mod test {
         let mut w = World::default();
         w.register::<FlaggedCvec>();
 
-        let mut s1: Storage<FlaggedCvec, _> = w.write_storage();
+        let mut s1: Storage<FlaggedCvec, _> = w.write_component();
 
         let mut inserted = BitSet::new();
         let mut modified = BitSet::new();
@@ -1002,7 +1002,7 @@ mod test {
         w.register::<CEntries>();
 
         {
-            let mut s: Storage<CEntries, _> = w.write_storage();
+            let mut s: Storage<CEntries, _> = w.write_component();
 
             for i in 0..15 {
                 let entity = w.entities().create();

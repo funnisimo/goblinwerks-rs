@@ -94,8 +94,8 @@ mod world;
 
 /// A reexport of the `#[derive(SystemData]` macro provided by `shred-derive`.
 /// This requires that the `shred-derive` feature is enabled.
-#[cfg(feature = "shred-derive")]
-pub use shred_derive::SystemData;
+// #[cfg(feature = "derive")]
+// pub use gw_macro::SystemData;
 
 #[cfg(feature = "parallel")]
 pub use self::dispatch::AsyncDispatcher;

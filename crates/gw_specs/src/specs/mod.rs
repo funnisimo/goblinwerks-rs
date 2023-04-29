@@ -1,8 +1,8 @@
 #![warn(missing_docs)]
-#![cfg_attr(
-    feature = "nightly",
-    feature(generic_associated_types, associated_type_defaults)
-)]
+// #![cfg_attr(
+//     feature = "nightly",
+//     feature(generic_associated_types, associated_type_defaults)
+// )]
 
 //! # SPECS Parallel ECS
 //!
@@ -220,8 +220,8 @@ pub use shrev::ReaderId;
 #[cfg(feature = "parallel")]
 pub use crate::shred::AsyncDispatcher;
 
-#[cfg(feature = "derive")]
-pub use gw_macro::{Component, ConvertSaveload};
+// #[cfg(feature = "derive")]
+// pub use gw_macro::Component; // ConvertSaveLoad
 
 #[cfg(feature = "parallel")]
 pub use self::join::ParJoin;

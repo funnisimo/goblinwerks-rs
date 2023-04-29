@@ -1,16 +1,17 @@
 use super::{
     comp::Component,
-    entity::{Allocator, EntitiesRes, Entity},
-    CreateIter, EntityBuilder, LazyUpdate,
+    entity::{EntitiesRes, Entity},
+    CreateIter, EntityBuilder,
 };
 
-use crate::shred::{Fetch, FetchMut, MetaTable, Read, Resource, SystemData};
+use crate::shred::{Fetch, FetchMut, Read, Resource};
 use crate::specs::{
     error::WrongGeneration,
-    storage::{AnyStorage, MaskedStorage},
-    ReadStorage, WriteStorage,
+    // storage::{AnyStorage, MaskedStorage},
+    ReadStorage,
+    WriteStorage,
 };
-use crate::World;
+// use crate::World;
 
 /// This trait provides some extension methods to make working with shred's
 /// [World] easier.
@@ -292,125 +293,128 @@ pub trait WorldExt {
     fn delete_components(&mut self, delete: &[Entity]);
 }
 
-impl WorldExt for World {
-    fn new() -> Self {
-        let mut world = Self::default();
-        world.insert(EntitiesRes::default());
-        world.insert(MetaTable::<dyn AnyStorage>::default());
-        world.insert(LazyUpdate::default());
+//
+// NOTE - Made WorldExt just a part of World now
+//
+// impl WorldExt for World {
+//     fn new() -> Self {
+//         let mut world = Self::default();
+//         world.insert(EntitiesRes::default());
+//         world.insert(MetaTable::<dyn AnyStorage>::default());
+//         world.insert(LazyUpdate::default());
 
-        world
-    }
+//         world
+//     }
 
-    fn register<T: Component>(&mut self)
-    where
-        T::Storage: Default,
-    {
-        self.register_with_storage::<_, T>(Default::default);
-    }
+//     fn register<T: Component>(&mut self)
+//     where
+//         T::Storage: Default,
+//     {
+//         self.register_with_storage::<_, T>(Default::default);
+//     }
 
-    fn register_with_storage<F, T>(&mut self, storage: F)
-    where
-        F: FnOnce() -> T::Storage,
-        T: Component,
-    {
-        self.entry()
-            .or_insert_with(move || MaskedStorage::<T>::new(storage()));
-        self.entry::<MetaTable<dyn AnyStorage>>()
-            .or_insert_with(Default::default);
-        self.fetch_mut::<MetaTable<dyn AnyStorage>>()
-            .register(&*self.fetch::<MaskedStorage<T>>());
-    }
+//     fn register_with_storage<F, T>(&mut self, storage: F)
+//     where
+//         F: FnOnce() -> T::Storage,
+//         T: Component,
+//     {
+//         self.entry()
+//             .or_insert_with(move || MaskedStorage::<T>::new(storage()));
+//         self.entry::<MetaTable<dyn AnyStorage>>()
+//             .or_insert_with(Default::default);
+//         self.fetch_mut::<MetaTable<dyn AnyStorage>>()
+//             .register(&*self.fetch::<MaskedStorage<T>>());
+//     }
 
-    fn add_resource<T: Resource>(&mut self, res: T) {
-        self.insert(res);
-    }
+//     fn add_resource<T: Resource>(&mut self, res: T) {
+//         self.insert(res);
+//     }
 
-    fn read_component<T: Component>(&self) -> ReadStorage<T> {
-        self.system_data()
-    }
+//     fn read_component<T: Component>(&self) -> ReadStorage<T> {
+//         self.system_data()
+//     }
 
-    fn write_component<T: Component>(&self) -> WriteStorage<T> {
-        self.system_data()
-    }
+//     fn write_component<T: Component>(&self) -> WriteStorage<T> {
+//         self.system_data()
+//     }
 
-    fn read_resource<T: Resource>(&self) -> Fetch<T> {
-        self.fetch()
-    }
+//     fn read_resource<T: Resource>(&self) -> Fetch<T> {
+//         self.fetch()
+//     }
 
-    fn write_resource<T: Resource>(&self) -> FetchMut<T> {
-        self.fetch_mut()
-    }
+//     fn write_resource<T: Resource>(&self) -> FetchMut<T> {
+//         self.fetch_mut()
+//     }
 
-    fn entities(&self) -> Read<EntitiesRes> {
-        Read::fetch(self)
-    }
+//     fn entities(&self) -> Read<EntitiesRes> {
+//         Read::fetch(self)
+//     }
 
-    fn entities_mut(&self) -> FetchMut<EntitiesRes> {
-        self.write_resource()
-    }
+//     fn entities_mut(&self) -> FetchMut<EntitiesRes> {
+//         self.write_resource()
+//     }
 
-    fn create_entity(&mut self) -> EntityBuilder {
-        self.create_entity_unchecked()
-    }
+//     fn create_entity(&mut self) -> EntityBuilder {
+//         self.create_entity_unchecked()
+//     }
 
-    fn create_entity_unchecked(&self) -> EntityBuilder {
-        let entity = self.entities_mut().alloc.allocate();
+//     fn create_entity_unchecked(&self) -> EntityBuilder {
+//         let entity = self.entities_mut().alloc.allocate();
 
-        EntityBuilder {
-            entity,
-            world: self,
-            built: false,
-        }
-    }
+//         EntityBuilder {
+//             entity,
+//             world: self,
+//             built: false,
+//         }
+//     }
 
-    fn create_iter(&mut self) -> CreateIter {
-        CreateIter(self.entities_mut())
-    }
+//     fn create_iter(&mut self) -> CreateIter {
+//         CreateIter(self.entities_mut())
+//     }
 
-    fn delete_entity(&mut self, entity: Entity) -> Result<(), WrongGeneration> {
-        self.delete_entities(&[entity])
-    }
+//     fn delete_entity(&mut self, entity: Entity) -> Result<(), WrongGeneration> {
+//         self.delete_entities(&[entity])
+//     }
 
-    fn delete_entities(&mut self, delete: &[Entity]) -> Result<(), WrongGeneration> {
-        self.delete_components(delete);
+//     fn delete_entities(&mut self, delete: &[Entity]) -> Result<(), WrongGeneration> {
+//         self.delete_components(delete);
 
-        self.entities_mut().alloc.kill(delete)
-    }
+//         self.entities_mut().alloc.kill(delete)
+//     }
 
-    fn delete_all(&mut self) {
-        use crate::specs::join::Join;
+//     fn delete_all(&mut self) {
+//         use crate::specs::join::Join;
 
-        let entities: Vec<_> = self.entities().join().collect();
+//         let entities: Vec<_> = self.entities().join().collect();
 
-        self.delete_entities(&entities).expect(
-            "Bug: previously collected entities are not valid \
-             even though access should be exclusive",
-        );
-    }
+//         self.delete_entities(&entities).expect(
+//             "Bug: previously collected entities are not valid \
+//              even though access should be exclusive",
+//         );
+//     }
 
-    fn is_alive(&self, e: Entity) -> bool {
-        assert!(e.gen().is_alive(), "Generation is dead");
+//     fn is_alive(&self, e: Entity) -> bool {
+//         assert!(e.gen().is_alive(), "Generation is dead");
 
-        let alloc: &Allocator = &self.entities().alloc;
-        alloc.generation(e.id()) == Some(e.gen())
-    }
+//         let alloc: &Allocator = &self.entities().alloc;
+//         alloc.generation(e.id()) == Some(e.gen())
+//     }
 
-    fn maintain(&mut self) {
-        let deleted = self.entities_mut().alloc.merge();
-        if !deleted.is_empty() {
-            self.delete_components(&deleted);
-        }
+//     fn maintain(&mut self) {
+//         let deleted = self.entities_mut().alloc.merge();
+//         if !deleted.is_empty() {
+//             self.delete_components(&deleted);
+//         }
 
-        let lazy = self.write_resource::<LazyUpdate>().clone();
-        lazy.maintain(self);
-    }
+//         let lazy = self.write_resource::<LazyUpdate>().clone();
+//         lazy.maintain(self);
+//     }
 
-    fn delete_components(&mut self, delete: &[Entity]) {
-        self.entry::<MetaTable<dyn AnyStorage>>()
-            .or_insert_with(Default::default);
-        for storage in self.fetch_mut::<MetaTable<dyn AnyStorage>>().iter_mut(self) {
-            storage.drop(delete);
-        }
-    }
-}
+//     fn delete_components(&mut self, delete: &[Entity]) {
+//         self.entry::<MetaTable<dyn AnyStorage>>()
+//             .or_insert_with(Default::default);
+//         for storage in self.fetch_mut::<MetaTable<dyn AnyStorage>>().iter_mut(self) {
+//             storage.drop(delete);
+//         }
+//     }
+// }
