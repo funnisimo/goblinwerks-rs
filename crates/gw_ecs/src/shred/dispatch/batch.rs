@@ -237,8 +237,8 @@ mod tests {
         let mut world = World::empty();
         dispatcher.setup(&mut world);
 
-        let potato_store = world.fetch::<PotatoStore>();
-        let tomato_store = world.fetch::<TomatoStore>();
+        let potato_store = world.read_resource::<PotatoStore>();
+        let tomato_store = world.read_resource::<TomatoStore>();
         assert!(!potato_store.is_store_open);
         assert!(!tomato_store.is_store_open);
         assert_eq!(potato_store.potato_count, 50);
@@ -279,8 +279,8 @@ mod tests {
 
         {
             // Initial assertion
-            let potato_store = world.fetch::<PotatoStore>();
-            let tomato_store = world.fetch::<TomatoStore>();
+            let potato_store = world.read_resource::<PotatoStore>();
+            let tomato_store = world.read_resource::<TomatoStore>();
             assert!(!potato_store.is_store_open);
             assert!(!tomato_store.is_store_open);
             assert_eq!(potato_store.potato_count, 50);
@@ -295,8 +295,8 @@ mod tests {
         {
             // This demonstrate that the batch system dispatch three times per
             // dispatch.
-            let potato_store = world.fetch::<PotatoStore>();
-            let tomato_store = world.fetch::<TomatoStore>();
+            let potato_store = world.read_resource::<PotatoStore>();
+            let tomato_store = world.read_resource::<TomatoStore>();
             assert!(!potato_store.is_store_open);
             assert!(!tomato_store.is_store_open);
             assert_eq!(potato_store.potato_count, 50 - (3 * 10));
@@ -340,9 +340,9 @@ mod tests {
 
         {
             // Initial assertion
-            let potato_store = world.fetch::<PotatoStore>();
-            let tomato_store = world.fetch::<TomatoStore>();
-            let customer_wallet = world.fetch::<CustomerWallet>();
+            let potato_store = world.read_resource::<PotatoStore>();
+            let tomato_store = world.read_resource::<TomatoStore>();
+            let customer_wallet = world.read_resource::<CustomerWallet>();
             assert!(!potato_store.is_store_open);
             assert!(!tomato_store.is_store_open);
             assert_eq!(potato_store.potato_count, 50);
@@ -358,9 +358,9 @@ mod tests {
         {
             // This demonstrate that the batch system dispatch three times per
             // dispatch.
-            let potato_store = world.fetch::<PotatoStore>();
-            let tomato_store = world.fetch::<TomatoStore>();
-            let customer_wallet = world.fetch::<CustomerWallet>();
+            let potato_store = world.read_resource::<PotatoStore>();
+            let tomato_store = world.read_resource::<TomatoStore>();
+            let customer_wallet = world.read_resource::<CustomerWallet>();
             assert!(!potato_store.is_store_open);
             assert!(!tomato_store.is_store_open);
             assert_eq!(potato_store.potato_count, 50 - (3 * 10));

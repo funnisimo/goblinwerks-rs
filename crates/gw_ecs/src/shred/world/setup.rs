@@ -23,22 +23,22 @@ macro_rules! fetch_panic {
     }};
 }
 
-/// A `SetupHandler` that simply uses the default implementation.
-pub struct DefaultProvider;
+/// A trait for doing the setup for SystemData.
+pub trait SetupHandler<T>: Sized {
+    /// Sets up `World` for fetching `T`.
+    fn setup(world: &mut World);
+}
 
-impl<T> SetupHandler<T> for DefaultProvider
+/// A `SetupHandler` that simply uses the default implementation.
+pub struct DefaultIfMissing;
+
+impl<T> SetupHandler<T> for DefaultIfMissing
 where
     T: Default + Resource,
 {
     fn setup(world: &mut World) {
-        world.entry().or_insert_with(T::default);
+        world.resources.entry().or_insert_with(T::default);
     }
-}
-
-/// A setup handler performing the fetching of `T`.
-pub trait SetupHandler<T>: Sized {
-    /// Sets up `World` for fetching `T`.
-    fn setup(world: &mut World);
 }
 
 /// A setup handler that simply does nothing and thus will cause a panic on
@@ -46,11 +46,19 @@ pub trait SetupHandler<T>: Sized {
 ///
 /// A typedef called `ReadExpect` exists, so you usually don't use this type
 /// directly.
-pub struct PanicHandler;
+pub struct PanicIfMissing;
 
-impl<T> SetupHandler<T> for PanicHandler
+impl<T> SetupHandler<T> for PanicIfMissing
 where
     T: Resource,
 {
     fn setup(_: &mut World) {}
+}
+
+/// A `SetupHandler` that simply does nothing.
+impl<T> SetupHandler<T> for ()
+where
+    T: Resource,
+{
+    fn setup(_world: &mut World) {}
 }

@@ -1,6 +1,6 @@
 use crate::globals::{GlobalFetch, GlobalFetchMut, Globals};
-use crate::shred::{Fetch, FetchMut, Resource};
-use crate::World;
+use crate::shred::{PanicIfMissing, Resource};
+use crate::{Read, World, Write};
 
 pub struct Ecs {
     pub(crate) worlds: Vec<World>,
@@ -88,7 +88,7 @@ impl Ecs {
         self.globals.try_fetch_mut::<G>()
     }
 
-    // UNIQUES
+    // RESOURCES
 
     pub fn has_unique<G: Resource>(&self) -> bool {
         self.current_world().has_value::<G>()
@@ -104,20 +104,20 @@ impl Ecs {
         self.current_world_mut().remove::<G>()
     }
 
-    pub fn fetch_unique<G: Resource>(&self) -> Fetch<G> {
-        self.current_world().fetch::<G>()
+    pub fn read_resource<G: Resource>(&self) -> Read<G, PanicIfMissing> {
+        self.current_world().read_resource::<G>()
     }
 
-    pub fn try_fetch_unique<G: Resource>(&self) -> Option<Fetch<G>> {
-        self.current_world().try_fetch::<G>()
+    pub fn try_read_resource<G: Resource>(&self) -> Option<Read<G, ()>> {
+        self.current_world().try_read_resource::<G>()
     }
 
-    pub fn fetch_unique_mut<G: Resource>(&self) -> FetchMut<G> {
-        self.current_world().fetch_mut::<G>()
+    pub fn write_resource<G: Resource>(&self) -> Write<G, PanicIfMissing> {
+        self.current_world().write_resource::<G>()
     }
 
-    pub fn try_fetch_unique_mut<G: Resource>(&self) -> Option<FetchMut<G>> {
-        self.current_world().try_fetch_mut::<G>()
+    pub fn try_write_resource<G: Resource>(&self) -> Option<Write<G, ()>> {
+        self.current_world().try_write_resource::<G>()
     }
 }
 

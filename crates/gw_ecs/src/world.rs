@@ -1,18 +1,19 @@
 use crate::globals::{GlobalFetch, GlobalFetchMut, Globals};
-use crate::shred::cell::TrustCell;
-use crate::shred::{Fetch, FetchMut, MetaTable, SystemData, World as Resources};
+use crate::shred::{MetaTable, PanicIfMissing, SystemData, World as Resources};
 use crate::specs::error::WrongGeneration;
 use crate::specs::storage::{AnyStorage, MaskedStorage};
 use crate::specs::world::EntityAllocator;
 use crate::specs::world::{CreateIter, EntitiesRes};
-use crate::specs::{Component, Entity, EntityBuilder, LazyUpdate, ReadStorage, WriteStorage};
-use crate::{Read, Resource, ResourceId};
+use crate::specs::{
+    Component, Entities, EntitiesMut, Entity, EntityBuilder, LazyUpdate, ReadStorage, WriteStorage,
+};
+use crate::{Read, Resource, ResourceId, Write};
 
 pub use crate::shred::Entry;
 
 pub struct World {
-    resources: Resources,
-    globals: Globals,
+    pub(crate) resources: Resources,
+    pub(crate) globals: Globals,
 }
 
 impl World {
@@ -62,7 +63,7 @@ impl World {
     where
         R: Resource,
     {
-        self.insert_by_id(ResourceId::new::<R>(), r);
+        self.resources.insert_by_id(ResourceId::new::<R>(), r);
     }
 
     /// Removes a resource of type `R` from the `World` and returns its
@@ -77,7 +78,7 @@ impl World {
     where
         R: Resource,
     {
-        self.remove_by_id(ResourceId::new::<R>())
+        self.resources.remove_by_id(ResourceId::new::<R>())
     }
 
     /// Returns true if the specified resource type `R` exists in `self`.
@@ -85,20 +86,32 @@ impl World {
     where
         R: Resource,
     {
-        self.has_value_raw(ResourceId::new::<R>())
+        self.resources.has_value_raw(ResourceId::new::<R>())
     }
 
-    /// Returns true if the specified resource type exists in `self`.
-    pub fn has_value_raw(&self, id: ResourceId) -> bool {
-        self.resources.has_value_raw(id)
+    // /// Returns true if the specified resource type exists in `self`.
+    // pub fn has_value_raw(&self, id: ResourceId) -> bool {
+    //     self.resources.has_value_raw(id)
+    // }
+
+    // /// Returns an entry for the resource with type `R`.
+    // pub fn entry<R>(&mut self) -> Entry<R>
+    // where
+    //     R: Resource,
+    // {
+    //     self.resources.entry::<R>()
+    // }
+
+    /// Makes sure there is a value for the given resource.
+    /// If not found, inserts a default value.
+    pub fn ensure_resource<G: Resource + Default>(&mut self) {
+        self.resources.entry().or_insert_with(G::default);
     }
 
-    /// Returns an entry for the resource with type `R`.
-    pub fn entry<R>(&mut self) -> Entry<R>
-    where
-        R: Resource,
-    {
-        self.resources.entry::<R>()
+    /// Makes sure there is a value for the given resource.
+    /// If not found, inserts a default value.
+    pub fn ensure_resource_with<G: Resource, F: FnOnce() -> G>(&mut self, func: F) {
+        self.resources.entry().or_insert_with(func);
     }
 
     /// Gets `SystemData` `T` from the `World`. This can be used to retrieve
@@ -230,132 +243,132 @@ impl World {
         f(self.system_data())
     }
 
-    /// Fetches the resource with the specified type `T` or panics if it doesn't
-    /// exist.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the resource doesn't exist.
-    /// Panics if the resource is being accessed mutably.
-    pub fn fetch<T>(&self) -> Fetch<T>
-    where
-        T: Resource,
-    {
-        self.try_fetch().unwrap_or_else(|| {
-            if self.resources.is_empty() {
-                eprintln!(
-                    "Note: Could not find a resource (see the following panic);\
-                     the `World` is completely empty. Did you accidentally create a fresh `World`?"
-                )
-            }
+    // /// Fetches the resource with the specified type `T` or panics if it doesn't
+    // /// exist.
+    // ///
+    // /// # Panics
+    // ///
+    // /// Panics if the resource doesn't exist.
+    // /// Panics if the resource is being accessed mutably.
+    // pub fn fetch<T>(&self) -> Fetch<T>
+    // where
+    //     T: Resource,
+    // {
+    //     self.try_fetch().unwrap_or_else(|| {
+    //         if self.resources.is_empty() {
+    //             eprintln!(
+    //                 "Note: Could not find a resource (see the following panic);\
+    //                  the `World` is completely empty. Did you accidentally create a fresh `World`?"
+    //             )
+    //         }
 
-            fetch_panic!()
-        })
-    }
+    //         fetch_panic!()
+    //     })
+    // }
 
-    /// Like `fetch`, but returns an `Option` instead of inserting a default
-    /// value in case the resource does not exist.
-    pub fn try_fetch<T>(&self) -> Option<Fetch<T>>
-    where
-        T: Resource,
-    {
-        self.resources.try_fetch::<T>()
-    }
+    // /// Like `fetch`, but returns an `Option` instead of inserting a default
+    // /// value in case the resource does not exist.
+    // pub fn try_fetch<T>(&self) -> Option<Fetch<T>>
+    // where
+    //     T: Resource,
+    // {
+    //     self.resources.try_fetch::<T>()
+    // }
 
-    /// Like `try_fetch`, but fetches the resource by its `ResourceId` which
-    /// allows using a dynamic ID.
-    ///
-    /// This is usually not what you need; please read the type-level
-    /// documentation of `ResourceId`.
-    ///
-    /// # Panics
-    ///
-    /// This method panics if `id` refers to a different type ID than `T`.
-    pub fn try_fetch_by_id<T>(&self, id: ResourceId) -> Option<Fetch<T>>
-    where
-        T: Resource,
-    {
-        self.resources.try_fetch_by_id(id)
-    }
+    // /// Like `try_fetch`, but fetches the resource by its `ResourceId` which
+    // /// allows using a dynamic ID.
+    // ///
+    // /// This is usually not what you need; please read the type-level
+    // /// documentation of `ResourceId`.
+    // ///
+    // /// # Panics
+    // ///
+    // /// This method panics if `id` refers to a different type ID than `T`.
+    // pub fn try_fetch_by_id<T>(&self, id: ResourceId) -> Option<Fetch<T>>
+    // where
+    //     T: Resource,
+    // {
+    //     self.resources.try_fetch_by_id(id)
+    // }
 
-    /// Fetches the resource with the specified type `T` mutably.
-    ///
-    /// Please see `fetch` for details.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the resource doesn't exist.
-    /// Panics if the resource is already being accessed.
-    pub fn fetch_mut<T>(&self) -> FetchMut<T>
-    where
-        T: Resource,
-    {
-        self.try_fetch_mut().unwrap_or_else(|| fetch_panic!())
-    }
+    // /// Fetches the resource with the specified type `T` mutably.
+    // ///
+    // /// Please see `fetch` for details.
+    // ///
+    // /// # Panics
+    // ///
+    // /// Panics if the resource doesn't exist.
+    // /// Panics if the resource is already being accessed.
+    // pub fn fetch_mut<T>(&self) -> FetchMut<T>
+    // where
+    //     T: Resource,
+    // {
+    //     self.resources.try_fetch_mut().unwrap_or_else(|| fetch_panic!())
+    // }
 
-    /// Like `fetch_mut`, but returns an `Option` instead of inserting a default
-    /// value in case the resource does not exist.
-    pub fn try_fetch_mut<T>(&self) -> Option<FetchMut<T>>
-    where
-        T: Resource,
-    {
-        self.resources.try_fetch_mut()
-    }
+    // /// Like `fetch_mut`, but returns an `Option` instead of inserting a default
+    // /// value in case the resource does not exist.
+    // pub fn try_fetch_mut<T>(&self) -> Option<FetchMut<T>>
+    // where
+    //     T: Resource,
+    // {
+    //     self.resources.try_fetch_mut()
+    // }
 
-    /// Like `try_fetch_mut`, but fetches the resource by its `ResourceId` which
-    /// allows using a dynamic ID.
-    ///
-    /// This is usually not what you need; please read the type-level
-    /// documentation of `ResourceId`.
-    ///
-    /// # Panics
-    ///
-    /// This method panics if `id` refers to a different type ID than `T`.
-    pub fn try_fetch_mut_by_id<T>(&self, id: ResourceId) -> Option<FetchMut<T>>
-    where
-        T: Resource,
-    {
-        self.resources.try_fetch_mut_by_id(id)
-    }
+    // /// Like `try_fetch_mut`, but fetches the resource by its `ResourceId` which
+    // /// allows using a dynamic ID.
+    // ///
+    // /// This is usually not what you need; please read the type-level
+    // /// documentation of `ResourceId`.
+    // ///
+    // /// # Panics
+    // ///
+    // /// This method panics if `id` refers to a different type ID than `T`.
+    // pub fn try_fetch_mut_by_id<T>(&self, id: ResourceId) -> Option<FetchMut<T>>
+    // where
+    //     T: Resource,
+    // {
+    //     self.resources.try_fetch_mut_by_id(id)
+    // }
 
-    /// Internal function for inserting resources, should only be used if you
-    /// know what you're doing.
-    ///
-    /// This is useful for inserting resources with a custom `ResourceId`.
-    ///
-    /// # Panics
-    ///
-    /// This method panics if `id` refers to a different type ID than `R`.
-    pub fn insert_by_id<R>(&mut self, id: ResourceId, r: R)
-    where
-        R: Resource,
-    {
-        self.resources.insert_by_id(id, r)
-    }
+    // /// Internal function for inserting resources, should only be used if you
+    // /// know what you're doing.
+    // ///
+    // /// This is useful for inserting resources with a custom `ResourceId`.
+    // ///
+    // /// # Panics
+    // ///
+    // /// This method panics if `id` refers to a different type ID than `R`.
+    // pub fn insert_by_id<R>(&mut self, id: ResourceId, r: R)
+    // where
+    //     R: Resource,
+    // {
+    //     self.resources.insert_by_id(id, r)
+    // }
 
-    /// Internal function for removing resources, should only be used if you
-    /// know what you're doing.
-    ///
-    /// This is useful for removing resources with a custom `ResourceId`.
-    ///
-    /// # Panics
-    ///
-    /// This method panics if `id` refers to a different type ID than `R`.
-    pub fn remove_by_id<R>(&mut self, id: ResourceId) -> Option<R>
-    where
-        R: Resource,
-    {
-        self.resources.remove_by_id(id)
-    }
+    // /// Internal function for removing resources, should only be used if you
+    // /// know what you're doing.
+    // ///
+    // /// This is useful for removing resources with a custom `ResourceId`.
+    // ///
+    // /// # Panics
+    // ///
+    // /// This method panics if `id` refers to a different type ID than `R`.
+    // pub fn remove_by_id<R>(&mut self, id: ResourceId) -> Option<R>
+    // where
+    //     R: Resource,
+    // {
+    //     self.resources.remove_by_id(id)
+    // }
 
-    /// Internal function for fetching resources, should only be used if you
-    /// know what you're doing.
-    pub(crate) fn try_fetch_internal(
-        &self,
-        id: ResourceId,
-    ) -> Option<&TrustCell<Box<dyn Resource>>> {
-        self.resources.try_fetch_internal(id)
-    }
+    // /// Internal function for fetching resources, should only be used if you
+    // /// know what you're doing.
+    // pub(crate) fn try_fetch_internal(
+    //     &self,
+    //     id: ResourceId,
+    // ) -> Option<&TrustCell<Box<dyn Resource>>> {
+    //     self.resources.try_fetch_internal(id)
+    // }
 
     // /// Retrieves a resource without fetching, which is cheaper, but only
     // /// available with `&mut self`.
@@ -425,12 +438,15 @@ impl World {
         F: FnOnce() -> T::Storage,
         T: Component,
     {
-        self.entry()
+        self.resources
+            .entry()
             .or_insert_with(move || MaskedStorage::<T>::new(storage()));
-        self.entry::<MetaTable<dyn AnyStorage>>()
+        self.resources
+            .entry::<MetaTable<dyn AnyStorage>>()
             .or_insert_with(Default::default);
-        self.fetch_mut::<MetaTable<dyn AnyStorage>>()
-            .register(&*self.fetch::<MaskedStorage<T>>());
+        self.resources
+            .fetch_mut::<MetaTable<dyn AnyStorage>>()
+            .register(&*self.resources.fetch::<MaskedStorage<T>>());
     }
 
     // pub fn add_resource<T: Resource>(&mut self, res: T) {
@@ -445,20 +461,28 @@ impl World {
         self.system_data()
     }
 
-    // fn read_resource<T: Resource>(&self) -> Fetch<T> {
-    //     self.fetch()
-    // }
-
-    // fn write_resource<T: Resource>(&self) -> FetchMut<T> {
-    //     self.fetch_mut()
-    // }
-
-    pub fn entities(&self) -> Read<EntitiesRes> {
+    pub fn read_resource<T: Resource>(&self) -> Read<T, PanicIfMissing> {
         Read::fetch(self)
     }
 
-    pub fn entities_mut(&self) -> FetchMut<EntitiesRes> {
-        self.fetch_mut()
+    pub fn try_read_resource<T: Resource>(&self) -> Option<Read<T, ()>> {
+        Option::<Read<T, ()>>::fetch(self)
+    }
+
+    pub fn write_resource<T: Resource>(&self) -> Write<T, PanicIfMissing> {
+        Write::fetch(self)
+    }
+
+    pub fn try_write_resource<T: Resource>(&self) -> Option<Write<T, ()>> {
+        Option::<Write<T, ()>>::fetch(self)
+    }
+
+    pub fn entities(&self) -> Entities {
+        Entities::fetch(self)
+    }
+
+    pub(crate) fn entities_mut(&self) -> EntitiesMut {
+        EntitiesMut::fetch(self)
     }
 
     pub fn create_entity(&mut self) -> EntityBuilder {
@@ -513,14 +537,19 @@ impl World {
             self.delete_components(&deleted);
         }
 
-        let lazy = self.fetch_mut::<LazyUpdate>().clone();
+        let lazy = self.resources.fetch_mut::<LazyUpdate>().clone();
         lazy.maintain(self);
     }
 
     pub fn delete_components(&mut self, delete: &[Entity]) {
-        self.entry::<MetaTable<dyn AnyStorage>>()
+        self.resources
+            .entry::<MetaTable<dyn AnyStorage>>()
             .or_insert_with(Default::default);
-        for storage in self.fetch_mut::<MetaTable<dyn AnyStorage>>().iter_mut(self) {
+        for storage in self
+            .resources
+            .fetch_mut::<MetaTable<dyn AnyStorage>>()
+            .iter_mut(self)
+        {
             storage.drop(delete);
         }
     }
@@ -632,14 +661,14 @@ mod tests {
         }
 
         let mut world = World::empty();
-        assert!(world.try_fetch::<i32>().is_none());
+        assert!(world.try_read_resource::<i32>().is_none());
 
         let mut sys = Sys;
         RunNow::setup(&mut sys, &mut world);
 
         sys.run_now(&world);
 
-        assert!(world.try_fetch::<i32>().is_some());
-        assert_eq!(*world.fetch::<i32>(), 33);
+        assert!(world.try_read_resource::<i32>().is_some());
+        assert_eq!(*world.read_resource::<i32>(), 33);
     }
 }

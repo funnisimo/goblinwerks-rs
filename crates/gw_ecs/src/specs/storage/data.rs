@@ -121,15 +121,19 @@ impl<'a, T> SystemData<'a> for ReadStorage<'a, T>
 where
     T: Component,
 {
-    fn setup(res: &mut World) {
-        res.entry::<MaskedStorage<T>>()
+    fn setup(world: &mut World) {
+        world
+            .resources
+            .entry::<MaskedStorage<T>>()
             .or_insert_with(|| MaskedStorage::new(<T::Storage as TryDefault>::unwrap_default()));
-        res.fetch_mut::<MetaTable<dyn AnyStorage>>()
-            .register(&*res.fetch::<MaskedStorage<T>>());
+        world
+            .resources
+            .fetch_mut::<MetaTable<dyn AnyStorage>>()
+            .register(&*world.resources.fetch::<MaskedStorage<T>>());
     }
 
-    fn fetch(res: &'a World) -> Self {
-        Storage::new(res.fetch(), res.fetch())
+    fn fetch(world: &'a World) -> Self {
+        Storage::new(world.resources.fetch(), world.resources.fetch())
     }
 
     fn reads() -> Vec<ResourceId> {
@@ -208,15 +212,19 @@ impl<'a, T> SystemData<'a> for WriteStorage<'a, T>
 where
     T: Component,
 {
-    fn setup(res: &mut World) {
-        res.entry::<MaskedStorage<T>>()
+    fn setup(world: &mut World) {
+        world
+            .resources
+            .entry::<MaskedStorage<T>>()
             .or_insert_with(|| MaskedStorage::new(<T::Storage as TryDefault>::unwrap_default()));
-        res.fetch_mut::<MetaTable<dyn AnyStorage>>()
-            .register(&*res.fetch::<MaskedStorage<T>>());
+        world
+            .resources
+            .fetch_mut::<MetaTable<dyn AnyStorage>>()
+            .register(&*world.resources.fetch::<MaskedStorage<T>>());
     }
 
-    fn fetch(res: &'a World) -> Self {
-        Storage::new(res.fetch(), res.fetch_mut())
+    fn fetch(world: &'a World) -> Self {
+        Storage::new(world.resources.fetch(), world.resources.fetch_mut())
     }
 
     fn reads() -> Vec<ResourceId> {

@@ -13,8 +13,8 @@ struct ExampleBundle<'a> {
 
 impl<'a> SystemData<'a> for ExampleBundle<'a> {
     fn setup(res: &mut World) {
-        res.entry().or_insert(ResA);
-        res.entry().or_insert(ResB);
+        res.ensure_resource::<ResA>();
+        res.ensure_resource::<ResB>();
     }
 
     fn fetch(res: &'a World) -> Self {

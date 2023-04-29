@@ -4,7 +4,7 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use crate::shred::Read;
+use crate::{shred::Read, Write};
 use hibitset::{AtomicBitSet, BitSet, BitSetOr};
 
 #[cfg(feature = "parallel")]
@@ -45,6 +45,38 @@ pub type Index = u32;
 /// }
 /// ```
 pub type Entities<'a> = Read<'a, EntitiesRes>;
+
+/// A wrapper for a writable `Entities` resource.
+/// Note that this is just `Write<Entities>`, so
+/// you can easily use it in your system:
+///
+/// ```
+/// # use specs::prelude::*;
+/// # struct Sys;
+/// # impl<'a> System<'a> for Sys {
+/// type SystemData = (EntitiesMut<'a> /* ... */,);
+/// # fn run(&mut self, _: Self::SystemData) {}
+/// # }
+/// ```
+///
+/// Please note that you should call `World::maintain`
+/// after creating / deleting entities with this resource.
+///
+/// When `.join`ing on `Entities`, you will need to do it like this:
+///
+/// ```
+/// use specs::prelude::*;
+///
+/// # struct Pos; impl Component for Pos { type Storage = VecStorage<Self>; }
+/// # let mut world = World::new(); world.register::<Pos>();
+/// # let entities = world.entities(); let positions = world.write_storage::<Pos>();
+/// for (e, pos) in (&entities, &positions).join() {
+///     // Do something
+/// #   let _ = e;
+/// #   let _ = pos;
+/// }
+/// ```
+pub type EntitiesMut<'a> = Write<'a, EntitiesRes>;
 
 /// Internally used structure for `Entity` allocation.
 #[derive(Default, Debug)]

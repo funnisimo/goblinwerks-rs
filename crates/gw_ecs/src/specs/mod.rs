@@ -232,7 +232,9 @@ pub use self::{
         DefaultVecStorage, DenseVecStorage, FlaggedStorage, HashMapStorage, NullStorage,
         ReadStorage, Storage, Tracked, VecStorage, WriteStorage,
     },
-    world::{Builder, Component, Entities, Entity, EntityBuilder, LazyUpdate, WorldExt},
+    world::{
+        Builder, Component, Entities, EntitiesMut, Entity, EntityBuilder, LazyUpdate, WorldExt,
+    },
 };
 
 #[cfg(feature = "nightly")]

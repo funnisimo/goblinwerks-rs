@@ -4,7 +4,8 @@ use std::{
 };
 
 use crate::shred::{
-    DefaultProvider, Fetch, FetchMut, PanicHandler, Resource, ResourceId, SetupHandler, SystemData,
+    DefaultIfMissing, Fetch, FetchMut, PanicIfMissing, Resource, ResourceId, SetupHandler,
+    SystemData,
 };
 use crate::World;
 
@@ -16,7 +17,7 @@ use crate::World;
 ///
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
-pub struct Read<'a, T: 'a, F = DefaultProvider> {
+pub struct Read<'a, T: 'a, F = DefaultIfMissing> {
     inner: Fetch<'a, T>,
     phantom: PhantomData<F>,
 }
@@ -51,7 +52,7 @@ where
     }
 
     fn fetch(world: &'a World) -> Self {
-        world.fetch::<T>().into()
+        world.resources.fetch::<T>().into()
     }
 
     fn reads() -> Vec<ResourceId> {
@@ -71,7 +72,7 @@ where
 ///
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
-pub struct Write<'a, T: 'a, F = DefaultProvider> {
+pub struct Write<'a, T: 'a, F = DefaultIfMissing> {
     inner: FetchMut<'a, T>,
     phantom: PhantomData<F>,
 }
@@ -115,7 +116,7 @@ where
     }
 
     fn fetch(world: &'a World) -> Self {
-        world.fetch_mut::<T>().into()
+        world.resources.fetch_mut::<T>().into()
     }
 
     fn reads() -> Vec<ResourceId> {
@@ -136,7 +137,7 @@ where
     fn setup(_: &mut World) {}
 
     fn fetch(world: &'a World) -> Self {
-        world.try_fetch().map(Into::into)
+        world.resources.try_fetch().map(Into::into)
     }
 
     fn reads() -> Vec<ResourceId> {
@@ -155,7 +156,7 @@ where
     fn setup(_: &mut World) {}
 
     fn fetch(world: &'a World) -> Self {
-        world.try_fetch_mut().map(Into::into)
+        world.resources.try_fetch_mut().map(Into::into)
     }
 
     fn reads() -> Vec<ResourceId> {
@@ -170,9 +171,9 @@ where
 /// Allows to fetch a resource in a system immutably.
 /// **This will panic if the resource does not exist.**
 /// Usage of `Read` or `Option<Read>` is therefore recommended.
-pub type ReadExpect<'a, T> = Read<'a, T, PanicHandler>;
+pub type ReadExpect<'a, T> = Read<'a, T, PanicIfMissing>;
 
 /// Allows to fetch a resource in a system mutably.
 /// **This will panic if the resource does not exist.**
 /// Usage of `Write` or `Option<Write>` is therefore recommended.
-pub type WriteExpect<'a, T> = Write<'a, T, PanicHandler>;
+pub type WriteExpect<'a, T> = Write<'a, T, PanicIfMissing>;

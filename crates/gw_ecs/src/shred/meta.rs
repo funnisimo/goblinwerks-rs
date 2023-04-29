@@ -74,6 +74,7 @@ where
         // Ugly hack that works due to `UnsafeCell` and distinct resources.
         unsafe {
             self.world
+                .resources
                 .try_fetch_internal(match self.tys.get(index) {
                     Some(&x) => ResourceId::from_type_id(x),
                     None => return None,
@@ -139,6 +140,7 @@ where
         // Ugly hack that works due to `UnsafeCell` and distinct resources.
         unsafe {
             self.world
+                .resources
                 .try_fetch_internal(match self.tys.get(index) {
                     Some(&x) => ResourceId::from_type_id(x),
                     None => return None,
@@ -484,14 +486,14 @@ mod tests {
 
         assert_eq!(
             table
-                .get(&*world.fetch::<ImplementorC>())
+                .get(&*world.read_resource::<ImplementorC>())
                 .unwrap()
                 .method1(),
             33
         );
         assert_eq!(
             table
-                .get(&*world.fetch::<ImplementorD>())
+                .get(&*world.read_resource::<ImplementorD>())
                 .unwrap()
                 .method1(),
             42

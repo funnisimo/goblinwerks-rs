@@ -44,8 +44,8 @@ fn lazy_insertion() {
     let e1;
     let e2;
     {
-        let entities = world.fetch::<EntitiesRes>();
-        let lazy = world.fetch::<LazyUpdate>();
+        let entities = world.read_resource::<EntitiesRes>();
+        let lazy = world.read_resource::<LazyUpdate>();
 
         e1 = entities.create();
         e2 = entities.create();
@@ -66,7 +66,7 @@ fn lazy_removal() {
 
     let e = world.create_entity().with(Pos).build();
     {
-        let lazy = world.fetch::<LazyUpdate>();
+        let lazy = world.read_resource::<LazyUpdate>();
         lazy.remove::<Pos>(e);
     }
 
@@ -80,11 +80,11 @@ fn super_lazy_execution() {
     world.register::<Pos>();
 
     let e = {
-        let entity_res = world.fetch::<EntitiesRes>();
+        let entity_res = world.read_resource::<EntitiesRes>();
         entity_res.create()
     };
-    world.fetch::<LazyUpdate>().exec(move |world| {
-        world.fetch::<LazyUpdate>().exec(move |world| {
+    world.read_resource::<LazyUpdate>().exec(move |world| {
+        world.read_resource::<LazyUpdate>().exec(move |world| {
             if let Err(err) = world.write_component::<Pos>().insert(e, Pos) {
                 panic!("Unable to lazily insert component! {:?}", err);
             }
@@ -101,11 +101,11 @@ fn lazy_execution() {
     world.register::<Pos>();
 
     let e = {
-        let entity_res = world.fetch::<EntitiesRes>();
+        let entity_res = world.read_resource::<EntitiesRes>();
         entity_res.create()
     };
     {
-        let lazy = world.fetch::<LazyUpdate>();
+        let lazy = world.read_resource::<LazyUpdate>();
         lazy.exec(move |world| {
             if let Err(err) = world.write_component::<Pos>().insert(e, Pos) {
                 panic!("Unable to lazily insert component! {:?}", err);
@@ -122,18 +122,18 @@ fn lazy_execution_order() {
     let mut world = World::default();
     world.insert(Vec::<u32>::new());
     {
-        let lazy = world.fetch::<LazyUpdate>();
+        let lazy = world.read_resource::<LazyUpdate>();
         lazy.exec(move |world| {
-            let mut v = world.fetch_mut::<Vec<u32>>();
+            let mut v = world.write_resource::<Vec<u32>>();
             v.push(1);
         });
         lazy.exec(move |world| {
-            let mut v = world.fetch_mut::<Vec<u32>>();
+            let mut v = world.write_resource::<Vec<u32>>();
             v.push(2);
         });
     }
     world.maintain();
-    let v = world.fetch::<Vec<u32>>();
+    let v = world.read_resource::<Vec<u32>>();
     assert_eq!(&**v, &[1, 2]);
 }
 
@@ -151,7 +151,7 @@ fn delete_twice() {
 fn delete_and_lazy() {
     let mut world = World::default();
     {
-        let lazy_update = world.fetch_mut::<crate::specs::LazyUpdate>();
+        let lazy_update = world.write_resource::<crate::specs::LazyUpdate>();
         lazy_update.exec(|world| {
             world.entities().create();
         })
@@ -159,7 +159,7 @@ fn delete_and_lazy() {
 
     world.maintain();
     {
-        let lazy_update = world.fetch_mut::<crate::specs::LazyUpdate>();
+        let lazy_update = world.write_resource::<crate::specs::LazyUpdate>();
         lazy_update.exec(|world| {
             world.entities().create();
         })

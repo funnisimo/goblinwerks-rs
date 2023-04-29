@@ -106,7 +106,7 @@ impl<'a, 'b, 'c> BatchController<'a, 'b, 'c> for CustomBatchControllerSystem {
     fn run(&mut self, world: &World, dispatcher: &mut Dispatcher<'a, 'b>) {
         {
             // The scope is used to unload the resource before dispatching inner systems.
-            let _ts = world.fetch::<TomatoStore>();
+            let _ts = world.read_resource::<TomatoStore>();
         }
         println!("Batch execution");
         for _i in 0..3 {

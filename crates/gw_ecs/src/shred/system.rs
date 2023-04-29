@@ -266,7 +266,7 @@ pub trait System<'a> {
 /// #     }
 /// # }
 /// ```
-pub trait SystemData<'a> {
+pub trait SystemData<'a>: Sized {
     /// Sets up the system data for fetching it from the `World`.
     fn setup(world: &mut World);
 

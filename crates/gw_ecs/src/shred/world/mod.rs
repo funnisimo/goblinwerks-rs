@@ -3,7 +3,7 @@
 pub use self::{
     data::{Read, ReadExpect, Write, WriteExpect},
     entry::Entry,
-    setup::{DefaultProvider, PanicHandler, SetupHandler},
+    setup::{DefaultIfMissing, PanicIfMissing, SetupHandler},
 };
 use crate::shred::cell::{Ref, RefMut, TrustCell};
 use ahash::AHashMap as HashMap;
@@ -198,7 +198,7 @@ impl ResourceId {
 /// Resources are identified by `ResourceId`s, which consist of a `TypeId`.
 #[derive(Default)]
 pub struct World {
-    resources: HashMap<ResourceId, TrustCell<Box<dyn Resource>>>,
+    hashmap: HashMap<ResourceId, TrustCell<Box<dyn Resource>>>,
 }
 
 impl World {
@@ -211,7 +211,7 @@ impl World {
 
     /// Returns whether or not the World has anything in it.
     pub fn is_empty(&self) -> bool {
-        self.resources.is_empty()
+        self.hashmap.is_empty()
     }
 
     /// Inserts a resource into this container. If the resource existed before,
@@ -268,7 +268,7 @@ impl World {
 
     /// Returns true if the specified resource type exists in `self`.
     pub fn has_value_raw(&self, id: ResourceId) -> bool {
-        self.resources.contains_key(&id)
+        self.hashmap.contains_key(&id)
     }
 
     /// Returns an entry for the resource with type `R`.
@@ -276,7 +276,7 @@ impl World {
     where
         R: Resource,
     {
-        create_entry(self.resources.entry(ResourceId::new::<R>()))
+        create_entry(self.hashmap.entry(ResourceId::new::<R>()))
     }
 
     // /// Gets `SystemData` `T` from the `World`. This can be used to retrieve
@@ -420,7 +420,7 @@ impl World {
         T: Resource,
     {
         self.try_fetch().unwrap_or_else(|| {
-            if self.resources.is_empty() {
+            if self.hashmap.is_empty() {
                 eprintln!(
                     "Note: Could not find a resource (see the following panic);\
                      the `World` is completely empty. Did you accidentally create a fresh `World`?"
@@ -439,7 +439,7 @@ impl World {
     {
         let res_id = ResourceId::new::<T>();
 
-        self.resources.get(&res_id).map(|r| Fetch {
+        self.hashmap.get(&res_id).map(|r| Fetch {
             inner: Ref::map(r.borrow(), Box::as_ref),
             phantom: PhantomData,
         })
@@ -460,7 +460,7 @@ impl World {
     {
         id.assert_same_type_id::<T>();
 
-        self.resources.get(&id).map(|r| Fetch {
+        self.hashmap.get(&id).map(|r| Fetch {
             inner: Ref::map(r.borrow(), Box::as_ref),
             phantom: PhantomData,
         })
@@ -489,7 +489,7 @@ impl World {
     {
         let res_id = ResourceId::new::<T>();
 
-        self.resources.get(&res_id).map(|r| FetchMut {
+        self.hashmap.get(&res_id).map(|r| FetchMut {
             inner: RefMut::map(r.borrow_mut(), Box::as_mut),
             phantom: PhantomData,
         })
@@ -510,7 +510,7 @@ impl World {
     {
         id.assert_same_type_id::<T>();
 
-        self.resources.get(&id).map(|r| FetchMut {
+        self.hashmap.get(&id).map(|r| FetchMut {
             inner: RefMut::map(r.borrow_mut(), Box::as_mut),
             phantom: PhantomData,
         })
@@ -530,7 +530,7 @@ impl World {
     {
         id.assert_same_type_id::<R>();
 
-        self.resources.insert(id, TrustCell::new(Box::new(r)));
+        self.hashmap.insert(id, TrustCell::new(Box::new(r)));
     }
 
     /// Internal function for removing resources, should only be used if you
@@ -550,7 +550,7 @@ impl World {
 
         id.assert_same_type_id::<R>();
 
-        self.resources
+        self.hashmap
             .remove(&id)
             .map(TrustCell::into_inner)
             .map(|x: Box<dyn Resource>| x.downcast())
@@ -561,7 +561,7 @@ impl World {
     /// Internal function for fetching resources, should only be used if you
     /// know what you're doing.
     pub fn try_fetch_internal(&self, id: ResourceId) -> Option<&TrustCell<Box<dyn Resource>>> {
-        self.resources.get(&id)
+        self.hashmap.get(&id)
     }
 
     /// Retrieves a resource without fetching, which is cheaper, but only
@@ -574,7 +574,7 @@ impl World {
     /// Retrieves a resource without fetching, which is cheaper, but only
     /// available with `&mut self`.
     pub fn get_mut_raw(&mut self, id: ResourceId) -> Option<&mut dyn Resource> {
-        self.resources
+        self.hashmap
             .get_mut(&id)
             .map(TrustCell::get_mut)
             .map(Box::as_mut)
@@ -756,7 +756,7 @@ mod tests {
 
         assert!(world.has_value::<Res>());
 
-        println!("{:#?}", world.resources.keys().collect::<Vec<_>>());
+        println!("{:#?}", world.hashmap.keys().collect::<Vec<_>>());
 
         world.remove::<Res>().unwrap();
 

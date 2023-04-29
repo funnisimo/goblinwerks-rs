@@ -1,7 +1,8 @@
 use crate::atomic_refcell::{AtomicBorrowRef, AtomicRefCell};
 use crate::shred::World as Resources;
 use crate::shred::{
-    DefaultProvider, Fetch, FetchMut, PanicHandler, Resource, ResourceId, SetupHandler, SystemData,
+    DefaultIfMissing, Fetch, FetchMut, PanicIfMissing, Resource, ResourceId, SetupHandler,
+    SystemData,
 };
 use crate::World;
 use std::marker::PhantomData;
@@ -165,7 +166,7 @@ pub(crate) struct GlobalSet;
 ///
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
-pub struct ReadGlobal<'a, T: 'a, F = DefaultProvider> {
+pub struct ReadGlobal<'a, T: 'a, F = DefaultIfMissing> {
     inner: GlobalFetch<'a, T>,
     phantom: PhantomData<F>,
 }
@@ -223,7 +224,7 @@ where
 ///
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
-pub struct WriteGlobal<'a, T: 'a, F = DefaultProvider> {
+pub struct WriteGlobal<'a, T: 'a, F = DefaultIfMissing> {
     inner: GlobalFetchMut<'a, T>,
     phantom: PhantomData<F>,
 }
@@ -325,12 +326,12 @@ where
 /// Allows to fetch a resource in a system immutably.
 /// **This will panic if the resource does not exist.**
 /// Usage of `Read` or `Option<Read>` is therefore recommended.
-pub type ReadGlobalExpect<'a, T> = ReadGlobal<'a, T, PanicHandler>;
+pub type ReadGlobalExpect<'a, T> = ReadGlobal<'a, T, PanicIfMissing>;
 
 /// Allows to fetch a resource in a system mutably.
 /// **This will panic if the resource does not exist.**
 /// Usage of `Write` or `Option<Write>` is therefore recommended.
-pub type WriteGlobalExpect<'a, T> = WriteGlobal<'a, T, PanicHandler>;
+pub type WriteGlobalExpect<'a, T> = WriteGlobal<'a, T, PanicIfMissing>;
 
 /////////////////////////////////////////////////////////////
 

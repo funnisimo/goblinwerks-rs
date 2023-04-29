@@ -4,12 +4,13 @@ pub(crate) use self::entity::EntityAllocator;
 pub use self::{
     comp::Component,
     entity::{
-        CreateIterAtomic, Entities, EntitiesRes, Entity, EntityResBuilder, Generation, Index,
+        CreateIterAtomic, Entities, EntitiesMut, EntitiesRes, Entity, EntityResBuilder, Generation,
+        Index,
     },
     lazy::{LazyBuilder, LazyUpdate},
     world_ext::WorldExt,
 };
-use crate::shred::{FetchMut, SystemData};
+use crate::shred::SystemData;
 use crate::specs::storage::WriteStorage;
 pub use crate::World;
 
@@ -25,7 +26,7 @@ mod world_ext;
 /// it because iterators are lazy.
 ///
 /// Returned from `World::create_iter`.
-pub struct CreateIter<'a>(pub(crate) FetchMut<'a, EntitiesRes>);
+pub struct CreateIter<'a>(pub(crate) EntitiesMut<'a>);
 
 impl<'a> Iterator for CreateIter<'a> {
     type Item = Entity;
@@ -211,6 +212,7 @@ impl<'a> Drop for EntityBuilder<'a> {
     fn drop(&mut self) {
         if !self.built {
             self.world
+                .resources
                 .fetch::<EntitiesRes>()
                 .delete(self.entity)
                 .unwrap();

@@ -112,7 +112,7 @@ pub use self::{
         SystemData,
     },
     world::{
-        DefaultProvider, Entry, Fetch, FetchMut, PanicHandler, Read, ReadExpect, Resource,
+        DefaultIfMissing, Entry, Fetch, FetchMut, PanicIfMissing, Read, ReadExpect, Resource,
         ResourceId, SetupHandler, World, Write, WriteExpect,
     },
 };
