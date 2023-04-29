@@ -600,9 +600,7 @@ pub trait UnprotectedStorage<T>: TryDefault {
 #[cfg(feature = "parallel")]
 mod tests_inline {
 
-    use crate::specs::{
-        Builder, Component, DenseVecStorage, Entities, ParJoin, ReadStorage, WorldExt,
-    };
+    use crate::specs::{Builder, Component, DenseVecStorage, Entities, ParJoin, ReadStorage};
     use crate::World;
     use rayon::iter::ParallelIterator;
 

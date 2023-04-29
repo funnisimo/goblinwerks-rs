@@ -1,7 +1,6 @@
 //! Entities, resources, components, and general world management.
 
-pub use crate::World;
-
+pub(crate) use self::entity::EntityAllocator;
 pub use self::{
     comp::Component,
     entity::{
@@ -10,13 +9,12 @@ pub use self::{
     lazy::{LazyBuilder, LazyUpdate},
     world_ext::WorldExt,
 };
-
 use crate::shred::{FetchMut, SystemData};
-
 use crate::specs::storage::WriteStorage;
+pub use crate::World;
 
 mod comp;
-pub mod entity;
+mod entity;
 mod lazy;
 #[cfg(test)]
 mod tests;

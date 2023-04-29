@@ -48,7 +48,7 @@ pub type Entities<'a> = Read<'a, EntitiesRes>;
 
 /// Internally used structure for `Entity` allocation.
 #[derive(Default, Debug)]
-pub(crate) struct Allocator {
+pub(crate) struct EntityAllocator {
     generations: Vec<ZeroableGeneration>,
 
     alive: BitSet,
@@ -58,7 +58,7 @@ pub(crate) struct Allocator {
     max_id: AtomicUsize,
 }
 
-impl Allocator {
+impl EntityAllocator {
     /// Kills a list of entities immediately.
     pub fn kill(&mut self, delete: &[Entity]) -> Result<(), WrongGeneration> {
         for &entity in delete {
@@ -208,7 +208,7 @@ impl Allocator {
 /// it because iterators are lazy.
 ///
 /// Returned from `Entities::create_iter`.
-pub struct CreateIterAtomic<'a>(&'a Allocator);
+pub struct CreateIterAtomic<'a>(&'a EntityAllocator);
 
 impl<'a> Iterator for CreateIterAtomic<'a> {
     type Item = Entity;
@@ -254,7 +254,7 @@ impl Entity {
 /// entities with this struct.
 #[derive(Debug, Default)]
 pub struct EntitiesRes {
-    pub(crate) alloc: Allocator,
+    pub(crate) alloc: EntityAllocator,
 }
 
 impl EntitiesRes {
@@ -539,7 +539,7 @@ mod tests {
 
     #[test]
     fn kill_atomic_create_merge() {
-        let mut allocator = Allocator::default();
+        let mut allocator = EntityAllocator::default();
 
         let entity = allocator.allocate();
         assert_eq!(entity.id(), 0);
@@ -554,7 +554,7 @@ mod tests {
 
     #[test]
     fn kill_atomic_kill_now_create_merge() {
-        let mut allocator = Allocator::default();
+        let mut allocator = EntityAllocator::default();
 
         let entity = allocator.allocate();
 

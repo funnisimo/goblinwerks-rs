@@ -3,7 +3,7 @@ use crate::shred::cell::TrustCell;
 use crate::shred::{Fetch, FetchMut, MetaTable, SystemData, World as Resources};
 use crate::specs::error::WrongGeneration;
 use crate::specs::storage::{AnyStorage, MaskedStorage};
-use crate::specs::world::entity::Allocator;
+use crate::specs::world::EntityAllocator;
 use crate::specs::world::{CreateIter, EntitiesRes};
 use crate::specs::{Component, Entity, EntityBuilder, LazyUpdate, ReadStorage, WriteStorage};
 use crate::{Read, Resource, ResourceId};
@@ -503,7 +503,7 @@ impl World {
     pub fn is_alive(&self, e: Entity) -> bool {
         assert!(e.gen().is_alive(), "Generation is dead");
 
-        let alloc: &Allocator = &self.entities().alloc;
+        let alloc: &EntityAllocator = &self.entities().alloc;
         alloc.generation(e.id()) == Some(e.gen())
     }
 
