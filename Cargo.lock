@@ -852,25 +852,6 @@ dependencies = [
 name = "gw_ecs"
 version = "0.1.0"
 dependencies = [
- "downcast-rs",
- "gw_macro",
- "gw_util",
-]
-
-[[package]]
-name = "gw_macro"
-version = "0.1.0"
-dependencies = [
- "gw_specs",
- "proc-macro2",
- "quote",
- "syn 2.0.15",
-]
-
-[[package]]
-name = "gw_specs"
-version = "0.1.0"
-dependencies = [
  "ahash",
  "arrayvec 0.7.2",
  "crossbeam-queue",
@@ -886,6 +867,16 @@ dependencies = [
  "tuple_utils",
  "tynm",
  "uuid 1.3.1",
+]
+
+[[package]]
+name = "gw_macro"
+version = "0.1.0"
+dependencies = [
+ "gw_ecs",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.15",
 ]
 
 [[package]]

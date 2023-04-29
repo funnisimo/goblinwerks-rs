@@ -18,7 +18,7 @@
 //! This is done by defining `CustomBatchControllerSystem` which executes its
 //! inner `System`s three times.
 
-use gw_specs::{BatchController, Dispatcher, DispatcherBuilder, Read, System, World, Write};
+use gw_ecs::{BatchController, Dispatcher, DispatcherBuilder, Read, System, World, Write};
 use std::{thread::sleep, time::Duration};
 
 fn main() {

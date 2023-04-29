@@ -1,4 +1,4 @@
-use gw_specs::{
+use gw_ecs::{
     ecs::Ecs,
     globals::ReadGlobal,
     shred::{DispatcherBuilder, Read, System},

@@ -1,5 +1,5 @@
+use gw_ecs::{specs::storage::HashMapStorage, *};
 use gw_macro::SystemData;
-use gw_specs::{specs::storage::HashMapStorage, *};
 
 // -- Components --
 // A component exists for 0..n
@@ -171,7 +171,7 @@ impl<'a> System<'a> for JoinParallel {
     );
 
     fn run(&mut self, (comp_bool, comp_int, mut comp_float): Self::SystemData) {
-        // use gw_specs::specs::rayon::prelude::*;
+        // use gw_ecs::specs::rayon::prelude::*;
         (&comp_bool, &comp_int, &mut comp_float)
             .par_join()
             // only iterate over entities with a `CompBool(true)`

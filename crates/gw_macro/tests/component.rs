@@ -1,4 +1,4 @@
-use gw_specs::{
+use gw_ecs::{
     specs::storage::{DenseVecStorage, VecStorage},
     Component, Ecs,
 };

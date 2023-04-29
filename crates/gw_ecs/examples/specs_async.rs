@@ -1,4 +1,4 @@
-use gw_specs::*;
+use gw_ecs::*;
 
 // A component contains data which is associated with an entity.
 

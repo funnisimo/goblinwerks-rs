@@ -1,5 +1,4 @@
-
-use gw_specs::{Read, ResourceId, SystemData, World, Write};
+use gw_ecs::{Read, ResourceId, SystemData, World, Write};
 
 #[derive(Debug, Default)]
 struct ResA;

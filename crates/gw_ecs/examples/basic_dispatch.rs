@@ -1,7 +1,7 @@
-use gw_specs::ecs::Ecs;
-use gw_specs::shred::DispatcherBuilder;
-use gw_specs::shred::System;
-use gw_specs::shred::{Read, Write};
+use gw_ecs::ecs::Ecs;
+use gw_ecs::shred::DispatcherBuilder;
+use gw_ecs::shred::System;
+use gw_ecs::shred::{Read, Write};
 
 #[derive(Debug, Default)]
 struct UniqueA;

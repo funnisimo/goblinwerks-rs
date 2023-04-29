@@ -1,121 +1,128 @@
-use crate::component::{Component, ComponentSet};
-use crate::fetch::{
-    Comp, CompMut, Fetch, Global, GlobalMut, LevelMut, LevelRef, LevelsMut, LevelsRef, Unique,
-    UniqueMut,
-};
-use crate::levels::Levels;
-use crate::resource::{Resource, Resources};
-use crate::Entity;
+use crate::globals::{GlobalFetch, GlobalFetchMut, Globals};
+use crate::shred::{Fetch, FetchMut, Resource};
+use crate::World;
 
 pub struct Ecs {
-    pub(crate) resources: Resources,
+    pub(crate) worlds: Vec<World>,
+    pub(crate) current: usize,
+    globals: Globals,
 }
 
 impl Ecs {
-    pub fn new() -> Self {
-        let mut res = Resources::default();
-        res.insert(Levels::new());
+    pub fn new(world: World) -> Self {
+        let globals = Globals::default();
+        let mut world = world;
+        world.set_globals(globals.clone());
 
-        Ecs { resources: res }
-    }
-
-    pub fn insert_global<R: Resource>(&mut self, res: R) {
-        self.resources.insert(res);
-    }
-
-    pub fn get_global<R: Resource>(&self) -> Option<Global<'_, R>> {
-        match self.resources.get::<R>() {
-            None => None,
-            Some(b) => Some(Global::new(b)),
+        Ecs {
+            worlds: vec![world],
+            current: 0,
+            globals,
         }
     }
 
-    pub fn get_global_mut<R: Resource>(&self) -> Option<GlobalMut<'_, R>> {
-        match self.resources.get_mut::<R>() {
-            None => None,
-            Some(b) => Some(GlobalMut::new(b)),
-        }
+    pub fn push_world(&mut self, world: World) -> usize {
+        let mut world = world;
+        world.set_globals(self.globals.clone());
+        self.worlds.push(world);
+        self.worlds.len() - 1
     }
 
-    pub fn levels(&self) -> LevelsRef<'_> {
-        self.get_global::<Levels>().unwrap()
+    /// Returns the current active world
+    pub fn current_world(&self) -> &World {
+        &self.worlds[self.current]
     }
 
-    pub fn levels_mut(&self) -> LevelsMut<'_> {
-        self.get_global_mut::<Levels>().unwrap()
+    pub fn set_current_index(&mut self, index: usize) {
+        // TODO - Safety: is index in bounds?
+        self.current = index;
     }
 
-    pub fn level(&self) -> LevelRef<'_> {
-        let levels = self.levels();
-        let (levels, parent) = levels.destructure();
-        let borrow = levels.current();
-        LevelRef::new(parent, borrow)
-    }
-
-    pub fn level_mut(&self) -> LevelMut<'_> {
-        let levels = self.levels();
-        let (levels, parent) = levels.destructure();
-        let borrow = levels.current_mut();
-        LevelMut::new(parent, borrow)
-    }
-
-    // spawn
-    pub fn spawn_empty(&self) -> Entity {
-        let mut level = self.level_mut();
-        level.spawn_empty()
-    }
-
-    pub fn spawn<'a, S: ComponentSet<'a>>(&self, comps: S) -> Entity {
-        let mut level = self.level_mut();
-        level.spawn(comps)
-    }
-
-    pub fn get_unique<U: Resource>(&self) -> Option<Unique<'_, U>> {
-        let (levels, root) = self.levels().destructure();
-        let (level, parent) = levels.current().destructure();
-        let borrow = level.get_unique::<U>()?;
-        Some(Unique::new(root, parent, borrow))
-    }
-
-    pub fn get_unique_mut<U: Resource>(&self) -> Option<UniqueMut<'_, U>> {
-        let (levels, root) = self.levels().destructure();
-        let (level, parent) = levels.current().destructure();
-        let borrow = level.get_unique_mut::<U>()?;
-        Some(UniqueMut::new(root, parent, borrow))
-    }
-
-    pub fn register_component<C: Component>(&mut self) {
-        // Store in registry
-        // Add to every level
-        let mut levels = self.levels_mut();
-        levels.register_component::<C>();
-    }
-
-    pub fn get_component<C: Component>(&self) -> Option<Comp<'_, C>> {
-        let (levels, root) = self.levels().destructure();
-        let (level, parent) = levels.current().destructure();
-        let borrow = level.get_component::<C>()?;
-        Some(Comp::new(root, parent, borrow))
-    }
-
-    pub fn get_component_mut<C: Component>(&self) -> Option<CompMut<'_, C>> {
-        let (levels, root) = self.levels().destructure();
-        let (level, parent) = levels.current().destructure();
-        let borrow = level.get_component_mut::<C>()?;
-        Some(CompMut::new(root, parent, borrow))
-    }
-
-    pub fn fetch<B>(&self) -> <B as Fetch>::Output<'_>
+    pub fn set_current_with<F>(&mut self, func: F) -> Option<usize>
     where
-        B: Fetch, // + ReadOnly,
+        F: Fn(&World) -> bool,
     {
-        B::fetch(self)
+        match self.worlds.iter().position(func) {
+            None => None,
+            Some(index) => {
+                self.set_current_index(index);
+                Some(index)
+            }
+        }
     }
 
-    // pub fn fetch_mut<B>(&self) -> <B as Fetch>::Output<'_>
-    // where
-    //     B: Fetch,
-    // {
-    //     B::fetch(self)
-    // }
+    /// Returns a mutable reference to the currently active world
+    pub fn current_world_mut(&mut self) -> &mut World {
+        &mut self.worlds[self.current]
+    }
+
+    // GLOBALS
+
+    pub fn has_global<G: Resource>(&self) -> bool {
+        self.current_world().has_global::<G>()
+    }
+
+    /// Inserts a global
+    pub fn insert_global<G: Resource>(&mut self, global: G) {
+        self.globals.insert(global)
+    }
+
+    /// Removes a global
+    pub fn remove_global<G: Resource>(&mut self) -> Option<G> {
+        self.globals.remove::<G>()
+    }
+
+    pub fn fetch_global<G: Resource>(&self) -> GlobalFetch<G> {
+        self.globals.fetch::<G>()
+    }
+
+    pub fn try_fetch_global<G: Resource>(&self) -> Option<GlobalFetch<G>> {
+        self.globals.try_fetch::<G>()
+    }
+
+    pub fn fetch_global_mut<G: Resource>(&self) -> GlobalFetchMut<G> {
+        self.globals.fetch_mut::<G>()
+    }
+
+    pub fn try_fetch_global_mut<G: Resource>(&self) -> Option<GlobalFetchMut<G>> {
+        self.globals.try_fetch_mut::<G>()
+    }
+
+    // UNIQUES
+
+    pub fn has_unique<G: Resource>(&self) -> bool {
+        self.current_world().has_value::<G>()
+    }
+
+    /// Inserts a unique
+    pub fn insert_unique<G: Resource>(&mut self, unique: G) {
+        self.current_world_mut().insert(unique)
+    }
+
+    /// Removes a unique
+    pub fn remove_unique<G: Resource>(&mut self) -> Option<G> {
+        self.current_world_mut().remove::<G>()
+    }
+
+    pub fn fetch_unique<G: Resource>(&self) -> Fetch<G> {
+        self.current_world().fetch::<G>()
+    }
+
+    pub fn try_fetch_unique<G: Resource>(&self) -> Option<Fetch<G>> {
+        self.current_world().try_fetch::<G>()
+    }
+
+    pub fn fetch_unique_mut<G: Resource>(&self) -> FetchMut<G> {
+        self.current_world().fetch_mut::<G>()
+    }
+
+    pub fn try_fetch_unique_mut<G: Resource>(&self) -> Option<FetchMut<G>> {
+        self.current_world().try_fetch_mut::<G>()
+    }
+}
+
+impl Default for Ecs {
+    fn default() -> Self {
+        Ecs::new(World::empty())
+    }
 }

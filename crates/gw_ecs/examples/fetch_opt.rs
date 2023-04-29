@@ -1,4 +1,4 @@
-use gw_specs::{DispatcherBuilder, Read, ReadExpect, System, World, Write};
+use gw_ecs::{DispatcherBuilder, Read, ReadExpect, System, World, Write};
 
 #[derive(Debug, Default)]
 struct ResA;

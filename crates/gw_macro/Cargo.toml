@@ -17,4 +17,4 @@ quote       = "1.0.26"
 proc-macro2 = "1.0.56"
 
 [dev-dependencies]
-gw_specs = { path = "../gw_specs" }
+gw_ecs = { path = "../gw_ecs" }

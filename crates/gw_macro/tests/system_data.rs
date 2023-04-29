@@ -1,4 +1,4 @@
-use gw_specs::{Ecs, ReadGlobal, ResourceId, SystemData, World, Write};
+use gw_ecs::{Ecs, ReadGlobal, ResourceId, SystemData, World, Write};
 
 #[derive(Default, PartialEq, Debug)]
 pub struct Clock(u32);
