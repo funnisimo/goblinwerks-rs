@@ -1,4 +1,4 @@
-use gw_ecs::{Read, ResourceId, SystemData, World, Write};
+use gw_ecs::{ReadRes, ResourceId, SystemData, World, WriteRes};
 
 #[derive(Debug, Default)]
 struct ResA;
@@ -7,8 +7,8 @@ struct ResA;
 struct ResB;
 
 struct ExampleBundle<'a> {
-    a: Read<'a, ResA>,
-    b: Write<'a, ResB>,
+    a: ReadRes<'a, ResA>,
+    b: WriteRes<'a, ResB>,
 }
 
 impl<'a> SystemData<'a> for ExampleBundle<'a> {
@@ -35,8 +35,8 @@ impl<'a> SystemData<'a> for ExampleBundle<'a> {
 
 fn main() {
     let mut res = World::empty();
-    res.insert(ResA);
-    res.insert(ResB);
+    res.insert_resource(ResA);
+    res.insert_resource(ResB);
 
     let mut bundle = ExampleBundle::fetch(&res);
     *bundle.b = ResB;

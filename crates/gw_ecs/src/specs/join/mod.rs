@@ -1,6 +1,6 @@
 //! Joining of components for iteration over entities with specific components.
 
-use crate::shred::{Fetch, FetchMut, Read, ReadExpect, Resource, Write, WriteExpect};
+use crate::shred::{Fetch, FetchMut, ReadRes, ReadResExpect, Resource, WriteRes, WriteResExpect};
 use hibitset::{BitIter, BitSetAll, BitSetAnd, BitSetLike};
 use std::ops::{Deref, DerefMut};
 use tuple_utils::Split;
@@ -640,5 +640,5 @@ macro_rules! mutable_resource_join {
     };
 }
 
-immutable_resource_join!(Fetch<'b, T>, Read<'b, T>, ReadExpect<'b, T>);
-mutable_resource_join!(FetchMut<'b, T>, Write<'b, T>, WriteExpect<'b, T>);
+immutable_resource_join!(Fetch<'b, T>, ReadRes<'b, T>, ReadResExpect<'b, T>);
+mutable_resource_join!(FetchMut<'b, T>, WriteRes<'b, T>, WriteResExpect<'b, T>);

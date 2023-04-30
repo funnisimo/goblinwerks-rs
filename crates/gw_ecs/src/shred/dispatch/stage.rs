@@ -500,12 +500,12 @@ mod tests {
 
     #[test]
     fn uses_group() {
-        use crate::shred::{Read, Write};
+        use crate::shred::{ReadRes, WriteRes};
 
         struct SysA;
 
         impl<'a> System<'a> for SysA {
-            type SystemData = Read<'a, ResA>;
+            type SystemData = ReadRes<'a, ResA>;
 
             fn run(&mut self, _: Self::SystemData) {}
         }
@@ -513,7 +513,7 @@ mod tests {
         struct SysB;
 
         impl<'a> System<'a> for SysB {
-            type SystemData = Write<'a, ResB>;
+            type SystemData = WriteRes<'a, ResB>;
 
             fn run(&mut self, _: Self::SystemData) {}
 
@@ -525,7 +525,7 @@ mod tests {
         struct SysC;
 
         impl<'a> System<'a> for SysC {
-            type SystemData = Read<'a, ResB>;
+            type SystemData = ReadRes<'a, ResB>;
 
             fn run(&mut self, _: Self::SystemData) {}
 

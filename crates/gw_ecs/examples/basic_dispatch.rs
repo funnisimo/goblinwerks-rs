@@ -1,7 +1,7 @@
 use gw_ecs::ecs::Ecs;
 use gw_ecs::shred::DispatcherBuilder;
 use gw_ecs::shred::System;
-use gw_ecs::shred::{Read, Write};
+use gw_ecs::shred::{ReadRes, WriteRes};
 
 #[derive(Debug, Default)]
 struct UniqueA;
@@ -14,7 +14,7 @@ struct UniqueB;
 struct PrintSystem;
 
 impl<'a> System<'a> for PrintSystem {
-    type SystemData = (Read<'a, UniqueA>, Write<'a, UniqueB>);
+    type SystemData = (ReadRes<'a, UniqueA>, WriteRes<'a, UniqueB>);
 
     fn run(&mut self, data: Self::SystemData) {
         let (a, mut b) = data;

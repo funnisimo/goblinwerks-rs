@@ -1,4 +1,4 @@
-use gw_ecs::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
+use gw_ecs::{DispatcherBuilder, ReadRes, ResourceId, System, SystemData, World, WriteRes};
 
 #[derive(Debug, Default)]
 struct ResA;
@@ -8,8 +8,8 @@ struct ResB;
 
 #[derive(SystemData)]
 struct Data<'a> {
-    a: Read<'a, ResA>,
-    b: Write<'a, ResB>,
+    a: ReadRes<'a, ResA>,
+    b: WriteRes<'a, ResB>,
 }
 
 struct EmptySystem(*mut i8); // System is not thread-safe
@@ -26,7 +26,7 @@ impl<'a> System<'a> for EmptySystem {
 struct PrintSystem;
 
 impl<'a> System<'a> for PrintSystem {
-    type SystemData = (Read<'a, ResA>, Write<'a, ResB>);
+    type SystemData = (ReadRes<'a, ResA>, WriteRes<'a, ResB>);
 
     fn run(&mut self, data: Self::SystemData) {
         let (a, mut b) = data;
@@ -43,8 +43,8 @@ fn main() {
     let mut x = 5;
 
     let mut resources = World::empty();
-    resources.insert(ResA);
-    resources.insert(ResB);
+    resources.insert_resource(ResA);
+    resources.insert_resource(ResB);
     let mut dispatcher = DispatcherBuilder::new()
         .with(PrintSystem, "print", &[]) // Adds a system "print" without dependencies
         .with_thread_local(EmptySystem(&mut x))

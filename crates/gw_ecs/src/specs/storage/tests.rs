@@ -5,7 +5,7 @@ use crate::specs::world::{Component, Entity, Generation, Index};
 use crate::World;
 use std::mem::MaybeUninit;
 
-fn create<T: Component>(world: &mut World) -> WriteStorage<T>
+fn create<T: Component>(world: &mut World) -> WriteComp<T>
 where
     T::Storage: Default,
 {
@@ -995,7 +995,7 @@ mod test {
 
     #[test]
     fn entries() {
-        use crate::specs::{join::Join, storage::WriteStorage, world::Entities};
+        use crate::specs::{join::Join, storage::WriteComp, world::Entities};
 
         let mut w = World::default();
 
@@ -1018,7 +1018,7 @@ mod test {
 
         let mut sum = 0;
 
-        w.exec(|(e, mut s): (Entities, WriteStorage<CEntries>)| {
+        w.exec(|(e, mut s): (Entities, WriteComp<CEntries>)| {
             sum = (&e, s.entries()).join().fold(0, |acc, (_, value)| {
                 let v = value.or_insert(2.into());
                 acc + v.0

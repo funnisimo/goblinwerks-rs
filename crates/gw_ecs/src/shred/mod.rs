@@ -112,12 +112,7 @@ pub use self::{
         SystemData,
     },
     world::{
-        DefaultIfMissing, Entry, Fetch, FetchMut, PanicIfMissing, Read, ReadExpect, Resource,
-        ResourceId, SetupHandler, World, Write, WriteExpect,
+        DefaultIfMissing, Entry, Fetch, FetchMut, PanicIfMissing, ReadRes, ReadResExpect, Resource,
+        ResourceId, Resources, SetupHandler, WriteRes, WriteResExpect,
     },
 };
-
-/// Alias for `World` for easier migration to the new version. Will be removed
-/// in the future.
-#[deprecated(since = "0.8.0", note = "renamed to `World`")]
-pub type Resources = World;

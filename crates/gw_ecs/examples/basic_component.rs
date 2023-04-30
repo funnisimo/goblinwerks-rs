@@ -22,7 +22,7 @@ impl<'a> System<'a> for SysA {
     // These are the resources required for execution.
     // You can also define a struct and `#[derive(SystemData)]`,
     // see the `full` example.
-    type SystemData = (WriteStorage<'a, Pos>, ReadStorage<'a, Vel>);
+    type SystemData = (WriteComp<'a, Pos>, ReadComp<'a, Vel>);
 
     fn run(&mut self, (mut pos, vel): Self::SystemData) {
         // The `.join()` combines multiple components,

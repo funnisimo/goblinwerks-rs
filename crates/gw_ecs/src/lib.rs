@@ -9,8 +9,8 @@ pub mod world;
 
 pub use ecs::Ecs;
 pub use globals::{ReadGlobal, ReadGlobalExpect, WriteGlobal, WriteGlobalExpect};
-pub use shred::{Read, ReadExpect, Write, WriteExpect};
-pub use shred::{Resource, ResourceId, SystemData, World as Resources};
+pub use shred::{ReadRes, ReadResExpect, WriteRes, WriteResExpect};
+pub use shred::{Resource, ResourceId, Resources, SystemData};
 pub use world::World;
 
 pub use shred::{BatchController, Dispatcher, DispatcherBuilder};
@@ -18,7 +18,7 @@ pub use specs::{
     join::*,
     storage::{DenseVecStorage, MaskedStorage, VecStorage},
     world::Builder,
-    Component, Entities, Entity, EntityBuilder, ReadStorage, System, WriteStorage,
+    Component, Entities, Entity, EntityBuilder, ReadComp, System, WriteComp,
 };
 
 #[cfg(feature = "parallel")]

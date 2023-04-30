@@ -17,12 +17,12 @@ use crate::World;
 ///
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
-pub struct Read<'a, T: 'a, F = DefaultIfMissing> {
+pub struct ReadRes<'a, T: 'a, F = DefaultIfMissing> {
     inner: Fetch<'a, T>,
     phantom: PhantomData<F>,
 }
 
-impl<'a, T, F> Deref for Read<'a, T, F>
+impl<'a, T, F> Deref for ReadRes<'a, T, F>
 where
     T: Resource,
 {
@@ -33,16 +33,16 @@ where
     }
 }
 
-impl<'a, T, F> From<Fetch<'a, T>> for Read<'a, T, F> {
+impl<'a, T, F> From<Fetch<'a, T>> for ReadRes<'a, T, F> {
     fn from(inner: Fetch<'a, T>) -> Self {
-        Read {
+        ReadRes {
             inner,
             phantom: PhantomData,
         }
     }
 }
 
-impl<'a, T, F> SystemData<'a> for Read<'a, T, F>
+impl<'a, T, F> SystemData<'a> for ReadRes<'a, T, F>
 where
     T: Resource,
     F: SetupHandler<T>,
@@ -72,12 +72,12 @@ where
 ///
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
-pub struct Write<'a, T: 'a, F = DefaultIfMissing> {
+pub struct WriteRes<'a, T: 'a, F = DefaultIfMissing> {
     inner: FetchMut<'a, T>,
     phantom: PhantomData<F>,
 }
 
-impl<'a, T, F> Deref for Write<'a, T, F>
+impl<'a, T, F> Deref for WriteRes<'a, T, F>
 where
     T: Resource,
 {
@@ -88,7 +88,7 @@ where
     }
 }
 
-impl<'a, T, F> DerefMut for Write<'a, T, F>
+impl<'a, T, F> DerefMut for WriteRes<'a, T, F>
 where
     T: Resource,
 {
@@ -97,16 +97,16 @@ where
     }
 }
 
-impl<'a, T, F> From<FetchMut<'a, T>> for Write<'a, T, F> {
+impl<'a, T, F> From<FetchMut<'a, T>> for WriteRes<'a, T, F> {
     fn from(inner: FetchMut<'a, T>) -> Self {
-        Write {
+        WriteRes {
             inner,
             phantom: PhantomData,
         }
     }
 }
 
-impl<'a, T, F> SystemData<'a> for Write<'a, T, F>
+impl<'a, T, F> SystemData<'a> for WriteRes<'a, T, F>
 where
     T: Resource,
     F: SetupHandler<T>,
@@ -130,7 +130,7 @@ where
 
 // ------------------
 
-impl<'a, T, F> SystemData<'a> for Option<Read<'a, T, F>>
+impl<'a, T, F> SystemData<'a> for Option<ReadRes<'a, T, F>>
 where
     T: Resource,
 {
@@ -149,7 +149,7 @@ where
     }
 }
 
-impl<'a, T, F> SystemData<'a> for Option<Write<'a, T, F>>
+impl<'a, T, F> SystemData<'a> for Option<WriteRes<'a, T, F>>
 where
     T: Resource,
 {
@@ -171,9 +171,9 @@ where
 /// Allows to fetch a resource in a system immutably.
 /// **This will panic if the resource does not exist.**
 /// Usage of `Read` or `Option<Read>` is therefore recommended.
-pub type ReadExpect<'a, T> = Read<'a, T, PanicIfMissing>;
+pub type ReadResExpect<'a, T> = ReadRes<'a, T, PanicIfMissing>;
 
 /// Allows to fetch a resource in a system mutably.
 /// **This will panic if the resource does not exist.**
 /// Usage of `Write` or `Option<Write>` is therefore recommended.
-pub type WriteExpect<'a, T> = Write<'a, T, PanicIfMissing>;
+pub type WriteResExpect<'a, T> = WriteRes<'a, T, PanicIfMissing>;

@@ -43,20 +43,20 @@ struct Sum(usize);
 
 #[derive(SystemData)]
 struct IntAndBoolData<'a> {
-    comp_int: ReadStorage<'a, CompInt>,
-    comp_bool: WriteStorage<'a, CompBool>,
+    comp_int: ReadComp<'a, CompInt>,
+    comp_bool: WriteComp<'a, CompBool>,
 }
 
 #[derive(SystemData)]
 struct SpawnData<'a> {
-    comp_int: WriteStorage<'a, CompInt>,
+    comp_int: WriteComp<'a, CompInt>,
     entities: Entities<'a>,
 }
 
 #[derive(SystemData)]
 struct StoreMaxData<'a> {
-    comp_float: ReadStorage<'a, CompFloat>,
-    comp_int: ReadStorage<'a, CompInt>,
+    comp_float: ReadComp<'a, CompFloat>,
+    comp_int: ReadComp<'a, CompInt>,
     entities: Entities<'a>,
 }
 
@@ -65,9 +65,9 @@ struct StoreMaxData<'a> {
 struct SysPrintBool;
 
 impl<'a> System<'a> for SysPrintBool {
-    type SystemData = ReadStorage<'a, CompBool>;
+    type SystemData = ReadComp<'a, CompBool>;
 
-    fn run(&mut self, data: ReadStorage<CompBool>) {
+    fn run(&mut self, data: ReadComp<CompBool>) {
         for b in (&data).join() {
             println!("Bool: {:?}", b);
         }
@@ -165,9 +165,9 @@ struct JoinParallel;
 #[cfg(feature = "parallel")]
 impl<'a> System<'a> for JoinParallel {
     type SystemData = (
-        ReadStorage<'a, CompBool>,
-        ReadStorage<'a, CompInt>,
-        WriteStorage<'a, CompFloat>,
+        ReadComp<'a, CompBool>,
+        ReadComp<'a, CompInt>,
+        WriteComp<'a, CompFloat>,
     );
 
     fn run(&mut self, (comp_bool, comp_int, mut comp_float): Self::SystemData) {
@@ -185,7 +185,7 @@ impl<'a> System<'a> for JoinParallel {
 struct AddIntToFloat;
 
 impl<'a> System<'a> for AddIntToFloat {
-    type SystemData = (ReadStorage<'a, CompInt>, ReadStorage<'a, CompFloat>);
+    type SystemData = (ReadComp<'a, CompInt>, ReadComp<'a, CompFloat>);
 
     fn run(&mut self, (comp_int, comp_float): Self::SystemData) {
         // This system demonstrates the use of `.maybe()`.

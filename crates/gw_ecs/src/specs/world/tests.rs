@@ -120,7 +120,7 @@ fn lazy_execution() {
 #[test]
 fn lazy_execution_order() {
     let mut world = World::default();
-    world.insert(Vec::<u32>::new());
+    world.insert_resource(Vec::<u32>::new());
     {
         let lazy = world.read_resource::<LazyUpdate>();
         lazy.exec(move |world| {

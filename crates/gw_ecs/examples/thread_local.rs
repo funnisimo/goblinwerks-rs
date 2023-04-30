@@ -1,4 +1,4 @@
-use gw_ecs::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
+use gw_ecs::{DispatcherBuilder, ReadRes, ResourceId, System, SystemData, World, WriteRes};
 
 #[derive(Debug, Default)]
 struct ResA;
@@ -9,8 +9,8 @@ struct ResB;
 #[cfg(feature = "derive")]
 #[derive(SystemData)]
 struct Data<'a> {
-    a: Read<'a, ResA>,
-    b: Write<'a, ResB>,
+    a: ReadRes<'a, ResA>,
+    b: WriteRes<'a, ResB>,
 }
 
 struct EmptySystem(*mut i8); // System is not thread-safe
@@ -41,29 +41,29 @@ fn main() {
 
 #[cfg(not(feature = "derive"))]
 struct Data<'a> {
-    a: Read<'a, ResA>,
-    b: Write<'a, ResB>,
+    a: ReadRes<'a, ResA>,
+    b: WriteRes<'a, ResB>,
 }
 
 #[cfg(not(feature = "derive"))]
 impl<'a> SystemData<'a> for Data<'a> {
     fn setup(world: &mut World) {
-        Read::<'_, ResA>::setup(world);
-        Write::<'_, ResB>::setup(world);
+        ReadRes::<'_, ResA>::setup(world);
+        WriteRes::<'_, ResB>::setup(world);
     }
 
     fn fetch(world: &'a World) -> Self {
         Self {
-            a: Read::<'_, ResA>::fetch(world),
-            b: Write::<'_, ResB>::fetch(world),
+            a: ReadRes::<'_, ResA>::fetch(world),
+            b: WriteRes::<'_, ResB>::fetch(world),
         }
     }
 
     fn reads() -> Vec<ResourceId> {
-        Read::<'_, ResA>::reads()
+        ReadRes::<'_, ResA>::reads()
     }
 
     fn writes() -> Vec<ResourceId> {
-        Write::<'_, ResB>::writes()
+        WriteRes::<'_, ResB>::writes()
     }
 }

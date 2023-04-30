@@ -4,12 +4,12 @@ use super::{
     CreateIter, EntityBuilder,
 };
 
-use crate::shred::{Fetch, FetchMut, Read, Resource};
+use crate::shred::{Fetch, FetchMut, ReadRes, Resource};
 use crate::specs::{
     error::WrongGeneration,
     // storage::{AnyStorage, MaskedStorage},
-    ReadStorage,
-    WriteStorage,
+    ReadComp,
+    WriteComp,
 };
 // use crate::World;
 
@@ -168,7 +168,7 @@ pub trait WorldExt {
     ///
     /// Panics if it is already borrowed mutably.
     /// Panics if the component has not been registered.
-    fn read_component<T: Component>(&self) -> ReadStorage<T>;
+    fn read_component<T: Component>(&self) -> ReadComp<T>;
 
     /// Fetches a component storage for writing.
     ///
@@ -176,7 +176,7 @@ pub trait WorldExt {
     ///
     /// Panics if it is already borrowed.
     /// Panics if the component has not been registered.
-    fn write_component<T: Component>(&self) -> WriteStorage<T>;
+    fn write_component<T: Component>(&self) -> WriteComp<T>;
 
     /// Fetches a component storage for reading.
     ///
@@ -184,7 +184,7 @@ pub trait WorldExt {
     ///
     /// Panics if it is already borrowed mutably.
     /// Panics if the component has not been registered.
-    fn read_storage<T: Component>(&self) -> ReadStorage<T> {
+    fn read_storage<T: Component>(&self) -> ReadComp<T> {
         self.read_component()
     }
 
@@ -194,7 +194,7 @@ pub trait WorldExt {
     ///
     /// Panics if it is already borrowed.
     /// Panics if the component has not been registered.
-    fn write_storage<T: Component>(&self) -> WriteStorage<T> {
+    fn write_storage<T: Component>(&self) -> WriteComp<T> {
         self.write_component()
     }
 
@@ -219,7 +219,7 @@ pub trait WorldExt {
     /// Creation and deletion of entities with the `Entities` struct
     /// are atomically, so the actual changes will be applied
     /// with the next call to `maintain()`.
-    fn entities(&self) -> Read<EntitiesRes>;
+    fn entities(&self) -> ReadRes<EntitiesRes>;
 
     /// Convenience method for fetching entities.
     fn entities_mut(&self) -> FetchMut<EntitiesRes>;

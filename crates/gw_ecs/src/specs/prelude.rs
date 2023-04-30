@@ -6,8 +6,8 @@ pub use super::join::Join;
 #[cfg(feature = "parallel")]
 pub use super::join::ParJoin;
 pub use crate::shred::{
-    Accessor, Dispatcher, DispatcherBuilder, Read, ReadExpect, Resource, ResourceId, RunNow,
-    StaticAccessor, System, SystemData, Write, WriteExpect,
+    Accessor, Dispatcher, DispatcherBuilder, ReadRes, ReadResExpect, Resource, ResourceId, RunNow,
+    StaticAccessor, System, SystemData, WriteRes, WriteResExpect,
 };
 pub use crate::World;
 pub use hibitset::BitSet;
@@ -22,7 +22,7 @@ pub use super::{
     changeset::ChangeSet,
     storage::{
         ComponentEvent, DefaultVecStorage, DenseVecStorage, FlaggedStorage, HashMapStorage,
-        NullStorage, ReadStorage, Storage, Tracked, VecStorage, WriteStorage,
+        NullStorage, ReadComp, Storage, Tracked, VecStorage, WriteComp,
     },
     world::{Builder, Component, Entities, Entity, EntityBuilder, LazyUpdate, WorldExt},
 };

@@ -216,7 +216,7 @@ where
 #[cfg(test)]
 mod tests {
 
-    use crate::shred::{BatchController, Dispatcher, DispatcherBuilder, System, Write};
+    use crate::shred::{BatchController, Dispatcher, DispatcherBuilder, System, WriteRes};
     use crate::World;
 
     /// This test demonstrate that the batch system is able to correctly setup
@@ -417,7 +417,7 @@ mod tests {
     pub struct OpenStoresSystem;
 
     impl<'a> System<'a> for OpenStoresSystem {
-        type SystemData = (Write<'a, PotatoStore>, Write<'a, TomatoStore>);
+        type SystemData = (WriteRes<'a, PotatoStore>, WriteRes<'a, TomatoStore>);
 
         fn run(&mut self, mut data: Self::SystemData) {
             data.0.is_store_open = true;
@@ -428,7 +428,7 @@ mod tests {
     pub struct CloseStoresSystem;
 
     impl<'a> System<'a> for CloseStoresSystem {
-        type SystemData = (Write<'a, PotatoStore>, Write<'a, TomatoStore>);
+        type SystemData = (WriteRes<'a, PotatoStore>, WriteRes<'a, TomatoStore>);
 
         fn run(&mut self, mut data: Self::SystemData) {
             data.0.is_store_open = false;
@@ -441,7 +441,7 @@ mod tests {
     pub struct BuyPotatoSystem;
 
     impl<'a> System<'a> for BuyPotatoSystem {
-        type SystemData = Write<'a, PotatoStore>;
+        type SystemData = WriteRes<'a, PotatoStore>;
 
         fn run(&mut self, mut potato_store: Self::SystemData) {
             assert!(potato_store.is_store_open);
@@ -452,7 +452,7 @@ mod tests {
     pub struct BuyTomatoSystem;
 
     impl<'a> System<'a> for BuyTomatoSystem {
-        type SystemData = Write<'a, TomatoStore>;
+        type SystemData = WriteRes<'a, TomatoStore>;
 
         fn run(&mut self, mut tomato_store: Self::SystemData) {
             assert!(tomato_store.is_store_open);
@@ -465,7 +465,7 @@ mod tests {
     pub struct BuyPotatoWalletSystem;
 
     impl<'a> System<'a> for BuyPotatoWalletSystem {
-        type SystemData = (Write<'a, PotatoStore>, Write<'a, CustomerWallet>);
+        type SystemData = (WriteRes<'a, PotatoStore>, WriteRes<'a, CustomerWallet>);
 
         fn run(&mut self, (mut potato_store, mut customer_wallet): Self::SystemData) {
             assert!(potato_store.is_store_open);
@@ -477,7 +477,7 @@ mod tests {
     pub struct BuyTomatoWalletSystem;
 
     impl<'a> System<'a> for BuyTomatoWalletSystem {
-        type SystemData = (Write<'a, TomatoStore>, Write<'a, CustomerWallet>);
+        type SystemData = (WriteRes<'a, TomatoStore>, WriteRes<'a, CustomerWallet>);
 
         fn run(&mut self, (mut tomato_store, mut customer_wallet): Self::SystemData) {
             assert!(tomato_store.is_store_open);

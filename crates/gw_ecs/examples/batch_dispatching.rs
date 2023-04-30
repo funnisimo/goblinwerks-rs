@@ -18,7 +18,7 @@
 //! This is done by defining `CustomBatchControllerSystem` which executes its
 //! inner `System`s three times.
 
-use gw_ecs::{BatchController, Dispatcher, DispatcherBuilder, Read, System, World, Write};
+use gw_ecs::{BatchController, Dispatcher, DispatcherBuilder, ReadRes, System, World, WriteRes};
 use std::{thread::sleep, time::Duration};
 
 fn main() {
@@ -63,7 +63,7 @@ pub struct TomatoStore(f32);
 pub struct SayHelloSystem;
 
 impl<'a> System<'a> for SayHelloSystem {
-    type SystemData = (Write<'a, PotatoStore>, Write<'a, TomatoStore>);
+    type SystemData = (WriteRes<'a, PotatoStore>, WriteRes<'a, TomatoStore>);
 
     fn run(&mut self, _data: Self::SystemData) {
         println!("Hello!")
@@ -75,7 +75,7 @@ impl<'a> System<'a> for SayHelloSystem {
 pub struct BuyPotatoSystem;
 
 impl<'a> System<'a> for BuyPotatoSystem {
-    type SystemData = Write<'a, PotatoStore>;
+    type SystemData = WriteRes<'a, PotatoStore>;
 
     fn run(&mut self, _data: Self::SystemData) {
         println!("Buy Potato")
@@ -87,7 +87,7 @@ impl<'a> System<'a> for BuyPotatoSystem {
 pub struct BuyTomatoSystem;
 
 impl<'a> System<'a> for BuyTomatoSystem {
-    type SystemData = Write<'a, TomatoStore>;
+    type SystemData = WriteRes<'a, TomatoStore>;
 
     fn run(&mut self, _data: Self::SystemData) {
         println!("Buy Tomato")
@@ -101,7 +101,7 @@ impl<'a, 'b, 'c> BatchController<'a, 'b, 'c> for CustomBatchControllerSystem {
     // Leaving `BatchBuilderData` to `()` would make the dispatcher to panic since
     // the run function will fetch the `TomatoStore` like the `SayHelloSystem`
     // does. type BatchSystemData = ();
-    type BatchSystemData = Read<'c, TomatoStore>;
+    type BatchSystemData = ReadRes<'c, TomatoStore>;
 
     fn run(&mut self, world: &World, dispatcher: &mut Dispatcher<'a, 'b>) {
         {

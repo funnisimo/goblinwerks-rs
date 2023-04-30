@@ -3,7 +3,7 @@
 #[cfg(feature = "nightly")]
 pub use self::deref_flagged::{DerefFlaggedStorage, FlaggedAccessMut};
 pub use self::{
-    data::{ReadStorage, WriteStorage},
+    data::{ReadComp, WriteComp},
     entry::{Entries, OccupiedEntry, StorageEntry, VacantEntry},
     flagged::FlaggedStorage,
     generic::{GenericReadStorage, GenericWriteStorage},
@@ -600,7 +600,7 @@ pub trait UnprotectedStorage<T>: TryDefault {
 #[cfg(feature = "parallel")]
 mod tests_inline {
 
-    use crate::specs::{Builder, Component, DenseVecStorage, Entities, ParJoin, ReadStorage};
+    use crate::specs::{Builder, Component, DenseVecStorage, Entities, ParJoin, ReadComp};
     use crate::World;
     use rayon::iter::ParallelIterator;
 
@@ -614,7 +614,7 @@ mod tests_inline {
     fn test_anti_par_join() {
         let mut world = World::default();
         world.create_entity().build();
-        world.exec(|(entities, pos): (Entities, ReadStorage<Pos>)| {
+        world.exec(|(entities, pos): (Entities, ReadComp<Pos>)| {
             (&entities, !&pos).par_join().for_each(|(ent, ())| {
                 println!("Processing entity: {:?}", ent);
             });

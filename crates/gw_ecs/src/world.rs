@@ -1,13 +1,13 @@
-use crate::globals::{GlobalFetch, GlobalFetchMut, Globals};
-use crate::shred::{MetaTable, PanicIfMissing, SystemData, World as Resources};
+use crate::globals::Globals;
+use crate::shred::{MetaTable, PanicIfMissing, Resources, SystemData};
 use crate::specs::error::WrongGeneration;
 use crate::specs::storage::{AnyStorage, MaskedStorage};
 use crate::specs::world::EntityAllocator;
 use crate::specs::world::{CreateIter, EntitiesRes};
 use crate::specs::{
-    Component, Entities, EntitiesMut, Entity, EntityBuilder, LazyUpdate, ReadStorage, WriteStorage,
+    Component, Entities, EntitiesMut, Entity, EntityBuilder, LazyUpdate, ReadComp, WriteComp,
 };
-use crate::{Read, Resource, ResourceId, Write};
+use crate::{ReadGlobal, ReadRes, Resource, ResourceId, WriteGlobal, WriteRes};
 
 pub use crate::shred::Entry;
 
@@ -17,13 +17,14 @@ pub struct World {
 }
 
 impl World {
-    /// Creates a new, empty resource container.
+    /// Creates a new World with a new empty Globals.
     ///
-    /// Note that if you're using Specs, you should use `WorldExt::new` instead.
     pub fn empty() -> Self {
         Self::new(Globals::default())
     }
 
+    /// Creates a new World with the given Globals.
+    ///
     pub fn new(globals: Globals) -> Self {
         let mut resources = Resources::empty();
         resources.insert(EntitiesRes::default());
@@ -33,85 +34,10 @@ impl World {
         World { resources, globals }
     }
 
+    /// Sets the globals on this World.
+    /// This is used when adding Worlds into the Ecs.
     pub(crate) fn set_globals(&mut self, globals: Globals) {
         self.globals = globals;
-    }
-
-    /// Inserts a resource into this container. If the resource existed before,
-    /// it will be overwritten.
-    ///
-    /// # Examples
-    ///
-    /// Every type satisfying `Any + Send + Sync` automatically
-    /// implements `Resource`, thus can be added:
-    ///
-    /// ```rust
-    /// # #![allow(dead_code)]
-    /// struct MyRes(i32);
-    /// ```
-    ///
-    /// When you have a resource, simply insert it like this:
-    ///
-    /// ```rust
-    /// # struct MyRes(i32);
-    /// use shred::World;
-    ///
-    /// let mut world = World::empty();
-    /// world.insert(MyRes(5));
-    /// ```
-    pub fn insert<R>(&mut self, r: R)
-    where
-        R: Resource,
-    {
-        self.resources.insert_by_id(ResourceId::new::<R>(), r);
-    }
-
-    /// Removes a resource of type `R` from the `World` and returns its
-    /// ownership to the caller. In case there is no such resource in this
-    /// `World`, `None` will be returned.
-    ///
-    /// Use this method with caution; other functions and systems might assume
-    /// this resource still exists. Thus, only use this if you're sure no
-    /// system will try to access this resource after you removed it (or else
-    /// you will get a panic).
-    pub fn remove<R>(&mut self) -> Option<R>
-    where
-        R: Resource,
-    {
-        self.resources.remove_by_id(ResourceId::new::<R>())
-    }
-
-    /// Returns true if the specified resource type `R` exists in `self`.
-    pub fn has_value<R>(&self) -> bool
-    where
-        R: Resource,
-    {
-        self.resources.has_value_raw(ResourceId::new::<R>())
-    }
-
-    // /// Returns true if the specified resource type exists in `self`.
-    // pub fn has_value_raw(&self, id: ResourceId) -> bool {
-    //     self.resources.has_value_raw(id)
-    // }
-
-    // /// Returns an entry for the resource with type `R`.
-    // pub fn entry<R>(&mut self) -> Entry<R>
-    // where
-    //     R: Resource,
-    // {
-    //     self.resources.entry::<R>()
-    // }
-
-    /// Makes sure there is a value for the given resource.
-    /// If not found, inserts a default value.
-    pub fn ensure_resource<G: Resource + Default>(&mut self) {
-        self.resources.entry().or_insert_with(G::default);
-    }
-
-    /// Makes sure there is a value for the given resource.
-    /// If not found, inserts a default value.
-    pub fn ensure_resource_with<G: Resource, F: FnOnce() -> G>(&mut self, func: F) {
-        self.resources.entry().or_insert_with(func);
     }
 
     /// Gets `SystemData` `T` from the `World`. This can be used to retrieve
@@ -392,6 +318,18 @@ impl World {
         self.globals.has_value::<G>()
     }
 
+    /// Makes sure there is a value for the given resource.
+    /// If not found, inserts a default value.
+    pub fn ensure_global<G: Resource + Default>(&mut self) {
+        self.globals.ensure_with(G::default);
+    }
+
+    /// Makes sure there is a value for the given global.
+    /// If not found, inserts a default value.
+    pub fn ensure_global_with<G: Resource, F: FnOnce() -> G>(&mut self, func: F) {
+        self.globals.ensure_with(func);
+    }
+
     /// Inserts a global
     pub fn insert_global<G: Resource>(&mut self, global: G) {
         self.globals.insert(global);
@@ -403,28 +341,123 @@ impl World {
     }
 
     /// Fetch a global value
-    pub fn fetch_global<G: Resource>(&self) -> GlobalFetch<G> {
-        self.globals.fetch::<G>()
+    pub fn read_global<G: Resource>(&self) -> ReadGlobal<G, PanicIfMissing> {
+        ReadGlobal::<G, PanicIfMissing>::fetch(self)
     }
 
     /// Fetch a global value as mutable
-    pub fn fetch_global_mut<G: Resource>(&self) -> GlobalFetchMut<G> {
-        self.globals.fetch_mut::<G>()
+    pub fn write_global<G: Resource>(&self) -> WriteGlobal<G, PanicIfMissing> {
+        WriteGlobal::<G, PanicIfMissing>::fetch(self)
     }
 
     /// Try to fetch a global value
-    pub fn try_fetch_global<G: Resource>(&self) -> Option<GlobalFetch<G>> {
-        self.globals.try_fetch::<G>()
+    pub fn try_read_global<G: Resource>(&self) -> Option<ReadGlobal<G, ()>> {
+        Option::<ReadGlobal<G, ()>>::fetch(self)
     }
 
     /// Try to fetch a global value mutably
-    pub fn try_fetch_global_mut<G: Resource>(&self) -> Option<GlobalFetchMut<G>> {
-        self.globals.try_fetch_mut::<G>()
+    pub fn try_write_global<G: Resource>(&self) -> Option<WriteGlobal<G, ()>> {
+        Option::<WriteGlobal<G, ()>>::fetch(self)
     }
 
     //
-    // WorldExt
+    // RESOURCES
     //
+
+    /// Inserts a resource into this container. If the resource existed before,
+    /// it will be overwritten.
+    ///
+    /// # Examples
+    ///
+    /// Every type satisfying `Any + Send + Sync` automatically
+    /// implements `Resource`, thus can be added:
+    ///
+    /// ```rust
+    /// # #![allow(dead_code)]
+    /// struct MyRes(i32);
+    /// ```
+    ///
+    /// When you have a resource, simply insert it like this:
+    ///
+    /// ```rust
+    /// # struct MyRes(i32);
+    /// use shred::World;
+    ///
+    /// let mut world = World::empty();
+    /// world.insert(MyRes(5));
+    /// ```
+    pub fn insert_resource<R>(&mut self, r: R)
+    where
+        R: Resource,
+    {
+        self.resources.insert_by_id(ResourceId::new::<R>(), r);
+    }
+
+    /// Removes a resource of type `R` from the `World` and returns its
+    /// ownership to the caller. In case there is no such resource in this
+    /// `World`, `None` will be returned.
+    ///
+    /// Use this method with caution; other functions and systems might assume
+    /// this resource still exists. Thus, only use this if you're sure no
+    /// system will try to access this resource after you removed it (or else
+    /// you will get a panic).
+    pub fn remove_resource<R>(&mut self) -> Option<R>
+    where
+        R: Resource,
+    {
+        self.resources.remove_by_id(ResourceId::new::<R>())
+    }
+
+    /// Returns true if the specified resource type `R` exists in `self`.
+    pub fn has_resource<R>(&self) -> bool
+    where
+        R: Resource,
+    {
+        self.resources.has_value_raw(ResourceId::new::<R>())
+    }
+
+    // /// Returns true if the specified resource type exists in `self`.
+    // pub fn has_value_raw(&self, id: ResourceId) -> bool {
+    //     self.resources.has_value_raw(id)
+    // }
+
+    // /// Returns an entry for the resource with type `R`.
+    // pub fn entry<R>(&mut self) -> Entry<R>
+    // where
+    //     R: Resource,
+    // {
+    //     self.resources.entry::<R>()
+    // }
+
+    /// Makes sure there is a value for the given resource.
+    /// If not found, inserts a default value.
+    pub fn ensure_resource<G: Resource + Default>(&mut self) {
+        self.resources.entry().or_insert_with(G::default);
+    }
+
+    /// Makes sure there is a value for the given resource.
+    /// If not found, inserts a default value.
+    pub fn ensure_resource_with<G: Resource, F: FnOnce() -> G>(&mut self, func: F) {
+        self.resources.entry().or_insert_with(func);
+    }
+
+    pub fn read_resource<T: Resource>(&self) -> ReadRes<T, PanicIfMissing> {
+        ReadRes::fetch(self)
+    }
+
+    pub fn try_read_resource<T: Resource>(&self) -> Option<ReadRes<T, ()>> {
+        Option::<ReadRes<T, ()>>::fetch(self)
+    }
+
+    pub fn write_resource<T: Resource>(&self) -> WriteRes<T, PanicIfMissing> {
+        WriteRes::fetch(self)
+    }
+
+    pub fn try_write_resource<T: Resource>(&self) -> Option<WriteRes<T, ()>> {
+        Option::<WriteRes<T, ()>>::fetch(self)
+    }
+
+    // COMPONENTS
 
     pub fn register<T: Component>(&mut self)
     where
@@ -453,29 +486,15 @@ impl World {
     //     self.insert(res);
     // }
 
-    pub fn read_component<T: Component>(&self) -> ReadStorage<T> {
+    pub fn read_component<T: Component>(&self) -> ReadComp<T> {
         self.system_data()
     }
 
-    pub fn write_component<T: Component>(&self) -> WriteStorage<T> {
+    pub fn write_component<T: Component>(&self) -> WriteComp<T> {
         self.system_data()
     }
 
-    pub fn read_resource<T: Resource>(&self) -> Read<T, PanicIfMissing> {
-        Read::fetch(self)
-    }
-
-    pub fn try_read_resource<T: Resource>(&self) -> Option<Read<T, ()>> {
-        Option::<Read<T, ()>>::fetch(self)
-    }
-
-    pub fn write_resource<T: Resource>(&self) -> Write<T, PanicIfMissing> {
-        Write::fetch(self)
-    }
-
-    pub fn try_write_resource<T: Resource>(&self) -> Option<Write<T, ()>> {
-        Option::<Write<T, ()>>::fetch(self)
-    }
+    // ENTITIES
 
     pub fn entities(&self) -> Entities {
         Entities::fetch(self)
@@ -564,7 +583,7 @@ impl Default for World {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shred::{Read, ReadExpect, Write};
+    use crate::shred::{ReadRes, ReadResExpect, WriteRes};
     use crate::shred::{RunNow, System, SystemData};
 
     #[derive(Default)]
@@ -572,30 +591,30 @@ mod tests {
 
     #[test]
     fn fetch_aspects() {
-        assert_eq!(Read::<Res>::reads(), vec![ResourceId::new::<Res>()]);
-        assert_eq!(Read::<Res>::writes(), vec![]);
+        assert_eq!(ReadRes::<Res>::reads(), vec![ResourceId::new::<Res>()]);
+        assert_eq!(ReadRes::<Res>::writes(), vec![]);
 
         let mut world = World::empty();
-        world.insert(Res);
-        <Read<Res> as SystemData>::fetch(&world);
+        world.insert_resource(Res);
+        <ReadRes<Res> as SystemData>::fetch(&world);
     }
 
     #[test]
     fn fetch_mut_aspects() {
-        assert_eq!(Write::<Res>::reads(), vec![]);
-        assert_eq!(Write::<Res>::writes(), vec![ResourceId::new::<Res>()]);
+        assert_eq!(WriteRes::<Res>::reads(), vec![]);
+        assert_eq!(WriteRes::<Res>::writes(), vec![ResourceId::new::<Res>()]);
 
         let mut world = World::empty();
-        world.insert(Res);
-        <Write<Res> as SystemData>::fetch(&world);
+        world.insert_resource(Res);
+        <WriteRes<Res> as SystemData>::fetch(&world);
     }
 
     #[test]
     fn system_data() {
         let mut world = World::empty();
 
-        world.insert(5u32);
-        let x = *world.system_data::<Read<u32>>();
+        world.insert_resource(5u32);
+        let x = *world.system_data::<ReadRes<u32>>();
         assert_eq!(x, 5);
     }
 
@@ -603,14 +622,14 @@ mod tests {
     fn setup() {
         let mut world = World::empty();
 
-        world.insert(5u32);
-        world.setup::<Read<u32>>();
-        let x = *world.system_data::<Read<u32>>();
+        world.insert_resource(5u32);
+        world.setup::<ReadRes<u32>>();
+        let x = *world.system_data::<ReadRes<u32>>();
         assert_eq!(x, 5);
 
-        world.remove::<u32>();
-        world.setup::<Read<u32>>();
-        let x = *world.system_data::<Read<u32>>();
+        world.remove_resource::<u32>();
+        world.setup::<ReadRes<u32>>();
+        let x = *world.system_data::<ReadRes<u32>>();
         assert_eq!(x, 0);
     }
 
@@ -620,17 +639,19 @@ mod tests {
 
         let mut world = World::empty();
 
-        world.exec(|(float, boolean): (Read<f32>, Read<bool>)| {
+        world.exec(|(float, boolean): (ReadRes<f32>, ReadRes<bool>)| {
             assert_eq!(*float, 0.0);
             assert!(!*boolean);
         });
 
-        world.exec(|(mut float, mut boolean): (Write<f32>, Write<bool>)| {
-            *float = 4.3;
-            *boolean = true;
-        });
+        world.exec(
+            |(mut float, mut boolean): (WriteRes<f32>, WriteRes<bool>)| {
+                *float = 4.3;
+                *boolean = true;
+            },
+        );
 
-        world.exec(|(float, boolean): (Read<f32>, ReadExpect<bool>)| {
+        world.exec(|(float, boolean): (ReadRes<f32>, ReadResExpect<bool>)| {
             assert_eq!(*float, 4.3);
             assert!(*boolean);
         });
@@ -641,7 +662,7 @@ mod tests {
     fn exec_panic() {
         let mut world = World::empty();
 
-        world.exec(|(_float, _boolean): (Write<f32>, Write<bool>)| {
+        world.exec(|(_float, _boolean): (WriteRes<f32>, WriteRes<bool>)| {
             panic!();
         });
     }
@@ -651,7 +672,7 @@ mod tests {
         struct Sys;
 
         impl<'a> System<'a> for Sys {
-            type SystemData = Write<'a, i32>;
+            type SystemData = WriteRes<'a, i32>;
 
             fn run(&mut self, mut data: Self::SystemData) {
                 assert_eq!(*data, 0);

@@ -1,4 +1,4 @@
-use gw_ecs::{Ecs, ReadGlobal, ResourceId, SystemData, World, Write};
+use gw_ecs::{Ecs, ReadGlobal, ResourceId, SystemData, World, WriteRes};
 
 #[derive(Default, PartialEq, Debug)]
 pub struct Clock(u32);
@@ -10,7 +10,7 @@ pub struct Timer(u32);
 #[derive(SystemData)]
 pub struct MySystemData<'a> {
     pub clock: ReadGlobal<'a, Clock>,
-    pub timer: Write<'a, Timer>,
+    pub timer: WriteRes<'a, Timer>,
 }
 
 #[test]
@@ -18,7 +18,7 @@ fn basic() {
     let mut ecs = Ecs::default();
 
     ecs.current_world_mut().insert_global(Clock(5));
-    ecs.current_world_mut().insert(Timer(0));
+    ecs.current_world_mut().insert_resource(Timer(0));
 
     let mut data = ecs.current_world().system_data::<MySystemData>();
     assert_eq!(data.clock.0, 5);

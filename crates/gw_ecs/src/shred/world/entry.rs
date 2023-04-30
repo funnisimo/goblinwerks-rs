@@ -67,13 +67,13 @@ pub fn create_entry<T>(e: StdEntry<ResourceId, TrustCell<Box<dyn Resource>>>) ->
 
 #[cfg(test)]
 mod tests {
-    use crate::shred::World;
+    use crate::shred::Resources;
 
     #[test]
     fn test_entry() {
         struct Res;
 
-        let mut world = World::empty();
+        let mut world = Resources::empty();
         world.entry().or_insert(Res);
 
         assert!(world.has_value::<Res>());

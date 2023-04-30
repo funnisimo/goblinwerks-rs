@@ -4,12 +4,12 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use crate::{shred::Read, Write};
+use crate::{shred::ReadRes, WriteRes};
 use hibitset::{AtomicBitSet, BitSet, BitSetOr};
 
 #[cfg(feature = "parallel")]
 use crate::specs::join::ParJoin;
-use crate::specs::{error::WrongGeneration, join::Join, storage::WriteStorage, world::Component};
+use crate::specs::{error::WrongGeneration, join::Join, storage::WriteComp, world::Component};
 
 /// An index is basically the id of an `Entity`.
 pub type Index = u32;
@@ -44,7 +44,7 @@ pub type Index = u32;
 /// #   let _ = pos;
 /// }
 /// ```
-pub type Entities<'a> = Read<'a, EntitiesRes>;
+pub type Entities<'a> = ReadRes<'a, EntitiesRes>;
 
 /// A wrapper for a writable `Entities` resource.
 /// Note that this is just `Write<Entities>`, so
@@ -76,7 +76,7 @@ pub type Entities<'a> = Read<'a, EntitiesRes>;
 /// #   let _ = pos;
 /// }
 /// ```
-pub type EntitiesMut<'a> = Write<'a, EntitiesRes>;
+pub type EntitiesMut<'a> = WriteRes<'a, EntitiesRes>;
 
 /// Internally used structure for `Entity` allocation.
 #[derive(Default, Debug)]
@@ -381,7 +381,7 @@ pub struct EntityResBuilder<'a> {
 
 impl<'a> EntityResBuilder<'a> {
     /// Appends a component and associates it with the entity.
-    pub fn with<T: Component>(self, c: T, storage: &mut WriteStorage<T>) -> Self {
+    pub fn with<T: Component>(self, c: T, storage: &mut WriteComp<T>) -> Self {
         storage.insert(self.entity, c).unwrap();
         self
     }

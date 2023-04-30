@@ -1,7 +1,7 @@
 //! Module for resource related types
 
 pub use self::{
-    data::{Read, ReadExpect, Write, WriteExpect},
+    data::{ReadRes, ReadResExpect, WriteRes, WriteResExpect},
     entry::Entry,
     setup::{DefaultIfMissing, PanicIfMissing, SetupHandler},
 };
@@ -197,11 +197,11 @@ impl ResourceId {
 ///
 /// Resources are identified by `ResourceId`s, which consist of a `TypeId`.
 #[derive(Default)]
-pub struct World {
+pub struct Resources {
     hashmap: HashMap<ResourceId, TrustCell<Box<dyn Resource>>>,
 }
 
-impl World {
+impl Resources {
     /// Creates a new, empty resource container.
     ///
     /// Note that if you're using Specs, you should use `WorldExt::new` instead.
@@ -613,7 +613,7 @@ mod tests {
     fn fetch_by_id() {
         #![allow(clippy::map_clone)] // False positive
 
-        let mut world = World::empty();
+        let mut world = Resources::empty();
 
         world.insert_by_id(ResourceId::new_with_dynamic_id::<i32>(1), 5);
         world.insert_by_id(ResourceId::new_with_dynamic_id::<i32>(2), 15);
@@ -698,7 +698,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn invalid_fetch_by_id0() {
-        let mut world = World::empty();
+        let mut world = Resources::empty();
 
         world.insert(5i32);
 
@@ -708,7 +708,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn invalid_fetch_by_id1() {
-        let mut world = World::empty();
+        let mut world = Resources::empty();
 
         world.insert(5i32);
 
@@ -719,7 +719,7 @@ mod tests {
     fn add() {
         struct Foo;
 
-        let mut world = World::empty();
+        let mut world = Resources::empty();
         world.insert(Res);
 
         assert!(world.has_value::<Res>());
@@ -728,9 +728,9 @@ mod tests {
 
     #[allow(unused)]
     #[test]
-    #[should_panic(expected = "but it was already borrowed")]
+    #[should_panic(expected = "already immutably borrowed")]
     fn read_write_fails() {
-        let mut world = World::empty();
+        let mut world = Resources::empty();
         world.insert(Res);
 
         let read: Fetch<Res> = world.fetch();
@@ -739,9 +739,9 @@ mod tests {
 
     #[allow(unused)]
     #[test]
-    #[should_panic(expected = "but it was already borrowed mutably")]
+    #[should_panic(expected = "already mutably borrowed")]
     fn write_read_fails() {
-        let mut world = World::empty();
+        let mut world = Resources::empty();
         world.insert(Res);
 
         let write: FetchMut<Res> = world.fetch_mut();
@@ -750,7 +750,7 @@ mod tests {
 
     #[test]
     fn remove_insert() {
-        let mut world = World::empty();
+        let mut world = Resources::empty();
 
         world.insert(Res);
 

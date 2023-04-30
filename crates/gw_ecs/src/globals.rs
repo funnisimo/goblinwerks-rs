@@ -1,5 +1,5 @@
 use crate::atomic_refcell::{AtomicBorrowRef, AtomicRefCell};
-use crate::shred::World as Resources;
+use crate::shred::Resources;
 use crate::shred::{
     DefaultIfMissing, Fetch, FetchMut, PanicIfMissing, Resource, ResourceId, SetupHandler,
     SystemData,
@@ -18,8 +18,15 @@ impl Globals {
         Globals { resources } // Using shred world, not specs world (no components)
     }
 
+    /// Returns true if the resource is in the Globals
     pub fn has_value<G: Resource>(&self) -> bool {
         self.resources.borrow().has_value::<G>()
+    }
+
+    /// Ensures that the resource is in the Globals or enters
+    /// the value from the function.
+    pub fn ensure_with<G: Resource, F: FnOnce() -> G>(&mut self, func: F) {
+        self.resources.borrow_mut().entry().or_insert_with(func);
     }
 
     /// Inserts a global
@@ -38,7 +45,7 @@ impl Globals {
         GlobalFetch::new(borrow, fetch)
     }
 
-    pub fn try_fetch<G: Resource>(&self) -> Option<GlobalFetch<G>> {
+    pub(crate) fn try_fetch<G: Resource>(&self) -> Option<GlobalFetch<G>> {
         let (globals, borrow) = self.resources.borrow().destructure();
         match globals.try_fetch::<G>() {
             None => None,
@@ -156,7 +163,7 @@ where
 }
 
 pub(crate) struct GlobalRes<T>(PhantomData<T>);
-pub(crate) struct GlobalSet;
+// pub(crate) struct GlobalSet;
 
 /// Allows to fetch a resource in a system immutably.
 ///
@@ -167,9 +174,21 @@ pub(crate) struct GlobalSet;
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
 pub struct ReadGlobal<'a, T: 'a, F = DefaultIfMissing> {
-    inner: GlobalFetch<'a, T>,
+    fetch: GlobalFetch<'a, T>,
     phantom: PhantomData<F>,
 }
+
+// impl<'a, T, F> ReadGlobal<'a, T, F>
+// where
+//     T: Resource,
+// {
+//     fn new(fetch: GlobalFetch<'a, T>) -> Self {
+//         ReadGlobal {
+//             fetch,
+//             phantom: PhantomData,
+//         }
+//     }
+// }
 
 impl<'a, T, F> Deref for ReadGlobal<'a, T, F>
 where
@@ -178,14 +197,14 @@ where
     type Target = T;
 
     fn deref(&self) -> &T {
-        &self.inner
+        &self.fetch
     }
 }
 
 impl<'a, T, F> From<GlobalFetch<'a, T>> for ReadGlobal<'a, T, F> {
-    fn from(inner: GlobalFetch<'a, T>) -> Self {
+    fn from(fetch: GlobalFetch<'a, T>) -> Self {
         ReadGlobal {
-            inner,
+            fetch,
             phantom: PhantomData,
         }
     }
@@ -201,12 +220,12 @@ where
     }
 
     fn fetch(world: &'a World) -> Self {
-        world.fetch_global::<T>().into()
+        world.globals.fetch::<T>().into()
     }
 
     fn reads() -> Vec<ResourceId> {
         vec![
-            ResourceId::new::<GlobalSet>(),
+            ResourceId::new::<Globals>(),
             ResourceId::new::<GlobalRes<T>>(),
         ]
     }
@@ -225,7 +244,7 @@ where
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
 pub struct WriteGlobal<'a, T: 'a, F = DefaultIfMissing> {
-    inner: GlobalFetchMut<'a, T>,
+    fetch: GlobalFetchMut<'a, T>,
     phantom: PhantomData<F>,
 }
 
@@ -236,7 +255,7 @@ where
     type Target = T;
 
     fn deref(&self) -> &T {
-        &self.inner
+        &self.fetch
     }
 }
 
@@ -245,14 +264,14 @@ where
     T: Resource,
 {
     fn deref_mut(&mut self) -> &mut T {
-        &mut self.inner
+        &mut self.fetch
     }
 }
 
 impl<'a, T, F> From<GlobalFetchMut<'a, T>> for WriteGlobal<'a, T, F> {
-    fn from(inner: GlobalFetchMut<'a, T>) -> Self {
+    fn from(fetch: GlobalFetchMut<'a, T>) -> Self {
         WriteGlobal {
-            inner,
+            fetch,
             phantom: PhantomData,
         }
     }
@@ -268,11 +287,11 @@ where
     }
 
     fn fetch(world: &'a World) -> Self {
-        world.fetch_global_mut::<T>().into()
+        world.globals.fetch_mut::<T>().into()
     }
 
     fn reads() -> Vec<ResourceId> {
-        vec![ResourceId::new::<GlobalSet>()]
+        vec![ResourceId::new::<Globals>()]
     }
 
     fn writes() -> Vec<ResourceId> {
@@ -289,12 +308,12 @@ where
     fn setup(_: &mut World) {}
 
     fn fetch(world: &'a World) -> Self {
-        world.try_fetch_global().map(Into::into)
+        world.globals.try_fetch::<T>().map(Into::into)
     }
 
     fn reads() -> Vec<ResourceId> {
         vec![
-            ResourceId::new::<GlobalSet>(),
+            ResourceId::new::<Globals>(),
             ResourceId::new::<GlobalRes<T>>(),
         ]
     }
@@ -311,11 +330,11 @@ where
     fn setup(_: &mut World) {}
 
     fn fetch(world: &'a World) -> Self {
-        world.try_fetch_global_mut().map(Into::into)
+        world.globals.try_fetch_mut::<T>().map(Into::into)
     }
 
     fn reads() -> Vec<ResourceId> {
-        vec![ResourceId::new::<GlobalSet>()]
+        vec![ResourceId::new::<Globals>()]
     }
 
     fn writes() -> Vec<ResourceId> {

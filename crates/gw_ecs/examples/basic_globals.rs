@@ -1,7 +1,7 @@
 use gw_ecs::{
     ecs::Ecs,
     globals::ReadGlobal,
-    shred::{DispatcherBuilder, Read, System},
+    shred::{DispatcherBuilder, ReadRes, System},
     World,
 };
 
@@ -20,7 +20,7 @@ impl<'a> System<'a> for GlobalSystem {
     type SystemData = (
         ReadGlobal<'a, GlobalA>,
         ReadGlobal<'a, GlobalB>,
-        Read<'a, UniqueA>,
+        ReadRes<'a, UniqueA>,
     );
 
     fn run(&mut self, (global_a, global_b, unique_a): Self::SystemData) {
@@ -33,7 +33,7 @@ impl<'a> System<'a> for GlobalSystem {
 fn main() {
     let mut ecs = Ecs::default();
 
-    assert!(ecs.try_fetch_global::<GlobalA>().is_none());
+    assert!(ecs.try_read_global::<GlobalA>().is_none());
     assert!(!ecs.has_global::<GlobalA>());
 
     ecs.insert_global(GlobalA(32));
@@ -41,9 +41,9 @@ fn main() {
     ecs.insert_unique(UniqueA(1));
 
     assert!(ecs.has_global::<GlobalA>());
-    assert_eq!(ecs.fetch_global::<GlobalA>().0, 32);
+    assert_eq!(ecs.read_global::<GlobalA>().0, 32);
 
-    assert!(ecs.try_fetch_global::<GlobalA>().is_some());
+    assert!(ecs.try_read_global::<GlobalA>().is_some());
 
     let mut dispatcher = DispatcherBuilder::new()
         .with(GlobalSystem, "global", &[])
@@ -52,7 +52,7 @@ fn main() {
     dispatcher.dispatch(ecs.current_world());
 
     let mut world = World::empty();
-    world.insert(UniqueA(2));
+    world.insert_resource(UniqueA(2));
 
     let index = ecs.push_world(world);
     ecs.set_current_index(index);

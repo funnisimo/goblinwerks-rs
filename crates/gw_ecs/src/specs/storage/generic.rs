@@ -1,7 +1,7 @@
 #[cfg(feature = "nightly")]
 use crate::specs::storage::UnprotectedStorage;
 use crate::specs::{
-    storage::{AccessMutReturn, InsertResult, ReadStorage, WriteStorage},
+    storage::{AccessMutReturn, InsertResult, ReadComp, WriteComp},
     world::{Component, Entity},
 };
 #[cfg(feature = "nightly")]
@@ -21,14 +21,14 @@ pub trait GenericReadStorage {
     fn _private() -> Seal;
 }
 
-impl<'a, T> GenericReadStorage for ReadStorage<'a, T>
+impl<'a, T> GenericReadStorage for ReadComp<'a, T>
 where
     T: Component,
 {
     type Component = T;
 
     fn get(&self, entity: Entity) -> Option<&Self::Component> {
-        ReadStorage::get(self, entity)
+        ReadComp::get(self, entity)
     }
 
     fn _private() -> Seal {
@@ -36,14 +36,14 @@ where
     }
 }
 
-impl<'a: 'b, 'b, T> GenericReadStorage for &'b ReadStorage<'a, T>
+impl<'a: 'b, 'b, T> GenericReadStorage for &'b ReadComp<'a, T>
 where
     T: Component,
 {
     type Component = T;
 
     fn get(&self, entity: Entity) -> Option<&Self::Component> {
-        ReadStorage::get(*self, entity)
+        ReadComp::get(*self, entity)
     }
 
     fn _private() -> Seal {
@@ -51,14 +51,14 @@ where
     }
 }
 
-impl<'a, T> GenericReadStorage for WriteStorage<'a, T>
+impl<'a, T> GenericReadStorage for WriteComp<'a, T>
 where
     T: Component,
 {
     type Component = T;
 
     fn get(&self, entity: Entity) -> Option<&Self::Component> {
-        WriteStorage::get(self, entity)
+        WriteComp::get(self, entity)
     }
 
     fn _private() -> Seal {
@@ -66,14 +66,14 @@ where
     }
 }
 
-impl<'a: 'b, 'b, T> GenericReadStorage for &'b WriteStorage<'a, T>
+impl<'a: 'b, 'b, T> GenericReadStorage for &'b WriteComp<'a, T>
 where
     T: Component,
 {
     type Component = T;
 
     fn get(&self, entity: Entity) -> Option<&Self::Component> {
-        WriteStorage::get(*self, entity)
+        WriteComp::get(*self, entity)
     }
 
     fn _private() -> Seal {
@@ -116,7 +116,7 @@ pub trait GenericWriteStorage {
     fn _private() -> Seal;
 }
 
-impl<'a, T> GenericWriteStorage for WriteStorage<'a, T>
+impl<'a, T> GenericWriteStorage for WriteComp<'a, T>
 where
     T: Component,
 {
@@ -128,7 +128,7 @@ where
     type Component = T;
 
     fn get_mut(&mut self, entity: Entity) -> Option<AccessMutReturn<'_, T>> {
-        WriteStorage::get_mut(self, entity)
+        WriteComp::get_mut(self, entity)
     }
 
     fn get_mut_or_default(&mut self, entity: Entity) -> Option<AccessMutReturn<'_, T>>
@@ -145,11 +145,11 @@ where
     }
 
     fn insert(&mut self, entity: Entity, comp: Self::Component) -> InsertResult<Self::Component> {
-        WriteStorage::insert(self, entity, comp)
+        WriteComp::insert(self, entity, comp)
     }
 
     fn remove(&mut self, entity: Entity) {
-        WriteStorage::remove(self, entity);
+        WriteComp::remove(self, entity);
     }
 
     fn _private() -> Seal {
@@ -157,7 +157,7 @@ where
     }
 }
 
-impl<'a: 'b, 'b, T> GenericWriteStorage for &'b mut WriteStorage<'a, T>
+impl<'a: 'b, 'b, T> GenericWriteStorage for &'b mut WriteComp<'a, T>
 where
     T: Component,
 {
@@ -169,7 +169,7 @@ where
     type Component = T;
 
     fn get_mut(&mut self, entity: Entity) -> Option<AccessMutReturn<'_, T>> {
-        WriteStorage::get_mut(*self, entity)
+        WriteComp::get_mut(*self, entity)
     }
 
     fn get_mut_or_default(&mut self, entity: Entity) -> Option<AccessMutReturn<'_, T>>
@@ -186,11 +186,11 @@ where
     }
 
     fn insert(&mut self, entity: Entity, comp: Self::Component) -> InsertResult<Self::Component> {
-        WriteStorage::insert(*self, entity, comp)
+        WriteComp::insert(*self, entity, comp)
     }
 
     fn remove(&mut self, entity: Entity) {
-        WriteStorage::remove(*self, entity);
+        WriteComp::remove(*self, entity);
     }
 
     fn _private() -> Seal {

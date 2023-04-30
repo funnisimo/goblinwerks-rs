@@ -115,9 +115,9 @@ use crate::specs::{
 /// Note that you can also use `LazyUpdate` , which does insertions on
 /// `World::maintain`. This allows more concurrency and is designed
 /// to be used for entity initialization.
-pub type ReadStorage<'a, T> = Storage<'a, T, Fetch<'a, MaskedStorage<T>>>;
+pub type ReadComp<'a, T> = Storage<'a, T, Fetch<'a, MaskedStorage<T>>>;
 
-impl<'a, T> SystemData<'a> for ReadStorage<'a, T>
+impl<'a, T> SystemData<'a> for ReadComp<'a, T>
 where
     T: Component,
 {
@@ -206,9 +206,9 @@ where
 ///
 /// There's also an Entry-API similar to the one provided by
 /// `std::collections::HashMap`.
-pub type WriteStorage<'a, T> = Storage<'a, T, FetchMut<'a, MaskedStorage<T>>>;
+pub type WriteComp<'a, T> = Storage<'a, T, FetchMut<'a, MaskedStorage<T>>>;
 
-impl<'a, T> SystemData<'a> for WriteStorage<'a, T>
+impl<'a, T> SystemData<'a> for WriteComp<'a, T>
 where
     T: Component,
 {
@@ -247,7 +247,7 @@ mod tests {
 
     struct Sys;
     impl<'a> System<'a> for Sys {
-        type SystemData = ReadStorage<'a, Foo>;
+        type SystemData = ReadComp<'a, Foo>;
 
         fn run(&mut self, _data: <Self as System>::SystemData) {
             unimplemented!()
@@ -260,10 +260,10 @@ mod tests {
 
         let mut d = DispatcherBuilder::new().with(Sys, "sys", &[]).build();
 
-        assert!(!w.has_value::<MaskedStorage<Foo>>());
+        assert!(!w.has_resource::<MaskedStorage<Foo>>());
 
         d.setup(&mut w);
 
-        assert!(w.has_value::<MaskedStorage<Foo>>());
+        assert!(w.has_resource::<MaskedStorage<Foo>>());
     }
 }

@@ -1,4 +1,4 @@
-use gw_ecs::{DispatcherBuilder, Read, ReadExpect, System, World, Write};
+use gw_ecs::{DispatcherBuilder, ReadRes, ReadResExpect, System, World, WriteRes};
 
 #[derive(Debug, Default)]
 struct ResA;
@@ -17,11 +17,11 @@ impl<'a> System<'a> for PrintSystem {
     // We can simply use `Option<Read>` or `Option<Write>` if a resource
     // isn't strictly required or can't be created (by a `Default` implementation).
     type SystemData = (
-        Read<'a, ResA>,
-        Option<Write<'a, ResB>>,
+        ReadRes<'a, ResA>,
+        Option<WriteRes<'a, ResB>>,
         // WARNING: using `ReadExpect` might lead to a panic!
         // If `ResWithoutSensibleDefault` does not exist, fetching will `panic!`.
-        ReadExpect<'a, ResWithoutSensibleDefault>,
+        ReadResExpect<'a, ResWithoutSensibleDefault>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -50,14 +50,14 @@ fn main() {
 
     // Will automatically insert `ResB` (the only one that has a default provider).
     dispatcher.setup(&mut resources);
-    resources.insert(ResWithoutSensibleDefault {
+    resources.insert_resource(ResWithoutSensibleDefault {
         magic_number_that_we_cant_compute: 42,
     });
 
     // `ResB` is not in resources, but `PrintSystem` still works.
     dispatcher.dispatch(&resources);
 
-    resources.insert(ResB);
+    resources.insert_resource(ResB);
 
     // Now `ResB` can be printed, too.
     dispatcher.dispatch(&resources);

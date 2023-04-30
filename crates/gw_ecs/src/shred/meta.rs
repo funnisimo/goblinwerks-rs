@@ -398,8 +398,8 @@ mod tests {
     fn test_iter_all() {
         let mut world = World::empty();
 
-        world.insert(ImplementorA(3));
-        world.insert(ImplementorB(1));
+        world.insert_resource(ImplementorA(3));
+        world.insert_resource(ImplementorB(1));
 
         let mut table = MetaTable::<dyn Object>::new();
         table.register(&ImplementorA(125));
@@ -426,8 +426,8 @@ mod tests {
     fn test_iter_all_after_removal() {
         let mut world = World::empty();
 
-        world.insert(ImplementorA(3));
-        world.insert(ImplementorB(1));
+        world.insert_resource(ImplementorA(3));
+        world.insert_resource(ImplementorB(1));
 
         let mut table = MetaTable::<dyn Object>::new();
         table.register(&ImplementorA(125));
@@ -439,14 +439,14 @@ mod tests {
             assert_eq!(iter.next().unwrap().method1(), 1);
         }
 
-        world.remove::<ImplementorA>().unwrap();
+        world.remove_resource::<ImplementorA>().unwrap();
 
         {
             let mut iter = table.iter(&world);
             assert_eq!(iter.next().unwrap().method1(), 1);
         }
 
-        world.remove::<ImplementorB>().unwrap();
+        world.remove_resource::<ImplementorB>().unwrap();
     }
 
     struct ImplementorC;
@@ -477,8 +477,8 @@ mod tests {
     fn get() {
         let mut world = World::empty();
 
-        world.insert(ImplementorC);
-        world.insert(ImplementorD);
+        world.insert_resource(ImplementorC);
+        world.insert_resource(ImplementorD);
 
         let mut table = MetaTable::<dyn Object>::new();
         table.register(&ImplementorC);
@@ -500,6 +500,6 @@ mod tests {
         );
 
         // Make sure it fulfills `Resource` requirements
-        world.insert(table);
+        world.insert_resource(table);
     }
 }

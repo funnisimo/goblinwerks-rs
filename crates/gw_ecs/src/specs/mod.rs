@@ -210,8 +210,8 @@ pub mod world;
 
 pub use crate::shred::{
     Accessor, AccessorCow, BatchAccessor, BatchController, BatchUncheckedWorld, Dispatcher,
-    DispatcherBuilder, Read, ReadExpect, RunNow, RunningTime, StaticAccessor, System, SystemData,
-    Write, WriteExpect,
+    DispatcherBuilder, ReadRes, ReadResExpect, RunNow, RunningTime, StaticAccessor, System,
+    SystemData, WriteRes, WriteResExpect,
 };
 pub use crate::World;
 pub use hibitset::BitSet;
@@ -229,8 +229,8 @@ pub use self::{
     changeset::ChangeSet,
     join::Join,
     storage::{
-        DefaultVecStorage, DenseVecStorage, FlaggedStorage, HashMapStorage, NullStorage,
-        ReadStorage, Storage, Tracked, VecStorage, WriteStorage,
+        DefaultVecStorage, DenseVecStorage, FlaggedStorage, HashMapStorage, NullStorage, ReadComp,
+        Storage, Tracked, VecStorage, WriteComp,
     },
     world::{
         Builder, Component, Entities, EntitiesMut, Entity, EntityBuilder, LazyUpdate, WorldExt,

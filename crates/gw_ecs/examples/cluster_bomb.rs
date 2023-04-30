@@ -44,11 +44,11 @@ struct ClusterBombSystem;
 impl<'a> System<'a> for ClusterBombSystem {
     type SystemData = (
         Entities<'a>,
-        WriteStorage<'a, ClusterBomb>,
-        ReadStorage<'a, Pos>,
+        WriteComp<'a, ClusterBomb>,
+        ReadComp<'a, Pos>,
         // Allows lazily adding and removing components to entities
         // or executing arbitrary code with world access lazily via `execute`.
-        Read<'a, LazyUpdate>,
+        ReadRes<'a, LazyUpdate>,
     );
 
     fn run(&mut self, (entities, mut bombs, positions, updater): Self::SystemData) {
@@ -95,7 +95,7 @@ impl<'a> System<'a> for ClusterBombSystem {
 
 struct PhysicsSystem;
 impl<'a> System<'a> for PhysicsSystem {
-    type SystemData = (WriteStorage<'a, Pos>, ReadStorage<'a, Vel>);
+    type SystemData = (WriteComp<'a, Pos>, ReadComp<'a, Vel>);
 
     fn run(&mut self, (mut pos, vel): Self::SystemData) {
         #[cfg(not(feature = "parallel"))]
@@ -113,7 +113,7 @@ impl<'a> System<'a> for PhysicsSystem {
 
 struct ShrapnelSystem;
 impl<'a> System<'a> for ShrapnelSystem {
-    type SystemData = (Entities<'a>, WriteStorage<'a, Shrapnel>);
+    type SystemData = (Entities<'a>, WriteComp<'a, Shrapnel>);
 
     fn run(&mut self, (entities, mut shrapnels): Self::SystemData) {
         #[cfg(not(feature = "parallel"))]

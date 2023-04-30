@@ -1,6 +1,7 @@
-use crate::globals::{GlobalFetch, GlobalFetchMut, Globals};
+use crate::globals::Globals;
 use crate::shred::{PanicIfMissing, Resource};
-use crate::{Read, World, Write};
+use crate::WriteGlobal;
+use crate::{ReadGlobal, ReadRes, World, WriteRes};
 
 pub struct Ecs {
     pub(crate) worlds: Vec<World>,
@@ -72,51 +73,51 @@ impl Ecs {
         self.globals.remove::<G>()
     }
 
-    pub fn fetch_global<G: Resource>(&self) -> GlobalFetch<G> {
-        self.globals.fetch::<G>()
+    pub fn read_global<G: Resource>(&self) -> ReadGlobal<G, PanicIfMissing> {
+        self.current_world().read_global::<G>()
     }
 
-    pub fn try_fetch_global<G: Resource>(&self) -> Option<GlobalFetch<G>> {
-        self.globals.try_fetch::<G>()
+    pub fn try_read_global<G: Resource>(&self) -> Option<ReadGlobal<G, ()>> {
+        self.current_world().try_read_global::<G>()
     }
 
-    pub fn fetch_global_mut<G: Resource>(&self) -> GlobalFetchMut<G> {
-        self.globals.fetch_mut::<G>()
+    pub fn write_global<G: Resource>(&self) -> WriteGlobal<G, PanicIfMissing> {
+        self.current_world().write_global::<G>()
     }
 
-    pub fn try_fetch_global_mut<G: Resource>(&self) -> Option<GlobalFetchMut<G>> {
-        self.globals.try_fetch_mut::<G>()
+    pub fn try_write_global<G: Resource>(&self) -> Option<WriteGlobal<G, ()>> {
+        self.current_world().try_write_global::<G>()
     }
 
     // RESOURCES
 
     pub fn has_unique<G: Resource>(&self) -> bool {
-        self.current_world().has_value::<G>()
+        self.current_world().has_resource::<G>()
     }
 
     /// Inserts a unique
     pub fn insert_unique<G: Resource>(&mut self, unique: G) {
-        self.current_world_mut().insert(unique)
+        self.current_world_mut().insert_resource(unique)
     }
 
     /// Removes a unique
     pub fn remove_unique<G: Resource>(&mut self) -> Option<G> {
-        self.current_world_mut().remove::<G>()
+        self.current_world_mut().remove_resource::<G>()
     }
 
-    pub fn read_resource<G: Resource>(&self) -> Read<G, PanicIfMissing> {
+    pub fn read_resource<G: Resource>(&self) -> ReadRes<G, PanicIfMissing> {
         self.current_world().read_resource::<G>()
     }
 
-    pub fn try_read_resource<G: Resource>(&self) -> Option<Read<G, ()>> {
+    pub fn try_read_resource<G: Resource>(&self) -> Option<ReadRes<G, ()>> {
         self.current_world().try_read_resource::<G>()
     }
 
-    pub fn write_resource<G: Resource>(&self) -> Write<G, PanicIfMissing> {
+    pub fn write_resource<G: Resource>(&self) -> WriteRes<G, PanicIfMissing> {
         self.current_world().write_resource::<G>()
     }
 
-    pub fn try_write_resource<G: Resource>(&self) -> Option<Write<G, ()>> {
+    pub fn try_write_resource<G: Resource>(&self) -> Option<WriteRes<G, ()>> {
         self.current_world().try_write_resource::<G>()
     }
 }

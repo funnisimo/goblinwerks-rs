@@ -173,7 +173,7 @@ pub fn new_dispatcher<'a, 'b>(
 
 #[cfg(test)]
 mod tests {
-    use crate::shred::{dispatch::builder::DispatcherBuilder, system::*, Write};
+    use crate::shred::{dispatch::builder::DispatcherBuilder, system::*, WriteRes};
     use crate::World;
 
     #[derive(Default)]
@@ -182,7 +182,7 @@ mod tests {
     struct Dummy(i32);
 
     impl<'a> System<'a> for Dummy {
-        type SystemData = Write<'a, Res>;
+        type SystemData = WriteRes<'a, Res>;
 
         fn run(&mut self, mut data: Self::SystemData) {
             if self.0 == 4 {
@@ -222,7 +222,7 @@ mod tests {
 
     fn new_world() -> World {
         let mut world = World::empty();
-        world.insert(Res(0));
+        world.insert_resource(Res(0));
 
         world
     }
