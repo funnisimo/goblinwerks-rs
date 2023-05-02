@@ -52,6 +52,6 @@ fn main() {
         .with_thread_local(EmptySystem(&mut x))
         .build();
 
-    dispatcher.dispatch(&resources.as_unsafe());
-    dispatcher.dispatch(&resources.as_unsafe());
+    dispatcher.dispatch(&resources);
+    dispatcher.dispatch(&resources);
 }

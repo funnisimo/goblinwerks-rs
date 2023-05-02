@@ -63,7 +63,7 @@ fn main() {
         let mut dispatcher = DispatcherBuilder::new().with(SysA, "sys_a", &[]).build();
 
         // This dispatches all the systems in parallel and async.
-        dispatcher.dispatch(&world.as_unsafe());
+        dispatcher.dispatch(&world);
 
         // Do something on the main thread
 

@@ -1,11 +1,9 @@
-use crate::{
-    shred::{
-        dispatch::util::check_intersection,
-        system::{RunNow, System},
-    },
-    world::UnsafeWorld,
+use crate::shred::{
+    dispatch::util::check_intersection,
+    resources::ResourceId,
+    system::{RunNow, System},
 };
-use crate::{ResourceId, World};
+use crate::World;
 use rayon::{join, ThreadPool};
 use std::borrow::Borrow;
 
@@ -231,7 +229,7 @@ where
     ///
     /// Please note that this method assumes that no resource
     /// is currently borrowed. If that's the case, it panics.
-    pub fn dispatch<'a>(&mut self, world: &UnsafeWorld<'a>) {
+    pub fn dispatch(&mut self, world: &World) {
         self.run.run(world, self.pool.borrow());
     }
 }
@@ -241,7 +239,7 @@ where
     P: Borrow<ThreadPool>,
     T: for<'b> RunWithPool<'b>,
 {
-    fn run_now(&mut self, world: &UnsafeWorld<'a>) {
+    fn run_now(&mut self, world: &World) {
         RunWithPool::run(&mut self.run, world, self.pool.borrow());
     }
 
@@ -265,7 +263,7 @@ pub trait RunWithPool<'a> {
     /// which are borrowed in an incompatible way already
     /// (tries to read from a resource which is already written to or
     /// tries to write to a resource which is read from).
-    fn run(&mut self, world: &UnsafeWorld<'a>, pool: &ThreadPool);
+    fn run(&mut self, world: &'a World, pool: &ThreadPool);
 
     /// Accumulates the necessary read/shared resources from the
     /// systems in this group.
@@ -284,7 +282,7 @@ where
         T::setup(self, world);
     }
 
-    fn run(&mut self, world: &UnsafeWorld<'a>, _: &ThreadPool) {
+    fn run(&mut self, world: &'a World, _: &ThreadPool) {
         RunNow::run_now(self, world);
     }
 
@@ -311,7 +309,7 @@ where
         self.tail.setup(world);
     }
 
-    fn run(&mut self, world: &UnsafeWorld<'a>, pool: &ThreadPool) {
+    fn run(&mut self, world: &'a World, pool: &ThreadPool) {
         let head = &mut self.head;
         let tail = &mut self.tail;
 
@@ -373,7 +371,7 @@ where
         self.tail.setup(world);
     }
 
-    fn run(&mut self, world: &UnsafeWorld<'a>, pool: &ThreadPool) {
+    fn run(&mut self, world: &'a World, pool: &ThreadPool) {
         self.head.run(world, pool);
         self.tail.run(world, pool);
     }
@@ -423,16 +421,14 @@ mod tests {
 
         let nr = Arc::new(AtomicUsize::new(0));
 
-        let world = World::empty();
-
         Par::new(A(nr.clone()))
             .with(A(nr.clone()))
             .with(A(nr.clone()))
-            .run(&world.as_unsafe(), &pool);
+            .run(&World::empty(), &pool);
 
         assert_eq!(nr.load(Ordering::Acquire), 3);
 
-        par![A(nr.clone()), A(nr.clone()),].run(&world.as_unsafe(), &pool);
+        par![A(nr.clone()), A(nr.clone()),].run(&World::empty(), &pool);
 
         assert_eq!(nr.load(Ordering::Acquire), 5);
     }
@@ -453,12 +449,10 @@ mod tests {
 
         let nr = Arc::new(AtomicUsize::new(0));
 
-        let world = World::empty();
-
         Seq::new(A(nr.clone()))
             .with(A(nr.clone()))
             .with(A(nr.clone()))
-            .run(&world.as_unsafe(), &pool);
+            .run(&World::empty(), &pool);
 
         assert_eq!(nr.load(Ordering::Acquire), 3);
     }

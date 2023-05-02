@@ -98,7 +98,7 @@ impl<'a> Builder for LazyBuilder<'a> {
         {
             let entity = self.entity;
             self.lazy.exec(move |world| {
-                let mut storage: WriteComp<C> = SystemData::fetch(&world.as_unsafe());
+                let mut storage: WriteComp<C> = SystemData::fetch(world);
                 if storage.insert(entity, component).is_err() {
                     log::warn!(
                         "Lazy insert of component failed because {:?} was dead.",
@@ -188,7 +188,7 @@ impl LazyUpdate {
             C: Component,
         {
             self.exec(move |world| {
-                let mut storage: WriteComp<C> = SystemData::fetch(&world.as_unsafe());
+                let mut storage: WriteComp<C> = SystemData::fetch(world);
                 if storage.insert(e, c).is_err() {
                     log::warn!("Lazy insert of component failed because {:?} was dead.", e);
                 }
@@ -227,7 +227,7 @@ impl LazyUpdate {
             I: IntoIterator<Item = (Entity, C)> + 'static,
         {
             self.exec(move |world| {
-                let mut storage: WriteComp<C> = SystemData::fetch(&world.as_unsafe());
+                let mut storage: WriteComp<C> = SystemData::fetch(world);
                 for (e, c) in iter {
                     if storage.insert(e, c).is_err() {
                         log::warn!("Lazy insert of component failed because {:?} was dead.", e);
@@ -266,7 +266,7 @@ impl LazyUpdate {
             C: Component,
         {
             self.exec(move |world| {
-                let mut storage: WriteComp<C> = SystemData::fetch(&world.as_unsafe());
+                let mut storage: WriteComp<C> = SystemData::fetch(world);
                 storage.remove(e);
             });
         }

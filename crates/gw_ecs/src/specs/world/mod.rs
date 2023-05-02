@@ -178,7 +178,7 @@ pub struct EntityBuilder<'a> {
     /// The (already created) entity for which components will be inserted.
     pub entity: Entity,
     /// A reference to the `World` for component insertions.
-    pub world: UnsafeWorld<'a>,
+    pub world: &'a World,
     pub(crate) built: bool,
 }
 

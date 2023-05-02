@@ -191,7 +191,7 @@ fn main() {
             break;
         }
 
-        dispatcher.dispatch(&world.as_unsafe());
+        dispatcher.dispatch(&world);
 
         // Maintain dynamically added and removed entities in dispatch.
         // This is what actually executes changes done by `LazyUpdate`.

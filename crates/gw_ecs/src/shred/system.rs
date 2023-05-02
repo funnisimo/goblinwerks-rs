@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, ops::Deref};
 
-use crate::{world::UnsafeWorld, ResourceId, World};
+use crate::{world::World, ResourceId};
 
 /// A trait for accessing read/write multiple resources from a system. This can
 /// be used to create dynamic systems that don't specify what they fetch at
@@ -117,7 +117,7 @@ pub trait RunNow<'a> {
     /// which are borrowed in an incompatible way already
     /// (tries to read from a resource which is already written to or
     /// tries to write to a resource which is read from).
-    fn run_now(&mut self, world: &UnsafeWorld<'a>);
+    fn run_now(&mut self, world: &'a World);
 
     /// Sets up `World` for a later call to `run_now`.
     fn setup(&mut self, world: &mut World);
@@ -135,7 +135,7 @@ impl<'a, T> RunNow<'a> for T
 where
     T: System<'a>,
 {
-    fn run_now(&mut self, world: &UnsafeWorld<'a>) {
+    fn run_now(&mut self, world: &'a World) {
         let data = T::SystemData::fetch(&self.accessor(), world);
         self.run(data);
     }
@@ -273,7 +273,7 @@ pub trait SystemData<'a>: Sized {
     /// Fetches the system data from `World`. Note that this is only specified
     /// for one concrete lifetime `'a`, you need to implement the
     /// `SystemData` trait for every possible lifetime.
-    fn fetch(world: &UnsafeWorld<'a>) -> Self;
+    fn fetch(world: &'a World) -> Self;
 
     /// Returns all read dependencies as fetched from `Self::fetch`.
     ///
@@ -296,7 +296,7 @@ where
         T::setup(world);
     }
 
-    fn fetch(_: &StaticAccessor<T>, world: &UnsafeWorld<'a>) -> Self {
+    fn fetch(_: &StaticAccessor<T>, world: &'a World) -> Self {
         T::fetch(world)
     }
 }
@@ -304,7 +304,7 @@ where
 impl<'a> SystemData<'a> for () {
     fn setup(_: &mut World) {}
 
-    fn fetch(_: &UnsafeWorld) -> Self {}
+    fn fetch(_: &World) -> Self {}
 
     fn reads() -> Vec<ResourceId> {
         Vec::new()
@@ -368,13 +368,13 @@ pub trait DynamicSystemData<'a> {
     /// fallback value.
     ///
     /// [`World`]: trait.World.html
-    fn fetch(access: &Self::Accessor, world: &UnsafeWorld<'a>) -> Self;
+    fn fetch(access: &Self::Accessor, world: &'a World) -> Self;
 }
 
 impl<'a, T: ?Sized> SystemData<'a> for PhantomData<T> {
     fn setup(_: &mut World) {}
 
-    fn fetch(_: &UnsafeWorld) -> Self {
+    fn fetch(_: &World) -> Self {
         PhantomData
     }
 
@@ -400,7 +400,7 @@ macro_rules! impl_data {
                      )*
                 }
 
-                fn fetch(world: &UnsafeWorld<'a>) -> Self {
+                fn fetch(world: &'a World) -> Self {
                     #![allow(unused_variables)]
 
                     ( $( <$ty as SystemData<'a>>::fetch(world), )* )

@@ -135,7 +135,7 @@ where
             .register(&*world.resources.get::<MaskedStorage<T>>().unwrap());
     }
 
-    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+    fn fetch(world: &'a World) -> Self {
         world.read_component::<T>()
     }
 
@@ -226,7 +226,7 @@ where
             .register(&*world.resources.get::<MaskedStorage<T>>().unwrap());
     }
 
-    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+    fn fetch(world: &'a World) -> Self {
         world.write_component::<T>()
     }
 

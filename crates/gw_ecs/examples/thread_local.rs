@@ -35,7 +35,7 @@ fn main() {
         .build();
     dispatcher.setup(&mut resources);
 
-    dispatcher.dispatch(&resources.as_unsafe());
+    dispatcher.dispatch(&resources);
 }
 
 // The following is required for the example to compile without the

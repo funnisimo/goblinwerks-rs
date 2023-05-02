@@ -1,6 +1,4 @@
-use crate::shred::{dispatch::stage::Stage, system::RunNow};
-use crate::world::UnsafeWorld;
-use crate::World;
+use crate::{shred::dispatch::stage::Stage, shred::system::RunNow, world::World};
 use smallvec::SmallVec;
 
 /// This wrapper is used to share a replaceable ThreadPool with other
@@ -56,7 +54,7 @@ impl<'a, 'b> Dispatcher<'a, 'b> {
     ///
     /// Please note that this method assumes that no resource
     /// is currently borrowed. If that's the case, it panics.
-    pub fn dispatch<'c>(&'c mut self, world: &'c UnsafeWorld<'c>) {
+    pub fn dispatch(&mut self, world: &World) {
         #[cfg(feature = "parallel")]
         self.dispatch_par(world);
 
@@ -77,7 +75,7 @@ impl<'a, 'b> Dispatcher<'a, 'b> {
     /// Please note that this method assumes that no resource
     /// is currently borrowed. If that's the case, it panics.
     #[cfg(feature = "parallel")]
-    pub(crate) fn dispatch_par<'c>(&'c mut self, world: &'c UnsafeWorld<'c>) {
+    pub fn dispatch_par(&mut self, world: &World) {
         let stages = &mut self.stages;
 
         self.thread_pool
@@ -99,7 +97,7 @@ impl<'a, 'b> Dispatcher<'a, 'b> {
     ///
     /// Please note that this method assumes that no resource
     /// is currently borrowed. If that's the case, it panics.
-    pub(crate) fn dispatch_seq<'c>(&'c mut self, world: &'c UnsafeWorld<'c>) {
+    pub fn dispatch_seq(&mut self, world: &World) {
         for stage in &mut self.stages {
             stage.execute_seq(world);
         }
@@ -109,7 +107,7 @@ impl<'a, 'b> Dispatcher<'a, 'b> {
     ///
     /// Please note that this method assumes that no resource
     /// is currently borrowed. If that's the case, it panics.
-    pub(crate) fn dispatch_thread_local<'c>(&'c mut self, world: &'c UnsafeWorld<'c>) {
+    pub fn dispatch_thread_local(&mut self, world: &World) {
         for sys in &mut self.thread_local {
             sys.run_now(world);
         }
@@ -128,11 +126,8 @@ impl<'a, 'b> Dispatcher<'a, 'b> {
     }
 }
 
-impl<'a, 'b, 'c> RunNow<'a> for Dispatcher<'b, 'c>
-where
-    'a: 'b,
-{
-    fn run_now(&mut self, world: &UnsafeWorld<'a>) {
+impl<'a, 'b, 'c> RunNow<'a> for Dispatcher<'b, 'c> {
+    fn run_now(&mut self, world: &World) {
         self.dispatch(world);
     }
 
@@ -177,8 +172,10 @@ pub fn new_dispatcher<'a, 'b>(
 
 #[cfg(test)]
 mod tests {
-    use crate::shred::{dispatch::builder::DispatcherBuilder, system::*, WriteRes};
-    use crate::World;
+    use crate::{
+        shred::{dispatch::builder::DispatcherBuilder, system::*},
+        World, WriteRes,
+    };
 
     #[derive(Default)]
     struct Res(i32);
@@ -234,25 +231,24 @@ mod tests {
     #[test]
     #[should_panic(expected = "Propagated panic")]
     fn dispatcher_panics() {
-        let world = new_world();
-        let unsafe_world = world.as_unsafe();
-        let mut disp = DispatcherBuilder::new().with(Panic, "p", &[]).build();
-        disp.dispatch(&unsafe_world);
+        DispatcherBuilder::new()
+            .with(Panic, "p", &[])
+            .build()
+            .dispatch(&new_world())
     }
 
     #[test]
     fn stages() {
-        let world = new_world();
-        let unsafe_world = world.as_unsafe();
         let mut d = new_builder().build();
-        d.dispatch(&unsafe_world);
+
+        d.dispatch(&new_world());
     }
 
-    // #[test]
-    // #[cfg(feature = "parallel")]
-    // fn stages_async() {
-    //     let mut d = new_builder().build_async(new_world());
+    #[test]
+    #[cfg(feature = "parallel")]
+    fn stages_async() {
+        let mut d = new_builder().build_async(new_world());
 
-    //     d.dispatch();
-    // }
+        d.dispatch();
+    }
 }

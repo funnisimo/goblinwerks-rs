@@ -262,7 +262,7 @@ fn main() {
     w.create_entity().with(CompBool(false)).build();
     w.create_entity().with(CompFloat(0.1)).build();
 
-    dispatcher.dispatch(&w.as_unsafe());
+    dispatcher.dispatch(&w);
     w.maintain();
 
     // Insert a component, associated with `e`.
@@ -270,6 +270,6 @@ fn main() {
         eprintln!("Failed to insert component! {:?}", err);
     }
 
-    dispatcher.dispatch(&w.as_unsafe());
+    dispatcher.dispatch(&w);
     w.maintain();
 }

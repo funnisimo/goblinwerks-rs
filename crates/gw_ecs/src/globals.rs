@@ -219,7 +219,7 @@ where
         F::setup(world)
     }
 
-    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+    fn fetch(world: &'a World) -> Self {
         ReadGlobal::<'a, T, F> {
             fetch: world.read_global::<T>().fetch,
             phantom: PhantomData,
@@ -289,7 +289,7 @@ where
         F::setup(world)
     }
 
-    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+    fn fetch(world: &'a World) -> Self {
         WriteGlobal::<'a, T, F> {
             fetch: world.write_global::<T>().fetch,
             phantom: PhantomData,
@@ -313,7 +313,7 @@ where
 {
     fn setup(_: &mut World) {}
 
-    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+    fn fetch(world: &'a World) -> Self {
         match world.try_read_global::<T>() {
             None => None,
             Some(fetch) => Some(ReadGlobal::<'a, T, F> {
@@ -341,7 +341,7 @@ where
 {
     fn setup(_: &mut World) {}
 
-    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+    fn fetch(world: &'a World) -> Self {
         match world.try_write_global::<T>() {
             None => None,
             Some(fetch) => Some(WriteGlobal::<'a, T, F> {

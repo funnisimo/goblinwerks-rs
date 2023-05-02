@@ -64,5 +64,5 @@ fn main() {
     world.create_entity().with(Pos(2.0)).build();
 
     // This dispatches all the systems in parallel (but blocking).
-    dispatcher.dispatch(&world.as_unsafe());
+    dispatcher.dispatch(&world);
 }

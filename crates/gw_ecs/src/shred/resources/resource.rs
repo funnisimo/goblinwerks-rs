@@ -70,18 +70,18 @@ impl ResourceId {
 // /// A resource is a data slot which lives in the `World` can only be accessed
 // /// according to Rust's typical borrowing model (one writer xor multiple
 // /// readers).
-#[cfg(feature = "parallel")]
-pub trait Resource: Any + Send + Sync + 'static {}
+// #[cfg(feature = "parallel")]
+// pub trait Resource: Any + Send + Sync + 'static {}
 
 /// A resource is a data slot which lives in the `World` can only be accessed
 /// according to Rust's typical borrowing model (one writer xor multiple
 /// readers).
-#[cfg(not(feature = "parallel"))]
+// #[cfg(not(feature = "parallel"))]
 pub trait Resource: Any + 'static {}
 
-#[cfg(feature = "parallel")]
-impl<T> Resource for T where T: Any + Send + Sync {}
-#[cfg(not(feature = "parallel"))]
+// #[cfg(feature = "parallel")]
+// impl<T> Resource for T where T: Any + Send + Sync {}
+// #[cfg(not(feature = "parallel"))]
 impl<T> Resource for T where T: Any + 'static {}
 
 // Code is based on https://github.com/chris-morgan/mopa

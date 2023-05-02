@@ -35,10 +35,6 @@ impl World {
         World { resources, globals }
     }
 
-    pub fn as_unsafe(&self) -> UnsafeWorld {
-        UnsafeWorld { world: self }
-    }
-
     /// Sets the globals on this World.
     /// This is used when adding Worlds into the Ecs.
     pub(crate) fn set_globals(&mut self, globals: Globals) {
@@ -71,7 +67,7 @@ impl World {
     where
         T: SystemData<'a>,
     {
-        SystemData::fetch(&self.as_unsafe())
+        SystemData::fetch(self)
     }
 
     /// Sets up system data `T` for fetching afterwards.
@@ -523,7 +519,7 @@ impl World {
 
         EntityBuilder {
             entity,
-            world: self.as_unsafe(),
+            world: self,
             built: false,
         }
     }
@@ -623,7 +619,7 @@ impl<'a> UnsafeWorld<'a> {
     where
         T: SystemData<'a>,
     {
-        SystemData::fetch(self)
+        SystemData::fetch(self.world)
     }
 
     // GLOBALS
@@ -727,7 +723,7 @@ mod tests {
 
         let mut world = World::empty();
         world.insert_resource(Res);
-        <ReadRes<Res> as SystemData>::fetch(&world.as_unsafe());
+        <ReadRes<Res> as SystemData>::fetch(&world);
     }
 
     #[test]
@@ -737,7 +733,7 @@ mod tests {
 
         let mut world = World::empty();
         world.insert_resource(Res);
-        <WriteRes<Res> as SystemData>::fetch(&world.as_unsafe());
+        <WriteRes<Res> as SystemData>::fetch(&world);
     }
 
     #[test]
@@ -818,7 +814,7 @@ mod tests {
         let mut sys = Sys;
         RunNow::setup(&mut sys, &mut world);
 
-        sys.run_now(&world.as_unsafe());
+        sys.run_now(&world);
 
         assert!(world.try_read_resource::<i32>().is_some());
         assert_eq!(*world.read_resource::<i32>(), 33);

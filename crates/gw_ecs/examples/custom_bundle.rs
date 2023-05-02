@@ -17,7 +17,7 @@ impl<'a> SystemData<'a> for ExampleBundle<'a> {
         res.ensure_resource::<ResB>();
     }
 
-    fn fetch(res: &UnsafeWorld<'a>) -> Self {
+    fn fetch(res: &'a World) -> Self {
         ExampleBundle {
             a: SystemData::fetch(res),
             b: SystemData::fetch(res),
@@ -38,7 +38,7 @@ fn main() {
     res.insert_resource(ResA);
     res.insert_resource(ResB);
 
-    let mut bundle = ExampleBundle::fetch(&res.as_unsafe());
+    let mut bundle = ExampleBundle::fetch(&res);
     *bundle.b = ResB;
 
     println!("{:?}", *bundle.a);

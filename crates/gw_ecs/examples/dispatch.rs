@@ -4,12 +4,12 @@ use gw_ecs::shred::System;
 use gw_ecs::shred::{ReadRes, WriteRes};
 
 #[derive(Debug, Default)]
-struct UniqueA;
+struct UniqueA(u32);
 
 // A resource usually has a `Default` implementation
 // which will be used if the resource has not been added.
 #[derive(Debug, Default)]
-struct UniqueB;
+struct UniqueB(u32);
 
 struct PrintSystem;
 
@@ -21,8 +21,8 @@ impl<'a> System<'a> for PrintSystem {
 
         println!("PrintSystem = {:?} + {:?}", &*a, &*b);
 
-        *b = UniqueB; // We can mutate UniqueB here
-                      // because it's `Write`.
+        *b = UniqueB(32); // We can mutate UniqueB here
+                          // because it's `Write`.
     }
 }
 

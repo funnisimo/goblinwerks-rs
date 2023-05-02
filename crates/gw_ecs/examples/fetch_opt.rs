@@ -55,10 +55,10 @@ fn main() {
     });
 
     // `ResB` is not in resources, but `PrintSystem` still works.
-    dispatcher.dispatch(&resources.as_unsafe());
+    dispatcher.dispatch(&resources);
 
     resources.insert_resource(ResB);
 
     // Now `ResB` can be printed, too.
-    dispatcher.dispatch(&resources.as_unsafe());
+    dispatcher.dispatch(&resources);
 }

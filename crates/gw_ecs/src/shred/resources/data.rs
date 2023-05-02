@@ -51,7 +51,7 @@ where
         F::setup(world)
     }
 
-    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+    fn fetch(world: &'a World) -> Self {
         ReadRes::<'a, T, F> {
             inner: world.read_resource::<T>().inner,
             phantom: PhantomData,
@@ -118,7 +118,7 @@ where
         F::setup(world)
     }
 
-    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+    fn fetch(world: &'a World) -> Self {
         WriteRes::<'a, T, F> {
             inner: world.write_resource::<T>().inner,
             phantom: PhantomData,
@@ -142,7 +142,7 @@ where
 {
     fn setup(_: &mut World) {}
 
-    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+    fn fetch(world: &'a World) -> Self {
         match world.try_read_resource::<T>() {
             None => None,
             Some(fetch) => Some(ReadRes::<'a, T, F> {
@@ -167,7 +167,7 @@ where
 {
     fn setup(_: &mut World) {}
 
-    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+    fn fetch(world: &'a World) -> Self {
         match world.try_write_resource::<T>() {
             None => None,
             Some(fetch) => Some(WriteRes::<'a, T, F> {

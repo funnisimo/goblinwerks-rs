@@ -33,15 +33,15 @@
 //! running times of the groups of this stage get closer to each other (called
 //! balanced in code).
 
-use super::{
-    dispatcher::{SystemExecSend, SystemId},
-    util::check_intersection,
+use crate::shred::{
+    dispatch::{
+        dispatcher::{SystemExecSend, SystemId},
+        util::check_intersection,
+    },
+    resources::ResourceId,
+    system::{RunningTime, System},
 };
-use crate::world::{UnsafeWorld, World};
-use crate::{
-    shred::system::{RunningTime, System},
-    ResourceId,
-};
+use crate::World;
 use ahash::AHashMap as HashMap;
 use arrayvec::ArrayVec;
 use smallvec::SmallVec;
@@ -102,7 +102,7 @@ impl<'a> Stage<'a> {
     }
 
     #[cfg(feature = "parallel")]
-    pub fn execute<'c>(&'c mut self, world: &'c UnsafeWorld<'c>) {
+    pub fn execute(&mut self, world: &World) {
         use rayon::prelude::*;
 
         self.groups.par_iter_mut().for_each(|group| {
@@ -119,7 +119,7 @@ impl<'a> Stage<'a> {
         self.groups.len()
     }
 
-    pub fn execute_seq<'c>(&'c mut self, world: &'c UnsafeWorld<'c>) {
+    pub fn execute_seq(&mut self, world: &World) {
         for group in &mut self.groups {
             for system in group {
                 system.run_now(world);
@@ -500,7 +500,7 @@ mod tests {
 
     #[test]
     fn uses_group() {
-        use crate::shred::{ReadRes, WriteRes};
+        use crate::{ReadRes, WriteRes};
 
         struct SysA;
 
