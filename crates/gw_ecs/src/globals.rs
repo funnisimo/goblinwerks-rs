@@ -3,7 +3,6 @@ use crate::shred::Resources;
 use crate::shred::{
     DefaultIfMissing, PanicIfMissing, Resource, ResourceId, SetupHandler, SystemData,
 };
-use crate::world::UnsafeWorld;
 use crate::World;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};

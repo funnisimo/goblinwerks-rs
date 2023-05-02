@@ -1,9 +1,8 @@
 use crate::atomic_refcell::{AtomicRef, AtomicRefMut};
-use crate::World;
-use crate::{
-    shred::{DefaultIfMissing, PanicIfMissing, Resource, ResourceId, SetupHandler, SystemData},
-    world::UnsafeWorld,
+use crate::shred::{
+    DefaultIfMissing, PanicIfMissing, Resource, ResourceId, SetupHandler, SystemData,
 };
+use crate::World;
 use std::{
     marker::PhantomData,
     ops::{Deref, DerefMut},

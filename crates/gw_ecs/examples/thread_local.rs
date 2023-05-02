@@ -1,6 +1,4 @@
-use gw_ecs::{
-    DispatcherBuilder, ReadRes, ResourceId, System, SystemData, UnsafeWorld, World, WriteRes,
-};
+use gw_ecs::{DispatcherBuilder, ReadRes, ResourceId, System, SystemData, World, WriteRes};
 
 #[derive(Debug, Default)]
 struct ResA;

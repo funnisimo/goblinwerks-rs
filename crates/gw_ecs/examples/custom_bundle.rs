@@ -1,4 +1,4 @@
-use gw_ecs::{ReadRes, ResourceId, SystemData, UnsafeWorld, World, WriteRes};
+use gw_ecs::{ReadRes, ResourceId, SystemData, World, WriteRes};
 
 #[derive(Debug, Default)]
 struct ResA;

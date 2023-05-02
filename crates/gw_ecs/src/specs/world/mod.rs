@@ -10,9 +10,9 @@ pub use self::{
     lazy::{LazyBuilder, LazyUpdate},
     world_ext::WorldExt,
 };
+use crate::shred::SystemData;
 use crate::specs::storage::WriteComp;
 pub use crate::World;
-use crate::{shred::SystemData, world::UnsafeWorld};
 
 mod comp;
 mod entity;

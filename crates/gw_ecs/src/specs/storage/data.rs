@@ -7,7 +7,6 @@ use crate::specs::{
     storage::{AnyStorage, MaskedStorage, Storage, TryDefault},
     world::{Component, EntitiesRes},
 };
-use crate::world::UnsafeWorld;
 
 /// A storage with read access.
 ///
