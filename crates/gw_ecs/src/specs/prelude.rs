@@ -13,8 +13,9 @@ pub use crate::World;
 pub use hibitset::BitSet;
 pub use shrev::ReaderId;
 
-#[cfg(feature = "parallel")]
-pub use crate::shred::AsyncDispatcher;
+// #[cfg(feature = "parallel")]
+// pub use crate::shred::AsyncDispatcher;
+
 #[cfg(feature = "parallel")]
 pub use rayon::iter::ParallelIterator;
 

@@ -1,10 +1,12 @@
-use crate::shred::{Fetch, FetchMut, MetaTable, ResourceId, SystemData};
+use crate::shred::{Fetch, FetchMut, ResourceId, SystemData};
+use crate::utils::MetaTable;
 use crate::World;
 
 use crate::specs::{
     storage::{AnyStorage, MaskedStorage, Storage, TryDefault},
     world::{Component, EntitiesRes},
 };
+use crate::world::UnsafeWorld;
 
 /// A storage with read access.
 ///
@@ -132,8 +134,8 @@ where
             .register(&*world.resources.fetch::<MaskedStorage<T>>());
     }
 
-    fn fetch(world: &'a World) -> Self {
-        Storage::new(world.resources.fetch(), world.resources.fetch())
+    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+        world.read_component::<T>()
     }
 
     fn reads() -> Vec<ResourceId> {
@@ -223,8 +225,8 @@ where
             .register(&*world.resources.fetch::<MaskedStorage<T>>());
     }
 
-    fn fetch(world: &'a World) -> Self {
-        Storage::new(world.resources.fetch(), world.resources.fetch_mut())
+    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+        world.write_component::<T>()
     }
 
     fn reads() -> Vec<ResourceId> {

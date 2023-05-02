@@ -34,7 +34,7 @@ fn main() {
     dispatcher.setup(ecs.current_world_mut());
 
     // Dispatch as often as you want to
-    dispatcher.dispatch(ecs.current_world());
-    dispatcher.dispatch(ecs.current_world());
+    dispatcher.dispatch(&ecs.current_world().as_unsafe());
+    dispatcher.dispatch(&ecs.current_world().as_unsafe());
     // ...
 }

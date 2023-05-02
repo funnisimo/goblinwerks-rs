@@ -1,4 +1,6 @@
-use gw_ecs::{DispatcherBuilder, ReadRes, ResourceId, System, SystemData, World, WriteRes};
+use gw_ecs::{
+    DispatcherBuilder, ReadRes, ResourceId, System, SystemData, UnsafeWorld, World, WriteRes,
+};
 
 #[derive(Debug, Default)]
 struct ResA;
@@ -33,7 +35,7 @@ fn main() {
         .build();
     dispatcher.setup(&mut resources);
 
-    dispatcher.dispatch(&resources);
+    dispatcher.dispatch(&resources.as_unsafe());
 }
 
 // The following is required for the example to compile without the

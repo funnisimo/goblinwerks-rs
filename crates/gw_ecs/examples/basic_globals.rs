@@ -49,7 +49,7 @@ fn main() {
         .with(GlobalSystem, "global", &[])
         .build();
 
-    dispatcher.dispatch(ecs.current_world());
+    dispatcher.dispatch(&ecs.current_world().as_unsafe());
 
     let mut world = World::empty();
     world.insert_resource(UniqueA(2));
@@ -57,5 +57,5 @@ fn main() {
     let index = ecs.push_world(world);
     ecs.set_current_index(index);
 
-    dispatcher.dispatch(ecs.current_world());
+    dispatcher.dispatch(&ecs.current_world().as_unsafe());
 }

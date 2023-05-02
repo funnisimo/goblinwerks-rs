@@ -87,32 +87,35 @@
 pub mod cell;
 
 mod dispatch;
-mod meta;
+// mod meta;
 mod system;
 #[macro_use]
-mod world;
+mod resources;
 
 /// A reexport of the `#[derive(SystemData]` macro provided by `shred-derive`.
 /// This requires that the `shred-derive` feature is enabled.
 // #[cfg(feature = "derive")]
 // pub use gw_macro::SystemData;
 
-#[cfg(feature = "parallel")]
-pub use self::dispatch::AsyncDispatcher;
+// #[cfg(feature = "parallel")]
+// pub use self::dispatch::AsyncDispatcher;
+
 #[cfg(feature = "parallel")]
 pub use self::dispatch::{Par, ParSeq, RunWithPool, Seq};
 pub use self::{
     dispatch::{
-        BatchAccessor, BatchController, BatchUncheckedWorld, Dispatcher, DispatcherBuilder,
-        MultiDispatchController, MultiDispatcher,
+        // BatchAccessor, BatchController, BatchUncheckedWorld,
+        Dispatcher,
+        DispatcherBuilder,
+        // MultiDispatchController, MultiDispatcher,
     },
-    meta::{CastFrom, MetaIter, MetaIterMut, MetaTable},
+    resources::{
+        DefaultIfMissing, Entry, Fetch, FetchMut, PanicIfMissing, ReadRes, ReadResExpect, Resource,
+        ResourceId, Resources, SetupHandler, WriteRes, WriteResExpect,
+    },
+    // meta::{CastFrom, MetaIter, MetaIterMut, MetaTable},
     system::{
         Accessor, AccessorCow, DynamicSystemData, RunNow, RunningTime, StaticAccessor, System,
         SystemData,
-    },
-    world::{
-        DefaultIfMissing, Entry, Fetch, FetchMut, PanicIfMissing, ReadRes, ReadResExpect, Resource,
-        ResourceId, Resources, SetupHandler, WriteRes, WriteResExpect,
     },
 };

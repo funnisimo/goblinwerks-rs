@@ -33,19 +33,19 @@
 //! running times of the groups of this stage get closer to each other (called
 //! balanced in code).
 
-use std::fmt;
-
 use super::{
     dispatcher::{SystemExecSend, SystemId},
     util::check_intersection,
 };
+use crate::world::{UnsafeWorld, World};
 use crate::{
     shred::system::{RunningTime, System},
-    ResourceId, World,
+    ResourceId,
 };
 use ahash::AHashMap as HashMap;
 use arrayvec::ArrayVec;
 use smallvec::SmallVec;
+use std::fmt;
 
 const MAX_SYSTEMS_PER_GROUP: usize = 5;
 
@@ -102,7 +102,7 @@ impl<'a> Stage<'a> {
     }
 
     #[cfg(feature = "parallel")]
-    pub fn execute(&mut self, world: &World) {
+    pub fn execute<'c>(&'c mut self, world: &'c UnsafeWorld<'c>) {
         use rayon::prelude::*;
 
         self.groups.par_iter_mut().for_each(|group| {
@@ -119,7 +119,7 @@ impl<'a> Stage<'a> {
         self.groups.len()
     }
 
-    pub fn execute_seq(&mut self, world: &World) {
+    pub fn execute_seq<'c>(&'c mut self, world: &'c UnsafeWorld<'c>) {
         for group in &mut self.groups {
             for system in group {
                 system.run_now(world);

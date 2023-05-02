@@ -4,6 +4,7 @@ use crate::shred::{
     DefaultIfMissing, Fetch, FetchMut, PanicIfMissing, Resource, ResourceId, SetupHandler,
     SystemData,
 };
+use crate::world::UnsafeWorld;
 use crate::World;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
@@ -219,8 +220,11 @@ where
         F::setup(world)
     }
 
-    fn fetch(world: &'a World) -> Self {
-        world.globals.fetch::<T>().into()
+    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+        ReadGlobal::<'a, T, F> {
+            fetch: world.read_global::<T>().fetch,
+            phantom: PhantomData,
+        }
     }
 
     fn reads() -> Vec<ResourceId> {
@@ -286,8 +290,11 @@ where
         F::setup(world)
     }
 
-    fn fetch(world: &'a World) -> Self {
-        world.globals.fetch_mut::<T>().into()
+    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+        WriteGlobal::<'a, T, F> {
+            fetch: world.write_global::<T>().fetch,
+            phantom: PhantomData,
+        }
     }
 
     fn reads() -> Vec<ResourceId> {
@@ -307,8 +314,14 @@ where
 {
     fn setup(_: &mut World) {}
 
-    fn fetch(world: &'a World) -> Self {
-        world.globals.try_fetch::<T>().map(Into::into)
+    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+        match world.try_read_global::<T>() {
+            None => None,
+            Some(fetch) => Some(ReadGlobal::<'a, T, F> {
+                fetch: fetch.fetch,
+                phantom: PhantomData,
+            }),
+        }
     }
 
     fn reads() -> Vec<ResourceId> {
@@ -329,8 +342,14 @@ where
 {
     fn setup(_: &mut World) {}
 
-    fn fetch(world: &'a World) -> Self {
-        world.globals.try_fetch_mut::<T>().map(Into::into)
+    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+        match world.try_write_global::<T>() {
+            None => None,
+            Some(fetch) => Some(WriteGlobal::<'a, T, F> {
+                fetch: fetch.fetch,
+                phantom: PhantomData,
+            }),
+        }
     }
 
     fn reads() -> Vec<ResourceId> {

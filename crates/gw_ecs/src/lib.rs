@@ -7,13 +7,15 @@ pub mod specs;
 
 pub mod world;
 
+pub mod utils;
+
 pub use ecs::Ecs;
 pub use globals::{ReadGlobal, ReadGlobalExpect, WriteGlobal, WriteGlobalExpect};
 pub use shred::{ReadRes, ReadResExpect, WriteRes, WriteResExpect};
 pub use shred::{Resource, ResourceId, Resources, SystemData};
-pub use world::World;
+pub use world::{UnsafeWorld, World};
 
-pub use shred::{BatchController, Dispatcher, DispatcherBuilder};
+pub use shred::{Dispatcher, DispatcherBuilder};
 pub use specs::{
     join::*,
     storage::{DenseVecStorage, MaskedStorage, VecStorage},
@@ -21,8 +23,9 @@ pub use specs::{
     Component, Entities, Entity, EntityBuilder, ReadComp, System, WriteComp,
 };
 
-#[cfg(feature = "parallel")]
-pub use crate::shred::AsyncDispatcher;
+// #[cfg(feature = "parallel")]
+// pub use crate::shred::AsyncDispatcher;
+
 #[cfg(feature = "parallel")]
 pub use rayon::iter::ParallelIterator;
 

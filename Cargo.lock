@@ -855,6 +855,7 @@ dependencies = [
  "ahash",
  "arrayvec 0.7.2",
  "crossbeam-queue",
+ "gw_app",
  "gw_macro",
  "hashbrown 0.13.2",
  "hibitset",

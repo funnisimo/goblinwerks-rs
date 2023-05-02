@@ -10,9 +10,9 @@ pub use self::{
     lazy::{LazyBuilder, LazyUpdate},
     world_ext::WorldExt,
 };
-use crate::shred::SystemData;
 use crate::specs::storage::WriteComp;
 pub use crate::World;
+use crate::{shred::SystemData, world::UnsafeWorld};
 
 mod comp;
 mod entity;
@@ -178,7 +178,7 @@ pub struct EntityBuilder<'a> {
     /// The (already created) entity for which components will be inserted.
     pub entity: Entity,
     /// A reference to the `World` for component insertions.
-    pub world: &'a World,
+    pub world: UnsafeWorld<'a>,
     pub(crate) built: bool,
 }
 
@@ -190,7 +190,7 @@ impl<'a> Builder for EntityBuilder<'a> {
     #[inline]
     fn with<T: Component>(self, c: T) -> Self {
         {
-            let mut storage: WriteComp<T> = SystemData::fetch(self.world);
+            let mut storage: WriteComp<T> = SystemData::fetch(&self.world);
             // This can't fail.  This is guaranteed by the lifetime 'a
             // in the EntityBuilder.
             storage.insert(self.entity, c).unwrap();
@@ -211,11 +211,7 @@ impl<'a> Builder for EntityBuilder<'a> {
 impl<'a> Drop for EntityBuilder<'a> {
     fn drop(&mut self) {
         if !self.built {
-            self.world
-                .resources
-                .fetch::<EntitiesRes>()
-                .delete(self.entity)
-                .unwrap();
+            self.world.entities().delete(self.entity).unwrap();
         }
     }
 }

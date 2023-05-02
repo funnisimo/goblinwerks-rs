@@ -1,4 +1,4 @@
-use gw_ecs::{ReadRes, ResourceId, SystemData, World, WriteRes};
+use gw_ecs::{ReadRes, ResourceId, SystemData, UnsafeWorld, World, WriteRes};
 
 #[derive(Debug, Default)]
 struct ResA;
@@ -17,7 +17,7 @@ impl<'a> SystemData<'a> for ExampleBundle<'a> {
         res.ensure_resource::<ResB>();
     }
 
-    fn fetch(res: &'a World) -> Self {
+    fn fetch(res: &UnsafeWorld<'a>) -> Self {
         ExampleBundle {
             a: SystemData::fetch(res),
             b: SystemData::fetch(res),
@@ -38,7 +38,7 @@ fn main() {
     res.insert_resource(ResA);
     res.insert_resource(ResB);
 
-    let mut bundle = ExampleBundle::fetch(&res);
+    let mut bundle = ExampleBundle::fetch(&res.as_unsafe());
     *bundle.b = ResB;
 
     println!("{:?}", *bundle.a);

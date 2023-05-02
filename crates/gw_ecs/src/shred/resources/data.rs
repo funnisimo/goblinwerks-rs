@@ -3,11 +3,14 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use crate::shred::{
-    DefaultIfMissing, Fetch, FetchMut, PanicIfMissing, Resource, ResourceId, SetupHandler,
-    SystemData,
-};
 use crate::World;
+use crate::{
+    shred::{
+        DefaultIfMissing, Fetch, FetchMut, PanicIfMissing, Resource, ResourceId, SetupHandler,
+        SystemData,
+    },
+    world::UnsafeWorld,
+};
 
 /// Allows to fetch a resource in a system immutably.
 ///
@@ -51,8 +54,11 @@ where
         F::setup(world)
     }
 
-    fn fetch(world: &'a World) -> Self {
-        world.resources.fetch::<T>().into()
+    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+        ReadRes::<'a, T, F> {
+            inner: world.read_resource::<T>().inner,
+            phantom: PhantomData,
+        }
     }
 
     fn reads() -> Vec<ResourceId> {
@@ -115,8 +121,11 @@ where
         F::setup(world)
     }
 
-    fn fetch(world: &'a World) -> Self {
-        world.resources.fetch_mut::<T>().into()
+    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+        WriteRes::<'a, T, F> {
+            inner: world.write_resource::<T>().inner,
+            phantom: PhantomData,
+        }
     }
 
     fn reads() -> Vec<ResourceId> {
@@ -136,8 +145,14 @@ where
 {
     fn setup(_: &mut World) {}
 
-    fn fetch(world: &'a World) -> Self {
-        world.resources.try_fetch().map(Into::into)
+    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+        match world.try_read_resource::<T>() {
+            None => None,
+            Some(fetch) => Some(ReadRes::<'a, T, F> {
+                inner: fetch.inner,
+                phantom: PhantomData,
+            }),
+        }
     }
 
     fn reads() -> Vec<ResourceId> {
@@ -155,8 +170,14 @@ where
 {
     fn setup(_: &mut World) {}
 
-    fn fetch(world: &'a World) -> Self {
-        world.resources.try_fetch_mut().map(Into::into)
+    fn fetch(world: &UnsafeWorld<'a>) -> Self {
+        match world.try_write_resource::<T>() {
+            None => None,
+            Some(fetch) => Some(WriteRes::<'a, T, F> {
+                inner: fetch.inner,
+                phantom: PhantomData,
+            }),
+        }
     }
 
     fn reads() -> Vec<ResourceId> {

@@ -19,14 +19,14 @@ pub use self::{
 
 use self::storages::SliceAccess;
 
+use crate::shred::Fetch;
+use crate::utils::CastFrom;
+use hibitset::{BitSet, BitSetLike, BitSetNot};
 use std::{
     self,
     marker::PhantomData,
     ops::{Deref, DerefMut, Not},
 };
-
-use crate::shred::{CastFrom, Fetch};
-use hibitset::{BitSet, BitSetLike, BitSetNot};
 
 #[cfg(feature = "parallel")]
 use crate::specs::join::ParJoin;

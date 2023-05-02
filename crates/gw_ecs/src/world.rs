@@ -1,5 +1,5 @@
 use crate::globals::Globals;
-use crate::shred::{MetaTable, PanicIfMissing, Resources, SystemData};
+use crate::shred::{PanicIfMissing, Resources, SystemData};
 use crate::specs::error::WrongGeneration;
 use crate::specs::storage::{AnyStorage, MaskedStorage};
 use crate::specs::world::EntityAllocator;
@@ -7,6 +7,7 @@ use crate::specs::world::{CreateIter, EntitiesRes};
 use crate::specs::{
     Component, Entities, EntitiesMut, Entity, EntityBuilder, LazyUpdate, ReadComp, WriteComp,
 };
+use crate::utils::MetaTable;
 use crate::{ReadGlobal, ReadRes, Resource, ResourceId, WriteGlobal, WriteRes};
 
 pub use crate::shred::Entry;
@@ -32,6 +33,10 @@ impl World {
         resources.insert(LazyUpdate::default());
 
         World { resources, globals }
+    }
+
+    pub fn as_unsafe(&self) -> UnsafeWorld {
+        UnsafeWorld { world: self }
     }
 
     /// Sets the globals on this World.
@@ -66,7 +71,7 @@ impl World {
     where
         T: SystemData<'a>,
     {
-        SystemData::fetch(self)
+        SystemData::fetch(&self.as_unsafe())
     }
 
     /// Sets up system data `T` for fetching afterwards.
@@ -342,22 +347,22 @@ impl World {
 
     /// Fetch a global value
     pub fn read_global<G: Resource>(&self) -> ReadGlobal<G, PanicIfMissing> {
-        ReadGlobal::<G, PanicIfMissing>::fetch(self)
+        self.globals.fetch::<G>().into()
     }
 
     /// Fetch a global value as mutable
     pub fn write_global<G: Resource>(&self) -> WriteGlobal<G, PanicIfMissing> {
-        WriteGlobal::<G, PanicIfMissing>::fetch(self)
+        self.globals.fetch_mut::<G>().into()
     }
 
     /// Try to fetch a global value
     pub fn try_read_global<G: Resource>(&self) -> Option<ReadGlobal<G, ()>> {
-        Option::<ReadGlobal<G, ()>>::fetch(self)
+        self.globals.try_fetch::<G>().map(|v| v.into())
     }
 
     /// Try to fetch a global value mutably
     pub fn try_write_global<G: Resource>(&self) -> Option<WriteGlobal<G, ()>> {
-        Option::<WriteGlobal<G, ()>>::fetch(self)
+        self.globals.try_fetch_mut::<G>().map(|v| v.into())
     }
 
     //
@@ -442,19 +447,19 @@ impl World {
     }
 
     pub fn read_resource<T: Resource>(&self) -> ReadRes<T, PanicIfMissing> {
-        ReadRes::fetch(self)
+        self.resources.fetch::<T>().into()
     }
 
     pub fn try_read_resource<T: Resource>(&self) -> Option<ReadRes<T, ()>> {
-        Option::<ReadRes<T, ()>>::fetch(self)
+        self.resources.try_fetch::<T>().map(|v| v.into())
     }
 
     pub fn write_resource<T: Resource>(&self) -> WriteRes<T, PanicIfMissing> {
-        WriteRes::fetch(self)
+        self.resources.fetch_mut::<T>().into()
     }
 
     pub fn try_write_resource<T: Resource>(&self) -> Option<WriteRes<T, ()>> {
-        Option::<WriteRes<T, ()>>::fetch(self)
+        self.resources.try_fetch_mut::<T>().map(|v| v.into())
     }
 
     // COMPONENTS
@@ -494,14 +499,20 @@ impl World {
         self.system_data()
     }
 
+    // Lazy Update
+
+    pub fn lazy_update(&self) -> ReadRes<LazyUpdate> {
+        self.resources.fetch::<LazyUpdate>().into()
+    }
+
     // ENTITIES
 
     pub fn entities(&self) -> Entities {
-        Entities::fetch(self)
+        self.resources.fetch::<EntitiesRes>().into()
     }
 
     pub(crate) fn entities_mut(&self) -> EntitiesMut {
-        EntitiesMut::fetch(self)
+        self.resources.fetch_mut::<EntitiesRes>().into()
     }
 
     pub fn create_entity(&mut self) -> EntityBuilder {
@@ -513,7 +524,7 @@ impl World {
 
         EntityBuilder {
             entity,
-            world: self,
+            world: self.as_unsafe(),
             built: false,
         }
     }
@@ -580,6 +591,127 @@ impl Default for World {
     }
 }
 
+// ------------------------------------
+
+pub struct UnsafeWorld<'a> {
+    world: &'a World,
+}
+
+impl<'a> UnsafeWorld<'a> {
+    /// Gets `SystemData` `T` from the `World`. This can be used to retrieve
+    /// data just like in [System](crate::System)s.
+    ///
+    /// This will not setup the system data, i.e. resources fetched here must
+    /// exist already.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use shred::*;
+    /// # #[derive(Default)] struct Timer; #[derive(Default)] struct AnotherResource;
+    ///
+    /// // NOTE: If you use Specs, use `World::new` instead.
+    /// let mut world = World::empty();
+    /// world.insert(Timer);
+    /// world.insert(AnotherResource);
+    /// let system_data: (Read<Timer>, Read<AnotherResource>) = world.system_data();
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// * Panics if `T` is already borrowed in an incompatible way.
+    pub fn system_data<T>(&self) -> T
+    where
+        T: SystemData<'a>,
+    {
+        SystemData::fetch(self)
+    }
+
+    // GLOBALS
+
+    pub fn has_global<G: Resource>(&self) -> bool {
+        self.world.has_global::<G>()
+    }
+
+    /// Fetch a global value
+    pub fn read_global<G: Resource>(&self) -> ReadGlobal<'a, G, PanicIfMissing> {
+        self.world.read_global::<G>()
+    }
+
+    /// Fetch a global value as mutable
+    pub fn write_global<G: Resource>(&self) -> WriteGlobal<'a, G, PanicIfMissing> {
+        self.world.write_global::<G>()
+    }
+
+    /// Try to fetch a global value
+    pub fn try_read_global<G: Resource>(&self) -> Option<ReadGlobal<'a, G, ()>> {
+        self.world.try_read_global::<G>()
+    }
+
+    /// Try to fetch a global value mutably
+    pub fn try_write_global<G: Resource>(&self) -> Option<WriteGlobal<'a, G, ()>> {
+        self.world.try_write_global::<G>()
+    }
+
+    //
+    // RESOURCES
+    //
+
+    /// Returns true if the specified resource type `R` exists in `self`.
+    pub fn has_resource<R>(&self) -> bool
+    where
+        R: Resource,
+    {
+        self.world.has_resource::<R>()
+    }
+
+    pub fn read_resource<T: Resource>(&self) -> ReadRes<'a, T, PanicIfMissing> {
+        self.world.read_resource::<T>()
+    }
+
+    pub fn try_read_resource<T: Resource>(&self) -> Option<ReadRes<'a, T, ()>> {
+        self.world.try_read_resource::<T>()
+    }
+
+    pub fn write_resource<T: Resource>(&self) -> WriteRes<'a, T, PanicIfMissing> {
+        self.world.write_resource::<T>()
+    }
+
+    pub fn try_write_resource<T: Resource>(&self) -> Option<WriteRes<'a, T, ()>> {
+        self.world.try_write_resource::<T>()
+    }
+
+    // COMPONENTS
+
+    pub fn read_component<T: Component>(&self) -> ReadComp<'a, T> {
+        self.world.read_component::<T>()
+    }
+
+    pub fn write_component<T: Component>(&self) -> WriteComp<'a, T> {
+        self.world.write_component::<T>()
+    }
+
+    // Lazy Update
+
+    pub fn lazy_update(&self) -> ReadRes<LazyUpdate> {
+        self.world.lazy_update()
+    }
+
+    // ENTITIES
+
+    pub fn entities(&self) -> Entities {
+        self.world.entities()
+    }
+
+    pub(crate) fn entities_mut(&self) -> EntitiesMut {
+        self.world.entities_mut()
+    }
+
+    pub fn is_alive(&self, e: Entity) -> bool {
+        self.world.is_alive(e)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -596,7 +728,7 @@ mod tests {
 
         let mut world = World::empty();
         world.insert_resource(Res);
-        <ReadRes<Res> as SystemData>::fetch(&world);
+        <ReadRes<Res> as SystemData>::fetch(&world.as_unsafe());
     }
 
     #[test]
@@ -606,7 +738,7 @@ mod tests {
 
         let mut world = World::empty();
         world.insert_resource(Res);
-        <WriteRes<Res> as SystemData>::fetch(&world);
+        <WriteRes<Res> as SystemData>::fetch(&world.as_unsafe());
     }
 
     #[test]
@@ -687,7 +819,7 @@ mod tests {
         let mut sys = Sys;
         RunNow::setup(&mut sys, &mut world);
 
-        sys.run_now(&world);
+        sys.run_now(&world.as_unsafe());
 
         assert!(world.try_read_resource::<i32>().is_some());
         assert_eq!(*world.read_resource::<i32>(), 33);

@@ -209,16 +209,27 @@ pub mod storage;
 pub mod world;
 
 pub use crate::shred::{
-    Accessor, AccessorCow, BatchAccessor, BatchController, BatchUncheckedWorld, Dispatcher,
-    DispatcherBuilder, ReadRes, ReadResExpect, RunNow, RunningTime, StaticAccessor, System,
-    SystemData, WriteRes, WriteResExpect,
+    Accessor,
+    AccessorCow,
+    // BatchAccessor, BatchController, BatchUncheckedWorld,
+    Dispatcher,
+    DispatcherBuilder,
+    ReadRes,
+    ReadResExpect,
+    RunNow,
+    RunningTime,
+    StaticAccessor,
+    System,
+    SystemData,
+    WriteRes,
+    WriteResExpect,
 };
 pub use crate::World;
 pub use hibitset::BitSet;
 pub use shrev::ReaderId;
 
-#[cfg(feature = "parallel")]
-pub use crate::shred::AsyncDispatcher;
+// #[cfg(feature = "parallel")]
+// pub use crate::shred::AsyncDispatcher;
 
 // #[cfg(feature = "derive")]
 // pub use gw_macro::Component; // ConvertSaveLoad

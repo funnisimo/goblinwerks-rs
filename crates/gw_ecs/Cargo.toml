@@ -43,6 +43,7 @@ nightly               = []
 rand = "0.8"
 # cgmath = "0.18.0"
 gw_macro = { path = "../gw_macro" }
+gw_app   = { path = "../gw_app" }
 
 [[example]]
 name              = "cluster_bomb"

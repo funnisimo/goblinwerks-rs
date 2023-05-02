@@ -41,7 +41,7 @@ pub fn impl_system_data(ast: &DeriveInput) -> proc_macro2::TokenStream {
                 )*
             }
 
-            fn fetch(world: & #impl_fetch_lt World) -> Self {
+            fn fetch(world: & UnsafeWorld<'a>) -> Self {
                 #fetch_return
             }
 

@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use crate::shred::{
     cell::{RefMut, TrustCell},
-    world::{FetchMut, Resource, ResourceId},
+    resources::{FetchMut, Resource, ResourceId},
 };
 
 type StdEntry<'a, K, V> = std::collections::hash_map::Entry<'a, K, V>;

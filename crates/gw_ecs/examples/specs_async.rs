@@ -60,26 +60,21 @@ fn main() {
     // See the `full` example for dependencies.
     #[cfg(feature = "parallel")]
     {
-        let mut dispatcher = DispatcherBuilder::new()
-            .with(SysA, "sys_a", &[])
-            .build_async(world);
+        let mut dispatcher = DispatcherBuilder::new().with(SysA, "sys_a", &[]).build();
 
         // This dispatches all the systems in parallel and async.
-        dispatcher.dispatch();
+        dispatcher.dispatch(&world.as_unsafe());
 
         // Do something on the main thread
 
-        dispatcher.wait();
+        // dispatcher.wait();
     }
 
     #[cfg(not(feature = "parallel"))]
     {
         eprintln!("The `async` example should be built with the `\"parallel\"` feature enabled.");
-
         let mut dispatcher = DispatcherBuilder::new().with(SysA, "sys_a", &[]).build();
-
         dispatcher.setup(&mut world);
-
         dispatcher.dispatch(&mut world);
     };
 }

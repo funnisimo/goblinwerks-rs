@@ -1,3 +1,5 @@
+// SOURCE - SHRED
+
 use crate::{Resource, ResourceId, World};
 use ahash::AHashMap as HashMap;
 use std::{any::TypeId, collections::hash_map::Entry, marker::PhantomData};

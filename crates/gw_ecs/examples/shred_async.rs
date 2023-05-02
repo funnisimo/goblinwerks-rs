@@ -1,4 +1,6 @@
-use gw_ecs::{DispatcherBuilder, ReadRes, ResourceId, System, SystemData, World, WriteRes};
+use gw_ecs::{
+    DispatcherBuilder, ReadRes, ResourceId, System, SystemData, UnsafeWorld, World, WriteRes,
+};
 
 #[derive(Debug, Default)]
 struct ResA;
@@ -48,11 +50,8 @@ fn main() {
     let mut dispatcher = DispatcherBuilder::new()
         .with(PrintSystem, "print", &[]) // Adds a system "print" without dependencies
         .with_thread_local(EmptySystem(&mut x))
-        .build_async(resources);
+        .build();
 
-    dispatcher.dispatch();
-    dispatcher.wait();
-
-    dispatcher.dispatch();
-    dispatcher.wait();
+    dispatcher.dispatch(&resources.as_unsafe());
+    dispatcher.dispatch(&resources.as_unsafe());
 }
