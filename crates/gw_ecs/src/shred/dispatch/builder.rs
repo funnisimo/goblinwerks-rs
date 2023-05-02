@@ -146,6 +146,7 @@ impl<'a, 'b> DispatcherBuilder<'a, 'b> {
     pub fn with<T>(mut self, system: T, name: &str, dep: &[&str]) -> Self
     where
         T: for<'c> System<'c> + Send + 'a,
+        <T as System<'a>>::SystemData: Send + Sync,
     {
         self.add(system, name, dep);
 
@@ -167,6 +168,7 @@ impl<'a, 'b> DispatcherBuilder<'a, 'b> {
     pub fn add<T>(&mut self, system: T, name: &str, dep: &[&str])
     where
         T: for<'c> System<'c> + Send + 'a,
+        <T as System<'a>>::SystemData: Send + Sync,
     {
         let id = self.next_id();
 
