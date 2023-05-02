@@ -686,7 +686,7 @@ impl TryInto<Vec<Value>> for Value {
 }
 
 impl Display for Value {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Value::Empty => write!(f, "()"),
             Value::Index(v) => write!(f, "{}", v),

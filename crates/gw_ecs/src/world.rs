@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use crate::globals::Globals;
 use crate::shred::{PanicIfMissing, Resources, SystemData};
 use crate::specs::error::WrongGeneration;
@@ -5,7 +7,8 @@ use crate::specs::storage::{AnyStorage, MaskedStorage};
 use crate::specs::world::EntityAllocator;
 use crate::specs::world::{CreateIter, EntitiesRes};
 use crate::specs::{
-    Component, Entities, EntitiesMut, Entity, EntityBuilder, LazyUpdate, ReadComp, WriteComp,
+    Component, Entities, EntitiesMut, Entity, EntityBuilder, LazyUpdate, ReadComp, Storage,
+    WriteComp,
 };
 use crate::utils::MetaTable;
 use crate::{ReadGlobal, ReadRes, Resource, ResourceId, WriteGlobal, WriteRes};
@@ -487,11 +490,15 @@ impl World {
     // }
 
     pub fn read_component<T: Component>(&self) -> ReadComp<T> {
-        self.system_data()
+        let entities = self.resources.get::<EntitiesRes>().unwrap();
+        let data = self.resources.get::<MaskedStorage<T>>().unwrap();
+        Storage::new(entities, data)
     }
 
     pub fn write_component<T: Component>(&self) -> WriteComp<T> {
-        self.system_data()
+        let entities = self.resources.get::<EntitiesRes>().unwrap();
+        let data = self.resources.get_mut::<MaskedStorage<T>>().unwrap();
+        Storage::new(entities, data)
     }
 
     // Lazy Update
