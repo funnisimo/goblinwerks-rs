@@ -23,6 +23,8 @@ macro_rules! fetch_panic {
     }};
 }
 
+pub(crate) use fetch_panic;
+
 /// A trait for doing the setup for SystemData.
 pub trait SetupHandler<T>: Sized {
     /// Sets up `World` for fetching `T`.
@@ -37,7 +39,7 @@ where
     T: Default + Resource,
 {
     fn setup(world: &mut World) {
-        world.resources.entry().or_insert_with(T::default);
+        world.resources.ensure(T::default);
     }
 }
 

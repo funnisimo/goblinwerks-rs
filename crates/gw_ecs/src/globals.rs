@@ -1,8 +1,7 @@
-use crate::atomic_refcell::{AtomicBorrowRef, AtomicRefCell};
+use crate::atomic_refcell::{AtomicBorrowRef, AtomicRef, AtomicRefCell, AtomicRefMut};
 use crate::shred::Resources;
 use crate::shred::{
-    DefaultIfMissing, Fetch, FetchMut, PanicIfMissing, Resource, ResourceId, SetupHandler,
-    SystemData,
+    DefaultIfMissing, PanicIfMissing, Resource, ResourceId, SetupHandler, SystemData,
 };
 use crate::world::UnsafeWorld;
 use crate::World;
@@ -21,13 +20,13 @@ impl Globals {
 
     /// Returns true if the resource is in the Globals
     pub fn has_value<G: Resource>(&self) -> bool {
-        self.resources.borrow().has_value::<G>()
+        self.resources.borrow().contains::<G>()
     }
 
     /// Ensures that the resource is in the Globals or enters
     /// the value from the function.
     pub fn ensure_with<G: Resource, F: FnOnce() -> G>(&mut self, func: F) {
-        self.resources.borrow_mut().entry().or_insert_with(func);
+        self.resources.borrow_mut().ensure(func);
     }
 
     /// Inserts a global
@@ -40,31 +39,31 @@ impl Globals {
         self.resources.borrow_mut().remove::<G>()
     }
 
-    pub fn fetch<'b, G: Resource>(&'b self) -> GlobalFetch<'b, G> {
+    pub fn fetch<'b, G: Resource>(&'b self) -> GlobalRef<'b, G> {
         let (globals, borrow) = self.resources.borrow().destructure();
-        let fetch = globals.fetch::<G>();
-        GlobalFetch::new(borrow, fetch)
+        let fetch = globals.get::<G>().unwrap();
+        GlobalRef::new(borrow, fetch)
     }
 
-    pub(crate) fn try_fetch<G: Resource>(&self) -> Option<GlobalFetch<G>> {
+    pub(crate) fn try_fetch<G: Resource>(&self) -> Option<GlobalRef<G>> {
         let (globals, borrow) = self.resources.borrow().destructure();
-        match globals.try_fetch::<G>() {
+        match globals.get::<G>() {
             None => None,
-            Some(fetch) => Some(GlobalFetch::new(borrow, fetch)),
+            Some(fetch) => Some(GlobalRef::new(borrow, fetch)),
         }
     }
 
-    pub fn fetch_mut<G: Resource>(&self) -> GlobalFetchMut<G> {
+    pub fn fetch_mut<G: Resource>(&self) -> GlobalRefMut<G> {
         let (globals, borrow) = self.resources.borrow().destructure();
-        let fetch = globals.fetch_mut::<G>();
-        GlobalFetchMut::new(borrow, fetch)
+        let fetch = globals.get_mut::<G>().unwrap();
+        GlobalRefMut::new(borrow, fetch)
     }
 
-    pub fn try_fetch_mut<G: Resource>(&self) -> Option<GlobalFetchMut<G>> {
+    pub fn try_fetch_mut<G: Resource>(&self) -> Option<GlobalRefMut<G>> {
         let (globals, borrow) = self.resources.borrow().destructure();
-        match globals.try_fetch_mut::<G>() {
+        match globals.get_mut::<G>() {
             None => None,
-            Some(fetch) => Some(GlobalFetchMut::new(borrow, fetch)),
+            Some(fetch) => Some(GlobalRefMut::new(borrow, fetch)),
         }
     }
 }
@@ -92,18 +91,18 @@ impl Clone for Globals {
 /// # Type parameters
 ///
 /// * `T`: The type of the resource
-pub struct GlobalFetch<'a, T: 'a> {
+pub struct GlobalRef<'a, T: 'a> {
     borrow: AtomicBorrowRef<'a>,
-    fetch: Fetch<'a, T>,
+    fetch: AtomicRef<'a, T>,
 }
 
-impl<'a, T: 'a> GlobalFetch<'a, T> {
-    pub(crate) fn new(borrow: AtomicBorrowRef<'a>, fetch: Fetch<'a, T>) -> Self {
-        GlobalFetch { borrow, fetch }
+impl<'a, T: 'a> GlobalRef<'a, T> {
+    pub(crate) fn new(borrow: AtomicBorrowRef<'a>, fetch: AtomicRef<'a, T>) -> Self {
+        GlobalRef { borrow, fetch }
     }
 }
 
-impl<'a, T> Deref for GlobalFetch<'a, T>
+impl<'a, T> Deref for GlobalRef<'a, T>
 where
     T: Resource,
 {
@@ -114,11 +113,11 @@ where
     }
 }
 
-impl<'a, T> Clone for GlobalFetch<'a, T> {
+impl<'a, T> Clone for GlobalRef<'a, T> {
     fn clone(&self) -> Self {
-        GlobalFetch {
+        GlobalRef {
             borrow: AtomicBorrowRef::clone(&self.borrow),
-            fetch: self.fetch.clone(),
+            fetch: AtomicRef::clone(&self.fetch),
         }
     }
 }
@@ -131,19 +130,19 @@ impl<'a, T> Clone for GlobalFetch<'a, T> {
 /// # Type parameters
 ///
 /// * `T`: The type of the resource
-pub struct GlobalFetchMut<'a, T: 'a> {
+pub struct GlobalRefMut<'a, T: 'a> {
     #[allow(dead_code)]
     borrow: AtomicBorrowRef<'a>,
-    fetch: FetchMut<'a, T>,
+    fetch: AtomicRefMut<'a, T>,
 }
 
-impl<'a, T: 'a> GlobalFetchMut<'a, T> {
-    pub(crate) fn new(borrow: AtomicBorrowRef<'a>, fetch: FetchMut<'a, T>) -> Self {
-        GlobalFetchMut { borrow, fetch }
+impl<'a, T: 'a> GlobalRefMut<'a, T> {
+    pub(crate) fn new(borrow: AtomicBorrowRef<'a>, fetch: AtomicRefMut<'a, T>) -> Self {
+        GlobalRefMut { borrow, fetch }
     }
 }
 
-impl<'a, T> Deref for GlobalFetchMut<'a, T>
+impl<'a, T> Deref for GlobalRefMut<'a, T>
 where
     T: Resource,
 {
@@ -154,7 +153,7 @@ where
     }
 }
 
-impl<'a, T> DerefMut for GlobalFetchMut<'a, T>
+impl<'a, T> DerefMut for GlobalRefMut<'a, T>
 where
     T: Resource,
 {
@@ -175,7 +174,7 @@ pub(crate) struct GlobalRes<T>(PhantomData<T>);
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
 pub struct ReadGlobal<'a, T: 'a, F = DefaultIfMissing> {
-    fetch: GlobalFetch<'a, T>,
+    fetch: GlobalRef<'a, T>,
     phantom: PhantomData<F>,
 }
 
@@ -202,8 +201,8 @@ where
     }
 }
 
-impl<'a, T, F> From<GlobalFetch<'a, T>> for ReadGlobal<'a, T, F> {
-    fn from(fetch: GlobalFetch<'a, T>) -> Self {
+impl<'a, T, F> From<GlobalRef<'a, T>> for ReadGlobal<'a, T, F> {
+    fn from(fetch: GlobalRef<'a, T>) -> Self {
         ReadGlobal {
             fetch,
             phantom: PhantomData,
@@ -248,7 +247,7 @@ where
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
 pub struct WriteGlobal<'a, T: 'a, F = DefaultIfMissing> {
-    fetch: GlobalFetchMut<'a, T>,
+    fetch: GlobalRefMut<'a, T>,
     phantom: PhantomData<F>,
 }
 
@@ -272,8 +271,8 @@ where
     }
 }
 
-impl<'a, T, F> From<GlobalFetchMut<'a, T>> for WriteGlobal<'a, T, F> {
-    fn from(fetch: GlobalFetchMut<'a, T>) -> Self {
+impl<'a, T, F> From<GlobalRefMut<'a, T>> for WriteGlobal<'a, T, F> {
+    fn from(fetch: GlobalRefMut<'a, T>) -> Self {
         WriteGlobal {
             fetch,
             phantom: PhantomData,

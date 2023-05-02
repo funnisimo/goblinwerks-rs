@@ -77,12 +77,12 @@ where
         unsafe {
             self.world
                 .resources
-                .try_fetch_internal(match self.tys.get(index) {
+                .get_internal(match self.tys.get(index) {
                     Some(&x) => ResourceId::from_type_id(x),
                     None => return None,
                 })
                 .map(|res| {
-                    self.fat[index].create_ptr::<T>(Box::as_ref(&res.borrow())
+                    self.fat[index].create_ptr::<T>(Box::as_ref(&res.data.borrow())
                         as *const dyn Resource
                         as *const ())
                 })
@@ -143,12 +143,12 @@ where
         unsafe {
             self.world
                 .resources
-                .try_fetch_internal(match self.tys.get(index) {
+                .get_internal(match self.tys.get(index) {
                     Some(&x) => ResourceId::from_type_id(x),
                     None => return None,
                 })
                 .map(|res| {
-                    self.fat[index].create_ptr::<T>(Box::as_mut(&mut res.borrow_mut())
+                    self.fat[index].create_ptr::<T>(Box::as_mut(&mut res.data.borrow_mut())
                         as *mut dyn Resource
                         as *const ()) as *mut T
                 })

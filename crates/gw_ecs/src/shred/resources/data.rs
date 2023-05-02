@@ -1,15 +1,12 @@
+use crate::atomic_refcell::{AtomicRef, AtomicRefMut};
+use crate::World;
+use crate::{
+    shred::{DefaultIfMissing, PanicIfMissing, Resource, ResourceId, SetupHandler, SystemData},
+    world::UnsafeWorld,
+};
 use std::{
     marker::PhantomData,
     ops::{Deref, DerefMut},
-};
-
-use crate::World;
-use crate::{
-    shred::{
-        DefaultIfMissing, Fetch, FetchMut, PanicIfMissing, Resource, ResourceId, SetupHandler,
-        SystemData,
-    },
-    world::UnsafeWorld,
 };
 
 /// Allows to fetch a resource in a system immutably.
@@ -21,7 +18,7 @@ use crate::{
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
 pub struct ReadRes<'a, T: 'a, F = DefaultIfMissing> {
-    inner: Fetch<'a, T>,
+    inner: AtomicRef<'a, T>,
     phantom: PhantomData<F>,
 }
 
@@ -36,8 +33,8 @@ where
     }
 }
 
-impl<'a, T, F> From<Fetch<'a, T>> for ReadRes<'a, T, F> {
-    fn from(inner: Fetch<'a, T>) -> Self {
+impl<'a, T, F> From<AtomicRef<'a, T>> for ReadRes<'a, T, F> {
+    fn from(inner: AtomicRef<'a, T>) -> Self {
         ReadRes {
             inner,
             phantom: PhantomData,
@@ -79,7 +76,7 @@ where
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
 pub struct WriteRes<'a, T: 'a, F = DefaultIfMissing> {
-    inner: FetchMut<'a, T>,
+    inner: AtomicRefMut<'a, T>,
     phantom: PhantomData<F>,
 }
 
@@ -103,8 +100,8 @@ where
     }
 }
 
-impl<'a, T, F> From<FetchMut<'a, T>> for WriteRes<'a, T, F> {
-    fn from(inner: FetchMut<'a, T>) -> Self {
+impl<'a, T, F> From<AtomicRefMut<'a, T>> for WriteRes<'a, T, F> {
+    fn from(inner: AtomicRefMut<'a, T>) -> Self {
         WriteRes {
             inner,
             phantom: PhantomData,

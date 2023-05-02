@@ -4,12 +4,15 @@ use super::{
     CreateIter, EntityBuilder,
 };
 
-use crate::shred::{Fetch, FetchMut, ReadRes, Resource};
 use crate::specs::{
     error::WrongGeneration,
     // storage::{AnyStorage, MaskedStorage},
     ReadComp,
     WriteComp,
+};
+use crate::{
+    atomic_refcell::{AtomicRef, AtomicRefMut},
+    shred::{ReadRes, Resource},
 };
 // use crate::World;
 
@@ -204,7 +207,7 @@ pub trait WorldExt {
     ///
     /// Panics if it is already borrowed mutably.
     /// Panics if the resource has not been added.
-    fn read_resource<T: Resource>(&self) -> Fetch<T>;
+    fn read_resource<T: Resource>(&self) -> AtomicRef<T>;
 
     /// Fetches a resource for writing.
     ///
@@ -212,17 +215,17 @@ pub trait WorldExt {
     ///
     /// Panics if it is already borrowed.
     /// Panics if the resource has not been added.
-    fn write_resource<T: Resource>(&self) -> FetchMut<T>;
+    fn write_resource<T: Resource>(&self) -> AtomicRefMut<T>;
 
     /// Convenience method for fetching entities.
     ///
     /// Creation and deletion of entities with the `Entities` struct
     /// are atomically, so the actual changes will be applied
     /// with the next call to `maintain()`.
-    fn entities(&self) -> ReadRes<EntitiesRes>;
+    fn entities(&self) -> AtomicRef<EntitiesRes>;
 
     /// Convenience method for fetching entities.
-    fn entities_mut(&self) -> FetchMut<EntitiesRes>;
+    fn entities_mut(&self) -> AtomicRefMut<EntitiesRes>;
 
     /// Allows building an entity with its components.
     ///

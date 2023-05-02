@@ -19,8 +19,8 @@ pub use self::{
 
 use self::storages::SliceAccess;
 
-use crate::shred::Fetch;
-use crate::utils::CastFrom;
+// use crate::shred::Fetch;
+use crate::{atomic_refcell::AtomicRef, utils::CastFrom};
 use hibitset::{BitSet, BitSetLike, BitSetNot};
 use std::{
     self,
@@ -212,14 +212,14 @@ impl<T: Component> Drop for MaskedStorage<T> {
 /// This is what `World::read/write` fetches for the user.
 pub struct Storage<'e, T, D> {
     data: D,
-    entities: Fetch<'e, EntitiesRes>,
+    entities: AtomicRef<'e, EntitiesRes>,
     phantom: PhantomData<T>,
 }
 
 impl<'e, T, D> Storage<'e, T, D> {
     /// Creates a new `Storage` from a fetched allocator and a immutable or
     /// mutable `MaskedStorage`, named `data`.
-    pub fn new(entities: Fetch<'e, EntitiesRes>, data: D) -> Storage<'e, T, D> {
+    pub fn new(entities: AtomicRef<'e, EntitiesRes>, data: D) -> Storage<'e, T, D> {
         Storage {
             data,
             entities,
@@ -390,7 +390,7 @@ where
 
 impl<'a, T, D: Clone> Clone for Storage<'a, T, D> {
     fn clone(&self) -> Self {
-        Storage::new(self.entities.clone(), self.data.clone())
+        Storage::new(AtomicRef::clone(&self.entities), self.data.clone())
     }
 }
 

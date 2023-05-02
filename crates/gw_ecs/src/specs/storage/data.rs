@@ -1,4 +1,5 @@
-use crate::shred::{Fetch, FetchMut, ResourceId, SystemData};
+use crate::atomic_refcell::{AtomicRef, AtomicRefMut};
+use crate::shred::{ResourceId, SystemData};
 use crate::utils::MetaTable;
 use crate::World;
 
@@ -117,21 +118,21 @@ use crate::world::UnsafeWorld;
 /// Note that you can also use `LazyUpdate` , which does insertions on
 /// `World::maintain`. This allows more concurrency and is designed
 /// to be used for entity initialization.
-pub type ReadComp<'a, T> = Storage<'a, T, Fetch<'a, MaskedStorage<T>>>;
+pub type ReadComp<'a, T> = Storage<'a, T, AtomicRef<'a, MaskedStorage<T>>>;
 
 impl<'a, T> SystemData<'a> for ReadComp<'a, T>
 where
     T: Component,
 {
     fn setup(world: &mut World) {
+        world.resources.get_or_insert_with(|| {
+            MaskedStorage::<T>::new(<T::Storage as TryDefault>::unwrap_default())
+        });
         world
             .resources
-            .entry::<MaskedStorage<T>>()
-            .or_insert_with(|| MaskedStorage::new(<T::Storage as TryDefault>::unwrap_default()));
-        world
-            .resources
-            .fetch_mut::<MetaTable<dyn AnyStorage>>()
-            .register(&*world.resources.fetch::<MaskedStorage<T>>());
+            .get_mut::<MetaTable<dyn AnyStorage>>()
+            .unwrap()
+            .register(&*world.resources.get::<MaskedStorage<T>>().unwrap());
     }
 
     fn fetch(world: &UnsafeWorld<'a>) -> Self {
@@ -208,21 +209,21 @@ where
 ///
 /// There's also an Entry-API similar to the one provided by
 /// `std::collections::HashMap`.
-pub type WriteComp<'a, T> = Storage<'a, T, FetchMut<'a, MaskedStorage<T>>>;
+pub type WriteComp<'a, T> = Storage<'a, T, AtomicRefMut<'a, MaskedStorage<T>>>;
 
 impl<'a, T> SystemData<'a> for WriteComp<'a, T>
 where
     T: Component,
 {
     fn setup(world: &mut World) {
+        world.resources.get_or_insert_with(|| {
+            MaskedStorage::<T>::new(<T::Storage as TryDefault>::unwrap_default())
+        });
         world
             .resources
-            .entry::<MaskedStorage<T>>()
-            .or_insert_with(|| MaskedStorage::new(<T::Storage as TryDefault>::unwrap_default()));
-        world
-            .resources
-            .fetch_mut::<MetaTable<dyn AnyStorage>>()
-            .register(&*world.resources.fetch::<MaskedStorage<T>>());
+            .get_mut::<MetaTable<dyn AnyStorage>>()
+            .unwrap()
+            .register(&*world.resources.get::<MaskedStorage<T>>().unwrap());
     }
 
     fn fetch(world: &UnsafeWorld<'a>) -> Self {

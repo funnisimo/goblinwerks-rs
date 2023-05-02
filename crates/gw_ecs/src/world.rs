@@ -10,7 +10,7 @@ use crate::specs::{
 use crate::utils::MetaTable;
 use crate::{ReadGlobal, ReadRes, Resource, ResourceId, WriteGlobal, WriteRes};
 
-pub use crate::shred::Entry;
+// pub use crate::shred::Entry;
 
 pub struct World {
     pub(crate) resources: Resources,
@@ -418,7 +418,7 @@ impl World {
     where
         R: Resource,
     {
-        self.resources.has_value_raw(ResourceId::new::<R>())
+        self.resources.contains::<R>()
     }
 
     // /// Returns true if the specified resource type exists in `self`.
@@ -437,29 +437,29 @@ impl World {
     /// Makes sure there is a value for the given resource.
     /// If not found, inserts a default value.
     pub fn ensure_resource<G: Resource + Default>(&mut self) {
-        self.resources.entry().or_insert_with(G::default);
+        self.resources.ensure(G::default);
     }
 
     /// Makes sure there is a value for the given resource.
     /// If not found, inserts a default value.
     pub fn ensure_resource_with<G: Resource, F: FnOnce() -> G>(&mut self, func: F) {
-        self.resources.entry().or_insert_with(func);
+        self.resources.ensure(func);
     }
 
     pub fn read_resource<T: Resource>(&self) -> ReadRes<T, PanicIfMissing> {
-        self.resources.fetch::<T>().into()
+        self.resources.get::<T>().unwrap().into()
     }
 
     pub fn try_read_resource<T: Resource>(&self) -> Option<ReadRes<T, ()>> {
-        self.resources.try_fetch::<T>().map(|v| v.into())
+        self.resources.get::<T>().map(|v| v.into())
     }
 
     pub fn write_resource<T: Resource>(&self) -> WriteRes<T, PanicIfMissing> {
-        self.resources.fetch_mut::<T>().into()
+        self.resources.get_mut::<T>().unwrap().into()
     }
 
     pub fn try_write_resource<T: Resource>(&self) -> Option<WriteRes<T, ()>> {
-        self.resources.try_fetch_mut::<T>().map(|v| v.into())
+        self.resources.get_mut::<T>().map(|v| v.into())
     }
 
     // COMPONENTS
@@ -477,14 +477,13 @@ impl World {
         T: Component,
     {
         self.resources
-            .entry()
-            .or_insert_with(move || MaskedStorage::<T>::new(storage()));
+            .get_or_insert_with(move || MaskedStorage::<T>::new(storage()));
         self.resources
-            .entry::<MetaTable<dyn AnyStorage>>()
-            .or_insert_with(Default::default);
+            .get_or_insert_with(MetaTable::<dyn AnyStorage>::default);
         self.resources
-            .fetch_mut::<MetaTable<dyn AnyStorage>>()
-            .register(&*self.resources.fetch::<MaskedStorage<T>>());
+            .get_mut::<MetaTable<dyn AnyStorage>>()
+            .unwrap()
+            .register(&*self.resources.get::<MaskedStorage<T>>().unwrap());
     }
 
     // pub fn add_resource<T: Resource>(&mut self, res: T) {
@@ -502,17 +501,17 @@ impl World {
     // Lazy Update
 
     pub fn lazy_update(&self) -> ReadRes<LazyUpdate> {
-        self.resources.fetch::<LazyUpdate>().into()
+        self.resources.get::<LazyUpdate>().unwrap().into()
     }
 
     // ENTITIES
 
     pub fn entities(&self) -> Entities {
-        self.resources.fetch::<EntitiesRes>().into()
+        self.resources.get::<EntitiesRes>().unwrap().into()
     }
 
     pub(crate) fn entities_mut(&self) -> EntitiesMut {
-        self.resources.fetch_mut::<EntitiesRes>().into()
+        self.resources.get_mut::<EntitiesRes>().unwrap().into()
     }
 
     pub fn create_entity(&mut self) -> EntityBuilder {
@@ -567,17 +566,17 @@ impl World {
             self.delete_components(&deleted);
         }
 
-        let lazy = self.resources.fetch_mut::<LazyUpdate>().clone();
+        let lazy = self.resources.get_mut::<LazyUpdate>().unwrap().clone();
         lazy.maintain(self);
     }
 
     pub fn delete_components(&mut self, delete: &[Entity]) {
         self.resources
-            .entry::<MetaTable<dyn AnyStorage>>()
-            .or_insert_with(Default::default);
+            .get_or_insert_with(MetaTable::<dyn AnyStorage>::default);
         for storage in self
             .resources
-            .fetch_mut::<MetaTable<dyn AnyStorage>>()
+            .get_mut::<MetaTable<dyn AnyStorage>>()
+            .unwrap()
             .iter_mut(self)
         {
             storage.drop(delete);

@@ -110,8 +110,17 @@ pub use self::{
         // MultiDispatchController, MultiDispatcher,
     },
     resources::{
-        DefaultIfMissing, Entry, Fetch, FetchMut, PanicIfMissing, ReadRes, ReadResExpect, Resource,
-        ResourceId, Resources, SetupHandler, WriteRes, WriteResExpect,
+        DefaultIfMissing,
+        // Entry, Fetch, FetchMut,
+        PanicIfMissing,
+        ReadRes,
+        ReadResExpect,
+        Resource,
+        ResourceId,
+        Resources,
+        SetupHandler,
+        WriteRes,
+        WriteResExpect,
     },
     // meta::{CastFrom, MetaIter, MetaIterMut, MetaTable},
     system::{
@@ -119,3 +128,5 @@ pub use self::{
         SystemData,
     },
 };
+
+pub(crate) use resources::fetch_panic;

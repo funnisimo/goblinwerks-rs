@@ -4,10 +4,10 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use crate::shred::Fetch;
+// use crate::shred::Fetch;
 use hibitset::BitSet;
 
-use crate::specs::join::Join;
+use crate::{atomic_refcell::AtomicRef, specs::join::Join};
 
 #[cfg(feature = "parallel")]
 use crate::specs::join::ParJoin;
@@ -75,7 +75,7 @@ where
 {
     bitset: B,
     data: S,
-    entities: &'rf Fetch<'st, EntitiesRes>,
+    entities: &'rf AtomicRef<'st, EntitiesRes>,
     phantom: PhantomData<(C, Restrict)>,
 }
 
@@ -108,7 +108,11 @@ where
 {
     type Mask = &'rf BitSet;
     type Type = PairedStorage<'rf, 'st, C, &'rf C::Storage, &'rf BitSet, Restrict>;
-    type Value = (&'rf C::Storage, &'rf Fetch<'st, EntitiesRes>, &'rf BitSet);
+    type Value = (
+        &'rf C::Storage,
+        &'rf AtomicRef<'st, EntitiesRes>,
+        &'rf BitSet,
+    );
 
     unsafe fn open(self) -> (Self::Mask, Self::Value) {
         let bitset = self.bitset.borrow();
@@ -137,7 +141,7 @@ where
     type Type = PairedStorage<'rf, 'st, C, &'rf mut C::Storage, &'rf BitSet, Restrict>;
     type Value = (
         &'rf mut C::Storage,
-        &'rf Fetch<'st, EntitiesRes>,
+        &'rf AtomicRef<'st, EntitiesRes>,
         &'rf BitSet,
     );
 
@@ -223,7 +227,7 @@ pub struct PairedStorage<'rf, 'st: 'rf, C, S, B, Restrict> {
     index: Index,
     storage: S,
     bitset: B,
-    entities: &'rf Fetch<'st, EntitiesRes>,
+    entities: &'rf AtomicRef<'st, EntitiesRes>,
     phantom: PhantomData<(C, Restrict)>,
 }
 
