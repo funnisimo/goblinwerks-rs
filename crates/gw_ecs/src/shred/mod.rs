@@ -119,6 +119,8 @@ pub use self::{
         ResourceId,
         Resources,
         SetupHandler,
+        TryReadRes,
+        TryWriteRes,
         WriteRes,
         WriteResExpect,
     },

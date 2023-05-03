@@ -83,7 +83,7 @@ impl Buffer {
         (self.width, self.height)
     }
 
-    pub fn pot_size(&self) -> (u32, u32) {
+    pub(crate) fn pot_size(&self) -> (u32, u32) {
         (self.pot_width, self.pot_height)
     }
 

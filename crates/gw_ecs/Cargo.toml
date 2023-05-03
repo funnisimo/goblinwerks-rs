@@ -44,6 +44,7 @@ rand = "0.8"
 # cgmath = "0.18.0"
 gw_macro = { path = "../gw_macro" }
 gw_app   = { path = "../gw_app" }
+gw_util  = { path = "../gw_util" }
 
 [[example]]
 name              = "cluster_bomb"

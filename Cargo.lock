@@ -857,6 +857,7 @@ dependencies = [
  "crossbeam-queue",
  "gw_app",
  "gw_macro",
+ "gw_util",
  "hashbrown 0.13.2",
  "hibitset",
  "log",

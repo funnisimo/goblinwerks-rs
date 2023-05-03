@@ -52,13 +52,14 @@ impl Screen for MyRoguelike {
             &format!("screen: {} x {}", screen_size.0, screen_size.1),
         );
 
-        let pot_size = buffer.pot_size();
+        // Doesn't need to be public
+        // let pot_size = buffer.pot_size();
 
-        draw::plain(buffer).align(TextAlign::Center).print(
-            (con_size.0 / 2) as i32,
-            (con_size.1 / 2) as i32 + 4,
-            &format!("pot size: {} x {}", pot_size.0, pot_size.1),
-        );
+        // draw::plain(buffer).align(TextAlign::Center).print(
+        //     (con_size.0 / 2) as i32,
+        //     (con_size.1 / 2) as i32 + 4,
+        //     &format!("pot size: {} x {}", pot_size.0, pot_size.1),
+        // );
 
         // buffer.back(
         //     self.mouse_pos.0 as i32,

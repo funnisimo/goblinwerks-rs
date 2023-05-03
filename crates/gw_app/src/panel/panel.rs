@@ -92,12 +92,12 @@ impl Panel {
     pub fn size(&self) -> (u32, u32) {
         (self.width(), self.height())
     }
-    pub fn pot_width(&self) -> u32 {
-        self.buffer.pot_size().0
-    }
-    pub fn pot_height(&self) -> u32 {
-        self.buffer.pot_size().1
-    }
+    // pub(crate) fn pot_width(&self) -> u32 {
+    //     self.buffer.pot_size().0
+    // }
+    // pub(crate) fn pot_height(&self) -> u32 {
+    //     self.buffer.pot_size().1
+    // }
 
     pub fn font_char_size(&self) -> (u32, u32) {
         match self.font {

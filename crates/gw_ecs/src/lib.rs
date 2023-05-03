@@ -11,7 +11,7 @@ pub mod utils;
 
 pub use ecs::Ecs;
 pub use globals::{ReadGlobal, ReadGlobalExpect, WriteGlobal, WriteGlobalExpect};
-pub use shred::{ReadRes, ReadResExpect, WriteRes, WriteResExpect};
+pub use shred::{ReadRes, ReadResExpect, TryReadRes, TryWriteRes, WriteRes, WriteResExpect};
 pub use shred::{Resource, ResourceId, Resources, SystemData};
 pub use world::World;
 

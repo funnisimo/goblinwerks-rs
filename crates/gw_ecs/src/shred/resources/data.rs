@@ -185,6 +185,12 @@ where
     }
 }
 
+/// Allows to optionally fetch a resource in a system immutably.
+pub type TryReadRes<'a, T> = Option<ReadRes<'a, T>>;
+
+/// Allows to optionally fetch a resource in a system mutably.
+pub type TryWriteRes<'a, T> = Option<WriteRes<'a, T>>;
+
 /// Allows to fetch a resource in a system immutably.
 /// **This will panic if the resource does not exist.**
 /// Usage of `Read` or `Option<Read>` is therefore recommended.
