@@ -155,6 +155,22 @@ impl Point {
         Point { x: 0, y: 0 }
     }
 
+    /// Get a point from a row-major index (x,y).
+    pub fn from_index_xy(index: usize, width: usize, height: usize) -> Point {
+        let _ = height;
+        let x = index % width;
+        let y = index / width;
+        Point::new(x as i32, y as i32)
+    }
+
+    /// Get a point from a column-major index (y,x).
+    pub fn from_index_yx(index: usize, width: usize, height: usize) -> Point {
+        let _ = width;
+        let x = index / height;
+        let y = index % height;
+        Point::new(x as i32, y as i32)
+    }
+
     pub fn is_zero(&self) -> bool {
         self.x == 0 && self.y == 0
     }
