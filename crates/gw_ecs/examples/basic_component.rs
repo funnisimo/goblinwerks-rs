@@ -41,7 +41,7 @@ fn main() {
     // container for components
     // and other resources.
 
-    let mut world = World::empty();
+    let mut world = World::empty("123");
 
     // This builds a dispatcher.
     // The third parameter of `add` specifies

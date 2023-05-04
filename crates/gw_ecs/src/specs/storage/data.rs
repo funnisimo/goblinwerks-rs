@@ -258,7 +258,7 @@ mod tests {
 
     #[test]
     fn uses_setup() {
-        let mut w = World::default();
+        let mut w = World::empty(0);
 
         let mut d = DispatcherBuilder::new().with(Sys, "sys", &[]).build();
 

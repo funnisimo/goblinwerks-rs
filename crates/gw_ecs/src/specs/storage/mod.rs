@@ -626,7 +626,7 @@ mod tests_inline {
 
     #[test]
     fn test_anti_par_join() {
-        let mut world = World::default();
+        let mut world = World::empty(0);
         world.create_entity().build();
         world.exec(|(entities, pos): (Entities, ReadComp<Pos>)| {
             (&entities, !&pos).par_join().for_each(|(ent, ())| {

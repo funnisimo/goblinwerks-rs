@@ -13,6 +13,7 @@ struct UniqueB(u32);
 
 #[derive(Debug)]
 struct NotSync {
+    #[allow(dead_code)]
     ptr: *const u8,
 }
 

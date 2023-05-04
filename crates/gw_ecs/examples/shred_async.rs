@@ -42,7 +42,7 @@ impl<'a> System<'a> for PrintSystem {
 fn main() {
     let mut x = 5;
 
-    let mut resources = World::empty();
+    let mut resources = World::empty(123);
     resources.insert_resource(ResA);
     resources.insert_resource(ResB);
     let mut dispatcher = DispatcherBuilder::new()

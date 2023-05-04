@@ -33,3 +33,5 @@ pub use rayon::iter::ParallelIterator;
 pub use gw_macro::Component; // ConvertSaveLoad
 #[cfg(feature = "derive")]
 pub use gw_macro::SystemData;
+
+pub use atomize;

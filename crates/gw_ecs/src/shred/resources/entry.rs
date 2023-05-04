@@ -18,7 +18,7 @@
 // /// #[derive(Debug)]
 // /// struct Res(i32);
 // ///
-// /// let mut world = World::empty();
+// /// let mut world = World::empty(0);
 // ///
 // /// let value = world.entry().or_insert(Res(4));
 // /// println!("{:?}", value.0 * 2);

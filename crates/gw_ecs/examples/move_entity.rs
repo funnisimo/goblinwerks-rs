@@ -20,12 +20,7 @@ struct Invisible;
 
 fn main() {
     // CREATE + POPULATE SOURCE WORLD
-    let mut world = World::default();
-
-    {
-        let entities = world.entities();
-        println!("world 1 entities = {:?}", *entities);
-    }
+    let mut world = World::empty(0);
 
     // create a registry which uses strings as the external type ID
     world.register::<Position>();
@@ -60,7 +55,7 @@ fn main() {
     println!("Original Entity = {:?}", entity);
 
     // CREATE + POPULATE DEST WORLD
-    let mut world2 = World::default();
+    let mut world2 = World::empty(1);
     world2.register_components(&world);
 
     // or extend via an IntoIterator of tuples to add many at once (this is faster)

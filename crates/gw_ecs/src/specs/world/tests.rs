@@ -18,7 +18,7 @@ impl Component for Vel {
 
 #[test]
 fn delete_all() {
-    let mut world = World::default();
+    let mut world = World::empty(0);
 
     world.register::<Pos>();
     world.register::<Vel>();
@@ -37,7 +37,7 @@ fn delete_all() {
 
 #[test]
 fn lazy_insertion() {
-    let mut world = World::default();
+    let mut world = World::empty(0);
     world.register::<Pos>();
     world.register::<Vel>();
 
@@ -61,7 +61,7 @@ fn lazy_insertion() {
 
 #[test]
 fn lazy_removal() {
-    let mut world = World::default();
+    let mut world = World::empty(0);
     world.register::<Pos>();
 
     let e = world.create_entity().with(Pos).build();
@@ -76,7 +76,7 @@ fn lazy_removal() {
 
 #[test]
 fn super_lazy_execution() {
-    let mut world = World::default();
+    let mut world = World::empty(0);
     world.register::<Pos>();
 
     let e = {
@@ -97,7 +97,7 @@ fn super_lazy_execution() {
 
 #[test]
 fn lazy_execution() {
-    let mut world = World::default();
+    let mut world = World::empty(0);
     world.register::<Pos>();
 
     let e = {
@@ -119,7 +119,7 @@ fn lazy_execution() {
 
 #[test]
 fn lazy_execution_order() {
-    let mut world = World::default();
+    let mut world = World::empty(0);
     world.insert_resource(Vec::<u32>::new());
     {
         let lazy = world.read_resource::<LazyUpdate>();
@@ -139,7 +139,7 @@ fn lazy_execution_order() {
 
 #[test]
 fn delete_twice() {
-    let mut world = World::default();
+    let mut world = World::empty(0);
 
     let e = world.create_entity().build();
 
@@ -149,7 +149,7 @@ fn delete_twice() {
 
 #[test]
 fn delete_and_lazy() {
-    let mut world = World::default();
+    let mut world = World::empty(0);
     {
         let lazy_update = world.write_resource::<crate::specs::LazyUpdate>();
         lazy_update.exec(|world| {

@@ -351,7 +351,7 @@ mod tests {
     //     assert_eq!(Read::<Res>::reads(), vec![ResourceId::new::<Res>()]);
     //     assert_eq!(Read::<Res>::writes(), vec![]);
 
-    //     let mut world = World::empty();
+    //     let mut world = World::empty(0);
     //     world.insert(Res);
     //     <Read<Res> as SystemData>::fetch(&world);
     // }
@@ -361,7 +361,7 @@ mod tests {
     //     assert_eq!(Write::<Res>::reads(), vec![]);
     //     assert_eq!(Write::<Res>::writes(), vec![ResourceId::new::<Res>()]);
 
-    //     let mut world = World::empty();
+    //     let mut world = World::empty(0);
     //     world.insert(Res);
     //     <Write<Res> as SystemData>::fetch(&world);
     // }
@@ -398,7 +398,7 @@ mod tests {
 
     // #[test]
     // fn system_data() {
-    //     let mut resources = World::empty();
+    //     let mut resources = World::empty(0);
 
     //     resources.insert(5u32);
     //     let x = *resources.system_data::<Read<u32>>();
@@ -407,7 +407,7 @@ mod tests {
 
     // #[test]
     // fn setup() {
-    //     let mut resources = World::empty();
+    //     let mut resources = World::empty(0);
 
     //     resources.insert(5u32);
     //     resources.setup::<Read<u32>>();
@@ -424,7 +424,7 @@ mod tests {
     // fn exec() {
     //     #![allow(clippy::float_cmp)]
 
-    //     let mut resources = World::empty();
+    //     let mut resources = World::empty(0);
 
     //     resources.exec(|(float, boolean): (Read<f32>, Read<bool>)| {
     //         assert_eq!(*float, 0.0);
@@ -445,7 +445,7 @@ mod tests {
     // #[test]
     // #[should_panic]
     // fn exec_panic() {
-    //     let mut resources = World::empty();
+    //     let mut resources = World::empty(0);
 
     //     resources.exec(|(_float, _boolean): (Write<f32>, Write<bool>)| {
     //         panic!();

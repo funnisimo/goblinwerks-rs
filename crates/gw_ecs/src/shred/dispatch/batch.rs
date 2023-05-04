@@ -236,7 +236,7 @@ mod tests {
             )
             .build();
 
-        let mut world = World::empty();
+        let mut world = World::empty(123);
         dispatcher.setup(&mut world);
 
         let potato_store = world.read_resource::<PotatoStore>();
@@ -275,7 +275,7 @@ mod tests {
             .with(CloseStoresSystem, "close_stores_system", &[])
             .build();
 
-        let mut world = World::empty();
+        let mut world = World::empty(123);
 
         dispatcher.setup(&mut world);
 
@@ -336,7 +336,7 @@ mod tests {
             .with(CloseStoresSystem, "close_stores_system", &[])
             .build();
 
-        let mut world = World::empty();
+        let mut world = World::empty(123);
 
         dispatcher.setup(&mut world);
 

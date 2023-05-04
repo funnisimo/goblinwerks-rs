@@ -186,7 +186,7 @@ mod tests {
 
     #[test]
     fn test() {
-        let mut world = World::default();
+        let mut world = World::empty(0);
         world.register::<Health>();
 
         let a = world.create_entity().with(Health(100)).build();

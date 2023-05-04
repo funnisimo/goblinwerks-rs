@@ -34,7 +34,7 @@ impl<'a> SystemData<'a> for ExampleBundle<'a> {
 }
 
 fn main() {
-    let mut res = World::empty();
+    let mut res = World::empty(0);
     res.insert_resource(ResA);
     res.insert_resource(ResB);
 

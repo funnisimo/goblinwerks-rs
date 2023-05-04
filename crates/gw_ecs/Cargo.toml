@@ -14,13 +14,13 @@ categories = ["concurrency"]
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-ahash    = "0.8.3"
-arrayvec = "0.7.2"
-rayon    = { version = "1.7.0", optional = true }
-gw_macro = { path = "../gw_macro", optional = true }
-smallvec = "1.10.0"
-tynm     = "0.1.7"
-
+ahash           = "0.8.3"
+arrayvec        = "0.7.2"
+rayon           = { version = "1.7.0", optional = true }
+gw_macro        = { path = "../gw_macro", optional = true }
+smallvec        = "1.10.0"
+tynm            = "0.1.7"
+atomize         = "0.1.3"
 crossbeam-queue = "0.3"
 hashbrown       = "0.13.2"
 hibitset        = { version = "0.6.3", default-features = false }

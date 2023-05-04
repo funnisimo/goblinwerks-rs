@@ -214,7 +214,7 @@ impl<'a> System<'a> for AddIntToFloat {
 }
 
 fn main() {
-    let mut w = World::default();
+    let mut w = World::empty("MAIN");
     // This builds our dispatcher, which contains the systems.
     // Every system has a name and can depend on other systems.
     // "check_positive" depends on  "print_bool" for example,

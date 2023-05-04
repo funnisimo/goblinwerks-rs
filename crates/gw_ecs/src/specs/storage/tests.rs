@@ -29,7 +29,7 @@ mod map_test {
 
     #[test]
     fn insert() {
-        let mut w = World::default();
+        let mut w = World::empty(0);
         let mut c = create(&mut w);
 
         for i in 0..1_000 {
@@ -45,7 +45,7 @@ mod map_test {
 
     #[test]
     fn insert_100k() {
-        let mut w = World::default();
+        let mut w = World::empty(0);
         let mut c = create(&mut w);
 
         for i in 0..100_000 {
@@ -61,7 +61,7 @@ mod map_test {
 
     #[test]
     fn remove() {
-        let mut w = World::default();
+        let mut w = World::empty(0);
         let mut c = create(&mut w);
 
         for i in 0..1_000 {
@@ -85,7 +85,7 @@ mod map_test {
 
     #[test]
     fn test_gen() {
-        let mut w = World::default();
+        let mut w = World::empty(0);
         let mut c = create(&mut w);
 
         for i in 0..1_000i32 {
@@ -104,7 +104,7 @@ mod map_test {
 
     #[test]
     fn insert_same_key() {
-        let mut w = World::default();
+        let mut w = World::empty(0);
         let mut c = create(&mut w);
 
         for i in 0..10_000 {
@@ -118,7 +118,7 @@ mod map_test {
     #[should_panic]
     #[test]
     fn wrap() {
-        let mut w = World::default();
+        let mut w = World::empty(0);
         let mut c = create(&mut w);
 
         let _ = c.insert(ent(1 << 25), Comp(7));
@@ -247,7 +247,7 @@ mod test {
     where
         T::Storage: Default,
     {
-        let mut w = World::default();
+        let mut w = World::empty(0);
         let mut s: Storage<T, _> = create(&mut w);
 
         for i in 0..1_000 {
@@ -268,7 +268,7 @@ mod test {
     where
         T::Storage: Default,
     {
-        let mut w = World::default();
+        let mut w = World::empty(0);
         let mut s: Storage<T, _> = create(&mut w);
 
         for i in 0..1_000 {
@@ -290,7 +290,7 @@ mod test {
     where
         T::Storage: Default,
     {
-        let mut w = World::default();
+        let mut w = World::empty(0);
         let mut s: Storage<T, _> = create(&mut w);
 
         for i in 0..1_000 {
@@ -317,7 +317,7 @@ mod test {
     where
         T::Storage: Default,
     {
-        let mut w = World::default();
+        let mut w = World::empty(0);
         let mut s: Storage<T, _> = create(&mut w);
 
         // Insert the first 500 components manually, leaving indices 500..1000
@@ -355,7 +355,7 @@ mod test {
     where
         T::Storage: Default,
     {
-        let mut w = World::default();
+        let mut w = World::empty(0);
         let mut s: Storage<T, _> = create(&mut w);
 
         for i in 0..1_000 {
@@ -382,7 +382,7 @@ mod test {
     where
         T::Storage: Default,
     {
-        let mut w = World::default();
+        let mut w = World::empty(0);
         let mut s: Storage<T, _> = create(&mut w);
 
         for i in 0..1_000 {
@@ -402,7 +402,7 @@ mod test {
     where
         T::Storage: Default,
     {
-        let mut w = World::default();
+        let mut w = World::empty(0);
         let mut s: Storage<T, _> = create(&mut w);
 
         for i in 0..10 {
@@ -422,7 +422,7 @@ mod test {
     where
         T::Storage: Default,
     {
-        let mut w = World::default();
+        let mut w = World::empty(0);
         let mut s: Storage<T, _> = create::<T>(&mut w);
 
         for i in 0..10 {
@@ -440,7 +440,7 @@ mod test {
     where
         T::Storage: Default + SliceAccess<T, Element = T>,
     {
-        let mut w = World::default();
+        let mut w = World::empty(0);
         let mut s: Storage<T, _> = create(&mut w);
 
         for i in 0..1_000 {
@@ -460,7 +460,7 @@ mod test {
     where
         T::Storage: Default + SliceAccess<T, Element = MaybeUninit<T>>,
     {
-        let mut w = World::default();
+        let mut w = World::empty(0);
         let mut s: Storage<T, _> = create(&mut w);
 
         for i in 0..1_000 {
@@ -572,7 +572,7 @@ mod test {
 
     #[test]
     fn default_vec_test_defaults() {
-        let mut w = World::default();
+        let mut w = World::empty(0);
         let mut s: Storage<CdefaultVec, _> = create(&mut w);
 
         // insert 1 and 3 at 1 and 3
@@ -662,7 +662,7 @@ mod test {
 
     #[test]
     fn test_null_insert_twice() {
-        let mut w = World::default();
+        let mut w = World::empty(0);
 
         w.register::<Cnull>();
         let e = w.create_entity().build();
@@ -685,7 +685,7 @@ mod test {
         use crate::specs::join::Join;
         use std::collections::HashSet;
 
-        let mut w = World::default();
+        let mut w = World::empty(0);
         w.register::<Cvec>();
         let mut s1: Storage<Cvec, _> = w.write_component();
         let mut components = HashSet::new();
@@ -725,7 +725,7 @@ mod test {
         use rayon::iter::ParallelIterator;
         use std::{collections::HashSet, sync::Mutex};
 
-        let mut w = World::default();
+        let mut w = World::empty(0);
         w.register::<Cvec>();
         let mut s1: Storage<Cvec, _> = w.write_component();
         let mut components = HashSet::new();
@@ -764,7 +764,7 @@ mod test {
 
     #[test]
     fn storage_entry() {
-        let mut w = World::default();
+        let mut w = World::empty(0);
         w.register::<Cvec>();
 
         let e1 = w.create_entity().build();
@@ -860,7 +860,7 @@ mod test {
     fn storage_mask() {
         use crate::specs::join::Join;
 
-        let mut w = World::default();
+        let mut w = World::empty(0);
         w.register::<CMarker>();
         let mut s1: Storage<CMarker, _> = w.write_component();
 
@@ -887,7 +887,7 @@ mod test {
         use crate::specs::join::ParJoin;
         use rayon::iter::ParallelIterator;
 
-        let mut w = World::default();
+        let mut w = World::empty(0);
         w.register::<CMarker>();
         let mut s1: Storage<CMarker, _> = w.write_component();
 
@@ -904,7 +904,7 @@ mod test {
     fn flagged() {
         use crate::specs::join::Join;
 
-        let mut w = World::default();
+        let mut w = World::empty(0);
         w.register::<FlaggedCvec>();
 
         let mut s1: Storage<FlaggedCvec, _> = w.write_component();
@@ -997,7 +997,7 @@ mod test {
     fn entries() {
         use crate::specs::{join::Join, storage::WriteComp, world::Entities};
 
-        let mut w = World::default();
+        let mut w = World::empty(0);
 
         w.register::<CEntries>();
 

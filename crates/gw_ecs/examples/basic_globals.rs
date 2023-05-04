@@ -51,11 +51,11 @@ fn main() {
 
     dispatcher.dispatch(ecs.current_world());
 
-    let mut world = World::empty();
+    let mut world = World::empty(0);
     world.insert_resource(UniqueA(2));
 
-    let index = ecs.push_world(world);
-    ecs.set_current_index(index);
+    let index = ecs.insert_world(world);
+    ecs.set_current_world(0);
 
     dispatcher.dispatch(ecs.current_world());
 }

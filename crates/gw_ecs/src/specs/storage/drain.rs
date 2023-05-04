@@ -52,7 +52,7 @@ mod tests {
             type Storage = DenseVecStorage<Self>;
         }
 
-        let mut world = World::default();
+        let mut world = World::empty(0);
         world.register::<Comp>();
 
         world.create_entity().build();

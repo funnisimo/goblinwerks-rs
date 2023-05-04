@@ -1,17 +1,31 @@
+use atomize::Atom;
+
 use crate::globals::Globals;
 use crate::shred::{PanicIfMissing, Resource};
-use crate::{Component, ReadComp, ReadGlobal, ReadRes, World, WriteComp, WriteRes};
+use crate::{
+    Component, Entity, EntityBuilder, ReadComp, ReadGlobal, ReadRes, World, WriteComp, WriteRes,
+};
 use crate::{SystemData, WriteGlobal};
 
 pub struct Ecs {
     pub(crate) worlds: Vec<World>,
     pub(crate) current: usize,
     globals: Globals,
+    registry: Vec<Box<dyn Fn(&mut World) -> ()>>,
 }
 
 impl Ecs {
+    pub fn empty() -> Self {
+        Ecs {
+            worlds: Vec::new(),
+            current: 0,
+            globals: Globals::new(),
+            registry: Vec::new(),
+        }
+    }
+
     pub fn new(world: World) -> Self {
-        let globals = Globals::default();
+        let globals = Globals::new();
         let mut world = world;
         world.set_globals(globals.clone());
 
@@ -19,14 +33,27 @@ impl Ecs {
             worlds: vec![world],
             current: 0,
             globals,
+            registry: Vec::new(),
         }
     }
 
-    pub fn push_world(&mut self, world: World) -> usize {
+    pub fn is_empty(&self) -> bool {
+        self.worlds.is_empty()
+    }
+
+    pub fn insert_world(&mut self, world: World) {
         let mut world = world;
         world.set_globals(self.globals.clone());
         self.worlds.push(world);
-        self.worlds.len() - 1
+    }
+
+    pub fn create_world<I: Into<Atom>>(&mut self, id: I) -> &mut World {
+        let mut world = World::new(id, self.globals.clone());
+        for r in self.registry.iter() {
+            (r)(&mut world);
+        }
+        self.worlds.push(world);
+        self.worlds.last_mut().unwrap()
     }
 
     /// Returns the current active world
@@ -34,20 +61,31 @@ impl Ecs {
         &self.worlds[self.current]
     }
 
-    pub fn set_current_index(&mut self, index: usize) {
-        // TODO - Safety: is index in bounds?
-        self.current = index;
+    // TODO - Error Type
+    pub fn set_current_world<I: Into<Atom>>(&mut self, id: I) -> Result<(), ()> {
+        // TODO - Report error?!
+        let id: Atom = id.into();
+        match self.worlds.iter().position(|w| w.id() == id) {
+            None => Err(()),
+            Some(index) => {
+                self.current = index;
+                Ok(())
+            }
+        }
     }
 
-    pub fn set_current_with<F>(&mut self, func: F) -> Option<usize>
+    pub fn set_current_with<F>(&mut self, func: F) -> Result<Atom, ()>
     where
         F: Fn(&World) -> bool,
     {
         match self.worlds.iter().position(func) {
-            None => None,
+            None => {
+                // TODO - Report Error?!?!
+                Err(())
+            }
             Some(index) => {
-                self.set_current_index(index);
-                Some(index)
+                self.current = index;
+                Ok(self.current_world().id())
             }
         }
     }
@@ -59,6 +97,25 @@ impl Ecs {
 
     pub fn fetch<'a, D: SystemData<'a>>(&'a self) -> D {
         D::fetch(self.current_world())
+    }
+
+    pub fn get_world<I: Into<Atom>>(&self, id: I) -> Option<&World> {
+        let id: Atom = id.into();
+        self.worlds.iter().find(|w| w.id() == id)
+    }
+
+    pub fn iter_worlds(&self) -> impl Iterator<Item = &World> {
+        self.worlds.iter()
+    }
+
+    pub fn iter_worlds_mut(&mut self) -> impl Iterator<Item = &mut World> {
+        self.worlds.iter_mut()
+    }
+
+    pub fn maintain(&mut self) {
+        for world in self.worlds.iter_mut() {
+            world.maintain();
+        }
     }
 
     // GLOBALS
@@ -127,20 +184,58 @@ impl Ecs {
 
     // COMPONENTS
 
+    pub fn create_entity(&mut self) -> EntityBuilder {
+        self.current_world_mut().create_entity()
+    }
+
+    pub fn move_entity<I: Into<Atom>, J: Into<Atom>>(
+        &mut self,
+        entity: Entity,
+        source: I,
+        dest: J,
+    ) -> Entity {
+        let source_id: Atom = source.into();
+        let source_index = match self.worlds.iter().position(|w| w.id() == source_id) {
+            None => panic!("Failed to find source world - {}", source_id),
+            Some(index) => index,
+        };
+        let dest_id: Atom = dest.into();
+        let dest_index = match self.worlds.iter().position(|w| w.id() == dest_id) {
+            None => panic!("Failed to find destination world - {}", dest_id),
+            Some(index) => index,
+        };
+
+        if source_index == dest_index {
+            return entity;
+        }
+
+        let (source_world, dest_world) = if source_index < dest_index {
+            let (left, right) = self.worlds.split_at_mut(dest_index);
+            let (_, late) = left.split_at_mut(source_index);
+            (&mut late[0], &mut right[0])
+        } else {
+            let (left, right) = self.worlds.split_at_mut(source_index);
+            let (_, late) = left.split_at_mut(dest_index);
+            (&mut right[0], &mut late[0])
+        };
+
+        source_world.move_entity_to(entity, dest_world)
+    }
+
     pub fn register<T: Component>(&mut self)
     where
         T::Storage: Default,
     {
-        self.current_world_mut().register::<T>();
+        self.registry.push(Box::new(|w| w.register::<T>()));
     }
 
     pub fn register_with_storage<F, T>(&mut self, storage: F)
     where
-        F: Fn() -> T::Storage,
+        F: Fn() -> T::Storage + 'static,
         T: Component,
     {
-        self.current_world_mut()
-            .register_with_storage::<F, T>(storage);
+        self.registry
+            .push(Box::new(move |w| w.register_with_storage::<T>(storage())));
     }
 
     pub fn read_component<C: Component>(&self) -> ReadComp<C> {
@@ -154,6 +249,6 @@ impl Ecs {
 
 impl Default for Ecs {
     fn default() -> Self {
-        Ecs::new(World::empty())
+        Ecs::new(World::empty("DEFAULT"))
     }
 }

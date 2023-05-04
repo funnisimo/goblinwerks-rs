@@ -216,7 +216,7 @@ where
 ///     }
 /// }
 ///
-/// let mut world = World::empty();
+/// let mut world = World::empty(0);
 ///
 /// world.insert(ImplementorA(3));
 /// world.insert(ImplementorB(1));
@@ -357,6 +357,21 @@ where
     }
 }
 
+impl<T> Clone for MetaTable<T>
+where
+    T: ?Sized,
+{
+    fn clone(&self) -> Self {
+        MetaTable {
+            fat: self.fat.clone(),
+            indices: self.indices.clone(),
+            tys: self.tys.clone(),
+            // `MetaTable` is invariant over `T`
+            marker: PhantomData,
+        }
+    }
+}
+
 fn assert_unsized<T: ?Sized>() {
     use std::mem::size_of;
 
@@ -365,6 +380,8 @@ fn assert_unsized<T: ?Sized>() {
 
 #[cfg(test)]
 mod tests {
+    use atomize::a;
+
     use super::*;
 
     trait Object {
@@ -412,7 +429,7 @@ mod tests {
 
     #[test]
     fn test_iter_all() {
-        let mut world = World::empty();
+        let mut world = World::empty(123);
 
         world.insert_resource(ImplementorA(3));
         world.insert_resource(ImplementorB(1));
@@ -440,7 +457,7 @@ mod tests {
 
     #[test]
     fn test_iter_all_after_removal() {
-        let mut world = World::empty();
+        let mut world = World::empty("TEST");
 
         world.insert_resource(ImplementorA(3));
         world.insert_resource(ImplementorB(1));
@@ -491,7 +508,7 @@ mod tests {
 
     #[test]
     fn get() {
-        let mut world = World::empty();
+        let mut world = World::empty(123);
 
         world.insert_resource(ImplementorC);
         world.insert_resource(ImplementorD);

@@ -186,7 +186,7 @@ impl<H> Par<H, Nil> {
 /// #
 /// # let pool = ThreadPoolBuilder::default().build().unwrap();
 /// #
-/// # let mut world = World::empty();
+/// # let mut world = World::empty(0);
 /// let x = 5u8;
 ///
 /// let mut dispatcher = ParSeq::new(
@@ -424,11 +424,11 @@ mod tests {
         Par::new(A(nr.clone()))
             .with(A(nr.clone()))
             .with(A(nr.clone()))
-            .run(&World::empty(), &pool);
+            .run(&World::empty(0), &pool);
 
         assert_eq!(nr.load(Ordering::Acquire), 3);
 
-        par![A(nr.clone()), A(nr.clone()),].run(&World::empty(), &pool);
+        par![A(nr.clone()), A(nr.clone()),].run(&World::empty(0), &pool);
 
         assert_eq!(nr.load(Ordering::Acquire), 5);
     }
@@ -452,7 +452,7 @@ mod tests {
         Seq::new(A(nr.clone()))
             .with(A(nr.clone()))
             .with(A(nr.clone()))
-            .run(&World::empty(), &pool);
+            .run(&World::empty(0), &pool);
 
         assert_eq!(nr.load(Ordering::Acquire), 3);
     }

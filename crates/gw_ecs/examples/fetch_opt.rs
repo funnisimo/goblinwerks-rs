@@ -43,7 +43,7 @@ impl<'a> System<'a> for PrintSystem {
 }
 
 fn main() {
-    let mut resources = World::empty();
+    let mut resources = World::empty("MAIN");
     let mut dispatcher = DispatcherBuilder::new()
         .with(PrintSystem, "print", &[]) // Adds a system "print" without dependencies
         .build();

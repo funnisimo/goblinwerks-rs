@@ -141,7 +141,7 @@ impl<'a> System<'a> for ShrapnelSystem {
 }
 
 fn main() {
-    let mut world = World::default();
+    let mut world = World::empty(0);
 
     let mut dispatcher = DispatcherBuilder::new()
         .with(PhysicsSystem, "physics", &[])

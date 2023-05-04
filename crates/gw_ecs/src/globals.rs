@@ -13,8 +13,14 @@ pub struct Globals {
 }
 
 impl Globals {
-    pub fn new(resources: Arc<AtomicRefCell<Resources>>) -> Self {
-        Globals { resources } // Using shred world, not specs world (no components)
+    pub fn new() -> Self {
+        Globals {
+            resources: Arc::new(AtomicRefCell::new(Resources::empty())),
+        }
+    }
+
+    pub fn empty() -> Self {
+        Globals::new()
     }
 
     /// Returns true if the resource is in the Globals
@@ -69,9 +75,7 @@ impl Globals {
 
 impl Default for Globals {
     fn default() -> Self {
-        Globals {
-            resources: Arc::new(AtomicRefCell::new(Resources::empty())),
-        }
+        Globals::new()
     }
 }
 

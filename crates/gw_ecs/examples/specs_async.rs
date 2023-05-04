@@ -40,7 +40,7 @@ fn main() {
     // container for components
     // and other resources.
 
-    let mut world = World::default();
+    let mut world = World::empty("MAIN");
     world.register::<Pos>();
     world.register::<Vel>();
 

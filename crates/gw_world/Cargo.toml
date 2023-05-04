@@ -7,11 +7,11 @@ edition = "2021"
 
 [dependencies]
 enum-utils       = "0.1"
-bitflags         = "1.3.2"
+bitflags         = "2.2.1"
 gw_app           = { path = "../gw_app" }
 gw_util          = { path = "../gw_util" }
 lazy_static      = "1.4.0"
 gw_ui            = { path = "../gw_ui" }
 num-rational     = "0.4"
-serde            = "1.0.154"
+serde            = { version = "1.0.160", features = ["derive"] }
 assert_approx_eq = "1.1.0"

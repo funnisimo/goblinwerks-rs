@@ -1,3 +1,5 @@
+use atomize::Atom;
+
 use crate::globals::Globals;
 use crate::shred::{PanicIfMissing, Resources, SystemData};
 use crate::specs::error::WrongGeneration;
@@ -15,6 +17,7 @@ use crate::{ReadGlobal, ReadRes, Resource, ResourceId, WriteGlobal, WriteRes};
 // pub use crate::shred::Entry;
 
 pub struct World {
+    id: Atom,
     pub(crate) resources: Resources,
     pub(crate) globals: Globals,
 }
@@ -22,25 +25,33 @@ pub struct World {
 impl World {
     /// Creates a new World with a new empty Globals.
     ///
-    pub fn empty() -> Self {
-        Self::new(Globals::default())
+    pub fn empty<I: Into<Atom>>(id: I) -> Self {
+        Self::new(id, Globals::default())
     }
 
     /// Creates a new World with the given Globals.
     ///
-    pub fn new(globals: Globals) -> Self {
+    pub fn new<I: Into<Atom>>(id: I, globals: Globals) -> Self {
         let mut resources = Resources::empty();
         resources.insert(EntitiesRes::default());
         resources.insert(MetaTable::<dyn AnyStorage>::default());
         resources.insert(LazyUpdate::default());
 
-        World { resources, globals }
+        World {
+            id: id.into(),
+            resources,
+            globals,
+        }
     }
 
     /// Sets the globals on this World.
     /// This is used when adding Worlds into the Ecs.
     pub(crate) fn set_globals(&mut self, globals: Globals) {
         self.globals = globals;
+    }
+
+    pub fn id(&self) -> Atom {
+        self.id
     }
 
     /// Gets `SystemData` `T` from the `World`. This can be used to retrieve
@@ -56,7 +67,7 @@ impl World {
     /// # #[derive(Default)] struct Timer; #[derive(Default)] struct AnotherResource;
     ///
     /// // NOTE: If you use Specs, use `World::new` instead.
-    /// let mut world = World::empty();
+    /// let mut world = World::empty(0);
     /// world.insert_resource(Timer);
     /// world.insert_resource(AnotherResource);
     /// let system_data: (ReadRes<Timer>, ReadRes<AnotherResource>) = world.fetch();
@@ -87,7 +98,7 @@ impl World {
     /// struct MyCounter(u32);
     ///
     /// // NOTE: If you use Specs, use `World::new` instead.
-    /// let mut world = World::empty();
+    /// let mut world = World::empty(0);
     /// assert!(!world.has_value::<MyCounter>());
     ///
     /// // `Read<MyCounter>` requires a `Default` implementation, and uses
@@ -105,7 +116,7 @@ impl World {
     /// struct MyCounter(u32);
     ///
     /// // NOTE: If you use Specs, use `World::new` instead.
-    /// let mut world = World::empty();
+    /// let mut world = World::empty(0);
     ///
     /// world.setup::<ReadExpect<MyCounter>>();
     /// ```
@@ -135,7 +146,7 @@ impl World {
     /// #     fn writes() -> Vec<ResourceId> { vec![] }
     /// #     fn setup(res: &mut World) {}
     /// # }
-    /// # let mut world = World::empty();
+    /// # let mut world = World::empty(0);
     /// {
     ///     // note the extra scope
     ///     world.setup::<MySystemData>();
@@ -149,7 +160,7 @@ impl World {
     /// ```
     /// # use shred::*;
     /// // NOTE: If you use Specs, use `World::new` instead.
-    /// let mut world = World::empty();
+    /// let mut world = World::empty(0);
     ///
     /// #[derive(Default)]
     /// struct MyRes {
@@ -386,7 +397,7 @@ impl World {
     /// # struct MyRes(i32);
     /// use shred::World;
     ///
-    /// let mut world = World::empty();
+    /// let mut world = World::empty(0);
     /// world.insert(MyRes(5));
     /// ```
     pub fn insert_resource<R>(&mut self, r: R)
@@ -484,16 +495,15 @@ impl World {
     where
         T::Storage: Default,
     {
-        self.register_with_storage::<_, T>(Default::default);
+        self.register_with_storage::<T>(Default::default());
     }
 
-    pub(crate) fn register_with_storage<F, T>(&mut self, storage: F)
+    pub(crate) fn register_with_storage<T>(&mut self, storage: T::Storage)
     where
-        F: Fn() -> T::Storage,
         T: Component,
     {
         self.resources
-            .get_or_insert_with(move || MaskedStorage::<T>::new(storage()));
+            .get_or_insert_with(move || MaskedStorage::<T>::new(storage));
         // self.resources
         //     .get_or_insert_with(MetaTable::<dyn AnyStorage>::default);
         self.resources
@@ -609,14 +619,16 @@ impl World {
     }
 }
 
-impl Default for World {
-    fn default() -> Self {
-        World::empty()
-    }
-}
+// impl Default for World {
+//     fn default() -> Self {
+//         World::empty("DEFAULT".into())
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
+    use atomize::a;
+
     use super::*;
     use crate::shred::{ReadRes, ReadResExpect, WriteRes};
     use crate::shred::{RunNow, System, SystemData};
@@ -629,7 +641,7 @@ mod tests {
         assert_eq!(ReadRes::<Res>::reads(), vec![ResourceId::new::<Res>()]);
         assert_eq!(ReadRes::<Res>::writes(), vec![]);
 
-        let mut world = World::empty();
+        let mut world = World::empty(a!(DEFAULT));
         world.insert_resource(Res);
         <ReadRes<Res> as SystemData>::fetch(&world);
     }
@@ -639,14 +651,14 @@ mod tests {
         assert_eq!(WriteRes::<Res>::reads(), vec![]);
         assert_eq!(WriteRes::<Res>::writes(), vec![ResourceId::new::<Res>()]);
 
-        let mut world = World::empty();
+        let mut world = World::empty("DEFAULT");
         world.insert_resource(Res);
         <WriteRes<Res> as SystemData>::fetch(&world);
     }
 
     #[test]
     fn system_data() {
-        let mut world = World::empty();
+        let mut world = World::empty(a!(MAIN));
 
         world.insert_resource(5u32);
         let x = *world.fetch::<ReadRes<u32>>();
@@ -655,7 +667,7 @@ mod tests {
 
     #[test]
     fn setup() {
-        let mut world = World::empty();
+        let mut world = World::empty(Atom::from("TEST"));
 
         world.insert_resource(5u32);
         world.setup::<ReadRes<u32>>();
@@ -672,7 +684,7 @@ mod tests {
     fn exec() {
         #![allow(clippy::float_cmp)]
 
-        let mut world = World::empty();
+        let mut world = World::empty("TEST");
 
         world.exec(|(float, boolean): (ReadRes<f32>, ReadRes<bool>)| {
             assert_eq!(*float, 0.0);
@@ -695,7 +707,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn exec_panic() {
-        let mut world = World::empty();
+        let mut world = World::empty(Atom::from(123));
 
         world.exec(|(_float, _boolean): (WriteRes<f32>, WriteRes<bool>)| {
             panic!();
@@ -716,7 +728,7 @@ mod tests {
             }
         }
 
-        let mut world = World::empty();
+        let mut world = World::empty(123);
         assert!(world.try_read_resource::<i32>().is_none());
 
         let mut sys = Sys;

@@ -27,7 +27,7 @@ impl<'a> System<'a> for EmptySystem {
 fn main() {
     let mut x = 5;
 
-    let mut resources = World::empty();
+    let mut resources = World::empty(0);
     let mut dispatcher = DispatcherBuilder::new()
         .with_thread_local(EmptySystem(&mut x))
         .build();
