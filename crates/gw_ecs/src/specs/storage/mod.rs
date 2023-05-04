@@ -20,7 +20,7 @@ pub use self::{
 use self::storages::SliceAccess;
 
 // use crate::shred::Fetch;
-use crate::{atomic_refcell::AtomicRef, utils::CastFrom};
+use crate::{atomic_refcell::AtomicRef, utils::CastFrom, EntityBuilder, World};
 use hibitset::{BitSet, BitSetLike, BitSetNot};
 use std::{
     self,
@@ -85,6 +85,12 @@ unsafe impl<'a> ParJoin for AntiStorage<'a> {}
 pub trait AnyStorage {
     /// Drop components of given entities.
     fn drop(&mut self, entities: &[Entity]);
+
+    /// Registers the component in the world - for registry copy
+    fn register(&self, world: &mut World);
+
+    /// Moves the component of the given entity to the other world
+    fn try_move_component(&mut self, entity: Entity, dest: &mut EntityBuilder);
 }
 
 unsafe impl<T> CastFrom<T> for dyn AnyStorage
@@ -108,6 +114,14 @@ where
         for entity in entities {
             MaskedStorage::drop(self, entity.id());
         }
+    }
+
+    fn register(&self, world: &mut World) {
+        world.register::<T>();
+    }
+
+    fn try_move_component(&mut self, entity: Entity, dest: &mut EntityBuilder) {
+        dest.maybe_insert::<T>(self.remove(entity.id()));
     }
 }
 

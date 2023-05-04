@@ -4,30 +4,31 @@ use crate::loader::Loader;
 use crate::messages::Messages;
 use crate::panel::PanelProgram;
 use crate::{font::Fonts, log, App, AppConfig, AppInput};
-pub use atomic_refcell::{AtomicRef, AtomicRefMut, BorrowError, BorrowMutError};
-use lazy_static::lazy_static;
-use legion::serialize::Canon;
-pub use legion::storage::Component;
-use legion::systems::Resource;
-pub use legion::systems::ResourceSet;
-pub use legion::Registry;
-pub use legion::*;
-use serde::de::DeserializeSeed;
-pub use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
+// pub use atomic_refcell::{AtomicRef, AtomicRefMut, BorrowError, BorrowMutError};
+pub use gw_ecs::*;
+// use lazy_static::lazy_static;
+// use legion::serialize::Canon;
+// pub use legion::storage::Component;
+// use legion::systems::Resource;
+// pub use legion::systems::ResourceSet;
+// pub use legion::Registry;
+// pub use legion::*;
+// use serde::de::DeserializeSeed;
+// pub use serde::{Deserialize, Serialize};
+// use std::sync::Mutex;
 
-lazy_static! {
-    pub static ref REGISTRY: Mutex<Registry<String>> = Mutex::new(Registry::new());
-}
+// lazy_static! {
+//     pub static ref REGISTRY: Mutex<Registry<String>> = Mutex::new(Registry::new());
+// }
 
-pub fn register_component<C>(name: &str)
-where
-    for<'d> C: Component + Serialize + Deserialize<'d>,
-{
-    if let Ok(mut registry) = REGISTRY.lock() {
-        registry.register::<C>(name.to_string());
-    }
-}
+// pub fn register_component<C>(name: &str)
+// where
+//     for<'d> C: Component + Serialize + Deserialize<'d>,
+// {
+//     if let Ok(mut registry) = REGISTRY.lock() {
+//         registry.register::<C>(name.to_string());
+//     }
+// }
 
 #[derive(Debug, Clone)]
 pub struct WindowInfo {
@@ -58,25 +59,25 @@ impl Default for Time {
     }
 }
 
-pub struct Ecs {
-    pub world: World,
-    pub resources: Resources,
-}
+// pub struct Ecs {
+//     pub world: World,
+//     pub resources: Resources,
+// }
 
-impl Ecs {
-    pub fn new() -> Self {
-        Ecs {
-            world: World::default(),
-            resources: Resources::default(),
-        }
-    }
-}
+// impl Ecs {
+//     pub fn new() -> Self {
+//         Ecs {
+//             world: World::default(),
+//             resources: Resources::default(),
+//         }
+//     }
+// }
 
 pub fn init_ecs(ecs: &mut Ecs, app: &App, options: &AppConfig) {
-    let resources = &mut ecs.resources;
+    // let resources = &mut ecs.resources;
 
     // FPS
-    resources.insert(Fps::new(options.fps));
+    ecs.insert_global(Fps::new(options.fps));
 
     // Window Sizes
     let real_window_width = (options.size.0 as f32 * app.hidpi_factor()) as u32;
@@ -109,7 +110,7 @@ pub fn init_ecs(ecs: &mut Ecs, app: &App, options: &AppConfig) {
         window_info.hidpi_factor
     ));
 
-    resources.insert(window_info);
+    ecs.insert_global(window_info);
 
     // GL + Panel Program
     let gl = uni_gl::WebGLRenderingContext::new(app.canvas());
@@ -125,12 +126,12 @@ pub fn init_ecs(ecs: &mut Ecs, app: &App, options: &AppConfig) {
         uni_gl::BlendMode::OneMinusSrcAlpha,
     );
 
-    resources.insert(PanelProgram::new(&gl));
+    ecs.insert_global(PanelProgram::new(&gl));
 
-    resources.insert(Fonts::new(&gl));
-    resources.insert(Images::new());
+    ecs.insert_global(Fonts::new(&gl));
+    ecs.insert_global(Images::new());
 
-    resources.insert(gl);
+    ecs.insert_global(gl);
 
     // App Input
     let input = if cfg!(target_arch = "wasm32") {
@@ -146,74 +147,74 @@ pub fn init_ecs(ecs: &mut Ecs, app: &App, options: &AppConfig) {
             (x_offset as u32, y_offset as u32),
         )
     };
-    resources.insert(input);
+    ecs.insert_global(input);
 
-    resources.insert(Time::default());
-    resources.insert(Messages::new());
-    resources.insert(Loader::new());
+    ecs.insert_global(Time::default());
+    ecs.insert_global(Messages::new());
+    ecs.insert_global(Loader::new());
 
     log("Configured ECS");
 }
 
-pub fn scoped_resource<F, R, T>(ecs: &mut Ecs, func: F) -> T
-where
-    F: FnOnce(&mut Ecs, &mut R) -> T,
-    R: Resource,
-{
-    let mut resource = ecs.resources.remove::<R>().unwrap();
-    let result = func(ecs, &mut resource);
-    ecs.resources.insert(resource);
-    return result;
-}
+// pub fn scoped_resource<F, R, T>(ecs: &mut Ecs, func: F) -> T
+// where
+//     F: FnOnce(&mut Ecs, &mut R) -> T,
+//     R: Resource,
+// {
+//     let mut resource = ecs.resources.remove::<R>().unwrap();
+//     let result = func(ecs, &mut resource);
+//     ecs.resources.insert(resource);
+//     return result;
+// }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub struct MoveToNewWorld;
+// #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+// pub struct MoveToNewWorld;
 
-pub fn move_entity(entity: Entity, src: &mut World, dest: &mut World) -> Entity {
-    let mut registry = REGISTRY.lock().unwrap();
+// pub fn move_entity(entity: Entity, src: &mut World, dest: &mut World) -> Entity {
+//     let mut registry = REGISTRY.lock().unwrap();
 
-    // add the marker component
-    let mut entry = src.entry(entity).unwrap();
-    entry.add_component(MoveToNewWorld);
+//     // add the marker component
+//     let mut entry = src.entry(entity).unwrap();
+//     entry.add_component(MoveToNewWorld);
 
-    registry.register::<MoveToNewWorld>("MoveToNewWorld".to_string());
+//     registry.register::<MoveToNewWorld>("MoveToNewWorld".to_string());
 
-    // let mut query = <(Entity, &MoveToNewWorld)>::query();
-    // let src_heros: Vec<Entity> = query.iter(src).map(|(e, _)| *e).collect();
+//     // let mut query = <(Entity, &MoveToNewWorld)>::query();
+//     // let src_heros: Vec<Entity> = query.iter(src).map(|(e, _)| *e).collect();
 
-    // println!("Entities to move - {:?}", src_heros);
+//     // println!("Entities to move - {:?}", src_heros);
 
-    let filter = component::<MoveToNewWorld>();
-    let entity_serializer = Canon::default();
+//     let filter = component::<MoveToNewWorld>();
+//     let entity_serializer = Canon::default();
 
-    let json = serde_json::to_value(&src.as_serializable(filter, &*registry, &entity_serializer))
-        .expect("Failed to serialize world!");
-    // println!("JSON = {:#}", json);
+//     let json = serde_json::to_value(&src.as_serializable(filter, &*registry, &entity_serializer))
+//         .expect("Failed to serialize world!");
+//     // println!("JSON = {:#}", json);
 
-    // for hero in src_heros {
-    // println!("- Deleting = {:?}", hero);
-    // src.remove(hero); // Delete the original entity
-    // }
+//     // for hero in src_heros {
+//     // println!("- Deleting = {:?}", hero);
+//     // src.remove(hero); // Delete the original entity
+//     // }
 
-    src.remove(entity);
+//     src.remove(entity);
 
-    let mut query = <(Entity, &MoveToNewWorld)>::query();
+//     let mut query = <(Entity, &MoveToNewWorld)>::query();
 
-    // let heros: Vec<Entity> = query.iter(dest).map(|(e, _)| *e).collect();
-    // println!("Dest starting entities = {:?}", heros);
+//     // let heros: Vec<Entity> = query.iter(dest).map(|(e, _)| *e).collect();
+//     // println!("Dest starting entities = {:?}", heros);
 
-    // registries are also serde deserializers
-    registry
-        .as_deserialize_into_world(dest, &entity_serializer)
-        .deserialize(json)
-        .expect("Failed to deserialize world!");
+//     // registries are also serde deserializers
+//     registry
+//         .as_deserialize_into_world(dest, &entity_serializer)
+//         .deserialize(json)
+//         .expect("Failed to deserialize world!");
 
-    let new_entities: Vec<Entity> = query.iter(dest).map(|(e, _)| *e).collect();
+//     let new_entities: Vec<Entity> = query.iter(dest).map(|(e, _)| *e).collect();
 
-    let entity = new_entities.into_iter().next().unwrap();
+//     let entity = new_entities.into_iter().next().unwrap();
 
-    let mut entry = dest.entry(entity).unwrap();
-    entry.remove_component::<MoveToNewWorld>();
+//     let mut entry = dest.entry(entity).unwrap();
+//     entry.remove_component::<MoveToNewWorld>();
 
-    entity
-}
+//     entity
+// }

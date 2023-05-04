@@ -1,8 +1,8 @@
+use gw_ecs::{ReadGlobal, ReadGlobalExpect, SystemData, WriteGlobal, WriteGlobalExpect};
 use uni_gl::BufferBit;
 
 use super::input::AppInput;
 use crate::ecs::{init_ecs, Ecs, Time, WindowInfo};
-use crate::ecs::{systems::ResourceSet, Read, Write};
 use crate::font::{default_from_glyph, default_to_glyph};
 use crate::fps::Fps;
 use crate::load_screen::LoadingScreen;
@@ -37,6 +37,7 @@ pub struct Runner {
     screens: Vec<Box<dyn Screen>>,
     // screen_resolution: (u32, u32),
     // real_screen_size: (u32, u32),
+    ready: bool,
 }
 
 impl Runner {
@@ -53,11 +54,12 @@ impl Runner {
         log("Runner created");
 
         Self {
-            ecs: None,
+            ecs: builder.ecs.take(),
             app: Some(app),
             builder,
             max_frameskip: 5,
             screens: Vec::new(),
+            ready: false,
             // screen_resolution,
             // real_screen_size: (real_screen_width, real_screen_height),
         }
@@ -100,10 +102,10 @@ impl Runner {
 
         {
             let (mut window_info, mut input, gl) = <(
-                Write<WindowInfo>,
-                Write<AppInput>,
-                Read<uni_gl::WebGLRenderingContext>,
-            )>::fetch_mut(&mut ecs.resources);
+                WriteGlobalExpect<WindowInfo>,
+                WriteGlobalExpect<AppInput>,
+                ReadGlobalExpect<uni_gl::WebGLRenderingContext>,
+            )>::fetch(ecs.current_world());
 
             let (x_offset, y_offset) =
                 if self.config().fullscreen && cfg!(not(target_arch = "wasm32")) {
@@ -145,7 +147,7 @@ impl Runner {
 
     fn handle_event(&mut self, ctx: &mut Ecs, ev: &mut AppEvent) -> Option<RunnerEvent> {
         {
-            let mut input = ctx.resources.get_mut::<AppInput>().unwrap();
+            let mut input = ctx.write_global::<AppInput>();
             input.on_event(ev);
         }
 
@@ -188,7 +190,7 @@ impl Runner {
     }
 
     fn handle_messages(&mut self, ctx: &mut Ecs) -> Option<RunnerEvent> {
-        let messages = ctx.resources.get_mut::<Messages>().unwrap().take();
+        let messages = ctx.write_global::<Messages>().take();
 
         for (id, val) in messages {
             if let Some(screen) = self.screens.last_mut() {
@@ -270,26 +272,28 @@ impl Runner {
         let mut create = Some(screen);
         log(format!("Runner started"));
 
-        app.run(move |app: &mut crate::app::App| match self.ecs.take() {
-            None => {
+        app.run(move |app: &mut crate::app::App| match self.ready {
+            false => {
                 for ev in app.events.borrow().iter() {
                     match ev {
                         AppEvent::Ready => {
                             log("Runner ready");
 
-                            let mut ctx = Ecs::new();
+                            let mut ctx = self.ecs.take().unwrap_or_default();
                             init_ecs(&mut ctx, &app, self.config());
                             if let Some(func) = create.take() {
                                 self.do_startup_files(&mut ctx);
                                 self.do_startup_screen(&mut ctx, func);
                             }
                             self.ecs = Some(ctx);
+                            self.ready = true;
                         }
                         _ => {}
                     }
                 }
             }
-            Some(mut ctx) => {
+            true => {
+                let mut ctx = self.ecs.take().unwrap();
                 if called {
                     if load_files(&mut ctx) {
                         // call any startup fns
@@ -307,7 +311,7 @@ impl Runner {
     }
 
     fn do_startup_files(&mut self, ctx: &mut Ecs) {
-        let mut loader = ctx.resources.get_mut::<Loader>().unwrap();
+        let mut loader = ctx.write_global::<Loader>();
 
         for (font, transform) in self.builder.fonts.drain(..) {
             let (to_glyph, from_glyph) =
@@ -325,7 +329,7 @@ impl Runner {
     }
 
     fn do_startup_screen(&mut self, ctx: &mut Ecs, func: BoxedScreen) {
-        let has_files_to_load = ctx.resources.get::<Loader>().unwrap().has_files_to_load();
+        let has_files_to_load = ctx.write_global::<Loader>().has_files_to_load();
         let mut screen = match has_files_to_load {
             false => func,
             true => {
@@ -340,7 +344,7 @@ impl Runner {
 
     fn do_frame(
         &mut self,
-        ctx: &mut Ecs,
+        ecs: &mut Ecs,
         app: &mut App,
         last_frame_time: &mut f64,
         next_frame: &mut f64,
@@ -350,11 +354,11 @@ impl Runner {
         }
 
         if let Some(event) =
-            self.handle_input(ctx, app.hidpi_factor(), &mut *app.events.borrow_mut())
+            self.handle_input(ecs, app.hidpi_factor(), &mut *app.events.borrow_mut())
         {
             match event {
                 RunnerEvent::Capture(filepath) => {
-                    capture_screen(ctx, &filepath);
+                    capture_screen(ecs, &filepath);
                     return;
                 }
                 RunnerEvent::Exit => {
@@ -365,10 +369,10 @@ impl Runner {
             }
         }
 
-        if let Some(event) = self.handle_messages(ctx) {
+        if let Some(event) = self.handle_messages(ecs) {
             match event {
                 RunnerEvent::Capture(filepath) => {
-                    capture_screen(ctx, &filepath);
+                    capture_screen(ecs, &filepath);
                     return;
                 }
                 RunnerEvent::Exit => {
@@ -379,7 +383,7 @@ impl Runner {
             }
         }
 
-        let fps_goal = ctx.resources.get::<Fps>().unwrap().goal();
+        let fps_goal = ecs.read_global::<Fps>().goal();
 
         let mut skipped_frames: i32 = -1;
         let time = crate::app::perf_now();
@@ -390,11 +394,11 @@ impl Runner {
 
         while time >= *last_frame_time && skipped_frames < self.max_frameskip {
             // self.app_ctx.frame_time_ms = SKIP_TICKS as f32 * 1000.0; // TODO - Use real elapsed time?
-            ctx.resources.insert(Time::new(time, skip_ticks * 1000.0)); // TODO - Use real elapsed time?
+            ecs.insert_global(Time::new(time, skip_ticks * 1000.0)); // TODO - Use real elapsed time?
 
-            if let Some(event) = self.update(ctx) {
+            if let Some(event) = self.update(ecs) {
                 match event {
-                    RunnerEvent::Capture(filepath) => capture_screen(ctx, &filepath),
+                    RunnerEvent::Capture(filepath) => capture_screen(ecs, &filepath),
                     RunnerEvent::Exit => return crate::app::App::exit(),
                     RunnerEvent::Next => {}
                 }
@@ -404,15 +408,15 @@ impl Runner {
             skipped_frames += 1;
         }
 
-        ctx.resources.get_mut::<AppInput>().unwrap().on_frame_end();
+        ecs.write_global::<AppInput>().on_frame_end();
 
         if skipped_frames == self.max_frameskip {
             // next_tick = time + SKIP_TICKS;
             *last_frame_time = time + skip_ticks;
         }
         if fps_goal == 0 || time >= *next_frame {
-            self.render(ctx);
-            ctx.resources.get_mut::<Fps>().unwrap().step();
+            self.render(ecs);
+            ecs.write_global::<Fps>().step();
 
             if fps_goal > 0 {
                 *next_frame += 1.0 / fps_goal as f64;
@@ -526,8 +530,10 @@ impl Runner {
 /// This captures an in-game screenshot and saves it to the file
 fn capture_screen(ecs: &Ecs, filepath: &str) {
     if cfg!(not(target_arch = "wasm32")) {
-        let (gl, window_info) =
-            <(Read<uni_gl::WebGLRenderingContext>, Read<WindowInfo>)>::fetch(&ecs.resources);
+        let (gl, window_info) = <(
+            ReadGlobalExpect<uni_gl::WebGLRenderingContext>,
+            ReadGlobalExpect<WindowInfo>,
+        )>::fetch(ecs.current_world());
 
         let (w, h) = window_info.real_size;
 
@@ -560,10 +566,7 @@ fn capture_screen(ecs: &Ecs, filepath: &str) {
 }
 
 pub fn clear_screen(ecs: &mut Ecs, color: Option<RGBA>) {
-    let gl = ecs
-        .resources
-        .get::<uni_gl::WebGLRenderingContext>()
-        .unwrap();
+    let gl = ecs.read_global::<uni_gl::WebGLRenderingContext>();
 
     gl.clear(uni_gl::BufferBit::Depth); // If using ZPos
     gl.clear(BufferBit::Color);

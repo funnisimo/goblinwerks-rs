@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use crate::globals::Globals;
 use crate::shred::{PanicIfMissing, Resources, SystemData};
 use crate::specs::error::WrongGeneration;
@@ -11,6 +9,7 @@ use crate::specs::{
     WriteComp,
 };
 use crate::utils::MetaTable;
+use crate::Builder;
 use crate::{ReadGlobal, ReadRes, Resource, ResourceId, WriteGlobal, WriteRes};
 
 // pub use crate::shred::Entry;
@@ -53,20 +52,20 @@ impl World {
     /// # Examples
     ///
     /// ```
-    /// # use shred::*;
+    /// # use gw_ecs::*;
     /// # #[derive(Default)] struct Timer; #[derive(Default)] struct AnotherResource;
     ///
     /// // NOTE: If you use Specs, use `World::new` instead.
     /// let mut world = World::empty();
-    /// world.insert(Timer);
-    /// world.insert(AnotherResource);
-    /// let system_data: (Read<Timer>, Read<AnotherResource>) = world.system_data();
+    /// world.insert_resource(Timer);
+    /// world.insert_resource(AnotherResource);
+    /// let system_data: (ReadRes<Timer>, ReadRes<AnotherResource>) = world.fetch();
     /// ```
     ///
     /// # Panics
     ///
     /// * Panics if `T` is already borrowed in an incompatible way.
-    pub fn system_data<'a, T>(&'a self) -> T
+    pub fn fetch<'a, T>(&'a self) -> T
     where
         T: SystemData<'a>,
     {
@@ -170,7 +169,7 @@ impl World {
         T: SystemData<'a>,
     {
         self.setup::<T>();
-        f(self.system_data())
+        f(self.fetch())
     }
 
     // /// Fetches the resource with the specified type `T` or panics if it doesn't
@@ -463,28 +462,6 @@ impl World {
 
     // COMPONENTS
 
-    pub fn register<T: Component>(&mut self)
-    where
-        T::Storage: Default,
-    {
-        self.register_with_storage::<_, T>(Default::default);
-    }
-
-    pub(crate) fn register_with_storage<F, T>(&mut self, storage: F)
-    where
-        F: FnOnce() -> T::Storage,
-        T: Component,
-    {
-        self.resources
-            .get_or_insert_with(move || MaskedStorage::<T>::new(storage()));
-        self.resources
-            .get_or_insert_with(MetaTable::<dyn AnyStorage>::default);
-        self.resources
-            .get_mut::<MetaTable<dyn AnyStorage>>()
-            .unwrap()
-            .register(&*self.resources.get::<MaskedStorage<T>>().unwrap());
-    }
-
     // pub fn add_resource<T: Resource>(&mut self, res: T) {
     //     self.insert(res);
     // }
@@ -499,6 +476,38 @@ impl World {
         let entities = self.resources.get::<EntitiesRes>().unwrap();
         let data = self.resources.get_mut::<MaskedStorage<T>>().unwrap();
         Storage::new(entities, data)
+    }
+
+    // REGISTRY
+
+    pub fn register<T: Component>(&mut self)
+    where
+        T::Storage: Default,
+    {
+        self.register_with_storage::<_, T>(Default::default);
+    }
+
+    pub(crate) fn register_with_storage<F, T>(&mut self, storage: F)
+    where
+        F: Fn() -> T::Storage,
+        T: Component,
+    {
+        self.resources
+            .get_or_insert_with(move || MaskedStorage::<T>::new(storage()));
+        // self.resources
+        //     .get_or_insert_with(MetaTable::<dyn AnyStorage>::default);
+        self.resources
+            .get_mut::<MetaTable<dyn AnyStorage>>()
+            .unwrap()
+            .register(&*self.resources.get::<MaskedStorage<T>>().unwrap());
+    }
+
+    pub fn register_components(&mut self, source: &World) {
+        let registry = source.read_resource::<MetaTable<dyn AnyStorage>>();
+
+        for item in registry.iter(source) {
+            item.register(self);
+        }
     }
 
     // Lazy Update
@@ -563,8 +572,21 @@ impl World {
         alloc.generation(e.id()) == Some(e.gen())
     }
 
+    pub fn move_entity_to(&mut self, entity: Entity, dest: &mut World) -> Entity {
+        let new_entity = {
+            let mut builder = dest.create_entity();
+            let storages = self.read_resource::<MetaTable<dyn AnyStorage>>();
+            for storage in storages.iter_mut(self) {
+                storage.try_move_component(entity, &mut builder);
+            }
+            builder.build()
+        };
+        let _ = self.delete_entity(entity); // Ignore
+        new_entity
+    }
+
     pub fn maintain(&mut self) {
-        let deleted = self.entities_mut().alloc.merge();
+        let deleted = self.entities_mut().maintain();
         if !deleted.is_empty() {
             self.delete_components(&deleted);
         }
@@ -574,8 +596,8 @@ impl World {
     }
 
     pub fn delete_components(&mut self, delete: &[Entity]) {
-        self.resources
-            .get_or_insert_with(MetaTable::<dyn AnyStorage>::default);
+        // self.resources
+        //     .get_or_insert_with(MetaTable::<dyn AnyStorage>::default);
         for storage in self
             .resources
             .get_mut::<MetaTable<dyn AnyStorage>>()
@@ -627,7 +649,7 @@ mod tests {
         let mut world = World::empty();
 
         world.insert_resource(5u32);
-        let x = *world.system_data::<ReadRes<u32>>();
+        let x = *world.fetch::<ReadRes<u32>>();
         assert_eq!(x, 5);
     }
 
@@ -637,12 +659,12 @@ mod tests {
 
         world.insert_resource(5u32);
         world.setup::<ReadRes<u32>>();
-        let x = *world.system_data::<ReadRes<u32>>();
+        let x = *world.fetch::<ReadRes<u32>>();
         assert_eq!(x, 5);
 
         world.remove_resource::<u32>();
         world.setup::<ReadRes<u32>>();
-        let x = *world.system_data::<ReadRes<u32>>();
+        let x = *world.fetch::<ReadRes<u32>>();
         assert_eq!(x, 0);
     }
 

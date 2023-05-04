@@ -63,7 +63,7 @@ impl Screen for MyRoguelike {
             _ => {}
         }
 
-        let input = ecs.resources.get::<AppInput>().unwrap();
+        let input = ecs.read_global::<AppInput>();
         self.mouse_pos = input.mouse_pct();
 
         // capture the screen

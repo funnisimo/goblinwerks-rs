@@ -11,10 +11,6 @@ keywords      = ["roguelike", "utilities", "cp437"]
 homepage      = "https://github.com/funnisimo/goblinwerks-rs"
 readme        = "README.md"
 
-[features]
-default = ["ecs"]
-ecs     = ["dep:legion"]
-
 [dependencies]
 lazy_static          = "1.4"
 regex                = "1.7.3"
@@ -27,18 +23,14 @@ rand                 = "0.8.5"
 rand_pcg             = "0.3.1"
 opensimplex_noise_rs = "0.3.0"
 jsonc-parser         = "0.21.0"
-serde                = "1.0.154"
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-legion = { version = "0.4", optional = true }
+serde_derive         = "1.0.160"
+"serde"              = "1.0.160"
+gw_ecs               = { path = "../gw_ecs" }
 
 [target.wasm32-unknown-unknown.dependencies]
 getrandom = { version = "0.2", features = [
     "js",
 ] } # https://docs.rs/getrandom/latest/getrandom/#webassembly-support
-legion = { version = "0.4", default-features = false, optional = true, features = [
-    "wasm-bindgen",
-] }
 
 [dev-dependencies]
 gw_app = { path = "../gw_app" }

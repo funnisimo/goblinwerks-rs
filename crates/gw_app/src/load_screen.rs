@@ -1,9 +1,10 @@
+use crate::ecs::SystemData;
 use crate::ecs::Time;
-use crate::ecs::{systems::ResourceSet, Read};
 use crate::loader::Loader;
 use crate::screen::BoxedScreen;
 use crate::{color::RGBA, draw, log};
 use crate::{Ecs, Panel, Screen, ScreenResult};
+use gw_ecs::ReadGlobalExpect;
 
 pub struct LoadingScreen {
     con: Panel,
@@ -23,7 +24,8 @@ impl LoadingScreen {
 
 impl Screen for LoadingScreen {
     fn update(&mut self, ecs: &mut Ecs) -> ScreenResult {
-        let (loader, time) = <(Read<Loader>, Read<Time>)>::fetch(&mut ecs.resources);
+        let (loader, time) =
+            <(ReadGlobalExpect<Loader>, ReadGlobalExpect<Time>)>::fetch(ecs.current_world());
 
         let ms = time.delta.floor();
 

@@ -46,7 +46,7 @@ impl MainScreen {
 impl Screen for MainScreen {
     fn update(&mut self, app: &mut Ecs) -> ScreenResult {
         if self.len == 0 {
-            let fonts = app.resources.get::<Fonts>().unwrap();
+            let fonts = app.read_global::<Fonts>();
             match fonts.get(BIG_FONT) {
                 None => {}
                 Some(font) => self.len = font.count(),

@@ -1,8 +1,8 @@
-use legion::Registry;
+// use legion::Registry;
 
 use crate::color::init_colors;
 use crate::ecs::Ecs;
-use crate::ecs::REGISTRY;
+// use crate::ecs::REGISTRY;
 use crate::font::FromGlyphFn;
 use crate::font::ToGlyphFn;
 use crate::loader::BoxedLoadHandler;
@@ -24,6 +24,8 @@ pub struct AppBuilder {
     pub(crate) files: Vec<(String, BoxedLoadHandler)>,
 
     pub(crate) startup: Vec<Box<StartupFn>>,
+
+    pub(crate) ecs: Option<Ecs>,
 }
 
 impl AppBuilder {
@@ -40,6 +42,7 @@ impl AppBuilder {
             images: Vec::new(),
             files: Vec::new(),
             startup: Vec::new(),
+            ecs: None,
         }
     }
 
@@ -137,13 +140,15 @@ impl AppBuilder {
         self
     }
 
-    pub fn register_components<F>(self, func: F) -> Self
+    pub fn register_components<F>(mut self, func: F) -> Self
     where
-        F: FnOnce(&mut Registry<String>) -> (),
+        F: FnOnce(&mut Ecs) -> (),
     {
-        if let Ok(mut registry) = REGISTRY.lock() {
-            (func)(&mut *registry);
+        if self.ecs.is_none() {
+            self.ecs = Some(Ecs::default());
         }
+
+        (func)(self.ecs.as_mut().unwrap());
         self
     }
 

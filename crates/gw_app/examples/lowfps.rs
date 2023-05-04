@@ -22,7 +22,7 @@ impl MyRoguelike {
 
 impl Screen for MyRoguelike {
     fn render(&mut self, app: &mut Ecs) {
-        let fps = app.resources.get::<Fps>().unwrap().current();
+        let fps = app.read_global::<Fps>().current();
 
         let buffer = self.con.buffer_mut();
         let buf_size = buffer.size();

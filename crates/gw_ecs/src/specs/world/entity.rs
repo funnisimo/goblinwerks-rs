@@ -343,6 +343,11 @@ impl EntitiesRes {
     pub fn is_alive(&self, e: Entity) -> bool {
         self.alloc.is_alive(e)
     }
+
+    /// Merges in the deleted entities and returns them
+    pub fn maintain(&mut self) -> Vec<Entity> {
+        self.alloc.merge()
+    }
 }
 
 impl<'a> Join for &'a EntitiesRes {

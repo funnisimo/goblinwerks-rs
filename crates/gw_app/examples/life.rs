@@ -75,7 +75,7 @@ impl MainScreen {
 
 impl Screen for MainScreen {
     fn input(&mut self, app: &mut Ecs, ev: &AppEvent) -> ScreenResult {
-        let input = app.resources.get::<AppInput>().unwrap();
+        let input = app.read_global::<AppInput>();
 
         let screen_pct = input.mouse_pct();
         match self.con.mouse_pos(screen_pct) {

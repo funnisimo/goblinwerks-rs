@@ -251,7 +251,7 @@ pub fn load_level(ecs: &mut Ecs, img_path: &str) -> bool {
     let ground_path = img_path.to_owned() + "_color.png";
 
     let (level_img, ground) = {
-        let images = ecs.resources.get::<Images>().unwrap();
+        let images = ecs.read_global::<Images>();
         (images.get(&level_path), images.get(&ground_path))
     };
 
@@ -270,9 +270,9 @@ pub fn load_level(ecs: &mut Ecs, img_path: &str) -> bool {
     player.move_to(level.start_pos());
     level.compute_fov(player.pos(), PLAYER_FOV_RADIUS);
 
-    ecs.resources.insert(level);
-    ecs.resources.insert(Entities(entities));
-    ecs.resources.insert(player);
+    ecs.insert_global(level);
+    ecs.insert_global(Entities(entities));
+    ecs.insert_global(player);
 
     true
 }

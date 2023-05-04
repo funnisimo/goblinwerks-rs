@@ -12,7 +12,7 @@ use crate::specs::{
 };
 use crate::{
     atomic_refcell::{AtomicRef, AtomicRefMut},
-    shred::{ReadRes, Resource},
+    shred::Resource,
 };
 // use crate::World;
 

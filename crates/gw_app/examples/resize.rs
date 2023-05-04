@@ -44,7 +44,7 @@ impl Screen for MyRoguelike {
             &format!("console: {} x {}", con_size.0, con_size.1),
         );
 
-        let screen_size = app.resources.get::<WindowInfo>().unwrap().size;
+        let screen_size = app.read_global::<WindowInfo>().size;
 
         draw::plain(buffer).align(TextAlign::Center).print(
             (con_size.0 / 2) as i32,
@@ -71,7 +71,7 @@ impl Screen for MyRoguelike {
     }
 
     fn resize(&mut self, api: &mut Ecs) {
-        let info = api.resources.get::<WindowInfo>().unwrap();
+        let info = api.read_global::<WindowInfo>();
 
         if self.con.ready() {
             let font_char = self.con.font_char_size();

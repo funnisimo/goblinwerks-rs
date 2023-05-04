@@ -144,7 +144,7 @@ impl ChoiceBuilder {
         if self.done.is_none() {
             let id = self.id.clone();
             self.done = Some(Box::new(move |app: &mut Ecs, data: Option<Value>| {
-                let mut msgs = app.resources.get_mut::<Messages>().unwrap();
+                let mut msgs = app.write_global::<Messages>();
                 msgs.push(id.as_ref(), data)
             }));
         }

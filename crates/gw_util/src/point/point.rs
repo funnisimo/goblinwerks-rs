@@ -1,5 +1,5 @@
 use super::distance;
-use serde::{Deserialize, Serialize};
+use serde_derive::{Deserialize, Serialize};
 use std::{fmt::Display, ops};
 
 pub static DIRS: [Point; 8] = [

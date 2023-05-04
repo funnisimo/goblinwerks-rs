@@ -204,7 +204,7 @@ where
 
     fn run(&mut self, world: &'c World, dispatcher: &mut Dispatcher<'a, 'b>) {
         let n = {
-            let plan_data = world.system_data();
+            let plan_data = world.fetch();
             self.controller.plan(plan_data)
         };
 

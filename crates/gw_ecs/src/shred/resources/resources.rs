@@ -453,23 +453,25 @@ mod tests {
     // }
 
     #[test]
-    #[should_panic]
     fn invalid_fetch_by_id0() {
         let mut resources = Resources::empty();
 
         resources.insert(5i32);
 
-        resources.get_by_id::<u32>(ResourceId::new_with_dynamic_id::<i32>(111));
+        assert!(resources
+            .get_by_id::<u32>(ResourceId::new_with_dynamic_id::<i32>(111))
+            .is_none());
     }
 
     #[test]
-    #[should_panic]
     fn invalid_fetch_by_id1() {
         let mut resources = Resources::empty();
 
         resources.insert(5i32);
 
-        resources.get_by_id::<i32>(ResourceId::new_with_dynamic_id::<u32>(111));
+        assert!(resources
+            .get_by_id::<i32>(ResourceId::new_with_dynamic_id::<u32>(111))
+            .is_none());
     }
 
     #[test]

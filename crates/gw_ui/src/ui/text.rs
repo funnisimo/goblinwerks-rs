@@ -257,7 +257,7 @@ mod test {
         assert_eq!(text.style().bg(), RGBA::rgb(255, 0, 0));
 
         let mut buf = Buffer::new(20, 10);
-        let mut ecs = Ecs::new();
+        let mut ecs = Ecs::default();
         ui.draw(&mut buf, &mut ecs);
 
         assert_eq!(extract_line(&buf, 0, 0, 10), "Hello\0\0\0\0\0");
@@ -300,7 +300,7 @@ mod test {
         assert_eq!(text.size().unwrap(), (15, 1));
 
         let mut buf = Buffer::new(80, 50);
-        let mut ecs = Ecs::new();
+        let mut ecs = Ecs::default();
         ui.root().draw(&mut buf, &mut ecs);
         assert_eq!(extract_line(&buf, 0, 0, 16), "This is a lon-\0\0"); // hyphen tries to go in middle of word (even if only 1 line tall)
     }
@@ -336,7 +336,7 @@ mod test {
         assert_eq!(text.size().unwrap(), (13, 5));
 
         let mut buf = Buffer::new(80, 50);
-        let mut ecs = Ecs::new();
+        let mut ecs = Ecs::default();
         ui.root().draw(&mut buf, &mut ecs);
 
         assert_eq!(extract_line(&buf, 0, 0, 15), "This is a\0\0\0\0\0\0");
@@ -364,7 +364,7 @@ mod test {
         assert_eq!(text.size().unwrap(), (13, 3));
 
         let mut buf = Buffer::new(80, 50);
-        let mut ecs = Ecs::new();
+        let mut ecs = Ecs::default();
         ui.root().draw(&mut buf, &mut ecs);
 
         assert_eq!(extract_line(&buf, 0, 0, 15), "This is a\0\0\0\0\0\0");
@@ -392,7 +392,7 @@ mod test {
         assert_eq!(text.size().unwrap(), (13, 1));
 
         let mut buf = Buffer::new(80, 50);
-        let mut ecs = Ecs::new();
+        let mut ecs = Ecs::default();
         ui.root().draw(&mut buf, &mut ecs);
 
         assert_eq!(extract_line(&buf, 0, 0, 15), "This is a lon\0\0");

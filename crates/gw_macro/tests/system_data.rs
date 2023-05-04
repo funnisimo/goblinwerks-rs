@@ -20,7 +20,7 @@ fn basic() {
     ecs.current_world_mut().insert_global(Clock(5));
     ecs.current_world_mut().insert_resource(Timer(0));
 
-    let mut data = ecs.current_world().system_data::<MySystemData>();
+    let mut data = ecs.current_world().fetch::<MySystemData>();
     assert_eq!(data.clock.0, 5);
     assert_eq!(data.timer.0, 0);
 

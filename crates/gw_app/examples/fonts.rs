@@ -65,7 +65,7 @@ impl Screen for MyRoguelike {
         if let Some(font_path) = font_path {
             self.cur_font_name = font_path.to_owned();
 
-            let fonts = app.resources.get::<Fonts>().unwrap();
+            let fonts = app.read_global::<Fonts>();
 
             match fonts.get(font_path) {
                 None => {}

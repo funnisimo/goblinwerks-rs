@@ -1,5 +1,5 @@
 use gw_app::*;
-use gw_app::ecs::{Read, Write, systems::ResourceSet};
+use gw_app::ecs::{SystemData};
 
 mod entity;
 mod level;
@@ -9,6 +9,7 @@ mod player;
 
 use entity::Entity;
 use gw_app::fps::Fps;
+use gw_ecs::{ReadGlobalExpect, WriteGlobalExpect};
 use level::{Level, load_level};
 use player::Player;
 
@@ -57,7 +58,7 @@ impl DoryenDemo {
 
     fn render_entities(&mut self, ecs: &mut Ecs) {
 
-        let (entities, level, player) = <(Read<Entities>, Read<Level>, Read<Player>)>::fetch(&ecs.resources);
+        let (entities, level, player) = <(ReadGlobalExpect<Entities>, ReadGlobalExpect<Level>, ReadGlobalExpect<Player>)>::fetch(ecs.current_world());
 
         let buffer = self.con.buffer_mut();
         for entity in entities.0.iter() {
@@ -73,12 +74,12 @@ impl DoryenDemo {
 }
 
 impl Screen for DoryenDemo {
-    fn update(&mut self, app: &mut Ecs) -> ScreenResult {
+    fn update(&mut self, ecs: &mut Ecs) -> ScreenResult {
         if !self.loaded {
-            self.loaded = load_level(app, LEVEL_PREFIX);
+            self.loaded = load_level(ecs, LEVEL_PREFIX);
         }
         if self.loaded {
-            let (input, mut player, mut level) = <(Read<AppInput>, Write<Player>, Write<Level>)>::fetch_mut(&mut app.resources);
+            let (input, mut player, mut level) = <(ReadGlobalExpect<AppInput>, WriteGlobalExpect<Player>, WriteGlobalExpect<Level>)>::fetch(ecs.current_world());
 
             let mut coef = 1.0 / std::f32::consts::SQRT_2;
             let mut mov = player.move_from_input(&*input);
@@ -98,18 +99,18 @@ impl Screen for DoryenDemo {
         ScreenResult::Continue
     }
 
-    fn render(&mut self, app: &mut Ecs) {
+    fn render(&mut self, ecs: &mut Ecs) {
         if self.loaded {
             self.clear_con();
 
             {
-                let (mut level, player) = <(Write<Level>, Read<Player>)>::fetch_mut(&mut app.resources);
+                let (mut level, player) = <(WriteGlobalExpect<Level>, ReadGlobalExpect<Player>)>::fetch(ecs.current_world());
                 level.render(self.map_con.buffer_mut(), player.pos());
             }
 
-            self.render_entities(app);
+            self.render_entities(ecs);
 
-            let fps = app.resources.get::<Fps>().unwrap().current();
+            let fps = ecs.read_global::<Fps>().current();
 
             draw::colored(self.con.buffer_mut()).align(TextAlign::Center).print(
             
@@ -126,8 +127,8 @@ impl Screen for DoryenDemo {
             );
         }
 
-        self.map_con.render(app);
-        self.con.render(app);
+        self.map_con.render(ecs);
+        self.con.render(ecs);
     }
 }
 

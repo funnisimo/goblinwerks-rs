@@ -445,7 +445,7 @@ mod test {
         assert_eq!(list.margin(), [2, 0, 0, 0]);
 
         let mut buffer = Buffer::new(80, 50);
-        let mut ecs = Ecs::new();
+        let mut ecs = Ecs::default();
         ui.root().draw(&mut buffer, &mut ecs);
 
         assert_eq!(extract_line(&buffer, 0, 0, 12), "\0\0-\0Test A\0\0");
@@ -503,7 +503,7 @@ mod test {
         });
 
         let mut buffer = Buffer::new(80, 50);
-        let mut ecs = Ecs::new();
+        let mut ecs = Ecs::default();
         ui.draw(&mut buffer, &mut ecs);
 
         assert_eq!(extract_line(&buffer, 0, 0, 12), "-\0Test A\0\0\0\0");

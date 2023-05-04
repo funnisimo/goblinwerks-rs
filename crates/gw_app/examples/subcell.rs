@@ -54,7 +54,7 @@ impl Screen for MyRoguelike {
                 .blit(skull, 0, 0, 0, 0, None, None);
             self.subcell.render(app);
         } else {
-            self.skull = app.resources.get::<Images>().unwrap().get(SKULL);
+            self.skull = app.read_global::<Images>().get(SKULL);
         }
     }
 }

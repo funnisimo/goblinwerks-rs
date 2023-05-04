@@ -107,7 +107,7 @@ impl Screen for Popup {
     }
 
     fn update(&mut self, ecs: &mut Ecs) -> ScreenResult {
-        let dt = ecs.resources.get::<Time>().unwrap().delta;
+        let dt = ecs.read_global::<Time>().delta;
 
         self.time_left -= dt;
         if self.time_left <= 0.0 {
@@ -118,7 +118,7 @@ impl Screen for Popup {
     }
 
     fn render(&mut self, app: &mut Ecs) {
-        let screen_pct = app.resources.get::<AppInput>().unwrap().mouse_pct();
+        let screen_pct = app.read_global::<AppInput>().mouse_pct();
         let cell_pct = self.con.mouse_pos(screen_pct);
 
         let buf = self.con.buffer_mut();

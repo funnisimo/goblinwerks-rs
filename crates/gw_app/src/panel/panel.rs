@@ -1,11 +1,21 @@
 use super::Buffer;
 use super::PanelProgram;
-use crate::ecs::{systems::ResourceSet, Read, Write};
+use crate::ecs::SystemData;
 use crate::font::{Font, Fonts};
 use crate::{log, Ecs};
+use gw_ecs::ReadGlobalExpect;
+use gw_ecs::WriteGlobalExpect;
+use gw_ecs::{ResourceId, World}; // For SystemData derive
 use gw_util::extents::Extents;
 use gw_util::point::Point;
 use std::sync::Arc;
+
+#[derive(SystemData)]
+struct RenderData<'a> {
+    fonts: ReadGlobalExpect<'a, Fonts>,
+    gl: ReadGlobalExpect<'a, uni_gl::WebGLRenderingContext>,
+    program: WriteGlobalExpect<'a, PanelProgram>,
+}
 
 /// This contains the data for a console (including the one displayed on the screen) and methods to draw on it.
 pub struct Panel {
@@ -112,11 +122,11 @@ impl Panel {
     }
 
     pub fn render(&mut self, ecs: &mut Ecs) {
-        let (fonts, gl, mut program) = <(
-            Read<Fonts>,
-            Read<uni_gl::WebGLRenderingContext>,
-            Write<PanelProgram>,
-        )>::fetch_mut(&mut ecs.resources);
+        let RenderData {
+            fonts,
+            gl,
+            mut program,
+        } = ecs.fetch::<RenderData>();
 
         if self.font.is_none() {
             let font = fonts.get(self.font_name.as_ref());

@@ -2,7 +2,7 @@ use crate::point::Point;
 
 use super::DataConvertError;
 use super::Key;
-use legion::Entity;
+use gw_ecs::Entity;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::fmt::{Debug, Formatter};

@@ -178,7 +178,7 @@ impl MultiChoiceBuilder {
                         None => None,
                         Some(x) => Some(Value::Map(x)),
                     };
-                    let mut msgs = app.resources.get_mut::<Messages>().unwrap();
+                    let mut msgs = app.write_global::<Messages>();
                     msgs.push(id.as_ref(), res)
                 },
             ));

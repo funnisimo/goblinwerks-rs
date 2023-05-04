@@ -275,7 +275,7 @@ impl UI {
                 self.prev_focus();
             }
             Some(UiAction::Message(id, data)) => {
-                let mut msgs = app.resources.get_mut::<Messages>().unwrap();
+                let mut msgs = app.write_global::<Messages>();
                 msgs.push(&id, data);
             }
             Some(UiAction::Stop) => {
@@ -294,7 +294,7 @@ impl UI {
     }
 
     pub fn input(&mut self, app: &mut Ecs, ev: &AppEvent) -> Option<ScreenResult> {
-        let screen_pos = app.resources.get::<AppInput>().unwrap().mouse_pct();
+        let screen_pos = app.read_global::<AppInput>().mouse_pct();
         if let Some(mouse_pos) = self.console.mouse_pos(screen_pos) {
             let mouse_pt: Point = mouse_pos.into();
             match ev {

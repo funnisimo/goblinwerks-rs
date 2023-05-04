@@ -93,7 +93,8 @@ where
     }
 }
 
-struct Fat(usize);
+#[derive(Clone, Copy)]
+pub(crate) struct Fat(usize);
 
 impl Fat {
     pub unsafe fn from_ptr<T: ?Sized>(t: &T) -> Self {
@@ -280,6 +281,19 @@ impl<T: ?Sized> MetaTable<T> {
 
                 self.fat.push(fat);
                 self.tys.push(ty_id);
+            }
+        }
+    }
+
+    pub(crate) fn register_internal(&mut self, ty_id: TypeId, fat: Fat) -> bool {
+        let len = self.indices.len();
+        match self.indices.entry(ty_id) {
+            Entry::Occupied(_occ) => false,
+            Entry::Vacant(vac) => {
+                vac.insert(len);
+                self.fat.push(fat);
+                self.tys.push(ty_id);
+                true
             }
         }
     }

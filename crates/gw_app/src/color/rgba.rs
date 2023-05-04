@@ -1,6 +1,6 @@
 use super::{get_color, ColorParseErr};
 use gw_util::value::Value;
-use serde::{Deserialize, Serialize};
+use serde_derive::{Deserialize, Serialize};
 use std::{ops, str::FromStr};
 
 /// White color

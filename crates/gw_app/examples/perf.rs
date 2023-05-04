@@ -85,7 +85,7 @@ impl Screen for PerfTest {
                 5,
             );
 
-        let fps = app.resources.get::<Fps>().unwrap().current();
+        let fps = app.read_global::<Fps>().current();
 
         draw::colored(buffer)
             .align(TextAlign::Center)
@@ -100,7 +100,7 @@ impl Screen for PerfTest {
     }
 
     fn resize(&mut self, api: &mut Ecs) {
-        let info = api.resources.get::<WindowInfo>().unwrap();
+        let info = api.read_global::<WindowInfo>();
         let new_width = info.size.0 / 8;
         let new_height = info.size.1 / 8;
         self.con.resize(new_width, new_height);

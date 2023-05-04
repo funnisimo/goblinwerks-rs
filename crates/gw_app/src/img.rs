@@ -91,11 +91,11 @@ impl LoadHandler for ImageFileLoader {
         &mut self,
         path: &str,
         data: Vec<u8>,
-        world: &mut crate::ecs::Ecs,
+        ecs: &mut crate::ecs::Ecs,
     ) -> Result<(), crate::loader::LoadError> {
         let image = Arc::new(Image::new(&data));
 
-        let mut fonts = world.resources.get_mut::<Images>().unwrap();
+        let mut fonts = ecs.write_global::<Images>();
         fonts.insert(path, image);
         log(format!("image load complete - {}", path));
         Ok(())

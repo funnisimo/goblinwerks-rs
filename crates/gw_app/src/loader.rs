@@ -110,7 +110,7 @@ impl Loader {
 /// returns true when no more files to process
 pub(crate) fn load_files(ecs: &mut Ecs) -> bool {
     // get the next file to load
-    let mut load_info = match ecs.resources.get_mut::<Loader>() {
+    let mut load_info = match ecs.try_write_global::<Loader>() {
         None => return true,
         Some(mut loader) => loader.pop(),
     };
@@ -139,13 +139,13 @@ pub(crate) fn load_files(ecs: &mut Ecs) -> bool {
             }
 
             // finished that one, get the next one
-            load_info = match ecs.resources.get_mut::<Loader>() {
+            load_info = match ecs.try_write_global::<Loader>() {
                 None => return true,
                 Some(mut loader) => loader.pop(),
             };
         } else {
             // File not ready, push back on queue
-            let mut loader = ecs.resources.get_mut::<Loader>().unwrap();
+            let mut loader = ecs.write_global::<Loader>();
             loader.unpop(info);
             return false;
         }

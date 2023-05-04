@@ -40,7 +40,7 @@ impl Screen for MainScreen {
     }
 
     fn update(&mut self, ecs: &mut Ecs) -> ScreenResult {
-        let input = ecs.resources.get::<AppInput>().unwrap();
+        let input = ecs.read_global::<AppInput>();
 
         if input.key(VirtualKeyCode::Escape) || input.close_requested() {
             ScreenResult::Push(Popup::new())
@@ -90,16 +90,12 @@ impl Screen for Popup {
         match ev {
             AppEvent::KeyDown(key_down) => match key_down.key_code {
                 VirtualKeyCode::Y => {
-                    app.resources
-                        .get_mut::<Messages>()
-                        .unwrap()
+                    app.write_global::<Messages>()
                         .push("QUIT", Some(true.into()));
                     ScreenResult::Pop
                 }
                 VirtualKeyCode::N => {
-                    app.resources
-                        .get_mut::<Messages>()
-                        .unwrap()
+                    app.write_global::<Messages>()
                         .push("QUIT", Some(false.into()));
                     ScreenResult::Pop
                 }

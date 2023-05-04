@@ -248,15 +248,12 @@ impl LoadHandler for FontFileLoader {
         &mut self,
         path: &str,
         data: Vec<u8>,
-        world: &mut crate::ecs::Ecs,
+        ecs: &mut crate::ecs::Ecs,
     ) -> Result<(), crate::loader::LoadError> {
         let char_size = parse_char_size(path);
 
         let font = {
-            let gl = world
-                .resources
-                .get::<uni_gl::WebGLRenderingContext>()
-                .unwrap();
+            let gl = ecs.read_global::<uni_gl::WebGLRenderingContext>();
 
             let mut font = Font::new(&*gl, &data, char_size);
             if let Some((to_glyph, from_glyph)) = self.transforms {
@@ -265,7 +262,7 @@ impl LoadHandler for FontFileLoader {
             Arc::new(font)
         };
 
-        let mut fonts = world.resources.get_mut::<Fonts>().unwrap();
+        let mut fonts = ecs.write_global::<Fonts>();
         fonts.insert(path, font);
 
         log(format!("font load complete - {}", path));

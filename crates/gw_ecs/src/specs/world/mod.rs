@@ -182,6 +182,26 @@ pub struct EntityBuilder<'a> {
     pub(crate) built: bool,
 }
 
+impl<'a> EntityBuilder<'a> {
+    /// Inserts a component into the correct storage
+    pub fn insert<T: Component>(&self, c: T) {
+        let mut storage: WriteComp<T> = SystemData::fetch(&self.world);
+        // This can't fail.  This is guaranteed by the lifetime 'a
+        // in the EntityBuilder.
+        storage.insert(self.entity, c).unwrap();
+    }
+
+    /// Inserts a component into the correct storage
+    pub fn maybe_insert<T: Component>(&self, c: Option<T>) {
+        if let Some(value) = c {
+            let mut storage: WriteComp<T> = SystemData::fetch(&self.world);
+            // This can't fail.  This is guaranteed by the lifetime 'a
+            // in the EntityBuilder.
+            storage.insert(self.entity, value).unwrap();
+        }
+    }
+}
+
 impl<'a> Builder for EntityBuilder<'a> {
     /// Inserts a component for this entity.
     ///
@@ -189,13 +209,7 @@ impl<'a> Builder for EntityBuilder<'a> {
     /// overwrite the previous component.
     #[inline]
     fn with<T: Component>(self, c: T) -> Self {
-        {
-            let mut storage: WriteComp<T> = SystemData::fetch(&self.world);
-            // This can't fail.  This is guaranteed by the lifetime 'a
-            // in the EntityBuilder.
-            storage.insert(self.entity, c).unwrap();
-        }
-
+        self.insert(c);
         self
     }
 

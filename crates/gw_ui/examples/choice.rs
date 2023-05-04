@@ -65,7 +65,7 @@ impl MainScreen {
                                 .items(vec!["Football", "Soccer", "Rugby", "Cricket"])
                                 .class("blue-back")
                                 .done(Box::new(move |app: &mut Ecs, data: Option<Value>| {
-                                    let mut msgs = app.resources.get_mut::<Messages>().unwrap();
+                                    let mut msgs = app.write_global::<Messages>();
                                     msgs.push("SINGLE", data) // This is what the default implementation does
                                 }))
                                 .build()))

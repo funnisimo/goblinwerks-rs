@@ -1,7 +1,7 @@
 use crate::globals::Globals;
 use crate::shred::{PanicIfMissing, Resource};
-use crate::WriteGlobal;
-use crate::{ReadGlobal, ReadRes, World, WriteRes};
+use crate::{Component, ReadComp, ReadGlobal, ReadRes, World, WriteComp, WriteRes};
+use crate::{SystemData, WriteGlobal};
 
 pub struct Ecs {
     pub(crate) worlds: Vec<World>,
@@ -55,6 +55,10 @@ impl Ecs {
     /// Returns a mutable reference to the currently active world
     pub fn current_world_mut(&mut self) -> &mut World {
         &mut self.worlds[self.current]
+    }
+
+    pub fn fetch<'a, D: SystemData<'a>>(&'a self) -> D {
+        D::fetch(self.current_world())
     }
 
     // GLOBALS
@@ -119,6 +123,32 @@ impl Ecs {
 
     pub fn try_write_resource<G: Resource>(&self) -> Option<WriteRes<G, ()>> {
         self.current_world().try_write_resource::<G>()
+    }
+
+    // COMPONENTS
+
+    pub fn register<T: Component>(&mut self)
+    where
+        T::Storage: Default,
+    {
+        self.current_world_mut().register::<T>();
+    }
+
+    pub fn register_with_storage<F, T>(&mut self, storage: F)
+    where
+        F: Fn() -> T::Storage,
+        T: Component,
+    {
+        self.current_world_mut()
+            .register_with_storage::<F, T>(storage);
+    }
+
+    pub fn read_component<C: Component>(&self) -> ReadComp<C> {
+        self.current_world().read_component::<C>()
+    }
+
+    pub fn write_component<C: Component>(&self) -> WriteComp<C> {
+        self.current_world().write_component::<C>()
     }
 }
 

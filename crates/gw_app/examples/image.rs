@@ -51,7 +51,7 @@ impl Screen for MyRoguelike {
                 img,
             );
         } else {
-            self.skull = app.resources.get::<Images>().unwrap().get(SKULL);
+            self.skull = app.read_global::<Images>().get(SKULL);
         }
 
         self.con.render(app)
