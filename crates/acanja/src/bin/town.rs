@@ -1,9 +1,9 @@
 use acanja::map::prefab::{PrefabFileLoader, Prefabs};
 use acanja::map::town::build_town_map;
-use gw_app::ecs::{systems::ResourceSet, Read};
 use gw_app::*;
 use gw_util::point::Point;
 use gw_world::camera::Camera;
+use gw_world::level::NeedsDraw;
 use gw_world::map::Map;
 use gw_world::tile::{Tiles, TilesLoader};
 use gw_world::widget::{AlwaysVisible, Viewport};
@@ -20,8 +20,12 @@ impl MainScreen {
     }
 
     fn build_new_level(&mut self, ecs: &mut Ecs) {
+        ecs.create_world("MAIN");
+        ecs.set_current_world("MAIN").unwrap();
+
         let mut map = {
-            let (tiles, prefabs) = <(Read<Tiles>, Read<Prefabs>)>::fetch(&ecs.resources);
+            let tiles = ecs.read_global::<Tiles>();
+            let prefabs = ecs.read_global::<Prefabs>();
 
             log(format!("- prefabs: {}", prefabs.len()));
             // let mut map = dig_room_level(&tiles, 80, 50);
@@ -32,23 +36,22 @@ impl MainScreen {
         map.make_fully_visible();
 
         let camera = Camera::new(80, 50);
-        ecs.resources.insert(camera);
-
-        ecs.resources.insert(map);
+        ecs.insert_resource(camera);
+        ecs.insert_resource(map);
+        ecs.insert_resource(NeedsDraw::default());
     }
 }
 
 impl Screen for MainScreen {
     fn setup(&mut self, ecs: &mut Ecs) {
-        let resources = &mut ecs.resources;
-        resources.get_or_insert_with(|| Tiles::default());
-        resources.get_or_insert_with(|| Prefabs::default());
+        ecs.ensure_global::<Tiles>();
+        ecs.ensure_global::<Prefabs>();
 
         self.build_new_level(ecs);
     }
 
     fn input(&mut self, ecs: &mut Ecs, ev: &AppEvent) -> ScreenResult {
-        if let Some(result) = self.viewport.input(ecs, ev) {
+        if let Some(result) = self.viewport.input(ecs.current_world_mut(), ev) {
             return result;
         }
 
@@ -85,7 +88,7 @@ impl Screen for MainScreen {
 
     fn render(&mut self, app: &mut Ecs) {
         {
-            let mut map = app.resources.get_mut::<Map>().unwrap();
+            let mut map = app.write_resource::<Map>();
             self.viewport
                 .draw_map(&mut *map, None, &AlwaysVisible::new(), (0, 0), false);
         }
@@ -104,6 +107,7 @@ fn main() {
             "assets/store_prefab.toml",
             Box::new(PrefabFileLoader::new().with_dump()),
         )
+        .register_components(|ecs| gw_world::register_components(ecs))
         .vsync(false)
         .build();
 

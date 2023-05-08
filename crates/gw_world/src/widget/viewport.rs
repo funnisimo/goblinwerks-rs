@@ -1,6 +1,8 @@
+use std::ops::DerefMut;
+
 use crate::camera::Camera;
 use crate::fov::FOV;
-use crate::level::{Level, Levels};
+use crate::level::NeedsDraw;
 use crate::map::Cell;
 // use crate::map::Wrap;
 use crate::map::{CellFlags, Map};
@@ -9,12 +11,10 @@ use crate::position::Position;
 use crate::sprite::Sprite;
 use gw_app::color::named::BLACK;
 use gw_app::color::{named, RGBA};
-use gw_app::ecs::atomic_refcell::{AtomicRef, AtomicRefMut};
-use gw_app::ecs::Join;
-// use gw_app::ecs::{Read, Write};
 use gw_app::messages::Messages;
+use gw_app::Panel;
 use gw_app::{log, AppEvent, ScreenResult};
-use gw_app::{Ecs, Panel};
+use gw_ecs::{Ecs, Join, ReadComp, ReadRes, SystemData, TryReadRes, TryWriteRes, World, WriteRes};
 use gw_util::point::Point;
 use gw_util::rect::Rect;
 use gw_util::value::Value;
@@ -34,11 +34,11 @@ pub trait VisSource {
 }
 
 pub struct FovVisibility<'a> {
-    fov: AtomicRef<'a, FOV>,
+    fov: ReadRes<'a, FOV>,
 }
 
 impl<'a> FovVisibility<'a> {
-    pub fn new(fov: AtomicRef<'a, FOV>) -> Self {
+    pub fn new(fov: ReadRes<'a, FOV>) -> Self {
         FovVisibility { fov }
     }
 }
@@ -106,7 +106,7 @@ impl Viewport {
         self.needs_draw = true;
     }
 
-    fn get_map_cell(&self, ecs: &Ecs, screen_pct: (f32, f32)) -> Option<Point> {
+    fn get_map_cell(&self, world: &World, screen_pct: (f32, f32)) -> Option<Point> {
         let view_point = match self.con.mouse_point(screen_pct) {
             None => return None,
             Some(pt) => pt,
@@ -124,32 +124,17 @@ impl Viewport {
             }
         };
 
-        match ecs.resources.get::<Levels>() {
-            Some(levels) => {
-                let level = levels.current();
-                let (map, camera) = <(Read<Map>, Read<Camera>)>::fetch(&level.resources);
-                calc_cell(&*map, &*camera)
-            }
-            None => match ecs.resources.get::<Level>() {
-                Some(level) => {
-                    let (map, camera) = <(Read<Map>, Read<Camera>)>::fetch(&level.resources);
-                    calc_cell(&*map, &*camera)
-                }
-                None => {
-                    let (map, camera) = <(Read<Map>, Read<Camera>)>::fetch(&ecs.resources);
-                    calc_cell(&*map, &*camera)
-                }
-            },
-        }
+        let (map, camera) = <(ReadRes<Map>, ReadRes<Camera>)>::fetch(world);
+        calc_cell(&*map, &*camera)
     }
 
-    pub fn input(&mut self, ecs: &mut Ecs, event: &AppEvent) -> Option<ScreenResult> {
+    pub fn input(&mut self, world: &mut World, event: &AppEvent) -> Option<ScreenResult> {
         match event {
-            AppEvent::MousePos(screen_pct) => match self.get_map_cell(ecs, *screen_pct) {
+            AppEvent::MousePos(screen_pct) => match self.get_map_cell(world, *screen_pct) {
                 None => {}
                 Some(cell) => {
                     if cell != self.last_mouse {
-                        let mut msgs = ecs.resources.get_mut::<Messages>().unwrap();
+                        let mut msgs = world.write_global::<Messages>();
                         msgs.push(
                             &format!("{}_MOVE", self.id),
                             Some(Value::Point(cell.x, cell.y)),
@@ -158,10 +143,10 @@ impl Viewport {
                     }
                 }
             },
-            AppEvent::MouseDown(mouse) => match self.get_map_cell(ecs, mouse.pos) {
+            AppEvent::MouseDown(mouse) => match self.get_map_cell(world, mouse.pos) {
                 None => {}
                 Some(cell) => {
-                    let mut msgs = ecs.resources.get_mut::<Messages>().unwrap();
+                    let mut msgs = world.write_global::<Messages>();
                     msgs.push(
                         &format!("{}_CLICK", self.id),
                         Some(Value::Point(cell.x, cell.y)),
@@ -173,83 +158,97 @@ impl Viewport {
         None
     }
 
-    pub fn update(&mut self, _ecs: &mut Ecs) -> Option<ScreenResult> {
+    pub fn update(&mut self, _world: &mut World) -> Option<ScreenResult> {
         None
     }
 
-    pub fn draw_level(&mut self, level: &mut Level) {
-        if !level.resources.contains::<Camera>() {
-            let map_size = level.resources.get::<Map>().unwrap().size();
-            let camera = Camera::new(map_size.0, map_size.1);
-            level.resources.insert(camera);
+    pub fn draw_level(&mut self, world: &mut World) {
+        {
+            if !world.has_resource::<Camera>() {
+                let map_size = world.read_resource::<Map>().size();
+                let camera = Camera::new(map_size.0, map_size.1);
+                world.insert_resource(camera);
+            }
+
+            let (mut map, camera, needs_draw, memory, fov) = <(
+                WriteRes<Map>,
+                ReadRes<Camera>,
+                ReadRes<NeedsDraw>,
+                TryWriteRes<MapMemory>,
+                TryReadRes<FOV>,
+            )>::fetch(world);
+
+            let offset = {
+                if self.con.size() != *camera.size() {
+                    self.resize(camera.size().0, camera.size().1);
+                }
+                let base_offset = camera.offset();
+                map.lock
+                    .lock(base_offset, *camera.size(), map.size())
+                    .into()
+            };
+
+            let viewport_needs_draw =
+                { needs_draw.needs_draw() || camera.needs_draw() || self.needs_draw };
+
+            let has_mem = memory.is_some();
+            let has_fov = fov.is_some();
+            match (has_mem, has_fov) {
+                (true, true) => {
+                    let vis = FovVisibility::new(fov.unwrap());
+                    draw_map(
+                        self,
+                        map.deref_mut(),
+                        memory,
+                        &vis,
+                        offset,
+                        viewport_needs_draw,
+                    );
+                }
+                (true, false) => {
+                    let vis = AlwaysVisible::new();
+                    draw_map(
+                        self,
+                        map.deref_mut(),
+                        memory,
+                        &vis,
+                        offset,
+                        viewport_needs_draw,
+                    );
+                }
+                (false, true) => {
+                    let vis = FovVisibility::new(fov.unwrap());
+                    draw_map(
+                        self,
+                        map.deref_mut(),
+                        None,
+                        &vis,
+                        offset,
+                        viewport_needs_draw,
+                    );
+                }
+                (false, false) => {
+                    let vis = AlwaysVisible::new();
+                    draw_map(
+                        self,
+                        map.deref_mut(),
+                        None,
+                        &vis,
+                        offset,
+                        viewport_needs_draw,
+                    );
+                }
+            };
         }
 
-        let offset = {
-            let (map, camera) = <(Read<Map>, Read<Camera>)>::fetch(&level.resources);
-
-            if self.con.size() != *camera.size() {
-                self.resize(camera.size().0, camera.size().1);
-            }
-            let base_offset = camera.offset();
-            map.lock
-                .lock(base_offset, *camera.size(), map.size())
-                .into()
-        };
-
-        let viewport_needs_draw = {
-            let camera = level.resources.get::<Camera>().unwrap();
-            level.needs_draw() || camera.needs_draw() || self.needs_draw
-        };
-
-        let has_mem = level.resources.contains::<MapMemory>();
-        let has_fov = level.resources.contains::<FOV>();
-        match (has_mem, has_fov) {
-            (true, true) => {
-                let (mut map, memory, fov) =
-                    <(Write<Map>, Write<MapMemory>, Read<FOV>)>::fetch_mut(&mut level.resources);
-                let vis = FovVisibility::new(fov);
-                draw_map(
-                    self,
-                    &mut *map,
-                    Some(memory),
-                    &vis,
-                    offset,
-                    viewport_needs_draw,
-                );
-            }
-            (true, false) => {
-                let (mut map, memory) =
-                    <(Write<Map>, Write<MapMemory>)>::fetch_mut(&mut level.resources);
-                let vis = AlwaysVisible::new();
-                draw_map(
-                    self,
-                    &mut *map,
-                    Some(memory),
-                    &vis,
-                    offset,
-                    viewport_needs_draw,
-                );
-            }
-            (false, true) => {
-                let (mut map, fov) = <(Write<Map>, Read<FOV>)>::fetch_mut(&mut level.resources);
-                let vis = FovVisibility::new(fov);
-                draw_map(self, &mut *map, None, &vis, offset, viewport_needs_draw);
-            }
-            (false, false) => {
-                let mut map = <Write<Map>>::fetch_mut(&mut level.resources);
-                let vis = AlwaysVisible::new();
-                draw_map(self, &mut *map, None, &vis, offset, viewport_needs_draw);
-            }
-        };
-
-        draw_actors(self, level);
-        clear_needs_draw(self, level);
+        draw_actors(self, world);
+        clear_needs_draw(self, world);
     }
 
     pub fn draw_map(
         &mut self,
         map: &mut Map,
-        memory: Option<AtomicRefMut<MapMemory>>,
+        memory: Option<WriteRes<MapMemory>>,
         vis: &dyn VisSource,
         offset: (i32, i32),
         force_draw: bool,
@@ -319,7 +318,7 @@ impl ViewPortBuilder {
 fn draw_map(
     viewport: &mut Viewport,
     map: &mut Map,
-    mut memory: Option<AtomicRefMut<MapMemory>>,
+    mut memory: Option<WriteRes<MapMemory>>,
     vis: &dyn VisSource,
     offset: (i32, i32),
     force_draw: bool,
@@ -482,8 +481,13 @@ fn draw_map(
     // self.needs_redraw = false;
 }
 
-fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
-    let (map, camera) = <(Read<Map>, Read<Camera>)>::fetch(&ecs.resources);
+fn draw_actors(viewport: &mut Viewport, world: &mut World) {
+    let (map, camera, position, sprite) = <(
+        ReadRes<Map>,
+        ReadRes<Camera>,
+        ReadComp<Position>,
+        ReadComp<Sprite>,
+    )>::fetch(world);
 
     // TODO - USE REGION
 
@@ -513,9 +517,7 @@ fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
     };
     let bounds = Rect::with_size(left, top, view_size.0, view_size.1);
 
-    let mut query = <(&Position, &Sprite)>::query();
-
-    for (pos, sprite) in query.iter(&ecs.world) {
+    for (pos, sprite) in (&position, &sprite).join() {
         if !region.contains(pos.x, pos.y) {
             log("ACTOR NOT IN REGION");
             continue;
@@ -561,10 +563,9 @@ fn draw_actors(viewport: &mut Viewport, ecs: &mut Level) {
     // self.needs_redraw = false;
 }
 
-fn clear_needs_draw(viewport: &mut Viewport, level: &mut Level) {
-    level.clear_needs_draw();
-
-    let (mut map, mut camera) = <(Write<Map>, Write<Camera>)>::fetch_mut(&mut level.resources);
+fn clear_needs_draw(viewport: &mut Viewport, world: &mut World) {
+    let (mut map, mut camera, mut needs_draw) =
+        <(WriteRes<Map>, WriteRes<Camera>, WriteRes<NeedsDraw>)>::fetch(world);
 
     let size = viewport.con.size();
 
@@ -589,6 +590,7 @@ fn clear_needs_draw(viewport: &mut Viewport, level: &mut Level) {
     }
 
     viewport.needs_draw = false;
+    needs_draw.clear();
     camera.clear_needs_draw();
 }
 

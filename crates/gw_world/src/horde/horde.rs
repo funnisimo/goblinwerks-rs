@@ -1,8 +1,10 @@
 use super::horde_flags::HordeFlags;
 use crate::being::BeingKind;
+use gw_ecs::{Component, DenseVecStorage};
 use gw_util::frequency::Frequency;
 use std::{
     fmt::{Debug, Formatter, Result},
+    ops::Deref,
     sync::Arc,
 };
 
@@ -64,5 +66,22 @@ impl Debug for Horde {
             s.field("tags", &self.tags);
         }
         s.finish()
+    }
+}
+
+#[derive(Component)]
+pub struct HordeRef(Arc<Horde>);
+
+impl HordeRef {
+    pub fn new(horde: Arc<Horde>) -> Self {
+        HordeRef(horde)
+    }
+}
+
+impl Deref for HordeRef {
+    type Target = Horde;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }

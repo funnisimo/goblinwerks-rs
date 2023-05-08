@@ -1,10 +1,31 @@
 use super::LevelLoader;
-use gw_app::{
-    ecs::{ResourceSet, Write},
-    loader::{LoadError, LoadHandler, Loader},
-    // log,
-};
-use gw_world::{being::BeingKindsLoader, horde::HordesLoader, level::Levels, tile::TilesLoader};
+use gw_app::loader::{LoadError, LoadHandler, Loader};
+use gw_ecs::{atomize::Atom, Ecs};
+use gw_world::{being::BeingKindsLoader, horde::HordesLoader, tile::TilesLoader};
+
+#[derive(Clone, Debug)]
+pub struct StartMap {
+    pub map_id: Atom,
+    pub location: String,
+}
+
+impl StartMap {
+    pub fn new<I: Into<Atom>>(map_id: I, location: &str) -> Self {
+        StartMap {
+            map_id: map_id.into(),
+            location: location.to_string(),
+        }
+    }
+}
+
+impl Default for StartMap {
+    fn default() -> Self {
+        StartMap {
+            map_id: Atom::from("DEFAULT"),
+            location: "START".to_string(),
+        }
+    }
+}
 
 pub struct GameConfigLoader;
 
@@ -13,7 +34,7 @@ impl LoadHandler for GameConfigLoader {
         &mut self,
         path: &str,
         data: Vec<u8>,
-        ecs: &mut gw_app::Ecs,
+        ecs: &mut Ecs,
     ) -> Result<(), gw_app::loader::LoadError> {
         let string = match String::from_utf8(data) {
             Err(e) => {
@@ -45,42 +66,41 @@ impl LoadHandler for GameConfigLoader {
             .expect("Config must have start value.")
             .to_string();
 
-        ecs.resources.get_or_insert_with(|| Levels::default());
+        {
+            let mut loader = ecs.write_global::<Loader>();
 
-        let (mut loader, mut levels) =
-            <(Write<Loader>, Write<Levels>)>::fetch_mut(&mut ecs.resources);
+            // Load TILES
+            if let Some(tiles_value) = table.get(&"tiles".into()) {
+                if tiles_value.is_string() {
+                    let filename = tiles_value.to_string();
+                    loader
+                        .load_file(&filename, Box::new(TilesLoader::new()))
+                        .expect("Failed to load tiles!");
+                }
+            }
 
-        // Load TILES
-        if let Some(tiles_value) = table.get(&"tiles".into()) {
-            if tiles_value.is_string() {
-                let filename = tiles_value.to_string();
-                loader
-                    .load_file(&filename, Box::new(TilesLoader::new()))
-                    .expect("Failed to load tiles!");
+            // Load BEINGS
+            if let Some(actor_value) = table.get(&"beings".into()) {
+                if actor_value.is_string() {
+                    let filename = actor_value.to_string();
+                    loader
+                        .load_file(&filename, Box::new(BeingKindsLoader::new()))
+                        .expect("Failed to load beings file!");
+                }
+            }
+
+            // Load HORDES
+            if let Some(horde_value) = table.get(&"hordes".into()) {
+                if horde_value.is_string() {
+                    let filename = horde_value.to_string();
+                    loader
+                        .load_file(&filename, Box::new(HordesLoader::new()))
+                        .expect("Failed to load hordes file!");
+                }
             }
         }
 
-        // Load BEINGS
-        if let Some(actor_value) = table.get(&"beings".into()) {
-            if actor_value.is_string() {
-                let filename = actor_value.to_string();
-                loader
-                    .load_file(&filename, Box::new(BeingKindsLoader::new()))
-                    .expect("Failed to load beings file!");
-            }
-        }
-
-        // Load HORDES
-        if let Some(horde_value) = table.get(&"hordes".into()) {
-            if horde_value.is_string() {
-                let filename = horde_value.to_string();
-                loader
-                    .load_file(&filename, Box::new(HordesLoader::new()))
-                    .expect("Failed to load hordes file!");
-            }
-        }
-
-        levels.set_start_map(&start_map);
+        ecs.insert_global(StartMap::new(start_map.as_str(), "START"));
 
         let maps = table.get(&"levels".into()).unwrap().as_map().unwrap();
 
@@ -90,7 +110,7 @@ impl LoadHandler for GameConfigLoader {
         for f_val in files {
             let name = f_val.to_string();
             let full_path = format!("{}/{}", dir, name);
-            loader
+            ecs.write_global::<Loader>()
                 .load_file(&full_path, Box::new(LevelLoader::new()))
                 .expect("Failed to load map listed in config file.");
         }

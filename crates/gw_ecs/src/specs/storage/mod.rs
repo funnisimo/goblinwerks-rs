@@ -6,7 +6,7 @@ pub use self::{
     data::{ReadComp, WriteComp},
     entry::{Entries, OccupiedEntry, StorageEntry, VacantEntry},
     flagged::FlaggedStorage,
-    generic::{GenericReadStorage, GenericWriteStorage},
+    generic::{GenericReadComp, GenericWriteComp},
     restrict::{
         ImmutableParallelRestriction, MutableParallelRestriction, PairedStorage, RestrictedStorage,
         SequentialRestriction,

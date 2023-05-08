@@ -1,7 +1,5 @@
 use crate::atomic_refcell::{AtomicRef, AtomicRefMut};
-use crate::shred::{
-    DefaultIfMissing, PanicIfMissing, Resource, ResourceId, SetupHandler, SystemData,
-};
+use crate::shred::{Resource, ResourceId, SetupDefault, SetupHandler, SystemData};
 use crate::World;
 use std::{
     marker::PhantomData,
@@ -16,7 +14,7 @@ use std::{
 ///
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
-pub struct ReadRes<'a, T: 'a, F = DefaultIfMissing> {
+pub struct ReadRes<'a, T: 'a, F = ()> {
     inner: AtomicRef<'a, T>,
     phantom: PhantomData<F>,
 }
@@ -74,7 +72,7 @@ where
 ///
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
-pub struct WriteRes<'a, T: 'a, F = DefaultIfMissing> {
+pub struct WriteRes<'a, T: 'a, F = ()> {
     inner: AtomicRefMut<'a, T>,
     phantom: PhantomData<F>,
 }
@@ -192,11 +190,9 @@ pub type TryReadRes<'a, T> = Option<ReadRes<'a, T>>;
 pub type TryWriteRes<'a, T> = Option<WriteRes<'a, T>>;
 
 /// Allows to fetch a resource in a system immutably.
-/// **This will panic if the resource does not exist.**
-/// Usage of `Read` or `Option<Read>` is therefore recommended.
-pub type ReadResExpect<'a, T> = ReadRes<'a, T, PanicIfMissing>;
+/// **This will add a default value in a `System` setup if one does not exist.**
+pub type ReadResSetup<'a, T> = ReadRes<'a, T, SetupDefault>;
 
 /// Allows to fetch a resource in a system mutably.
-/// **This will panic if the resource does not exist.**
-/// Usage of `Write` or `Option<Write>` is therefore recommended.
-pub type WriteResExpect<'a, T> = WriteRes<'a, T, PanicIfMissing>;
+/// **This will add a default value in a `System` setup if the resource does not exist.**
+pub type WriteResSetup<'a, T> = WriteRes<'a, T, SetupDefault>;

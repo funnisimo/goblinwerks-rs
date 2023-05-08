@@ -38,7 +38,7 @@ fn main() {
 
     ecs.insert_global(GlobalA(32));
     ecs.insert_global(GlobalB(64));
-    ecs.insert_unique(UniqueA(1));
+    ecs.insert_resource(UniqueA(1));
 
     assert!(ecs.has_global::<GlobalA>());
     assert_eq!(ecs.read_global::<GlobalA>().0, 32);

@@ -1,9 +1,6 @@
 use super::{BoxedEffect, Effect, EffectResult};
-use crate::{level::Levels, map::Map, tile::Tiles};
-use gw_app::{
-    ecs::{Entity, Read, ResourceSet, Write},
-    Ecs,
-};
+use crate::{map::Map, tile::Tiles};
+use gw_ecs::{Entity, World};
 use gw_util::{point::Point, value::Value};
 
 #[derive(Debug, Clone)]
@@ -16,16 +13,15 @@ impl ForceTile {
 }
 
 impl Effect for ForceTile {
-    fn fire(&self, ecs: &mut Ecs, pos: Point, _entity: Option<Entity>) -> EffectResult {
-        let (mut levels, tiles) = <(Write<Levels>, Read<Tiles>)>::fetch_mut(&mut ecs.resources);
-        let level = levels.current_mut();
+    fn fire(&self, world: &mut World, pos: Point, _entity: Option<Entity>) -> EffectResult {
+        let tiles = world.read_global::<Tiles>();
 
         let tile = match tiles.get(&self.0) {
             None => return EffectResult::Fail,
             Some(tile) => tile,
         };
 
-        let mut map = level.resources.get_mut::<Map>().unwrap();
+        let mut map = world.write_resource::<Map>();
 
         let idx = map.get_wrapped_index(pos.x, pos.y).unwrap();
 
@@ -53,16 +49,15 @@ pub(super) fn parse_tile(value: &Value) -> Result<BoxedEffect, String> {
 pub struct ResetTiles(String);
 
 impl Effect for ResetTiles {
-    fn fire(&self, ecs: &mut Ecs, pos: Point, _entity: Option<Entity>) -> EffectResult {
-        let (mut levels, tiles) = <(Write<Levels>, Read<Tiles>)>::fetch_mut(&mut ecs.resources);
-        let level = levels.current_mut();
+    fn fire(&self, world: &mut World, pos: Point, _entity: Option<Entity>) -> EffectResult {
+        let tiles = world.read_global::<Tiles>();
 
         let tile = match tiles.get(&self.0) {
             None => return EffectResult::Fail,
             Some(tile) => tile,
         };
 
-        let mut map = level.resources.get_mut::<Map>().unwrap();
+        let mut map = world.write_resource::<Map>();
 
         let idx = map.get_wrapped_index(pos.x, pos.y).unwrap();
 
@@ -83,16 +78,15 @@ impl ForceFixture {
 }
 
 impl Effect for ForceFixture {
-    fn fire(&self, ecs: &mut Ecs, pos: Point, _entity: Option<Entity>) -> EffectResult {
-        let (mut levels, tiles) = <(Write<Levels>, Read<Tiles>)>::fetch_mut(&mut ecs.resources);
-        let level = levels.current_mut();
+    fn fire(&self, world: &mut World, pos: Point, _entity: Option<Entity>) -> EffectResult {
+        let tiles = world.read_global::<Tiles>();
 
         let tile = match tiles.get(&self.0) {
             None => return EffectResult::Fail,
             Some(tile) => tile,
         };
 
-        let mut map = level.resources.get_mut::<Map>().unwrap();
+        let mut map = world.write_global::<Map>();
 
         let idx = map.get_wrapped_index(pos.x, pos.y).unwrap();
 
@@ -120,16 +114,8 @@ pub(super) fn parse_fixture(value: &Value) -> Result<BoxedEffect, String> {
 pub struct ClearFixture;
 
 impl Effect for ClearFixture {
-    fn fire(
-        &self,
-        ecs: &mut gw_app::Ecs,
-        pos: gw_util::point::Point,
-        _entity: Option<Entity>,
-    ) -> EffectResult {
-        let (mut levels,) = <(Write<Levels>,)>::fetch_mut(&mut ecs.resources);
-        let level = levels.current_mut();
-
-        let mut map = level.resources.get_mut::<Map>().unwrap();
+    fn fire(&self, world: &mut World, pos: Point, _entity: Option<Entity>) -> EffectResult {
+        let mut map = world.write_resource::<Map>();
 
         let idx = map.get_wrapped_index(pos.x, pos.y).unwrap();
 

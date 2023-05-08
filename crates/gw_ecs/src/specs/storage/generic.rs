@@ -10,7 +10,7 @@ use std::ops::DerefMut;
 pub struct Seal;
 
 /// Provides generic read access to both `ReadStorage` and `WriteStorage`
-pub trait GenericReadStorage {
+pub trait GenericReadComp {
     /// The component type of the storage
     type Component: Component;
 
@@ -21,7 +21,7 @@ pub trait GenericReadStorage {
     fn _private() -> Seal;
 }
 
-impl<'a, T> GenericReadStorage for ReadComp<'a, T>
+impl<'a, T> GenericReadComp for ReadComp<'a, T>
 where
     T: Component,
 {
@@ -36,7 +36,7 @@ where
     }
 }
 
-impl<'a: 'b, 'b, T> GenericReadStorage for &'b ReadComp<'a, T>
+impl<'a: 'b, 'b, T> GenericReadComp for &'b ReadComp<'a, T>
 where
     T: Component,
 {
@@ -51,7 +51,7 @@ where
     }
 }
 
-impl<'a, T> GenericReadStorage for WriteComp<'a, T>
+impl<'a, T> GenericReadComp for WriteComp<'a, T>
 where
     T: Component,
 {
@@ -66,7 +66,7 @@ where
     }
 }
 
-impl<'a: 'b, 'b, T> GenericReadStorage for &'b WriteComp<'a, T>
+impl<'a: 'b, 'b, T> GenericReadComp for &'b WriteComp<'a, T>
 where
     T: Component,
 {
@@ -83,7 +83,7 @@ where
 
 /// Provides generic write access to `WriteStorage`, both as a value and a
 /// mutable reference.
-pub trait GenericWriteStorage {
+pub trait GenericWriteComp {
     /// The component type of the storage
     type Component: Component;
     /// The wrapper through with mutable access of a component is performed.
@@ -116,7 +116,7 @@ pub trait GenericWriteStorage {
     fn _private() -> Seal;
 }
 
-impl<'a, T> GenericWriteStorage for WriteComp<'a, T>
+impl<'a, T> GenericWriteComp for WriteComp<'a, T>
 where
     T: Component,
 {
@@ -157,7 +157,7 @@ where
     }
 }
 
-impl<'a: 'b, 'b, T> GenericWriteStorage for &'b mut WriteComp<'a, T>
+impl<'a: 'b, 'b, T> GenericWriteComp for &'b mut WriteComp<'a, T>
 where
     T: Component,
 {

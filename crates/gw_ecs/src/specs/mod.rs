@@ -215,14 +215,14 @@ pub use crate::shred::{
     Dispatcher,
     DispatcherBuilder,
     ReadRes,
-    ReadResExpect,
+    ReadResSetup,
     RunNow,
     RunningTime,
     StaticAccessor,
     System,
     SystemData,
     WriteRes,
-    WriteResExpect,
+    WriteResSetup,
 };
 pub use crate::World;
 pub use hibitset::BitSet;

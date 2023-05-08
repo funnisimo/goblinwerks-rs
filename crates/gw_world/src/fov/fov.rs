@@ -1,11 +1,8 @@
-use crate::{hero::Hero, level::get_current_level_mut, map::Map, position::Position};
-
 use super::{goblin::calculate_fov, FovTarget};
+use crate::{hero::Hero, map::Map, position::Position};
 use bitflags::bitflags;
-use gw_app::{
-    ecs::{Read, ResourceSet, Write},
-    Ecs,
-};
+use gw_app::log;
+use gw_ecs::{ReadRes, SystemData, World, WriteRes};
 use gw_util::fl;
 use std::fmt;
 
@@ -59,7 +56,7 @@ impl fmt::Display for FovFlags {
 // FOV COMPONENT
 
 // #[derive(Component, Clone, Debug)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct FOV {
     pub(crate) flags: Vec<FovFlags>,
     width: u32,
@@ -330,26 +327,23 @@ mod tests {
     }
 }
 
-pub fn update_fov(ecs: &mut Ecs) {
-    let mut level = get_current_level_mut(ecs);
-
-    if !level.resources.contains::<FOV>() {
+pub fn update_fov(world: &mut World) {
+    if !world.has_resource::<FOV>() {
         return;
     }
 
     let hero_point = {
-        let hero = level.resources.get::<Hero>().unwrap().entity;
-
-        level
-            .world
-            .entry(hero)
-            .unwrap()
-            .get_component::<Position>()
-            .unwrap()
-            .point()
+        let hero = world.read_resource::<Hero>().entity;
+        let positions = world.read_component::<Position>();
+        match positions.get(hero) {
+            None => {
+                log("FOV update - no hero position!");
+                return;
+            }
+            Some(pos) => pos.point(),
+        }
     };
 
-    let (map, mut fov) = <(Read<Map>, Write<FOV>)>::fetch_mut(&mut level.resources);
-
+    let (map, mut fov) = <(ReadRes<Map>, WriteRes<FOV>)>::fetch(world);
     calculate_fov(&*map, hero_point, fov.range, &mut *fov);
 }

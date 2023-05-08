@@ -1,10 +1,8 @@
 use super::{basic_monster_ai, idle_ai, mirror_entity_ai, move_randomly_ai, user_control_ai};
-use crate::{
-    hero::Hero,
-    level::{get_current_level, get_current_level_mut, with_current_level_mut},
-    position::Position,
-};
-use gw_app::{ecs::Entity, log, screen::BoxedScreen, Ecs};
+use crate::{hero::Hero, position::Position};
+use gw_app::log;
+use gw_app::screen::BoxedScreen;
+use gw_ecs::{Component, DenseVecStorage, Entity, World};
 use gw_util::point::Point;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
@@ -26,7 +24,7 @@ pub enum TaskResult {
     PushMode(BoxedScreen),
 }
 
-pub type TaskFn = fn(&mut Ecs, Entity) -> TaskResult;
+pub type TaskFn = fn(&mut World, Entity) -> TaskResult;
 
 lazy_static! {
     static ref TASK_FNS: Mutex<HashMap<String, TaskFn>> = {
@@ -51,7 +49,7 @@ pub fn get_task(name: &str) -> Option<TaskFn> {
     TASK_FNS.lock().unwrap().get(name).map(|v| *v)
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Component)]
 pub struct Task {
     name: String,
 }
@@ -80,6 +78,7 @@ impl TaskEntry {
     }
 }
 
+#[derive(Default)]
 struct TaskList {
     tasks: Vec<TaskEntry>,
     pub time: u64,
@@ -125,14 +124,14 @@ impl TaskList {
         }
     }
 
-    // pub fn remove(&mut self, entity: Entity) {
-    //     self.tasks = self
-    //         .tasks
-    //         .iter()
-    //         .filter(|&task| task.entity != entity)
-    //         .cloned()
-    //         .collect();
-    // }
+    pub fn remove(&mut self, entity: Entity) {
+        self.tasks = self
+            .tasks
+            .iter()
+            .filter(|&task| task.entity != entity)
+            .cloned()
+            .collect();
+    }
 
     pub fn pop(&mut self) -> Option<TaskEntry> {
         if self.tasks.is_empty() {
@@ -160,7 +159,7 @@ impl Debug for TaskList {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Executor {
     tasks: TaskList,
 }
@@ -189,7 +188,7 @@ impl Executor {
     }
 
     // pub fn insert_actor(&mut self, entity: Entity, in_time: u32) {
-    //     let task = Box::new(move |ecs: &mut Ecs| do_entity_action(entity, ecs));
+    //     let task = Box::new(move |ecs: &mut World| do_entity_action(entity, ecs));
     //     self.tasks.insert(task, in_time)
     // }
 
@@ -198,9 +197,9 @@ impl Executor {
         self.tasks.insert(entry)
     }
 
-    // pub fn remove(&mut self, entity: Entity) {
-    //     self.tasks.remove(entity);
-    // }
+    pub fn remove(&mut self, entity: Entity) {
+        self.tasks.remove(entity);
+    }
 
     fn pop(&mut self) -> Option<TaskEntry> {
         self.tasks.pop()
@@ -210,7 +209,7 @@ impl Executor {
         self.tasks.unpop(task);
     }
 
-    // pub fn get_next_action(&self, entity: Entity, ecs: &mut Ecs) -> Option<BoxedAction> {
+    // pub fn get_next_action(&self, entity: Entity, ecs: &mut World) -> Option<BoxedAction> {
     //     let ai = {
     //         let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
     //         let level = levels.current_mut();
@@ -231,7 +230,7 @@ impl Executor {
     // }
 
     // #[must_use]
-    // pub fn do_next_action(&mut self, ecs: &mut Ecs) -> DoNextActionResult {
+    // pub fn do_next_action(&mut self, ecs: &mut World) -> DoNextActionResult {
     //     let hero_entity = {
     //         let levels = ecs.resources.get::<Levels>().unwrap();
     //         let level = levels.current();
@@ -310,105 +309,90 @@ impl Executor {
 }
 
 #[must_use]
-pub fn do_next_task(ecs: &mut Ecs) -> DoNextTaskResult {
-    let task = with_current_level_mut(ecs, |level| level.executor.pop());
+pub fn do_next_task(world: &mut World) -> DoNextTaskResult {
+    let task = world.write_resource::<Executor>().pop();
 
     match task {
         None => DoNextTaskResult::Done,
         Some(task) => {
-            let hero_entity = get_hero_entity(ecs);
+            let hero_entity = get_hero_entity(world);
             let res = if hero_entity == task.entity {
                 DoNextTaskResult::Hero
             } else {
                 DoNextTaskResult::Other
             };
 
-            let mut level = get_current_level_mut(ecs);
-            match level.world.entry(task.entity) {
+            let task_comp = world
+                .read_component::<Task>()
+                .get(task.entity)
+                .map(|t| t.clone());
+            match task_comp {
                 None => res,
-                Some(entry) => match entry.get_component::<Task>() {
-                    Err(_) => res,
-                    Ok(task_comp) => {
-                        let task_fn = match get_task(&task_comp.name) {
-                            None => {
-                                log(format!("Task Function not found - {}", task_comp.name));
-                                // TODO - Remove Task component?
-                                return res;
-                            } // Do not add me back
-                            Some(task_fn) => task_fn,
-                        };
+                Some(task_comp) => {
+                    let task_fn = match get_task(&task_comp.name) {
+                        None => {
+                            log(format!("Task Function not found - {}", task_comp.name));
+                            // TODO - Remove Task component?
+                            return res;
+                        } // Do not add me back
+                        Some(task_fn) => task_fn,
+                    };
 
-                        drop(entry);
-                        drop(level);
+                    match task_fn(world, task.entity) {
+                        TaskResult::Finished => res,
+                        TaskResult::Retry => {
+                            // unpop
+                            world.write_resource::<Executor>().unpop(task);
 
-                        match task_fn(ecs, task.entity) {
-                            TaskResult::Finished => res,
-                            TaskResult::Retry => {
-                                // unpop
-                                with_current_level_mut(ecs, move |level| {
-                                    level.executor.unpop(task)
-                                });
-                                DoNextTaskResult::Done // Need to break loop regardless of whether or not this is the hero acting
-                            }
-                            TaskResult::Success(t) => {
-                                // insert
-                                with_current_level_mut(ecs, move |level| {
-                                    level.executor.insert(task.entity, t)
-                                });
-                                res
-                            }
-                            TaskResult::PushMode(mode_info) => {
-                                // run the given screen and then try this task again...
-                                with_current_level_mut(ecs, move |level| {
-                                    level.executor.unpop(task)
-                                });
-                                DoNextTaskResult::PushMode(mode_info)
-                            }
+                            DoNextTaskResult::Done // Need to break loop regardless of whether or not this is the hero acting
+                        }
+                        TaskResult::Success(t) => {
+                            // insert
+                            world.write_resource::<Executor>().insert(task.entity, t);
+                            res
+                        }
+                        TaskResult::PushMode(mode_info) => {
+                            // run the given screen and then try this task again...
+                            world.write_resource::<Executor>().unpop(task);
+                            DoNextTaskResult::PushMode(mode_info)
                         }
                     }
-                },
+                }
             }
         }
     }
 }
 
 // TODO - Move to Level
-pub fn get_hero_entity(ecs: &Ecs) -> Entity {
-    let level = get_current_level(ecs);
-    let hero = level.resources.get::<Hero>().unwrap();
+pub fn get_hero_entity(world: &World) -> Entity {
+    let hero = world.read_resource::<Hero>();
     hero.entity
 }
 
-pub fn get_hero_entity_point(ecs: &Ecs) -> (Entity, Point) {
-    let entity = ecs.resources.get::<Hero>().unwrap().entity;
-    let mut level = get_current_level_mut(ecs);
-    let point = level
-        .world
-        .entry(entity)
-        .unwrap()
-        .get_component::<Position>()
-        .unwrap()
-        .point();
+pub fn get_hero_entity_point(world: &World) -> (Entity, Point) {
+    let entity = get_hero_entity(world);
+    let positions = world.read_component::<Position>();
+
+    let point = positions.get(entity).unwrap().point();
     (entity, point)
 }
 
-fn execute_task(task: &str, ecs: &mut Ecs, entity: Entity) -> TaskResult {
+fn execute_task(task: &str, world: &mut World, entity: Entity) -> TaskResult {
     match get_task(task) {
         None => {
             log(format!("Task Function not found - {}", task));
             TaskResult::Finished
         } // Do not add me back
-        Some(task_fn) => task_fn(ecs, entity),
+        Some(task_fn) => task_fn(world, entity),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::level::{Level, Levels};
-
     use super::*;
-    // use gw_app::ecs::Ecs;
+    use gw_ecs::{Builder, World};
 
+    #[derive(Component)]
     struct Count(u32);
 
     #[test]
@@ -416,13 +400,18 @@ mod tests {
         let mut scheduler = Executor::new();
         assert_eq!(scheduler.is_empty(), true);
 
-        // let mut ecs = Ecs::new();
-        let mut levels = Levels::new();
-        let mut level = Level::new("TEST");
-        let entity = level.world.push((Task::new("TEST".to_string()), Count(0)));
-        levels.insert(level);
+        // let mut ecs = World::new();
+        let mut world = World::empty(1);
+        world.register::<Task>();
+        world.register::<Count>();
 
-        // fn inc_count(ecs: &mut Ecs, entity: Entity) -> TaskResult {
+        let entity = world
+            .create_entity()
+            .with(Task::new("TEST".to_string()))
+            .with(Count(0))
+            .build();
+
+        // fn inc_count(ecs: &mut World, entity: Entity) -> TaskResult {
         //     let mut level = get_current_level_mut(ecs);
         //     let mut entry = level.world.entry_mut(entity).unwrap();
         //     let mut count = entry.get_component_mut::<Count>().unwrap();
@@ -452,14 +441,22 @@ mod tests {
         let mut scheduler = Executor::new();
         assert_eq!(scheduler.is_empty(), true);
 
-        // let mut ecs = Ecs::new();
-        let mut levels = Levels::new();
-        let mut level = Level::new("TEST");
-        let entity_a = level.world.push((Task::new("TEST".to_string()), Count(0)));
-        let entity_b = level.world.push((Task::new("TEST".to_string()), Count(0)));
-        levels.insert(level);
+        let mut world = World::empty("TEST");
+        world.register::<Task>();
+        world.register::<Count>();
 
-        // fn inc_count(ecs: &mut Ecs, entity: Entity) -> TaskResult {
+        let entity_a = world
+            .create_entity()
+            .with(Task::new("TEST".to_string()))
+            .with(Count(0))
+            .build();
+        let entity_b = world
+            .create_entity()
+            .with(Task::new("TEST".to_string()))
+            .with(Count(0))
+            .build();
+
+        // fn inc_count(ecs: &mut World, entity: Entity) -> TaskResult {
         //     let mut level = get_current_level_mut(ecs);
         //     let mut entry = level.world.entry_mut(entity).unwrap();
         //     let mut count = entry.get_component_mut::<Count>().unwrap();
@@ -491,14 +488,22 @@ mod tests {
         let mut scheduler = Executor::new();
         assert_eq!(scheduler.is_empty(), true);
 
-        // let mut ecs = Ecs::new();
-        let mut levels = Levels::new();
-        let mut level = Level::new("TEST");
-        let entity_a = level.world.push((Task::new("TEST".to_string()), Count(0)));
-        let entity_b = level.world.push((Task::new("TEST".to_string()), Count(0)));
-        levels.insert(level);
+        let mut world = World::empty("TEST");
+        world.register::<Task>();
+        world.register::<Count>();
 
-        // fn inc_count(ecs: &mut Ecs, entity: Entity) -> TaskResult {
+        let entity_a = world
+            .create_entity()
+            .with(Task::new("TEST".to_string()))
+            .with(Count(0))
+            .build();
+        let entity_b = world
+            .create_entity()
+            .with(Task::new("TEST".to_string()))
+            .with(Count(0))
+            .build();
+
+        // fn inc_count(ecs: &mut World, entity: Entity) -> TaskResult {
         //     let mut level = get_current_level_mut(ecs);
         //     let mut entry = level.world.entry_mut(entity).unwrap();
         //     let mut count = entry.get_component_mut::<Count>().unwrap();
@@ -530,14 +535,22 @@ mod tests {
         let mut scheduler = Executor::new();
         assert_eq!(scheduler.is_empty(), true);
 
-        // let mut ecs = Ecs::new();
-        let mut levels = Levels::new();
-        let mut level = Level::new("TEST");
-        let entity_a = level.world.push((Task::new("TEST".to_string()), Count(0)));
-        let entity_b = level.world.push((Task::new("TEST".to_string()), Count(0)));
-        levels.insert(level);
+        let mut world = World::empty("TEST");
+        world.register::<Task>();
+        world.register::<Count>();
 
-        // fn inc_count(ecs: &mut Ecs, entity: Entity) -> TaskResult {
+        let entity_a = world
+            .create_entity()
+            .with(Task::new("TEST".to_string()))
+            .with(Count(0))
+            .build();
+        let entity_b = world
+            .create_entity()
+            .with(Task::new("TEST".to_string()))
+            .with(Count(0))
+            .build();
+
+        // fn inc_count(ecs: &mut World, entity: Entity) -> TaskResult {
         //     let mut level = get_current_level_mut(ecs);
         //     let mut entry = level.world.entry_mut(entity).unwrap();
         //     let mut count = entry.get_component_mut::<Count>().unwrap();

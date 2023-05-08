@@ -1,10 +1,11 @@
+use gw_ecs::{Component, DenseVecStorage};
 use gw_util::point::Point;
 use serde::{Deserialize, Serialize};
 use std::convert::From;
 use std::convert::Into;
 
 // #[derive(Component, Default, Clone, Copy, Debug)]
-#[derive(Default, Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Copy, Debug, Serialize, Deserialize, Component)]
 pub struct Position {
     pub x: i32,
     pub y: i32,

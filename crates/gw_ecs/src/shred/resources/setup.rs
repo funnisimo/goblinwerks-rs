@@ -31,10 +31,21 @@ pub trait SetupHandler<T>: Sized {
     fn setup(world: &mut World);
 }
 
-/// A `SetupHandler` that simply uses the default implementation.
-pub struct DefaultIfMissing;
+/// A `SetupHandler` that simply does nothing.
+pub struct NoSetup;
 
-impl<T> SetupHandler<T> for DefaultIfMissing
+/// A `SetupHandler` that simply does nothing.
+impl<T> SetupHandler<T> for NoSetup
+where
+    T: Resource,
+{
+    fn setup(_world: &mut World) {}
+}
+
+/// A `SetupHandler` that adds a default constructor.
+pub struct SetupDefault;
+
+impl<T> SetupHandler<T> for SetupDefault
 where
     T: Default + Resource,
 {
@@ -43,24 +54,13 @@ where
     }
 }
 
-/// A setup handler that simply does nothing and thus will cause a panic on
-/// fetching.
-///
-/// A typedef called `ReadExpect` exists, so you usually don't use this type
-/// directly.
-pub struct PanicIfMissing;
-
-impl<T> SetupHandler<T> for PanicIfMissing
-where
-    T: Resource,
-{
-    fn setup(_: &mut World) {}
-}
-
-/// A `SetupHandler` that simply does nothing.
+/// A `SetupHandler` that adds a default constructor.
+/// This is the most common usage for setup
 impl<T> SetupHandler<T> for ()
 where
-    T: Resource,
+    T: Resource + Default,
 {
-    fn setup(_world: &mut World) {}
+    fn setup(world: &mut World) {
+        world.resources.ensure(T::default);
+    }
 }

@@ -1,5 +1,6 @@
 use gw_app::{color::RGBA, AppInput, Buffer, VirtualKeyCode};
 
+#[derive(Default)]
 pub struct Player {
     pos: (f32, f32),
     speed: f32,

@@ -1,7 +1,10 @@
-use atomize::Atom;
+use std::any::TypeId;
 
-use crate::globals::Globals;
-use crate::shred::{PanicIfMissing, Resources, SystemData};
+use atomize::Atom;
+use tynm::TypeName;
+
+use crate::globals::{GlobalRef, GlobalRefMut, Globals};
+use crate::shred::{Resources, SystemData};
 use crate::specs::error::WrongGeneration;
 use crate::specs::storage::{AnyStorage, MaskedStorage};
 use crate::specs::world::EntityAllocator;
@@ -354,23 +357,61 @@ impl World {
         self.globals.remove::<G>()
     }
 
+    pub fn with_global<R, G: Resource, F: FnOnce(&G) -> R>(&self, f: F) -> R {
+        let global = self.read_global::<G>();
+        f(&global)
+    }
+
     /// Fetch a global value
-    pub fn read_global<G: Resource>(&self) -> ReadGlobal<G, PanicIfMissing> {
-        self.globals.fetch::<G>().into()
+    pub fn read_global<G: Resource>(&self) -> GlobalRef<G> {
+        self.globals.fetch::<G>()
+    }
+
+    pub fn read_global_or_insert<G: Resource + Default>(&mut self) -> GlobalRef<G> {
+        self.ensure_global::<G>();
+        self.globals.fetch::<G>()
+    }
+
+    pub fn read_global_or_insert_with<G: Resource, F: FnOnce() -> G>(
+        &mut self,
+        f: F,
+    ) -> GlobalRef<G> {
+        self.ensure_global_with(f);
+        self.globals.fetch::<G>()
+    }
+
+    pub fn with_global_mut<R, G: Resource, F: FnOnce(&mut G) -> R>(&self, f: F) -> R {
+        let mut global = self.write_global::<G>();
+        f(&mut global)
     }
 
     /// Fetch a global value as mutable
-    pub fn write_global<G: Resource>(&self) -> WriteGlobal<G, PanicIfMissing> {
+    pub fn write_global<G: Resource>(&self) -> GlobalRefMut<G> {
+        self.globals.fetch_mut::<G>()
+    }
+
+    /// Fetch a global value as mutable
+    pub fn write_global_or_insert<G: Resource + Default>(&mut self) -> GlobalRefMut<G> {
+        self.ensure_global::<G>();
+        self.globals.fetch_mut::<G>().into()
+    }
+
+    /// Fetch a global value as mutable
+    pub fn write_global_or_insert_with<G: Resource, F: FnOnce() -> G>(
+        &mut self,
+        f: F,
+    ) -> WriteGlobal<G> {
+        self.ensure_global_with(f);
         self.globals.fetch_mut::<G>().into()
     }
 
     /// Try to fetch a global value
-    pub fn try_read_global<G: Resource>(&self) -> Option<ReadGlobal<G, ()>> {
+    pub fn try_read_global<G: Resource>(&self) -> Option<GlobalRef<G>> {
         self.globals.try_fetch::<G>().map(|v| v.into())
     }
 
     /// Try to fetch a global value mutably
-    pub fn try_write_global<G: Resource>(&self) -> Option<WriteGlobal<G, ()>> {
+    pub fn try_write_global<G: Resource>(&self) -> Option<GlobalRefMut<G>> {
         self.globals.try_fetch_mut::<G>().map(|v| v.into())
     }
 
@@ -455,19 +496,71 @@ impl World {
         self.resources.ensure(func);
     }
 
-    pub fn read_resource<T: Resource>(&self) -> ReadRes<T, PanicIfMissing> {
+    pub fn with_resource<G: Resource, F: FnOnce(&G) -> R, R>(&self, f: F) -> R {
+        let res = self.read_resource::<G>();
+        f(&res)
+    }
+
+    pub fn read_resource<T: Resource>(&self) -> ReadRes<T> {
+        match self.resources.get::<T>() {
+            None => {
+                let name = std::any::type_name::<T>();
+                panic!(
+                    "Failed to find resource [{name}].  Either ensure it is there or use 'try_read_resource'"
+                );
+            }
+            Some(r) => r.into(),
+        }
+    }
+
+    pub fn read_resource_or_insert<T: Resource + Default>(&mut self) -> ReadRes<T> {
+        self.ensure_resource::<T>();
         self.resources.get::<T>().unwrap().into()
     }
 
-    pub fn try_read_resource<T: Resource>(&self) -> Option<ReadRes<T, ()>> {
+    pub fn read_resource_or_insert_with<T: Resource, F: FnOnce() -> T>(
+        &mut self,
+        f: F,
+    ) -> ReadRes<T> {
+        self.ensure_resource_with(f);
+        self.resources.get::<T>().unwrap().into()
+    }
+
+    pub fn try_read_resource<T: Resource>(&self) -> Option<ReadRes<T>> {
         self.resources.get::<T>().map(|v| v.into())
     }
 
-    pub fn write_resource<T: Resource>(&self) -> WriteRes<T, PanicIfMissing> {
+    pub fn with_resource_mut<G: Resource, F: FnOnce(&mut G) -> R, R>(&self, f: F) -> R {
+        let mut res = self.write_resource::<G>();
+        f(&mut res)
+    }
+
+    pub fn write_resource<T: Resource>(&self) -> WriteRes<T> {
+        match self.resources.get_mut::<T>() {
+            None => {
+                let name = std::any::type_name::<T>();
+                panic!(
+                    "Failed to find resource [{name}].  Either ensure it is there or use 'try_write_resource'"
+                );
+            }
+            Some(r) => r.into(),
+        }
+    }
+
+    pub fn write_resource_or_insert<T: Resource + Default>(&mut self) -> WriteRes<T> {
+        self.ensure_resource::<T>();
         self.resources.get_mut::<T>().unwrap().into()
     }
 
-    pub fn try_write_resource<T: Resource>(&self) -> Option<WriteRes<T, ()>> {
+    pub fn write_resource_or_insert_with<T: Resource, F: FnOnce() -> T>(
+        &mut self,
+        f: F,
+    ) -> WriteRes<T> {
+        self.ensure_resource_with(f);
+        self.resources.get_mut::<T>().unwrap().into()
+    }
+
+    pub fn try_write_resource<T: Resource>(&self) -> Option<WriteRes<T>> {
         self.resources.get_mut::<T>().map(|v| v.into())
     }
 
@@ -479,14 +572,40 @@ impl World {
 
     pub fn read_component<T: Component>(&self) -> ReadComp<T> {
         let entities = self.resources.get::<EntitiesRes>().unwrap();
-        let data = self.resources.get::<MaskedStorage<T>>().unwrap();
+        let data = match self.resources.get::<MaskedStorage<T>>() {
+            None => {
+                let name = std::any::type_name::<T>();
+                panic!(
+                    "Failed to find storage for a component [{name}].  Did you forget to register it?"
+                );
+            }
+            Some(data) => data,
+        };
         Storage::new(entities, data)
+    }
+
+    pub fn with_component<R, C: Component, F: FnOnce(ReadComp<C>) -> R>(&self, f: F) -> R {
+        let comp = self.read_component::<C>();
+        f(comp)
     }
 
     pub fn write_component<T: Component>(&self) -> WriteComp<T> {
         let entities = self.resources.get::<EntitiesRes>().unwrap();
-        let data = self.resources.get_mut::<MaskedStorage<T>>().unwrap();
+        let data = match self.resources.get_mut::<MaskedStorage<T>>() {
+            None => {
+                let name = std::any::type_name::<T>();
+                panic!(
+                    "Failed to find storage for a component [{name}].  Did you forget to register it?"
+                );
+            }
+            Some(data) => data,
+        };
         Storage::new(entities, data)
+    }
+
+    pub fn with_component_mut<R, C: Component, F: FnOnce(WriteComp<C>) -> R>(&self, f: F) -> R {
+        let comp = self.write_component::<C>();
+        f(comp)
     }
 
     // REGISTRY
@@ -554,14 +673,13 @@ impl World {
         CreateIter(self.entities_mut())
     }
 
-    pub fn delete_entity(&mut self, entity: Entity) -> Result<(), WrongGeneration> {
-        self.delete_entities(&[entity])
+    pub fn delete_entity(&mut self, entity: Entity) {
+        self.delete_entities(&[entity]);
     }
 
-    pub fn delete_entities(&mut self, delete: &[Entity]) -> Result<(), WrongGeneration> {
+    pub fn delete_entities(&mut self, delete: &[Entity]) {
         self.delete_components(delete);
-
-        self.entities_mut().alloc.kill(delete)
+        let _ = self.entities_mut().alloc.kill(delete);
     }
 
     pub fn delete_all(&mut self) {
@@ -569,10 +687,11 @@ impl World {
 
         let entities: Vec<_> = self.entities().join().collect();
 
-        self.delete_entities(&entities).expect(
-            "Bug: previously collected entities are not valid \
-             even though access should be exclusive",
-        );
+        self.delete_entities(&entities);
+        // .expect(
+        //     "Bug: previously collected entities are not valid \
+        //      even though access should be exclusive",
+        // );
     }
 
     pub fn is_alive(&self, e: Entity) -> bool {
@@ -596,13 +715,13 @@ impl World {
     }
 
     pub fn maintain(&mut self) {
+        let lazy = self.resources.get_mut::<LazyUpdate>().unwrap().clone();
+        lazy.maintain(self);
+
         let deleted = self.entities_mut().maintain();
         if !deleted.is_empty() {
             self.delete_components(&deleted);
         }
-
-        let lazy = self.resources.get_mut::<LazyUpdate>().unwrap().clone();
-        lazy.maintain(self);
     }
 
     pub fn delete_components(&mut self, delete: &[Entity]) {
@@ -630,7 +749,7 @@ mod tests {
     use atomize::a;
 
     use super::*;
-    use crate::shred::{ReadRes, ReadResExpect, WriteRes};
+    use crate::shred::{ReadRes, WriteRes};
     use crate::shred::{RunNow, System, SystemData};
 
     #[derive(Default)]
@@ -698,7 +817,7 @@ mod tests {
             },
         );
 
-        world.exec(|(float, boolean): (ReadRes<f32>, ReadResExpect<bool>)| {
+        world.exec(|(float, boolean): (ReadRes<f32>, ReadRes<bool>)| {
             assert_eq!(*float, 4.3);
             assert!(*boolean);
         });

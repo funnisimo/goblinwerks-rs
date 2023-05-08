@@ -1,9 +1,11 @@
+use crate::{
+    specs::{prelude::*, world::EntitiesRes},
+    Ecs,
+};
 use crossbeam_queue::SegQueue;
-
-use crate::specs::{prelude::*, world::EntitiesRes};
 use std::sync::Arc;
 
-struct Queue<T>(SegQueue<T>);
+pub(crate) struct Queue<T>(SegQueue<T>);
 
 impl<T> Default for Queue<T> {
     fn default() -> Self {
@@ -19,6 +21,18 @@ pub trait LazyUpdateInternal: Send + Sync {
 #[cfg(not(feature = "parallel"))]
 pub trait LazyUpdateInternal {
     fn update(self: Box<Self>, world: &mut World);
+}
+
+/// An updte that works on the whole Ecs
+#[cfg(feature = "parallel")]
+pub trait LazyUpdateEcs: Send + Sync {
+    /// Do the update
+    fn update(self: Box<Self>, ecs: &mut Ecs);
+}
+
+#[cfg(not(feature = "parallel"))]
+pub trait LazyUpdateEcs {
+    fn update(self: Box<Self>, ecs: &mut Ecs);
 }
 
 /// Generates two versions of functions within the macro call:
@@ -139,6 +153,26 @@ where
     }
 }
 
+#[cfg(feature = "parallel")]
+impl<F> LazyUpdateEcs for F
+where
+    F: FnOnce(&mut Ecs) + Send + Sync + 'static,
+{
+    fn update(self: Box<Self>, ecs: &mut Ecs) {
+        self(ecs);
+    }
+}
+
+#[cfg(not(feature = "parallel"))]
+impl<F> LazyUpdateEcs for F
+where
+    F: FnOnce(&mut Ecs) + 'static,
+{
+    fn update(self: Box<Self>, ecs: &mut Ecs) {
+        self(ecs);
+    }
+}
+
 /// Lazy updates can be used for world updates
 /// that need to borrow a lot of resources
 /// and as such should better be done at the end.
@@ -155,10 +189,125 @@ where
 #[derive(Default)]
 pub struct LazyUpdate {
     queue: Arc<Queue<Box<dyn LazyUpdateInternal>>>,
+    pub(crate) queue_ecs: Arc<Queue<Box<dyn LazyUpdateEcs>>>,
 }
 
 impl LazyUpdate {
     parallel_feature! {
+
+        /// Lazily inserts a global.
+        ///
+        /// ## Examples
+        ///
+        /// ```
+        /// # use specs::prelude::*;
+        /// #
+        /// struct Pos(f32, f32);
+        ///
+        /// struct InsertPos;
+        ///
+        /// impl<'a> System<'a> for InsertPos {
+        ///     type SystemData = (ReadRes<'a, LazyUpdate>,);
+        ///
+        ///     fn run(&mut self, (lazy,): Self::SystemData) {
+        ///         lazy.insert_global(Pos(1.0, 1.0));
+        ///     }
+        /// }
+        /// ```
+        pub fn insert_global<G>(&self, global: G)
+        where
+            G: Resource,
+        {
+            self.exec(move |world| {
+                world.insert_global(global);
+            });
+        }
+
+        /// Lazily removes a global.
+        ///
+        /// ## Examples
+        ///
+        /// ```
+        /// # use specs::prelude::*;
+        /// #
+        /// struct Pos(f32, f32);
+        ///
+        /// struct InsertPos;
+        ///
+        /// impl<'a> System<'a> for InsertPos {
+        ///     type SystemData = (ReadRes<'a, LazyUpdate>,);
+        ///
+        ///     fn run(&mut self, (lazy,): Self::SystemData) {
+        ///         lazy.remove_global::<Pos>();
+        ///     }
+        /// }
+        /// ```
+        pub fn remove_global<G>(&self)
+        where
+            G: Resource,
+        {
+            self.exec(move |world| {
+                world.remove_global::<G>();
+            });
+        }
+
+
+        /// Lazily inserts a resource.
+        ///
+        /// ## Examples
+        ///
+        /// ```
+        /// # use specs::prelude::*;
+        /// #
+        /// struct Pos(f32, f32);
+        ///
+        /// struct InsertPos;
+        ///
+        /// impl<'a> System<'a> for InsertPos {
+        ///     type SystemData = (ReadRes<'a, LazyUpdate>,);
+        ///
+        ///     fn run(&mut self, (lazy,): Self::SystemData) {
+        ///         lazy.insert_resource(Pos(1.0, 1.0));
+        ///     }
+        /// }
+        /// ```
+        pub fn insert_resource<G>(&self, global: G)
+        where
+            G: Resource,
+        {
+            self.exec(move |world| {
+                world.insert_resource(global);
+            });
+        }
+
+        /// Lazily removes a resource.
+        ///
+        /// ## Examples
+        ///
+        /// ```
+        /// # use specs::prelude::*;
+        /// #
+        /// struct Pos(f32, f32);
+        ///
+        /// struct InsertPos;
+        ///
+        /// impl<'a> System<'a> for InsertPos {
+        ///     type SystemData = (ReadRes<'a, LazyUpdate>,);
+        ///
+        ///     fn run(&mut self, (lazy,): Self::SystemData) {
+        ///         lazy.remove_global::<Pos>();
+        ///     }
+        /// }
+        /// ```
+        pub fn remove_resource<G>(&self)
+        where
+            G: Resource,
+        {
+            self.exec(move |world| {
+                world.remove_resource::<G>();
+            });
+        }
+
         /// Lazily inserts a component for an entity.
         ///
         /// ## Examples
@@ -183,7 +332,7 @@ impl LazyUpdate {
         ///     }
         /// }
         /// ```
-        pub fn insert<C>(&self, e: Entity, c: C)
+        pub fn insert_component<C>(&self, e: Entity, c: C)
         where
             C: Component,
         {
@@ -221,7 +370,7 @@ impl LazyUpdate {
         ///     }
         /// }
         /// ```
-        pub fn insert_all<C, I>(&self, iter: I)
+        pub fn insert_all_components<C, I>(&self, iter: I)
         where
             C: Component,
             I: IntoIterator<Item = (Entity, C)> + 'static,
@@ -261,7 +410,7 @@ impl LazyUpdate {
         ///     }
         /// }
         /// ```
-        pub fn remove<C>(&self, e: Entity)
+        pub fn remove_component<C>(&self, e: Entity)
         where
             C: Component,
         {
@@ -309,14 +458,14 @@ impl LazyUpdate {
                 .push(Box::new(f));
         }
 
-        /// Lazily executes a closure with mutable world access.
+        /// Lazily executes a closure with mutable Ecs access.
         ///
-        /// This can be used to add a resource to the `World` from a system.
+        /// This can be used to change the current world or move an entity.
         ///
         /// ## Examples
         ///
         /// ```
-        /// # use specs::prelude::*;
+        /// # use gw_ecs::*;
         /// #
         ///
         /// struct Sys;
@@ -326,19 +475,19 @@ impl LazyUpdate {
         ///
         ///     fn run(&mut self, (ent, lazy): Self::SystemData) {
         ///         for entity in ent.join() {
-        ///             lazy.exec_mut(move |world| {
+        ///             lazy.exec_ecs(move |ecs| {
         ///                 // complete extermination!
-        ///                 world.delete_all();
+        ///                 ecs.set_current_world(a!(MARS))
         ///             });
         ///         }
         ///     }
         /// }
         /// ```
-        pub fn exec_mut<F>(&self, f: F)
+        pub fn exec_ecs<F>(&self, f: F)
         where
-            F: FnOnce(&mut World) + 'static,
+            F: FnOnce(&mut Ecs) + 'static,
         {
-            self.queue.0.push(Box::new(f));
+            self.queue_ecs.0.push(Box::new(f));
         }
     }
 
@@ -368,9 +517,17 @@ impl LazyUpdate {
         LazyBuilder { entity, lazy: self }
     }
 
+    /// Deletes an entity
+    pub fn delete_entity(&self, e: Entity) {
+        self.exec(move |world| {
+            let _ = world.entities().delete(e);
+        });
+    }
+
     pub(crate) fn clone(&self) -> Self {
         Self {
             queue: self.queue.clone(),
+            queue_ecs: self.queue_ecs.clone(),
         }
     }
 
@@ -378,6 +535,14 @@ impl LazyUpdate {
         while let Some(l) = self.queue.0.pop() {
             l.update(world);
         }
+    }
+
+    pub(crate) fn take_ecs_funcs(&self) -> Vec<Box<dyn LazyUpdateEcs>> {
+        let mut result = Vec::<Box<dyn LazyUpdateEcs>>::new();
+        while let Some(l) = self.queue_ecs.0.pop() {
+            result.push(l);
+        }
+        result
     }
 }
 

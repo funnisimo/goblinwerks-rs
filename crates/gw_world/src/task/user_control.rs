@@ -1,36 +1,42 @@
 use super::TaskResult;
-use crate::{
-    action::{ActionResult, BoxedAction},
-    level::get_current_level_mut,
-};
-use gw_app::{ecs::Entity, Ecs};
+use crate::action::{ActionResult, BoxedAction};
+use gw_ecs::{Entity, World};
 
-pub struct UserAction(BoxedAction);
+#[derive(Default)]
+pub struct UserAction {
+    action: Option<BoxedAction>,
+}
 
 impl UserAction {
     pub fn new(action: BoxedAction) -> Self {
-        UserAction(action)
-    }
-}
-
-pub fn user_control_ai(ecs: &mut Ecs, entity: Entity) -> TaskResult {
-    // let hero_entity = get_hero_entity(ecs);
-
-    let mut level = get_current_level_mut(ecs);
-
-    match level.resources.remove::<UserAction>() {
-        None => TaskResult::Retry,
-        Some(user_action) => {
-            drop(level);
-            execute_actor_action(user_action.0, ecs, entity)
+        UserAction {
+            action: Some(action),
         }
     }
+
+    pub fn take(&mut self) -> Option<BoxedAction> {
+        self.action.take()
+    }
+
+    pub fn set(&mut self, action: BoxedAction) {
+        self.action.replace(action);
+    }
 }
 
-pub fn execute_actor_action(action: BoxedAction, ecs: &mut Ecs, _entity: Entity) -> TaskResult {
+pub fn user_control_ai(world: &mut World, entity: Entity) -> TaskResult {
+    // let hero_entity = get_hero_entity(ecs);
+
+    let action = world.write_resource::<UserAction>().take();
+    match action {
+        None => TaskResult::Retry,
+        Some(user_action) => execute_actor_action(user_action, world, entity),
+    }
+}
+
+pub fn execute_actor_action(action: BoxedAction, world: &mut World, _entity: Entity) -> TaskResult {
     let mut action = action;
     loop {
-        match action.execute(ecs) {
+        match action.execute(world) {
             ActionResult::Dead(_) => {
                 // no rescedule - entity dead
                 return TaskResult::Finished;

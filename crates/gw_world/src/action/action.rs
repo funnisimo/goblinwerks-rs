@@ -1,7 +1,5 @@
-use crate::level::Level;
-use gw_app::ecs::Entity;
 use gw_app::screen::BoxedScreen;
-use gw_app::Ecs;
+use gw_ecs::{Entity, World};
 
 pub enum ActionResult {
     Done(u32),            // Action done, queue entity in u64 time
@@ -14,20 +12,20 @@ pub enum ActionResult {
 }
 
 pub trait Action: Send + Sync {
-    fn execute(&mut self, ecs: &mut Ecs) -> ActionResult;
+    fn execute(&mut self, world: &mut World) -> ActionResult;
 }
 
 pub type BoxedAction = Box<dyn Action>;
 
-pub type ActionFn = dyn FnMut(&mut Level) -> ActionResult + 'static + Send + Sync;
+pub type ActionFn = dyn FnMut(&mut World) -> ActionResult + 'static + Send + Sync;
 pub type BoxedActionFn = Box<ActionFn>;
 
 impl<F> Action for F
 where
-    F: FnMut(&mut Ecs) -> ActionResult + 'static + Send + Sync,
+    F: FnMut(&mut World) -> ActionResult + 'static + Send + Sync,
 {
-    fn execute(&mut self, ecs: &mut Ecs) -> ActionResult {
-        (self)(ecs)
+    fn execute(&mut self, world: &mut World) -> ActionResult {
+        (self)(world)
     }
 }
 
@@ -47,9 +45,9 @@ where
 //         self.data.push(Box::new(func));
 //     }
 
-//     pub fn execute(&mut self, level: &mut Ecs) {
+//     pub fn execute(&mut self, world: &mut World) {
 //         for sys in self.data.iter_mut() {
-//             sys.execute(ecs);
+//             sys.execute(world);
 //         }
 //     }
 // }

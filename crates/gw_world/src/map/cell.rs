@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use gw_app::{ecs::World, log};
+use gw_ecs::ReadComp;
 
 use crate::{
     being::Being,
@@ -149,13 +150,12 @@ impl<'m> Cell for CellMut<'m> {
 
 ///////////////////
 
-pub fn cell_flavor(map: &Map, world: &mut World, index: usize) -> String {
+pub fn cell_flavor(map: &Map, world: &World, index: usize) -> String {
+    let beings = world.fetch::<ReadComp<Being>>();
     if let Some(actor_entity) = map.iter_beings(index).next() {
-        if let Some(entry) = world.entry(actor_entity) {
-            if let Ok(actor) = entry.get_component::<Being>() {
-                if let Some(ref flavor) = actor.flavor {
-                    return flavor.clone();
-                }
+        if let Some(actor) = beings.get(actor_entity) {
+            if let Some(ref flavor) = actor.flavor {
+                return flavor.clone();
             }
         }
     }

@@ -285,18 +285,18 @@ impl<T: ?Sized> MetaTable<T> {
         }
     }
 
-    pub(crate) fn register_internal(&mut self, ty_id: TypeId, fat: Fat) -> bool {
-        let len = self.indices.len();
-        match self.indices.entry(ty_id) {
-            Entry::Occupied(_occ) => false,
-            Entry::Vacant(vac) => {
-                vac.insert(len);
-                self.fat.push(fat);
-                self.tys.push(ty_id);
-                true
-            }
-        }
-    }
+    // pub(crate) fn register_internal(&mut self, ty_id: TypeId, fat: Fat) -> bool {
+    //     let len = self.indices.len();
+    //     match self.indices.entry(ty_id) {
+    //         Entry::Occupied(_occ) => false,
+    //         Entry::Vacant(vac) => {
+    //             vac.insert(len);
+    //             self.fat.push(fat);
+    //             self.tys.push(ty_id);
+    //             true
+    //         }
+    //     }
+    // }
 
     /// Tries to convert `world` to a trait object of type `&T`.
     /// If `world` doesn't have an implementation for `T` (or it wasn't

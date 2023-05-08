@@ -1,41 +1,29 @@
-use gw_app::{ecs::Entity, Ecs};
+use gw_ecs::{Entity, World};
 use gw_world::{
-    action::move_step::MoveStepAction, being::do_entity_action, hero::Hero,
-    level::get_current_level_mut, map::Map, position::Position, task::TaskResult,
+    action::move_step::MoveStepAction, being::do_entity_action, hero::Hero, map::Map,
+    position::Position, task::TaskResult,
 };
 
 /// Try to move toward the hero - will be stopped by the counters.
-pub fn shopkeeper(ecs: &mut Ecs, entity: Entity) -> TaskResult {
-    let mut level = get_current_level_mut(ecs);
-
-    let hero_entity = level.resources.get::<Hero>().unwrap().entity;
+pub fn shopkeeper(world: &mut World, entity: Entity) -> TaskResult {
+    let hero_entity = world.read_resource::<Hero>().entity;
 
     // log(format!("SHOPKEEPER - {:?}", entity));
 
-    let hero_point = match level
-        .world
-        .entry(hero_entity)
-        .unwrap()
-        .get_component::<Position>()
-    {
-        Err(_) => {
+    let hero_point = match world.read_component::<Position>().get(hero_entity) {
+        None => {
             // log("- no hero_point");
             return TaskResult::Success(100);
         }
-        Ok(pos) => pos.point(),
+        Some(pos) => pos.point(),
     };
 
-    let entity_point = match level
-        .world
-        .entry(entity)
-        .unwrap()
-        .get_component::<Position>()
-    {
-        Err(_) => {
+    let entity_point = match world.read_component::<Position>().get(entity) {
+        None => {
             // log("- no entity point");
             return TaskResult::Success(100);
         }
-        Ok(pos) => pos.point(),
+        Some(pos) => pos.point(),
     };
 
     // log(format!("- entity_point={:?}", entity_point));
@@ -52,7 +40,7 @@ pub fn shopkeeper(ecs: &mut Ecs, entity: Entity) -> TaskResult {
         0
     } else {
         // if blocked => 0 else ...
-        let map = level.resources.get::<Map>().unwrap();
+        let map = world.read_resource::<Map>();
 
         match map.get_wrapped_index(entity_point.x + dx, entity_point.y + move_dir.y.signum()) {
             Some(index) => {
@@ -78,7 +66,5 @@ pub fn shopkeeper(ecs: &mut Ecs, entity: Entity) -> TaskResult {
 
     // log(format!("- move: {},{}", dx, dy));
 
-    drop(level);
-
-    do_entity_action(Box::new(MoveStepAction::new(entity, dx, dy)), ecs, entity)
+    do_entity_action(Box::new(MoveStepAction::new(entity, dx, dy)), world, entity)
 }

@@ -1,7 +1,6 @@
-use gw_app::{ecs::Entity, log, Ecs};
-use gw_world::{
-    action::BoxedAction, level::get_current_level_mut, map::Map, task::TaskResult, tile::Tiles,
-};
+use gw_app::log;
+use gw_ecs::{Entity, World};
+use gw_world::{action::BoxedAction, map::Map, task::TaskResult, tile::Tiles};
 
 #[derive(Default, Clone, Debug)]
 pub struct Moons {
@@ -33,8 +32,8 @@ impl Moons {
 }
 
 /// Try to move toward the hero - will be stopped by the counters.
-pub fn move_moongate(ecs: &mut Ecs, _entity: Entity) -> TaskResult {
-    let mut moons = ecs.resources.get_mut_or_insert_with(|| Moons::new());
+pub fn move_moongate(world: &mut World, _entity: Entity) -> TaskResult {
+    let mut moons = world.write_resource_or_insert::<Moons>();
     let location = moons.location();
     moons.increment();
     let new_location = moons.location();
@@ -42,12 +41,11 @@ pub fn move_moongate(ecs: &mut Ecs, _entity: Entity) -> TaskResult {
     drop(moons);
 
     let moongate = {
-        let tiles = ecs.resources.get::<Tiles>().unwrap();
+        let tiles = world.read_global::<Tiles>();
         tiles.get("MOONGATE").unwrap()
     };
 
-    let level = get_current_level_mut(ecs);
-    let mut map = level.resources.get_mut::<Map>().unwrap();
+    let mut map = world.write_resource::<Map>();
 
     let current_idx = map.get_location(location).unwrap();
     map.clear_fixture(current_idx);

@@ -1,7 +1,8 @@
 use gw_app::{
     loader::{LoadError, LoadHandler},
-    log, Ecs,
+    log,
 };
+use gw_ecs::Ecs;
 use gw_world::{
     map::Builder,
     tile::{Tile, TileKind},
@@ -282,7 +283,7 @@ impl PrefabFileLoader {
 
 impl LoadHandler for PrefabFileLoader {
     fn file_loaded(&mut self, path: &str, data: Vec<u8>, ecs: &mut Ecs) -> Result<(), LoadError> {
-        let mut prefabs = ecs.resources.get_mut_or_insert_with(|| Prefabs::default());
+        ecs.ensure_global::<Prefabs>();
 
         let string = match String::from_utf8(data) {
             Err(e) => {
@@ -300,6 +301,7 @@ impl LoadHandler for PrefabFileLoader {
             Err(e) => return Err(LoadError::ParseError(e.to_string())),
         };
 
+        let mut prefabs = ecs.write_global::<Prefabs>();
         match load_prefab_data(&mut prefabs, doc) {
             Err(e) => return Err(e),
             Ok(count) => {

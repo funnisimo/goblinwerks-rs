@@ -1,13 +1,7 @@
 use super::{BoxedEffect, Effect, EffectResult};
-use crate::{
-    level::{Level, Levels},
-    map::Map,
-    position::Position,
-};
-use gw_app::{
-    ecs::{Entity, EntityStore},
-    log, Ecs,
-};
+use crate::{map::Map, position::Position};
+use gw_app::log;
+use gw_ecs::{Entity, World};
 use gw_util::point::Point;
 use gw_util::value::Value;
 
@@ -17,23 +11,16 @@ use gw_util::value::Value;
 pub struct MoveEntity(i32, i32);
 
 impl Effect for MoveEntity {
-    fn fire(&self, ecs: &mut Ecs, _pos: Point, entity: Option<Entity>) -> EffectResult {
+    fn fire(&self, world: &mut World, _pos: Point, entity: Option<Entity>) -> EffectResult {
         let entity = match entity {
             None => return EffectResult::Fail,
             Some(entity) => entity,
         };
-        let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-        let level = levels.current_mut();
 
-        let Level {
-            resources, world, ..
-        } = level;
+        let mut map = world.write_resource::<Map>();
 
-        let mut map = resources.get_mut::<Map>().unwrap();
-
-        let mut entry = world.entry_mut(entity).unwrap();
-
-        let pos = entry.get_component_mut::<Position>().unwrap();
+        let mut positions = world.write_component::<Position>();
+        let pos = positions.get_mut(entity).unwrap();
         let orig_pt = pos.point();
 
         let old_idx = map.get_index(orig_pt.x, orig_pt.y).unwrap();
@@ -115,11 +102,8 @@ pub(super) fn parse_move_entity(value: &Value) -> Result<BoxedEffect, String> {
 pub struct MoveRegion(i32, i32);
 
 impl Effect for MoveRegion {
-    fn fire(&self, ecs: &mut Ecs, _pos: Point, _entity: Option<Entity>) -> EffectResult {
-        let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-        let level = levels.current_mut();
-
-        let mut map = level.resources.get_mut::<Map>().unwrap();
+    fn fire(&self, world: &mut World, _pos: Point, _entity: Option<Entity>) -> EffectResult {
+        let mut map = world.write_resource::<Map>();
 
         let orig = map.region().clone();
         map.move_region_pos(self.0, self.1);

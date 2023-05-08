@@ -1,11 +1,12 @@
 use acanja::effect::{parse_gremlins, parse_mark, parse_moongate_travel, parse_winds};
-use acanja::loader::GameConfigLoader;
-use gw_app::ecs::systems::CommandBuffer;
-use gw_app::ecs::{Entity, Read, ResourceSet, Write};
-use gw_app::ecs::{IntoQuery, Query};
+use acanja::loader::{GameConfigLoader, StartMap};
+use acanja::map::prefab::Prefabs;
+use acanja::tasks::AnchorPos;
 use gw_app::*;
+use gw_ecs::{Builder, Entity, Join, World};
 use gw_util::grid::{dump_grid, random_point_with};
 use gw_util::point::Point;
+use gw_util::rng::RandomNumberGenerator;
 use gw_world::action::idle::IdleAction;
 use gw_world::action::move_step::MoveStepAction;
 use gw_world::being::{spawn_being, Being, BeingFlags, BeingKinds, Stats};
@@ -15,18 +16,16 @@ use gw_world::effect::{register_effect_parser, BoxedEffect};
 use gw_world::fov::update_fov;
 use gw_world::hero::Hero;
 use gw_world::horde::{pick_random_horde, spawn_horde, HordeSpawn};
-use gw_world::level::{
-    get_current_level, get_current_level_mut, with_current_level, Level, Levels,
-};
 use gw_world::map::{ensure_area_grid, AreaGrid, Cell, Map};
 use gw_world::position::Position;
-use gw_world::task::{do_next_task, DoNextTaskResult, Task, UserAction};
+use gw_world::task::{do_next_task, DoNextTaskResult, Executor, Task, UserAction};
 use gw_world::task::{get_hero_entity, register_task};
+use gw_world::tile::Tiles;
 use gw_world::widget::Viewport;
 use std::ops::DerefMut;
 
-const CAMERA_WIDTH: u32 = 1024 / 32;
-const CAMERA_HEIGHT: u32 = 768 / 32;
+// const CAMERA_WIDTH: u32 = 1024 / 32;
+// const CAMERA_HEIGHT: u32 = 768 / 32;
 
 struct MainScreen {
     viewport: Viewport,
@@ -52,58 +51,69 @@ impl MainScreen {
     fn post_action(&mut self, ecs: &mut Ecs) {
         // Post Update
 
-        update_camera_follows(&mut *get_current_level_mut(ecs));
-        update_fov(ecs);
+        update_camera_follows(ecs.current_world_mut());
+        update_fov(ecs.current_world_mut());
     }
 }
 
 impl Screen for MainScreen {
     fn setup(&mut self, ecs: &mut Ecs) {
-        let resources = &mut ecs.resources;
-        // resources.get_or_insert_with(|| Tiles::default());
-        // resources.get_or_insert_with(|| Prefabs::default());
+        ecs.ensure_global::<Tiles>();
+        ecs.ensure_global::<Prefabs>();
+        ecs.ensure_global::<BeingKinds>();
 
-        let (mut levels, actor_kinds) = <(Write<Levels>, Read<BeingKinds>)>::fetch_mut(resources);
-
-        log(format!("START MAP = {}", levels.current_id()));
-        levels.setup();
-        let level = levels.current_mut();
-
-        let start_pos = {
-            let map = level.resources.get::<Map>().unwrap();
-            // dump_map(&*map);
-            // log(format!("map size = {:?}", map.get_size()));
-            map.to_point(map.get_location("START").unwrap())
-        };
-
-        let hero_kind = actor_kinds.get("HERO").unwrap();
-        log(format!("HERO - {:?}", hero_kind));
-
-        let entity = spawn_being(&hero_kind, level, start_pos);
-
-        ///////////////////////////////////////////
-
-        // SPAWN MOONGATES...
-
-        ///////////////////////////////////////////
+        set_start_map(ecs);
 
         {
-            let mut camera = level
-                .resources
-                .get_mut_or_insert_with(|| Camera::new(CAMERA_WIDTH, CAMERA_HEIGHT));
-            camera.set_follows(entity);
+            let level = ecs.current_world_mut();
+            log(format!("START MAP = {}", level.id()));
+
+            let start_pos = {
+                let map = level.read_resource::<Map>();
+                // dump_map(&*map);
+                // log(format!("map size = {:?}", map.get_size()));
+                map.to_point(map.get_location("START").unwrap())
+            };
+
+            let entity = {
+                let actor_kinds = level.read_global::<BeingKinds>();
+                let hero_kind = actor_kinds.get("HERO").unwrap();
+                log(format!("HERO - {:?}", hero_kind));
+                spawn_being(&hero_kind, level, start_pos)
+            };
+
+            ///////////////////////////////////////////
+
+            // SPAWN MOONGATES...
+
+            ///////////////////////////////////////////
+
+            {
+                let mut camera = level.write_resource::<Camera>();
+                camera.set_follows(entity);
+            }
+
+            let moongate = level
+                .create_entity()
+                .with(Task::new("MOVE_MOONGATE"))
+                .build();
+
+            {
+                let mut executor = level.write_resource::<Executor>();
+                executor.insert(moongate, 0);
+                log(format!("STARTING TASKS = {:?}", *executor));
+            }
+
+            // level.ensure_resource::<NeedsDraw>();
+            // level.ensure_resource::<UserAction>();
+            // level.ensure_resource::<Logger>();
         }
 
-        let moongate = level.world.push((Task::new("MOVE_MOONGATE"),));
-        level.executor.insert(moongate, 0);
-
-        // level.reset_tasks();
-
-        log(format!("STARTING TASKS = {:?}", level.executor));
+        ecs.maintain();
     }
 
     fn input(&mut self, ecs: &mut Ecs, ev: &AppEvent) -> ScreenResult {
-        if let Some(result) = self.viewport.input(ecs, ev) {
+        if let Some(result) = self.viewport.input(ecs.current_world_mut(), ev) {
             return result;
         }
 
@@ -113,16 +123,16 @@ impl Screen for MainScreen {
                     return ScreenResult::Quit;
                 }
                 VirtualKeyCode::Down => {
-                    move_hero(ecs, 0, 1);
+                    move_hero(ecs.current_world_mut(), 0, 1);
                 }
                 VirtualKeyCode::Left => {
-                    move_hero(ecs, -1, 0);
+                    move_hero(ecs.current_world_mut(), -1, 0);
                 }
                 VirtualKeyCode::Up => {
-                    move_hero(ecs, 0, -1);
+                    move_hero(ecs.current_world_mut(), 0, -1);
                 }
                 VirtualKeyCode::Right => {
-                    move_hero(ecs, 1, 0);
+                    move_hero(ecs.current_world_mut(), 1, 0);
                 }
                 _ => {}
             },
@@ -130,34 +140,39 @@ impl Screen for MainScreen {
                 '<' => {
                     // Climb
                     log("CLIMB");
-                    try_fire_hero_action(ecs, "climb");
-                    // let hero_point = get_hero_point(ecs);
-                    // try_move_hero_world(ecs, &hero_point, PortalFlags::ON_CLIMB);
+                    try_fire_hero_action(ecs.current_world_mut(), "climb");
+                    // let hero_point = get_hero_point(ecs.current_world_mut());
+                    // try_move_hero_world(ecs.current_world_mut(), &hero_point, PortalFlags::ON_CLIMB);
                 }
                 '>' => {
                     // Descend
                     log("DESCEND");
-                    try_fire_hero_action(ecs, "descend");
-                    // let hero_point = get_hero_point(ecs);
-                    // try_move_hero_world(ecs, &hero_point, PortalFlags::ON_DESCEND);
+                    try_fire_hero_action(ecs.current_world_mut(), "descend");
+                    // let hero_point = get_hero_point(ecs.current_world_mut());
+                    // try_move_hero_world(ecs.current_world_mut(), &hero_point, PortalFlags::ON_DESCEND);
                 }
                 '.' | ' ' => {
-                    hero_idle(ecs);
+                    hero_idle(ecs.current_world_mut());
                 }
-                't' => with_current_level(ecs, |level| {
-                    println!("TASKS = {:?}", level.executor);
-                }),
-                'a' => with_current_level(ecs, |level| {
-                    let mut query = <&Being>::query();
-
+                't' => {
+                    let executor = ecs.read_resource::<Executor>();
+                    println!("TASKS = {:?}", *executor);
+                }
+                'a' => {
+                    let beings = ecs.read_component::<Being>();
                     // you can then iterate through the components found in the world
-                    for actor in query.iter(&level.world) {
+                    for actor in beings.join() {
                         println!("{:?}", actor);
                     }
-                }),
+                }
                 'k' => {
-                    let kinds = ecs.resources.get::<BeingKinds>().unwrap();
+                    let kinds = ecs.read_global::<BeingKinds>();
                     kinds.dump();
+                }
+                'm' => {
+                    for world in ecs.iter_worlds() {
+                        println!("world = {:?}", world.id());
+                    }
                 }
                 _ => {}
             },
@@ -177,9 +192,8 @@ impl Screen for MainScreen {
                 let pt: Point = value.unwrap().try_into().unwrap();
                 log(format!("CLICK = {}", pt));
 
-                let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-                let level = levels.current_mut();
-                let map = level.resources.get::<Map>().unwrap();
+                let level = ecs.current_world();
+                let map = level.read_resource::<Map>();
 
                 let idx = map.get_index(pt.x, pt.y).unwrap();
                 let cell = map.get_cell(idx).unwrap();
@@ -192,13 +206,15 @@ impl Screen for MainScreen {
                 }
 
                 for entity in map.iter_beings(idx) {
-                    let entry = level.world.entry(entity).unwrap();
-                    let being = entry.get_component::<Being>().unwrap();
+                    let beings = level.read_component::<Being>();
+                    let being = beings.get(entity).unwrap();
                     log(format!("BEING({:?}) = {:?}", entity, being));
-                    if let Ok(melee) = entry.get_component::<Melee>() {
+                    let melees = level.read_component::<Melee>();
+                    if let Some(melee) = melees.get(entity) {
                         log(format!("MELEE({:?}) = {:?}", entity, melee));
                     }
-                    if let Ok(stats) = entry.get_component::<Stats>() {
+                    let stats = level.read_component::<Stats>();
+                    if let Some(stats) = stats.get(entity) {
                         log(format!("STATS - {:?}", *stats));
                     }
                 }
@@ -226,7 +242,7 @@ impl Screen for MainScreen {
             //     return ScreenResult::Continue;
             // }
             // let res = executor.do_next_action(&mut *level);
-            let res = do_next_task(ecs);
+            let res = do_next_task(ecs.current_world_mut());
             self.post_action(ecs);
             match res {
                 DoNextTaskResult::Done => {
@@ -245,12 +261,11 @@ impl Screen for MainScreen {
     }
 
     fn render(&mut self, app: &mut Ecs) {
-        {
-            let mut levels = app.resources.get_mut::<Levels>().unwrap();
-            let level = levels.current_mut();
-            self.viewport.draw_level(&mut *level);
-        }
+        self.viewport.draw_level(app.current_world_mut());
         self.viewport.render(app);
+
+        // TODO - This should be in APP
+        app.maintain();
     }
 }
 
@@ -264,12 +279,9 @@ fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Acanja - World Viewer")
         .font("assets/font_32x58.png")
-        .register_components(|registry| {
-            registry.register::<gw_world::position::Position>("Position".to_string());
-            registry.register::<gw_world::sprite::Sprite>("Sprite".to_string());
-            registry.register::<gw_world::being::Being>("Being".to_string());
-            registry.register::<gw_world::task::Task>("Task".to_string());
-            registry.register::<gw_world::being::Stats>("Stats".to_string());
+        .register_components(|ecs| {
+            gw_world::register_components(ecs);
+            ecs.register::<AnchorPos>();
         })
         .startup(Box::new(|_ecs: &mut Ecs| {
             register_task("ANCHORED_WANDER", acanja::tasks::anchored_wander);
@@ -285,59 +297,42 @@ fn main() {
     app.run(MainScreen::new());
 }
 
-fn move_hero(ecs: &mut Ecs, dx: i32, dy: i32) {
-    let hero_entity = get_hero_entity(ecs);
-
-    let mut level = get_current_level_mut(ecs);
-    level
-        .resources
-        .insert(UserAction::new(Box::new(MoveStepAction::new(
-            hero_entity,
-            dx,
-            dy,
-        ))));
+fn move_hero(level: &mut World, dx: i32, dy: i32) {
+    let hero_entity = get_hero_entity(level);
+    let mut user_action = level.write_resource::<UserAction>();
+    user_action.set(Box::new(MoveStepAction::new(hero_entity, dx, dy)));
 }
 
-fn hero_idle(ecs: &mut Ecs) {
+fn hero_idle(level: &mut World) {
     let (hero_entity, act_time) = {
-        let mut level = get_current_level_mut(ecs);
-
-        let hero_entity = level.resources.get::<Hero>().unwrap().entity;
+        let hero_entity = level.read_resource::<Hero>().entity;
 
         let act_time = {
-            let mut entry = level.world.entry(hero_entity).unwrap();
-            let actor = entry.get_component_mut::<Being>().unwrap();
+            let beings = level.read_component::<Being>();
+            let actor = beings.get(hero_entity).unwrap();
             actor.act_time
         };
         (hero_entity, act_time)
     };
 
-    let mut level = get_current_level_mut(ecs);
-    level
-        .resources
-        .insert(UserAction::new(Box::new(IdleAction::new(
-            hero_entity,
-            act_time,
-        ))));
+    let mut user_action = level.write_resource::<UserAction>();
+    user_action.set(Box::new(IdleAction::new(hero_entity, act_time)));
 }
 
 fn get_hero_action_effects(
-    ecs: &mut Ecs,
+    world: &mut World,
     action: &str,
 ) -> Option<(Entity, Point, Vec<BoxedEffect>)> {
     let action = action.to_uppercase();
-    let hero_entity = get_hero_entity(ecs);
-    let mut level = get_current_level_mut(ecs);
+    let hero_entity = get_hero_entity(world);
 
-    let hero_point = level
-        .world
-        .entry(hero_entity)
-        .unwrap()
-        .get_component::<Position>()
+    let hero_point = world
+        .read_component::<Position>()
+        .get(hero_entity)
         .unwrap()
         .point();
 
-    let map = level.resources.get::<Map>().unwrap();
+    let map = world.read_resource::<Map>();
 
     let index = map.get_index(hero_point.x, hero_point.y).unwrap();
 
@@ -347,13 +342,13 @@ fn get_hero_action_effects(
     }
 }
 
-fn try_fire_hero_action(ecs: &mut Ecs, action: &str) -> bool {
-    match get_hero_action_effects(ecs, action) {
+fn try_fire_hero_action(world: &mut World, action: &str) -> bool {
+    match get_hero_action_effects(world, action) {
         None => false,
         Some((entity, pos, effects)) => {
             log("FIRE EFFECTS");
             for eff in effects.iter() {
-                eff.fire(ecs, pos, Some(entity));
+                eff.fire(world, pos, Some(entity));
             }
             true
         }
@@ -361,12 +356,12 @@ fn try_fire_hero_action(ecs: &mut Ecs, action: &str) -> bool {
 }
 
 fn spawn_hordes(ecs: &mut Ecs) {
-    let current_time = { get_current_level(ecs).executor.time() };
+    let current_time = ecs.read_resource::<Executor>().time();
     let depth = 1;
 
     let max_alive = {
-        let level = get_current_level_mut(ecs);
-        let mut info = match level.resources.get_mut::<HordeSpawn>() {
+        let level = ecs.current_world_mut();
+        let mut info = match level.try_write_resource::<HordeSpawn>() {
             None => {
                 return;
             }
@@ -380,12 +375,10 @@ fn spawn_hordes(ecs: &mut Ecs) {
     };
 
     {
-        let level = get_current_level(ecs);
-
-        let mut beings = <&Being>::query();
+        let beings = ecs.read_component::<Being>();
 
         let count = beings
-            .iter(&level.world)
+            .join()
             .filter(|b| b.has_flag(BeingFlags::SPAWNED))
             .count() as u32;
         if count >= max_alive {
@@ -398,19 +391,19 @@ fn spawn_hordes(ecs: &mut Ecs) {
     }
 
     // We got to here so we need to spawn a horde...
-    if let Some(horde) = pick_random_horde(ecs, depth) {
+    if let Some(horde) = pick_random_horde(ecs.current_world_mut(), depth) {
         log(format!("SPAWN - {:?}", horde));
 
         // need spawn point...
 
-        ensure_area_grid(ecs);
-        let mut level = get_current_level_mut(ecs);
+        ensure_area_grid(ecs.current_world_mut());
+        let mut level = ecs.current_world_mut();
         let spawn_point = {
-            let Level { resources, rng, .. } = level.deref_mut();
+            let area_grid = level.read_resource::<AreaGrid>();
+            let mut rng = level.write_resource::<RandomNumberGenerator>();
 
-            let area_grid = resources.get::<AreaGrid>().unwrap();
-
-            let spawn_point = match random_point_with(&area_grid.grid(), |v, _, _| *v > 0, rng) {
+            let spawn_point = match random_point_with(&area_grid.grid(), |v, _, _| *v > 0, &mut rng)
+            {
                 None => {
                     log(format!("Failed to find point to spawn horde"));
                     dump_grid(area_grid.grid());
@@ -419,7 +412,7 @@ fn spawn_hordes(ecs: &mut Ecs) {
                 Some(point) => point,
             };
 
-            let map = resources.get::<Map>().unwrap();
+            let map = level.read_resource::<Map>();
             let map_idx = map.get_index(spawn_point.x, spawn_point.y).unwrap();
             if map.is_blocked(map_idx) {
                 log(format!(
@@ -434,4 +427,13 @@ fn spawn_hordes(ecs: &mut Ecs) {
         let entity = spawn_horde(&horde, level.deref_mut(), spawn_point);
         log(format!("Spawned entity {:?} @ {:?}", entity, spawn_point));
     }
+}
+
+fn set_start_map(ecs: &mut Ecs) {
+    let map_id = match ecs.try_read_global::<StartMap>() {
+        None => return,
+        Some(start_map) => start_map.map_id,
+    };
+
+    ecs.set_current_world(map_id).unwrap();
 }

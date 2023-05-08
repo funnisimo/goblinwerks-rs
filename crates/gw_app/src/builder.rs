@@ -145,7 +145,7 @@ impl AppBuilder {
         F: FnOnce(&mut Ecs) -> (),
     {
         if self.ecs.is_none() {
-            self.ecs = Some(Ecs::default());
+            self.ecs = Some(Ecs::empty());
         }
 
         (func)(self.ecs.as_mut().unwrap());

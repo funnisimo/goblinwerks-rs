@@ -157,6 +157,12 @@ impl RngCore for RandomNumberGenerator {
     }
 }
 
+impl Default for RandomNumberGenerator {
+    fn default() -> Self {
+        RandomNumberGenerator::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::RandomNumberGenerator;

@@ -1,6 +1,6 @@
 use super::{BoxedEffect, Effect, EffectResult};
-use crate::level::Levels;
-use gw_app::{ecs::Entity, Ecs};
+use crate::log::Logger;
+use gw_ecs::{Entity, World};
 use gw_util::dice::Dice;
 use gw_util::point::Point;
 use gw_util::value::Value;
@@ -17,11 +17,9 @@ impl Damage {
 }
 
 impl Effect for Damage {
-    fn fire(&self, ecs: &mut Ecs, _pos: Point, _entity: Option<Entity>) -> EffectResult {
-        let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-        let level = levels.current_mut();
-
-        level.logger.log(format!("Damage - {}", self.0));
+    fn fire(&self, world: &mut World, _pos: Point, _entity: Option<Entity>) -> EffectResult {
+        let mut logger = world.write_resource::<Logger>();
+        logger.log(format!("Damage - {}", self.0));
         EffectResult::Success
     }
 }

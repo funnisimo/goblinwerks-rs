@@ -1,10 +1,8 @@
-use gw_app::{log, Ecs};
+use gw_app::log;
+use gw_ecs::World;
 use gw_util::rng::RandomNumberGenerator;
 
-use crate::{
-    being::BeingKind,
-    level::{get_current_level, get_current_level_mut},
-};
+use crate::being::BeingKind;
 
 use super::{Horde, HordeFlags};
 use std::sync::Arc;
@@ -36,7 +34,7 @@ impl Hordes {
 }
 
 /* , forbidden_flags: HordeFlags, required_flags: HordeFlags, summonerKind: String */
-pub fn pick_random_horde(ecs: &Ecs, depth: u32) -> Option<Arc<Horde>> {
+pub fn pick_random_horde(world: &World, depth: u32) -> Option<Arc<Horde>> {
     //   if (typeof summonerKind == 'string') {
     //     summonerKind = RUT.Monsters.get(summonerKind);
     //   }
@@ -45,7 +43,7 @@ pub fn pick_random_horde(ecs: &Ecs, depth: u32) -> Option<Arc<Horde>> {
     let forbidden_flags = HordeFlags::empty();
     let required_flags = HordeFlags::empty();
 
-    let hordes = match ecs.resources.get::<Hordes>() {
+    let hordes = match world.try_read_global::<Hordes>() {
         None => {
             log("No hordes configured.");
             return None;
@@ -69,17 +67,14 @@ pub fn pick_random_horde(ecs: &Ecs, depth: u32) -> Option<Arc<Horde>> {
             poss_count += freq;
         }
     }
-    drop(hordes);
 
     if poss_count == 0 {
         log(format!("No hordes found for depth={}", depth));
         return None;
     }
 
-    let mut level = get_current_level_mut(ecs);
-    let mut index = level.rng.range(1, poss_count as i32) as u32;
-
-    let hordes = ecs.resources.get::<Hordes>().unwrap();
+    let mut rng = world.write_resource::<RandomNumberGenerator>();
+    let mut index = rng.range(1, poss_count as i32) as u32;
 
     for horde in hordes.iter() {
         if horde.flags.intersects(forbidden_flags) {

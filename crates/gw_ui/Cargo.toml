@@ -16,3 +16,6 @@ gw_app      = { path = "../gw_app" }
 gw_util     = { path = "../gw_util" }
 lazy_static = "1.4"
 regex       = "1.6"
+
+[dev-dependencies]
+gw_ecs = { path = "../gw_ecs" }

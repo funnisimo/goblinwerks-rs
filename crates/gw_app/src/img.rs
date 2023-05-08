@@ -1,6 +1,8 @@
 #![warn(clippy::float_cmp)]
 use std::{collections::HashMap, sync::Arc};
 
+use gw_ecs::Ecs;
+
 use crate::{color::RGBA, loader::LoadHandler, log};
 // use std::cell::RefCell;
 // use std::rc::Rc;
@@ -91,7 +93,7 @@ impl LoadHandler for ImageFileLoader {
         &mut self,
         path: &str,
         data: Vec<u8>,
-        ecs: &mut crate::ecs::Ecs,
+        ecs: &mut Ecs,
     ) -> Result<(), crate::loader::LoadError> {
         let image = Arc::new(Image::new(&data));
 

@@ -9,7 +9,8 @@ mod player;
 
 use entity::Entity;
 use gw_app::fps::Fps;
-use gw_ecs::{ReadGlobalExpect, WriteGlobalExpect};
+use gw_ecs::shred::NoSetup;
+use gw_ecs::{ReadGlobal, WriteGlobal};
 use level::{Level, load_level};
 use player::Player;
 
@@ -20,6 +21,7 @@ pub const CONSOLE_WIDTH: u32 = 80;
 pub const CONSOLE_HEIGHT: u32 = 45;
 pub const PLAYER_SPEED: f32 = 0.2;
 pub const PLAYER_FOV_RADIUS: usize = 40;
+
 
 pub struct Entities(pub Vec<Entity>);
 
@@ -58,7 +60,7 @@ impl DoryenDemo {
 
     fn render_entities(&mut self, ecs: &mut Ecs) {
 
-        let (entities, level, player) = <(ReadGlobalExpect<Entities>, ReadGlobalExpect<Level>, ReadGlobalExpect<Player>)>::fetch(ecs.current_world());
+        let (entities, level, player) = <(ReadGlobal<Entities, NoSetup>, ReadGlobal<Level, NoSetup>, ReadGlobal<Player>)>::fetch(ecs.current_world());
 
         let buffer = self.con.buffer_mut();
         for entity in entities.0.iter() {
@@ -79,7 +81,7 @@ impl Screen for DoryenDemo {
             self.loaded = load_level(ecs, LEVEL_PREFIX);
         }
         if self.loaded {
-            let (input, mut player, mut level) = <(ReadGlobalExpect<AppInput>, WriteGlobalExpect<Player>, WriteGlobalExpect<Level>)>::fetch(ecs.current_world());
+            let (input, mut player, mut level) = <(ReadGlobal<AppInput>, WriteGlobal<Player>, WriteGlobal<Level, NoSetup>)>::fetch(ecs.current_world());
 
             let mut coef = 1.0 / std::f32::consts::SQRT_2;
             let mut mov = player.move_from_input(&*input);
@@ -104,7 +106,7 @@ impl Screen for DoryenDemo {
             self.clear_con();
 
             {
-                let (mut level, player) = <(WriteGlobalExpect<Level>, ReadGlobalExpect<Player>)>::fetch(ecs.current_world());
+                let (mut level, player) = <(WriteGlobal<Level, NoSetup>, ReadGlobal<Player>)>::fetch(ecs.current_world());
                 level.render(self.map_con.buffer_mut(), player.pos());
             }
 

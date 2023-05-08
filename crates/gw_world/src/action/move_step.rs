@@ -3,13 +3,12 @@ use crate::action::{Action, ActionResult};
 use crate::being::Being;
 use crate::effect::fire_cell_action;
 use crate::hero::Hero;
-use crate::level::{get_current_level, get_current_level_mut, Level};
+use crate::log::Logger;
 use crate::map::cell_flavor;
 use crate::map::Map;
 use crate::position::Position;
-use gw_app::ecs::systems::ResourceSet;
-use gw_app::ecs::{Entity, EntityStore, Read};
-use gw_app::{log, Ecs};
+use gw_app::log;
+use gw_ecs::{Entity, ReadComp, ReadRes, SystemData, World, WriteRes};
 use gw_util::point::Point;
 
 #[derive(Copy, Clone, Debug)]
@@ -24,22 +23,18 @@ impl MoveStepAction {
         MoveStepAction { entity, dx, dy }
     }
 
-    fn validate(&mut self, ecs: &mut Ecs) -> Option<ActionResult> {
-        let mut level = get_current_level_mut(ecs);
-        let Level {
-            resources,
-            world,
-            logger,
-            ..
-        } = &mut *level;
+    fn validate(&mut self, world: &mut World) -> Option<ActionResult> {
+        let (map, hero, beings, positions, mut logger) = <(
+            ReadRes<Map>,
+            ReadRes<Hero>,
+            ReadComp<Being>,
+            ReadComp<Position>,
+            WriteRes<Logger>,
+        )>::fetch(world);
 
-        let (map, hero) = <(Read<Map>, Read<Hero>)>::fetch(resources);
-
-        let entry = world.entry_mut(self.entity).unwrap();
-
-        let being = match entry.get_component::<Being>() {
-            Err(_) => return Some(ActionResult::Dead(self.entity)),
-            Ok(a) => a,
+        let being = match beings.get(self.entity) {
+            None => return Some(ActionResult::Dead(self.entity)),
+            Some(a) => a,
         };
 
         if self.dx == 0 && self.dy == 0 {
@@ -49,9 +44,9 @@ impl MoveStepAction {
             ))));
         }
 
-        let pos = match entry.get_component::<Position>() {
-            Err(_) => return Some(ActionResult::Dead(self.entity)),
-            Ok(pos) => pos,
+        let pos = match positions.get(self.entity) {
+            None => return Some(ActionResult::Dead(self.entity)),
+            Some(pos) => pos,
         };
 
         let orig_pt = pos.point();
@@ -88,32 +83,30 @@ impl MoveStepAction {
 
         if map.is_blocked(idx) {
             // Check for actor at location...
-            if let Some(entity) = map.iter_beings(idx).next() {
-                if let Some(entity) = world.entry(entity) {
-                    // Check for shopkeeper (Really only possible for horses)
+            if let Some(other) = map.iter_beings(idx).next() {
+                // Check for shopkeeper (Really only possible for horses)
 
-                    // Check for talk...
-                    if let Ok(other_being) = entity.get_component::<Being>() {
-                        if let Some(ref talk) = other_being.talk {
-                            if actor_is_hero {
-                                log(format!("{} says: '{}'", other_being.name(), talk));
-                                return Some(ActionResult::Replace(Box::new(IdleAction::new(
-                                    self.entity,
-                                    act_time,
-                                ))));
-                            }
-                        }
-                        // Check for combat?
-                        // if hero and will make other hostile ask for
-
-                        // Should this be a different thing?
+                // Check for talk...
+                if let Some(other_being) = beings.get(other) {
+                    if let Some(ref talk) = other_being.talk {
                         if actor_is_hero {
-                            log(format!("{} says: 'Hello'", other_being.name()));
+                            log(format!("{} says: '{}'", other_being.name(), talk));
                             return Some(ActionResult::Replace(Box::new(IdleAction::new(
                                 self.entity,
                                 act_time,
                             ))));
                         }
+                    }
+                    // Check for combat?
+                    // if hero and will make other hostile ask for
+
+                    // Should this be a different thing?
+                    if actor_is_hero {
+                        log(format!("{} says: 'Hello'", other_being.name()));
+                        return Some(ActionResult::Replace(Box::new(IdleAction::new(
+                            self.entity,
+                            act_time,
+                        ))));
                     }
                 }
             }
@@ -132,21 +125,19 @@ impl MoveStepAction {
         None
     }
 
-    fn do_action(&mut self, ecs: &mut Ecs) -> ActionResult {
+    fn do_action(&mut self, world: &mut World) -> ActionResult {
         // let Level {
         //     resources, world, ..
         // } = levels.current_mut();
 
-        let orig_pt = {
-            let mut level = get_current_level_mut(ecs);
-            let entry = level.world.entry(self.entity).unwrap();
-            let pos = entry.get_component::<Position>().unwrap();
-            pos.point()
-        };
+        let orig_pt = world
+            .read_component::<Position>()
+            .get(self.entity)
+            .unwrap()
+            .point();
 
         let (old_idx, new_idx, new_pt) = {
-            let level = get_current_level(ecs);
-            let map = level.resources.get::<Map>().unwrap();
+            let map = world.read_resource::<Map>();
             let (new_x, new_y) = map
                 .try_wrap_xy(orig_pt.x + self.dx, orig_pt.y + self.dy)
                 .unwrap();
@@ -159,27 +150,24 @@ impl MoveStepAction {
         };
 
         // TODO - How to check for permission to exit?
-        fire_cell_action(ecs, orig_pt, "exit", Some(self.entity));
+        fire_cell_action(world, orig_pt, "exit", Some(self.entity));
 
         // println!("changed : {}", old_idx);
         let blocks_move = {
-            let mut level = get_current_level_mut(ecs);
-            let mut entry = level.world.entry_mut(self.entity).unwrap();
-            let pos = entry.get_component_mut::<Position>().unwrap();
-
+            let mut positions = world.write_component::<Position>();
+            let pos = positions.get_mut(self.entity).unwrap();
             pos.set(new_pt.x, new_pt.y);
             pos.blocks_move
         };
 
         {
-            let level = get_current_level_mut(ecs);
-            let mut map = level.resources.get_mut::<Map>().unwrap();
+            let mut map = world.write_resource::<Map>();
             map.remove_being(old_idx, self.entity);
             map.add_being(new_idx, self.entity, blocks_move);
         }
 
         // TODO - How to check for permission to enter?
-        fire_cell_action(ecs, new_pt, "enter", Some(self.entity));
+        fire_cell_action(world, new_pt, "enter", Some(self.entity));
 
         // if let Some(mut fov) = entry.get_component_mut::<FOV>() {
         //     fov.set_needs_update();
@@ -198,9 +186,8 @@ impl MoveStepAction {
         // }
         // }
 
-        let mut level = get_current_level_mut(ecs);
-        let entry = level.world.entry(self.entity).unwrap();
-        let actor = entry.get_component::<Being>().unwrap();
+        let beings = world.read_component::<Being>();
+        let actor = beings.get(self.entity).unwrap();
 
         let mut move_time = actor.act_time;
         if self.dx != 0 && self.dy != 0 {
@@ -211,11 +198,11 @@ impl MoveStepAction {
 }
 
 impl Action for MoveStepAction {
-    fn execute(&mut self, ecs: &mut Ecs) -> ActionResult {
-        if let Some(res) = self.validate(ecs) {
+    fn execute(&mut self, world: &mut World) -> ActionResult {
+        if let Some(res) = self.validate(world) {
             return res;
         }
 
-        self.do_action(ecs)
+        self.do_action(world)
     }
 }

@@ -62,15 +62,15 @@ impl<'a> System<'a> for ClusterBombSystem {
                 let _ = entities.delete(entity);
                 for _ in 0..9 {
                     let shrapnel = entities.create();
-                    updater.insert(
+                    updater.insert_component(
                         shrapnel,
                         Shrapnel {
                             durability: durability_range.sample(&mut rng),
                         },
                     );
-                    updater.insert(shrapnel, position.clone());
+                    updater.insert_component(shrapnel, position.clone());
                     let angle: f32 = rng.gen::<f32>() * TAU;
-                    updater.insert(shrapnel, Vel(angle.sin(), angle.cos()));
+                    updater.insert_component(shrapnel, Vel(angle.sin(), angle.cos()));
                 }
             } else {
                 bomb.fuse -= 1;

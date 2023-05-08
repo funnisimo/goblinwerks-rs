@@ -1,14 +1,14 @@
 use super::{load_level_data_file, LevelDataLoader};
 use gw_app::{
-    ecs::{Read, ResourceSet, Write},
     loader::{LoadError, LoadHandler, Loader},
-    log, Ecs,
+    log,
 };
+use gw_ecs::{Ecs, ReadGlobal, SystemData, World, WriteGlobal};
 use gw_util::{
     json::parse_string,
     point::Point,
     rect::Rect,
-    value::{Key, Value},
+    value::Value,
     xy::{Lock, Wrap},
 };
 use gw_world::{
@@ -17,8 +17,10 @@ use gw_world::{
     effect::{parse_effects, BoxedEffect, Message, Portal},
     fov::FOV,
     horde::{parse_spawn, HordeSpawn},
-    level::{Level, Levels},
+    level::NeedsDraw,
+    log::Logger,
     map::Map,
+    task::UserAction,
     tile::{Tile, Tiles},
 };
 use std::{collections::HashMap, fs::read_to_string, sync::Arc};
@@ -118,22 +120,16 @@ impl LoadHandler for LevelLoader {
             Ok(v) => v,
         };
 
-        ecs.resources.get_mut_or_insert_with(|| Tiles::default());
-        ecs.resources.get_mut_or_insert_with(|| Levels::default());
-        let (tiles, mut loader, mut levels, actor_kinds) =
-            <(Read<Tiles>, Write<Loader>, Write<Levels>, Read<BeingKinds>)>::fetch_mut(
-                &mut ecs.resources,
-            );
+        ecs.ensure_global::<Tiles>();
+        ecs.ensure_global::<BeingKinds>();
 
-        let level_data = load_level_data(&*tiles, &*actor_kinds, value);
+        let level_data = load_level_data(ecs, value);
 
         match level_data.map_data {
             None => panic!("No map data in level file."),
             Some(MapData::Data(_)) => {
-                let level = make_level(level_data);
-                log(format!("Adding Level - {}", level.id));
-
-                levels.insert(level);
+                let level = make_level(ecs, level_data);
+                log(format!("Adding Level - {}", level.id()));
             }
             Some(MapData::FileName(ref file)) => {
                 // Need to load level file
@@ -150,7 +146,7 @@ impl LoadHandler for LevelLoader {
 
                 log(format!("Loading level data file - {}", level_data_filename));
 
-                loader
+                ecs.write_global::<Loader>()
                     .load_file(
                         &level_data_filename,
                         Box::new(LevelDataLoader::new(level_data)),
@@ -164,9 +160,12 @@ impl LoadHandler for LevelLoader {
 }
 
 ////////////////////////////////////////////////////////////
-pub fn load_level_data(tiles: &Tiles, being_kinds: &BeingKinds, json: Value) -> LevelData {
+pub fn load_level_data(ecs: &Ecs, json: Value) -> LevelData {
     // let path = "./assets/maps/";
     // let json_file = "sosaria.jsonc";
+
+    let tiles = ecs.read_global::<Tiles>();
+    let being_kinds = ecs.read_global::<BeingKinds>();
 
     let root = json.as_map().unwrap();
 
@@ -631,7 +630,7 @@ pub fn load_level_data(tiles: &Tiles, being_kinds: &BeingKinds, json: Value) -> 
     level_data
 }
 
-pub fn make_level(mut level_data: LevelData) -> Level {
+pub fn make_level<'a>(ecs: &'a mut Ecs, mut level_data: LevelData) -> &'a World {
     let cell_lookup = level_data.cell_lookup;
     let (width, height) = level_data.map_size;
     let wrap = level_data.map_wrap;
@@ -640,7 +639,8 @@ pub fn make_level(mut level_data: LevelData) -> Level {
         _ => panic!("Must have map data to make level"),
     };
 
-    let mut level = Level::new(&level_data.id);
+    let mut world = ecs.create_world(level_data.id.as_str());
+    gw_world::setup_world(world);
 
     let def_entry = cell_lookup
         .get(&level_data.default_entry)
@@ -718,7 +718,7 @@ pub fn make_level(mut level_data: LevelData) -> Level {
         map.select_region(region.left(), region.top(), region.width(), region.height());
     }
 
-    level.resources.insert(map);
+    world.insert_resource(map);
 
     for (y, line) in data.iter().enumerate() {
         let y = y as i32;
@@ -739,7 +739,7 @@ pub fn make_level(mut level_data: LevelData) -> Level {
                         //     "Spawn Actor - {} @ {},{} - being: {:?}",
                         //     kind.id, x, y, kind.being
                         // ));
-                        spawn_being(kind, &mut level, Point::new(x, y));
+                        spawn_being(kind, &mut world, Point::new(x, y));
                     }
                 }
             }
@@ -747,26 +747,28 @@ pub fn make_level(mut level_data: LevelData) -> Level {
     }
 
     if level_data.camera_size.0 > 0 {
+        let mut camera = world.write_resource::<Camera>();
         log(format!("MAP CAMERA SIZE = {:?}", level_data.camera_size));
-        level.resources.insert(Camera::new(
-            level_data.camera_size.0,
-            level_data.camera_size.1,
-        ));
+        camera.resize(level_data.camera_size.0, level_data.camera_size.1);
     }
 
     if let Some(range) = level_data.fov {
-        level.resources.insert(FOV::new(range));
+        world.insert_resource(FOV::new(range));
         log(format!("[[[[ FOV ]]]] = {}", range));
     }
 
     if let Some(mut spawn) = level_data.spawn {
         if let Some(first) = spawn.drain(0..1).next() {
             log(format!("CONFIGURED SPAWN - {:?}", first));
-            level.resources.insert(first);
+            world.insert_resource(first);
         }
     }
 
-    level
+    world.ensure_resource::<NeedsDraw>();
+    world.ensure_resource::<UserAction>();
+    world.ensure_resource::<Logger>();
+
+    world
 }
 
 fn resolve_references(tiles: &Tiles, map: &HashMap<String, Cell>) -> HashMap<String, Cell> {
@@ -869,16 +871,21 @@ fn resolve_references(tiles: &Tiles, map: &HashMap<String, Cell>) -> HashMap<Str
     result
 }
 
-pub fn load_level_file(filename: &str, tiles: &Tiles, actor_kinds: &BeingKinds) -> Level {
+pub fn load_level_file<'a>(
+    ecs: &'a mut Ecs,
+    filename: &str,
+    // tiles: &Tiles,
+    // actor_kinds: &BeingKinds,
+) -> &'a World {
     let file_text = read_to_string(filename).expect(&format!("Failed to open {filename}"));
 
     let json = parse_string(&file_text).expect(&format!("Failed to parse level file - {filename}"));
 
-    let mut level_data = load_level_data(tiles, actor_kinds, json);
+    let mut level_data = load_level_data(ecs, json);
 
     match level_data.map_data {
         None => panic!("No map data in level file."),
-        Some(MapData::Data(_)) => make_level(level_data),
+        Some(MapData::Data(_)) => make_level(ecs, level_data),
         Some(MapData::FileName(ref file)) => {
             // Need to load level file
 
@@ -896,7 +903,7 @@ pub fn load_level_file(filename: &str, tiles: &Tiles, actor_kinds: &BeingKinds) 
 
             load_level_data_file(&level_data_filename, &mut level_data);
 
-            make_level(level_data)
+            make_level(ecs, level_data)
         }
     }
 }

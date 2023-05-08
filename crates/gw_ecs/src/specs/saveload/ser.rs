@@ -3,13 +3,13 @@ use std::fmt::Display;
 use serde::ser::{self, Serialize, SerializeSeq, Serializer};
 
 use super::ConvertSaveload;
-use crate::{
+use crate::specs::{
     join::Join,
     saveload::{
         marker::{Marker, MarkerAllocator},
         EntityData,
     },
-    storage::{GenericReadStorage, ReadStorage, WriteStorage},
+    storage::{GenericReadComp, ReadComp, WriteComp},
     world::{Component, EntitiesRes, Entity},
 };
 
@@ -37,7 +37,7 @@ where
     fn serialize<S>(
         &self,
         entities: &EntitiesRes,
-        markers: &ReadStorage<M>,
+        markers: &ReadComp<M>,
         serializer: S,
     ) -> Result<S::Ok, S::Error>
     where
@@ -67,7 +67,7 @@ where
     fn serialize_recursive<S>(
         &self,
         entities: &EntitiesRes,
-        markers: &mut WriteStorage<M>,
+        markers: &mut WriteComp<M>,
         allocator: &mut M::Allocator,
         serializer: S,
     ) -> Result<S::Ok, S::Error>
@@ -115,7 +115,7 @@ macro_rules! serialize_components {
         where
             M: Marker,
             $(
-                $sto: GenericReadStorage<Component = $comp>,
+                $sto: GenericReadComp<Component = $comp>,
                 $comp: ConvertSaveload<M> + Component,
                 E: From<<$comp as ConvertSaveload<M>>::Error>,
             )*

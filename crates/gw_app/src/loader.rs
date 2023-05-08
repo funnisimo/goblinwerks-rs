@@ -1,10 +1,9 @@
-use std::collections::VecDeque;
-
 use crate::app::File;
-use crate::ecs::Ecs;
 use crate::font::{FontFileLoader, FromGlyphFn, ToGlyphFn};
 use crate::img::ImageFileLoader;
 use crate::log;
+use gw_ecs::Ecs;
+use std::collections::VecDeque;
 
 #[derive(Debug)]
 pub enum LoadError {
@@ -15,7 +14,7 @@ pub enum LoadError {
 }
 
 pub trait LoadHandler {
-    fn file_loaded(&mut self, path: &str, data: Vec<u8>, world: &mut Ecs) -> Result<(), LoadError>;
+    fn file_loaded(&mut self, path: &str, data: Vec<u8>, ecs: &mut Ecs) -> Result<(), LoadError>;
 }
 
 pub type BoxedLoadHandler = Box<dyn LoadHandler>;
@@ -24,8 +23,8 @@ impl<F> LoadHandler for F
 where
     F: Fn(&str, Vec<u8>, &mut Ecs) -> Result<(), LoadError>,
 {
-    fn file_loaded(&mut self, path: &str, data: Vec<u8>, world: &mut Ecs) -> Result<(), LoadError> {
-        self(path, data, world)
+    fn file_loaded(&mut self, path: &str, data: Vec<u8>, ecs: &mut Ecs) -> Result<(), LoadError> {
+        self(path, data, ecs)
     }
 }
 
@@ -45,6 +44,7 @@ impl LoadInfo {
     }
 }
 
+#[derive(Default)]
 pub struct Loader {
     files_to_load: VecDeque<LoadInfo>,
     ready: bool,

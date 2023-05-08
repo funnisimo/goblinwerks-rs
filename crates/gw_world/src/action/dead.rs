@@ -1,6 +1,5 @@
 use crate::action::{Action, ActionResult};
-use gw_app::ecs::Entity;
-use gw_app::Ecs;
+use gw_ecs::{Entity, World};
 
 #[derive(Copy, Clone, Debug)]
 pub struct DeadAction {
@@ -14,7 +13,7 @@ impl DeadAction {
 }
 
 impl Action for DeadAction {
-    fn execute(&mut self, _ecs: &mut Ecs) -> ActionResult {
+    fn execute(&mut self, _world: &mut World) -> ActionResult {
         // TODO - Delete entity from ECS?
         ActionResult::Dead(self.entity)
     }

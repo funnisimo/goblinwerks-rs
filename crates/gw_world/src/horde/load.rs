@@ -1,9 +1,9 @@
 use super::Hordes;
 use super::{set_field, HordeBuilder};
 use crate::being::{self, BeingKinds};
-use gw_app::ecs::{Ecs, Read, ResourceSet, Write};
 use gw_app::loader::{LoadError, LoadHandler};
 use gw_app::log;
+use gw_ecs::{Ecs, ReadGlobal, SystemData, WriteGlobal};
 use gw_util::value::Value;
 use std::fs::read_to_string;
 
@@ -126,11 +126,11 @@ impl LoadHandler for HordesLoader {
             ));
         };
 
-        ecs.resources.get_or_insert_with(|| BeingKinds::default());
-        ecs.resources.get_or_insert_with(|| Hordes::default());
+        ecs.ensure_global::<BeingKinds>();
+        ecs.ensure_global::<Hordes>();
 
-        let (mut hordes, being_kinds) =
-            <(Write<Hordes>, Read<BeingKinds>)>::fetch_mut(&mut ecs.resources);
+        let mut hordes = ecs.write_global::<Hordes>();
+        let being_kinds = ecs.read_global::<BeingKinds>();
 
         match load_horde_data(&mut hordes, &being_kinds, string_table) {
             Err(e) => return Err(LoadError::ProcessError(e)),

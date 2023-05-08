@@ -49,8 +49,8 @@ fn lazy_insertion() {
 
         e1 = entities.create();
         e2 = entities.create();
-        lazy.insert(e1, Pos);
-        lazy.insert_all(vec![(e1, Vel), (e2, Vel)]);
+        lazy.insert_component(e1, Pos);
+        lazy.insert_all_components(vec![(e1, Vel), (e2, Vel)]);
     }
 
     world.maintain();
@@ -67,7 +67,7 @@ fn lazy_removal() {
     let e = world.create_entity().with(Pos).build();
     {
         let lazy = world.read_resource::<LazyUpdate>();
-        lazy.remove::<Pos>(e);
+        lazy.remove_component::<Pos>(e);
     }
 
     world.maintain();
@@ -143,8 +143,8 @@ fn delete_twice() {
 
     let e = world.create_entity().build();
 
-    world.delete_entity(e).unwrap();
-    assert!(world.entities().delete(e).is_err());
+    world.delete_entity(e);
+    world.entities().delete(e);
 }
 
 #[test]

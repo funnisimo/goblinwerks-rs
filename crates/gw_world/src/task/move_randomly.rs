@@ -2,29 +2,20 @@ use super::{execute_actor_action, TaskResult};
 use crate::{
     action::move_step::MoveStepAction,
     being::{Being, MoveFlags},
-    level::get_current_level_mut,
 };
-use gw_app::{
-    ecs::{Entity, EntityStore},
-    Ecs,
-};
-use gw_util::point::DIRS;
+use gw_ecs::{Entity, World};
+use gw_util::{point::DIRS, rng::RandomNumberGenerator};
 
-pub fn move_randomly_ai(ecs: &mut Ecs, entity: Entity) -> TaskResult {
-    let mut level = get_current_level_mut(ecs);
-    let entry = match level.world.entry_mut(entity) {
-        Err(_) => return TaskResult::Finished,
-        Ok(entry) => entry,
+pub fn move_randomly_ai(world: &mut World, entity: Entity) -> TaskResult {
+    let beings = world.read_component::<Being>();
+    let act_time = match beings.get(entity) {
+        None => return TaskResult::Finished,
+        Some(being) => being.act_time as u64,
     };
 
-    let act_time = match entry.get_component::<Being>() {
-        Err(_) => return TaskResult::Finished,
-        Ok(being) => being.act_time as u64,
-    };
-
-    let chance = match entry.get_component::<Being>() {
-        Err(_) => 50,
-        Ok(being) => {
+    let chance = match beings.get(entity) {
+        None => 50,
+        Some(being) => {
             if being.move_flags.contains(MoveFlags::RAND100) {
                 100
             } else {
@@ -43,17 +34,16 @@ pub fn move_randomly_ai(ecs: &mut Ecs, entity: Entity) -> TaskResult {
         }
     };
 
-    drop(entry);
-
-    let rng = &mut level.rng;
+    let mut rng = world.write_resource::<RandomNumberGenerator>();
 
     if rng.chance(chance) {
         let index = rng.range(0, 4) as usize;
         let dir = DIRS[index];
         let action = Box::new(MoveStepAction::new(entity, dir.x, dir.y));
-        drop(level);
+        drop(rng);
+        drop(beings);
 
-        return execute_actor_action(action, ecs, entity);
+        return execute_actor_action(action, world, entity);
     }
 
     TaskResult::Success(act_time)

@@ -1,7 +1,7 @@
-use gw_app::{ecs::Entity, log};
+use crate::position::Position;
+use gw_app::log;
+use gw_ecs::{Entity, ReadComp, SystemData, World, WriteRes};
 use gw_util::point::Point;
-
-use crate::{level::Level, position::Position};
 
 #[derive(Debug)]
 pub struct Camera {
@@ -85,20 +85,29 @@ impl Camera {
     }
 }
 
-pub fn update_camera_follows(level: &mut Level) {
-    if let Some(mut camera) = level.resources.get_mut::<Camera>() {
-        if let Some(ref entity) = camera.follows {
-            if let Some(entry) = level.world.entry(*entity) {
-                if let Ok(pos) = entry.get_component::<Position>() {
-                    if camera.center != pos.point() {
-                        camera.set_center(pos.x, pos.y);
-                        // log(format!("Set camera center={:?}", camera.center));
-                    }
-                }
-            } else {
-                camera.follows = None;
-                log("Cancelling camera follows - entity not found.");
+impl Default for Camera {
+    fn default() -> Self {
+        Camera {
+            center: Point::new(0, 0),
+            follows: None,
+            size: (80, 50),
+            needs_draw: true,
+        }
+    }
+}
+
+pub fn update_camera_follows(world: &World) {
+    let (mut camera, position) = <(WriteRes<Camera>, ReadComp<Position>)>::fetch(world);
+
+    if let Some(ref entity) = camera.follows {
+        if let Some(pos) = position.get(*entity) {
+            if camera.center != pos.point() {
+                camera.set_center(pos.x, pos.y);
+                // log(format!("Set camera center={:?}", camera.center));
             }
         }
+    } else {
+        camera.follows = None;
+        log("Cancelling camera follows - entity not set.");
     }
 }

@@ -8,12 +8,12 @@ use serde::de::{
 };
 
 use super::ConvertSaveload;
-use crate::{
+use crate::specs::{
     saveload::{
         marker::{Marker, MarkerAllocator},
         EntityData,
     },
-    storage::{GenericWriteStorage, WriteStorage},
+    storage::{GenericWriteComp, WriteComp},
     world::{Component, EntitiesRes, Entity},
 };
 
@@ -41,7 +41,7 @@ where
     fn deserialize<'a: 'b, 'b, 'de, D>(
         &'b mut self,
         entities: &'b EntitiesRes,
-        markers: &'b mut WriteStorage<'a, M>,
+        markers: &'b mut WriteComp<'a, M>,
         allocator: &'b mut M::Allocator,
         deserializer: D,
     ) -> Result<(), D::Error>
@@ -58,13 +58,13 @@ where
     }
 }
 
-/// Wrapper for `Entity` and tuple of `WriteStorage`s that implements
+/// Wrapper for `Entity` and tuple of `WriteComp`s that implements
 /// `serde::Deserialize`.
 struct DeserializeEntity<'a: 'b, 'b, E, M: Marker, S: 'b> {
-    allocator: &'b mut M::Allocator,
+    allocator: &'b mut <M as Marker>::Allocator,
     entities: &'b EntitiesRes,
     storages: &'b mut S,
-    markers: &'b mut WriteStorage<'a, M>,
+    markers: &'b mut WriteComp<'a, M>,
     pd: PhantomData<E>,
 }
 
@@ -97,12 +97,12 @@ where
     }
 }
 
-/// Wrapper for `Entities` and tuple of `WriteStorage`s that implements
+/// Wrapper for `Entities` and tuple of `WriteComp`s that implements
 /// `serde::de::Visitor`
 struct VisitEntities<'a: 'b, 'b, E, M: Marker, S: 'b> {
     allocator: &'b mut M::Allocator,
     entities: &'b EntitiesRes,
-    markers: &'b mut WriteStorage<'a, M>,
+    markers: &'b mut WriteComp<'a, M>,
     storages: &'b mut S,
     pd: PhantomData<E>,
 }
@@ -146,16 +146,16 @@ macro_rules! deserialize_components {
             E: Display,
             M: Marker,
             $(
-                $sto: GenericWriteStorage,
-                <$sto as GenericWriteStorage>::Component: ConvertSaveload<M> + Component,
+                $sto: GenericWriteComp,
+                <$sto as GenericWriteComp>::Component: ConvertSaveload<M> + Component,
                 E: From<<
-                    <$sto as GenericWriteStorage>::Component as ConvertSaveload<M>
+                    <$sto as GenericWriteComp>::Component as ConvertSaveload<M>
                 >::Error>,
             )*
         {
             type Data = ($(
                 Option<
-                    <<$sto as GenericWriteStorage>::Component as ConvertSaveload<M>>::Data
+                    <<$sto as GenericWriteComp>::Component as ConvertSaveload<M>>::Data
                 >,)*
             );
 

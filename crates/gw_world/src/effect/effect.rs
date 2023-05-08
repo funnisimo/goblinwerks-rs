@@ -1,12 +1,10 @@
-use crate::level::get_current_level;
-use crate::map::Map;
-
 use super::{
     parse_cure, parse_damage, parse_fixture, parse_heal, parse_message, parse_move_entity,
     parse_move_region, parse_poison, parse_portal, parse_restore_items, parse_store_items,
     parse_tile, parse_treasure,
 };
-use gw_app::{ecs::Entity, Ecs};
+use crate::map::Map;
+use gw_ecs::{Entity, World};
 use gw_util::point::Point;
 use gw_util::value::Value;
 use lazy_static::lazy_static;
@@ -21,7 +19,7 @@ pub enum EffectResult {
 }
 
 pub trait Effect: Send + Sync + std::fmt::Debug + EffectClone {
-    fn fire(&self, ecs: &mut Ecs, pos: Point, entity: Option<Entity>) -> EffectResult;
+    fn fire(&self, world: &mut World, pos: Point, entity: Option<Entity>) -> EffectResult;
 }
 
 pub type BoxedEffect = Box<dyn Effect>;
@@ -118,7 +116,7 @@ pub fn parse_effects(value: &Value) -> Result<Vec<BoxedEffect>, String> {
 }
 
 pub fn fire_cell_action(
-    ecs: &mut Ecs,
+    world: &mut World,
     pos: Point,
     action: &str,
     entity: Option<Entity>,
@@ -126,8 +124,7 @@ pub fn fire_cell_action(
     // log(format!("Fire cell effects - {}", action));
 
     let effects = {
-        let level = get_current_level(ecs);
-        let map = level.resources.get::<Map>().unwrap();
+        let map = world.read_resource::<Map>();
         let idx = map.get_index(pos.x, pos.y).unwrap();
         match map.get_cell_effects(idx, &action.to_uppercase()) {
             None => return EffectResult::Success,
@@ -138,7 +135,7 @@ pub fn fire_cell_action(
     // log(format!(" - effects - {:?}", effects));
 
     for eff in effects.iter() {
-        match eff.fire(ecs, pos, entity) {
+        match eff.fire(world, pos, entity) {
             EffectResult::Stop => {
                 return EffectResult::Success;
             }

@@ -1,33 +1,32 @@
-use std::collections::VecDeque;
-
-use gw_app::{ecs::Entity, ecs::EntityStore, ecs::IntoQuery, Ecs};
+use gw_ecs::{
+    specs::Join, Component, DenseVecStorage, Entities, Entity, ReadComp, SystemData, World,
+    WriteComp,
+};
 use gw_util::{
-    grid::{random_point_matching, Grid},
-    mask::get_area_mask,
+    grid::random_point_matching,
     path::a_star_search,
     point::{Point, DIRS},
+    rng::RandomNumberGenerator,
 };
 use gw_world::{
     action::move_step::MoveStepAction,
     being::{do_entity_action, Being, MoveFlags},
-    level::{get_current_level_mut, Level},
     map::{ensure_area_grid, AreaGrid, Map},
     position::Position,
     task::TaskResult,
 };
+use std::collections::VecDeque;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Component)]
 pub struct AnchorPos(pub Point);
 
 /// Try to wander around anchor point - which is usually the point that the actor was created at
-pub fn anchored_wander(ecs: &mut Ecs, entity: Entity) -> TaskResult {
-    let mut level = get_current_level_mut(ecs);
-
+pub fn anchored_wander(world: &mut World, entity: Entity) -> TaskResult {
     // log(format!("ANCHORED WANDER - {:?}", entity));
 
     let chance = {
-        let entry = level.world.entry(entity).unwrap();
-        let actor = entry.get_component::<Being>().unwrap();
+        let beings = world.read_component::<Being>();
+        let actor = beings.get(entity).unwrap();
         if actor.move_flags.contains(MoveFlags::RAND100) {
             100
         } else {
@@ -48,65 +47,68 @@ pub fn anchored_wander(ecs: &mut Ecs, entity: Entity) -> TaskResult {
         }
     };
 
-    if level.rng.chance(100 - chance) {
+    if world
+        .write_resource::<RandomNumberGenerator>()
+        .chance(100 - chance)
+    {
         return TaskResult::Success(100);
     }
 
-    let mut entry = level.world.entry(entity).unwrap();
-
-    let entity_point = match entry.get_component::<Position>() {
-        Err(_) => {
+    let entity_point = match world.read_component::<Position>().get(entity) {
+        None => {
             // log("- no entity point");
             return TaskResult::Success(100);
         }
-        Ok(pos) => pos.point(),
+        Some(pos) => pos.point(),
     };
 
-    let anchor_point = match entry.get_component::<AnchorPos>() {
-        Ok(anchor) => anchor.0.clone(),
-        Err(_) => {
-            entry.add_component(AnchorPos(entity_point.clone()));
-            entity_point.clone()
+    let anchor_point = {
+        let mut anchor = world.write_component::<AnchorPos>();
+        match anchor.get(entity) {
+            Some(anchor) => anchor.0.clone(),
+            None => {
+                anchor
+                    .insert(entity, AnchorPos(entity_point.clone()))
+                    .unwrap();
+                entity_point.clone()
+            }
         }
     };
 
     // log(format!("- entity_point={:?}", entity_point));
     // log(format!("- anchor_point={:?}", anchor_point));
 
-    drop(entry);
-
-    let dir = if level.rng.chance_in(1, 4) {
+    let dir = if world
+        .write_resource::<RandomNumberGenerator>()
+        .chance_in(1, 4)
+    {
         // 25% chance - move towards anchor
         (anchor_point - entity_point).as_dir()
     } else {
         // Otherwise pick a random (of 8) direction to move
-        let dir_index = level.rng.rand(8);
+        let dir_index = world.write_resource::<RandomNumberGenerator>().rand(8);
         match DIRS.get(dir_index as usize) {
             None => unreachable!("Not reachable"),
             Some(d) => d.clone(), // Error!  Not possible!
         }
     };
 
-    drop(level);
-
     // Set action time to be 3-5 x act time so there is a delay before next action
 
     do_entity_action(
         Box::new(MoveStepAction::new(entity, dir.x, dir.y)),
-        ecs,
+        world,
         entity,
     )
 }
 
 /// Just move randomly every now and then...
-pub fn random_move(ecs: &mut Ecs, entity: Entity) -> TaskResult {
-    let mut level = get_current_level_mut(ecs);
-
+pub fn random_move(world: &mut World, entity: Entity) -> TaskResult {
     // log(format!("RANDOM WANDER - {:?}", entity));
 
     let chance = {
-        let entry = level.world.entry(entity).unwrap();
-        let actor = entry.get_component::<Being>().unwrap();
+        let beings = world.read_component::<Being>();
+        let actor = beings.get(entity).unwrap();
         if actor.move_flags.contains(MoveFlags::RAND100) {
             100
         } else {
@@ -127,12 +129,15 @@ pub fn random_move(ecs: &mut Ecs, entity: Entity) -> TaskResult {
         }
     };
 
-    if level.rng.chance(100 - chance) {
+    if world
+        .write_resource::<RandomNumberGenerator>()
+        .chance(100 - chance)
+    {
         return TaskResult::Success(100);
     }
 
     // Otherwise pick a random (of 8) direction to move
-    let dir_index = level.rng.rand(8);
+    let dir_index = world.write_resource::<RandomNumberGenerator>().rand(8);
     let dir = match DIRS.get(dir_index as usize) {
         None => unreachable!("Not reachable"),
         Some(d) => d.clone(), // Error!  Not possible!
@@ -140,15 +145,14 @@ pub fn random_move(ecs: &mut Ecs, entity: Entity) -> TaskResult {
 
     // Set action time to be 3-5 x act time so there is a delay before next action
 
-    drop(level);
-
     do_entity_action(
         Box::new(MoveStepAction::new(entity, dir.x, dir.y)),
-        ecs,
+        world,
         entity,
     )
 }
 
+#[derive(Default, Component)]
 pub struct FollowPath {
     path: VecDeque<Point>,
 }
@@ -160,74 +164,59 @@ impl FollowPath {
 }
 
 /// Just move randomly every now and then...
-pub fn wander_horde(ecs: &mut Ecs, entity: Entity) -> TaskResult {
-    let mut level = get_current_level_mut(ecs);
-
-    let mut query = <(&Position, Option<&mut FollowPath>)>::query();
-
-    let (pos, follow_path) = match query.get_mut(&mut level.world, entity) {
-        Err(_) => return TaskResult::Finished,
-        Ok(d) => d,
+pub fn wander_horde(world: &mut World, entity: Entity) -> TaskResult {
+    let (pos, next_step) = {
+        let (entities, positions, mut follow_path) =
+            <(Entities, ReadComp<Position>, WriteComp<FollowPath>)>::fetch(world);
+        let mut query = (&positions, (&mut follow_path).maybe()).join();
+        match query.get(entity, &entities) {
+            None => return TaskResult::Finished,
+            Some((p, None)) => (p.clone(), None),
+            Some((p, Some(follow))) => (p.clone(), follow.path.pop_front()),
+        }
     };
 
     let entity_pt = pos.point();
 
     // log(format!("RANDOM WANDER - {:?}", entity));
-    match follow_path {
-        None => {
-            drop(level);
-            init_wander(ecs, entity)
-        }
-        Some(follow) => {
-            let next_pt = match follow.path.pop_front() {
-                None => {
-                    drop(level);
-                    return init_wander(ecs, entity);
-                }
-                Some(step) => step,
-            };
-
+    match next_step {
+        None => init_wander(world, entity),
+        Some(next_pt) => {
             let dir = (next_pt - entity_pt).as_dir();
-
-            drop(query);
-            drop(level);
 
             do_entity_action(
                 Box::new(MoveStepAction::new(entity, dir.x, dir.y)),
-                ecs,
+                world,
                 entity,
             )
         }
     }
 }
 
-fn init_wander(ecs: &mut Ecs, entity: Entity) -> TaskResult {
-    ensure_area_grid(ecs);
+fn init_wander(world: &mut World, entity: Entity) -> TaskResult {
+    ensure_area_grid(world);
 
-    let mut level = get_current_level_mut(ecs);
+    let area_grid = world.read_resource::<AreaGrid>();
 
-    let Level {
-        resources,
-        world,
-        rng,
-        ..
-    } = &mut *level;
-
-    let area_grid = resources.get::<AreaGrid>().unwrap();
-
-    let entry = world.entry(entity).unwrap();
-    let start_point = entry.get_component::<Position>().unwrap().point();
-    drop(entry);
+    let start_point = world
+        .read_component::<Position>()
+        .get(entity)
+        .unwrap()
+        .point();
 
     let area_id = area_grid.get(start_point.x, start_point.y).unwrap();
 
-    let wander_goal = match random_point_matching(&area_grid.grid(), area_id, rng) {
+    let wander_goal = match random_point_matching(
+        &area_grid.grid(),
+        area_id,
+        &mut world.write_resource::<RandomNumberGenerator>(),
+    ) {
         None => return TaskResult::Finished,
         Some(point) => point,
     };
 
     let path = {
-        let map = resources.get::<Map>().unwrap();
+        let map = world.read_resource::<Map>();
         a_star_search(start_point, wander_goal, &*map, false)
     };
 
@@ -238,8 +227,7 @@ fn init_wander(ecs: &mut Ecs, entity: Entity) -> TaskResult {
         }
         Some(path) => {
             let wander = FollowPath::new(path);
-            let mut entry = world.entry(entity).unwrap();
-            entry.add_component(wander);
+            world.write_component().insert(entity, wander);
         }
     }
 

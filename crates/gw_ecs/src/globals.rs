@@ -1,8 +1,6 @@
 use crate::atomic_refcell::{AtomicBorrowRef, AtomicRef, AtomicRefCell, AtomicRefMut};
 use crate::shred::Resources;
-use crate::shred::{
-    DefaultIfMissing, PanicIfMissing, Resource, ResourceId, SetupHandler, SystemData,
-};
+use crate::shred::{Resource, ResourceId, SetupDefault, SetupHandler, SystemData};
 use crate::World;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
@@ -176,7 +174,7 @@ pub(crate) struct GlobalRes<T>(PhantomData<T>);
 ///
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
-pub struct ReadGlobal<'a, T: 'a, F = DefaultIfMissing> {
+pub struct ReadGlobal<'a, T: 'a, F = ()> {
     fetch: GlobalRef<'a, T>,
     phantom: PhantomData<F>,
 }
@@ -224,7 +222,7 @@ where
 
     fn fetch(world: &'a World) -> Self {
         ReadGlobal::<'a, T, F> {
-            fetch: world.read_global::<T>().fetch,
+            fetch: world.read_global::<T>(),
             phantom: PhantomData,
         }
     }
@@ -249,7 +247,7 @@ where
 ///
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
-pub struct WriteGlobal<'a, T: 'a, F = DefaultIfMissing> {
+pub struct WriteGlobal<'a, T: 'a, F = ()> {
     fetch: GlobalRefMut<'a, T>,
     phantom: PhantomData<F>,
 }
@@ -294,7 +292,7 @@ where
 
     fn fetch(world: &'a World) -> Self {
         WriteGlobal::<'a, T, F> {
-            fetch: world.write_global::<T>().fetch,
+            fetch: world.write_global::<T>(),
             phantom: PhantomData,
         }
     }
@@ -320,7 +318,7 @@ where
         match world.try_read_global::<T>() {
             None => None,
             Some(fetch) => Some(ReadGlobal::<'a, T, F> {
-                fetch: fetch.fetch,
+                fetch: fetch,
                 phantom: PhantomData,
             }),
         }
@@ -348,7 +346,7 @@ where
         match world.try_write_global::<T>() {
             None => None,
             Some(fetch) => Some(WriteGlobal::<'a, T, F> {
-                fetch: fetch.fetch,
+                fetch: fetch,
                 phantom: PhantomData,
             }),
         }
@@ -364,45 +362,9 @@ where
 }
 
 /// Allows to fetch a resource in a system immutably.
-/// **This will panic if the resource does not exist.**
-/// Usage of `Read` or `Option<Read>` is therefore recommended.
-pub type ReadGlobalExpect<'a, T> = ReadGlobal<'a, T, PanicIfMissing>;
+/// **This will add a default value in a `System` setup if the resource does not exist.**
+pub type ReadGlobalDefault<'a, T> = ReadGlobal<'a, T, SetupDefault>;
 
 /// Allows to fetch a resource in a system mutably.
-/// **This will panic if the resource does not exist.**
-/// Usage of `Write` or `Option<Write>` is therefore recommended.
-pub type WriteGlobalExpect<'a, T> = WriteGlobal<'a, T, PanicIfMissing>;
-
-/////////////////////////////////////////////////////////////
-
-// pub trait WorldGlobals {
-//     fn fetch_global<G: Resource>(&self) -> GlobalFetch<G> {
-//         self.try_fetch_global::<G>().unwrap()
-//     }
-
-//     fn try_fetch_global<G: Resource>(&self) -> Option<GlobalFetch<G>>;
-
-//     fn fetch_global_mut<G: Resource>(&self) -> GlobalFetchMut<G> {
-//         self.try_fetch_global_mut::<G>().unwrap()
-//     }
-
-//     fn try_fetch_global_mut<G: Resource>(&self) -> Option<GlobalFetchMut<G>>;
-// }
-
-// impl WorldGlobals for World {
-//     fn try_fetch_global<G: Resource>(&self) -> Option<GlobalFetch<G>> {
-//         let (globals, borrow) = self.fetch::<Globals>().destructure();
-//         match globals.try_fetch::<G>() {
-//             None => None,
-//             Some(fetch) => Some(GlobalFetch::new(borrow, fetch)),
-//         }
-//     }
-
-//     fn try_fetch_global_mut<G: Resource>(&self) -> Option<GlobalFetchMut<G>> {
-//         let (globals, borrow) = self.fetch::<Globals>().destructure();
-//         match globals.try_fetch_mut::<G>() {
-//             None => None,
-//             Some(fetch) => Some(GlobalFetchMut::new(borrow, fetch)),
-//         }
-//     }
-// }
+/// **This will add a default value in a `System` setup if the resource does not exist.**
+pub type WriteGlobalDefault<'a, T> = WriteGlobal<'a, T, SetupDefault>;

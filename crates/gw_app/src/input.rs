@@ -44,6 +44,7 @@ use std::collections::HashMap;
 // }
 
 /// Tracks all input events
+#[derive(Default)]
 pub struct AppInput {
     /// keys currently down
     kdown: HashMap<VirtualKeyCode, bool>,

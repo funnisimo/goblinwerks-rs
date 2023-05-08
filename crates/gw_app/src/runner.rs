@@ -1,6 +1,3 @@
-use gw_ecs::{ReadGlobal, ReadGlobalExpect, SystemData, WriteGlobal, WriteGlobalExpect};
-use uni_gl::BufferBit;
-
 use super::input::AppInput;
 use crate::ecs::{init_ecs, Ecs, Time, WindowInfo};
 use crate::font::{default_from_glyph, default_to_glyph};
@@ -10,6 +7,9 @@ use crate::loader::{load_files, Loader};
 use crate::messages::Messages;
 use crate::screen::BoxedScreen;
 use crate::{log, App, AppBuilder, AppConfig, AppEvent, Screen, ScreenResult, RGBA};
+use gw_ecs::shred::NoSetup;
+use gw_ecs::{ReadGlobal, SystemData, WriteGlobal};
+use uni_gl::BufferBit;
 // use std::sync::Arc;
 
 /// What is returned by the internal update and input functions
@@ -102,9 +102,9 @@ impl Runner {
 
         {
             let (mut window_info, mut input, gl) = <(
-                WriteGlobalExpect<WindowInfo>,
-                WriteGlobalExpect<AppInput>,
-                ReadGlobalExpect<uni_gl::WebGLRenderingContext>,
+                WriteGlobal<WindowInfo>,
+                WriteGlobal<AppInput>,
+                ReadGlobal<uni_gl::WebGLRenderingContext, NoSetup>,
             )>::fetch(ecs.current_world());
 
             let (x_offset, y_offset) =
@@ -295,6 +295,7 @@ impl Runner {
             true => {
                 let mut ctx = self.ecs.take().unwrap();
                 if called {
+                    // TODO - NOT MUT
                     if load_files(&mut ctx) {
                         // call any startup fns
                         for func in self.builder.startup.drain(..) {
@@ -531,8 +532,8 @@ impl Runner {
 fn capture_screen(ecs: &Ecs, filepath: &str) {
     if cfg!(not(target_arch = "wasm32")) {
         let (gl, window_info) = <(
-            ReadGlobalExpect<uni_gl::WebGLRenderingContext>,
-            ReadGlobalExpect<WindowInfo>,
+            ReadGlobal<uni_gl::WebGLRenderingContext, NoSetup>,
+            ReadGlobal<WindowInfo>,
         )>::fetch(ecs.current_world());
 
         let (w, h) = window_info.real_size;

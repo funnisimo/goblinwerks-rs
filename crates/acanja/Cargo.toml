@@ -10,6 +10,7 @@ gw_app    = { path = "../gw_app" }
 gw_util   = { path = "../gw_util" }
 gw_ui     = { path = "../gw_ui" }
 gw_world  = { path = "../gw_world" }
+gw_ecs    = { path = "../gw_ecs" }
 toml_edit = "0.19.4"
 serde     = "1.0.154"
 rand      = "0.8.5"

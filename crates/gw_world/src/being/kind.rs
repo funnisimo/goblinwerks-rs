@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use super::{Being, BeingKindBuilder, BeingKindFlags, Stats};
-use crate::combat::Melee;
 use crate::hero::Hero;
-use crate::level::Level;
 use crate::map::Map;
 use crate::position::Position;
 use crate::sprite::Sprite;
 use crate::task::Task;
+use crate::{combat::Melee, task::Executor};
 use gw_app::{ecs::Entity, log};
+use gw_ecs::{specs::LazyUpdate, Builder, Entities, ReadRes, SystemData, World, WriteRes};
 use gw_util::point::Point;
 
 #[derive(Debug, Clone)]
@@ -38,44 +38,45 @@ impl BeingKind {
     }
 }
 
-pub fn spawn_being(kind: &Arc<BeingKind>, level: &mut Level, point: Point) -> Entity {
-    let index = level
-        .resources
-        .get::<Map>()
-        .unwrap()
-        .get_index(point.x, point.y);
+pub fn spawn_being(kind: &Arc<BeingKind>, world: &World, point: Point) -> Entity {
+    let (mut map, lazy_update, entities, mut executor) = <(
+        WriteRes<Map>,
+        ReadRes<LazyUpdate>,
+        Entities,
+        WriteRes<Executor>,
+    )>::fetch(world);
+
+    let index = map.get_index(point.x, point.y);
+
     if let Some(idx) = index {
         let pos = Position::from(point).with_blocking(true);
 
         println!("spawn being({}) - task={}", kind.id, kind.task);
 
-        let entity = level.world.push((
-            kind.being.clone(),
-            pos,
-            kind.sprite.clone(),
-            Task::new(kind.task.clone()),
-            kind.stats.clone(),
-        ));
+        let mut builder = lazy_update
+            .create_entity(&entities)
+            .with(kind.being.clone())
+            .with(pos)
+            .with(kind.sprite.clone())
+            .with(Task::new(kind.task.clone()))
+            .with(kind.stats.clone());
 
         if let Some(ref melee) = kind.melee {
-            level
-                .world
-                .entry(entity)
-                .unwrap()
-                .add_component(melee.clone());
+            builder = builder.with(melee.clone());
             log(format!("SPAWN MELEE!!!"));
         }
+        let entity = builder.build();
 
         if kind.being.kind_flags.contains(BeingKindFlags::HERO) {
-            level.resources.insert(Hero::new(entity));
+            let mut hero = world.write_resource::<Hero>();
+            hero.entity = entity;
         }
 
         // make map aware of actor
-        let mut map = level.resources.get_mut::<Map>().unwrap();
         map.add_being(idx, entity, true);
 
         // Add to schedule
-        level.executor.insert(entity, kind.being.act_time as u64);
+        executor.insert(entity, kind.being.act_time as u64);
 
         return entity;
     }

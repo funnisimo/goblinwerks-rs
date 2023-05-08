@@ -1,4 +1,5 @@
 use gw_app::{color::init_colors, Ecs};
+use gw_ecs::Builder;
 use gw_world::{
     being::{load_being_kinds_file, Being},
     effect::register_effect_parser,
@@ -21,27 +22,28 @@ fn fov_10_26() {
     register_effect_parser("gremlins", parse_gremlins);
     register_effect_parser("mark", parse_mark);
 
-    let tiles = load_tiles_file("assets/tiles.jsonc");
-    let actor_kinds = load_being_kinds_file("assets/actors.jsonc");
-    let mut level = load_level_file("assets/maps/sosaria.jsonc", &tiles, &actor_kinds);
+    let mut ecs = Ecs::empty();
 
     {
-        let map = level.resources.get::<Map>().unwrap();
+        let tiles = load_tiles_file("assets/tiles.jsonc");
+        ecs.insert_global(tiles);
+        let actor_kinds = load_being_kinds_file("assets/actors.jsonc");
+        ecs.insert_global(actor_kinds);
+        let level = load_level_file(&mut ecs, "assets/maps/sosaria.jsonc");
+
+        let map = level.read_resource::<Map>();
         assert!(FovSource::is_opaque(&*map, 9, 26));
         assert!(FovSource::is_opaque(&*map, 9, 27));
         assert!(FovSource::is_opaque(&*map, 10, 27));
     }
 
-    let entity = level
-        .world
-        .push((Position::new(10, 26), Being::new("HERO".to_string())));
+    let entity = ecs
+        .create_entity()
+        .with(Position::new(10, 26))
+        .with(Being::new("HERO".to_string()))
+        .build();
 
-    let mut ecs = Ecs::new();
-    ecs.resources.insert(tiles);
-    ecs.resources.insert(actor_kinds);
-    ecs.resources.insert(level);
-
-    let mask = get_fov_mask(&ecs, entity, 11);
+    let mask = get_fov_mask(ecs.current_world(), entity, 11);
 
     assert!(mask.in_fov(10, 26));
     assert!(mask.in_fov(10, 27));

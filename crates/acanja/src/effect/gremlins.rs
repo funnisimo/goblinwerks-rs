@@ -1,8 +1,10 @@
-use gw_app::{ecs::Entity, Ecs};
+use gw_ecs::{Entity, World};
 use gw_util::point::Point;
 use gw_util::value::Value;
-use gw_world::effect::{BoxedEffect, Effect, EffectResult};
-use gw_world::level::Levels;
+use gw_world::{
+    effect::{BoxedEffect, Effect, EffectResult},
+    log::Logger,
+};
 
 ////////////////////////
 
@@ -16,11 +18,9 @@ impl Gremlins {
 }
 
 impl Effect for Gremlins {
-    fn fire(&self, ecs: &mut Ecs, _pos: Point, _entity: Option<Entity>) -> EffectResult {
-        let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-        let level = levels.current_mut();
-
-        level.logger.log("Gremlins");
+    fn fire(&self, world: &mut World, _pos: Point, _entity: Option<Entity>) -> EffectResult {
+        let mut logger = world.write_resource::<Logger>();
+        logger.log("Gremlins");
         EffectResult::Success
     }
 }

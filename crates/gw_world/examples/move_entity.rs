@@ -1,72 +1,98 @@
-use gw_app::ecs::{register_component, Deserialize, Entity, Serialize};
-use gw_world::level::{move_entity, Level};
+use gw_ecs::{Builder, Component, DenseVecStorage, Ecs, Entity};
+use serde::{Deserialize, Serialize};
 
 // a component is any type that is 'static, sized, send and sync
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, Component, Default)]
 struct Position {
     x: f32,
     y: f32,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, Component, Default)]
 struct Velocity {
     dx: f32,
     dy: f32,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, Component)]
 struct Invisible;
 
 fn main() {
-    // create a registry which uses strings as the external type ID
-    register_component::<Position>("Position");
-    register_component::<Velocity>("Velocity");
-    register_component::<f32>("f32");
-    register_component::<bool>("bool");
+    let mut ecs = Ecs::empty();
 
-    // CREATE + POPULATE SOURCE WORLD
-    let mut source = Level::new("SOURCE");
+    // create a registry which uses strings as the external type ID
+    ecs.register::<Position>();
+    ecs.register::<Velocity>();
+
+    let mut source = ecs.create_world("SOURCE");
 
     // or extend via an IntoIterator of tuples to add many at once (this is faster)
-    let _entities: &[Entity] = source.world.extend(vec![
-        (Position { x: 0.0, y: 0.0 }, Velocity { dx: 0.0, dy: 0.0 }),
-        (Position { x: 1.0, y: 1.0 }, Velocity { dx: 0.0, dy: 0.0 }),
-        (Position { x: 2.0, y: 2.0 }, Velocity { dx: 0.0, dy: 0.0 }),
-    ]);
+    for i in 0..3 {
+        source
+            .create_entity()
+            .with(Position {
+                x: i as f32,
+                y: i as f32,
+            })
+            .with(Velocity::default())
+            .build();
+    }
 
     // push a component tuple into the world to create an entity that we will move
-    let entity: Entity = source.world.push((Position { x: 3.0, y: 4.0 },));
+    let entity: Entity = source
+        .create_entity()
+        .with(Position { x: 3.0, y: 4.0 })
+        .build();
     // or
     // .. see what happens if the entity has an unregistered component
-    // let entity: Entity = world.push((Position { x: 0.0, y: 0.0 }, Invisible));
+    // let entity: Entity = source.create_entity().with(Position { x: 0.0, y: 0.0 }).with(Invisible).build();
 
+    drop(source);
     println!("Original Entity = {:?}", entity);
 
     // CREATE + POPULATE DEST WORLD
-    let mut destination = Level::new("DESTINATION");
+    let mut destination = ecs.create_world("DESTINATION");
 
     // or extend via an IntoIterator of tuples to add many at once (this is faster)
-    destination.world.extend(vec![
-        (Position { x: 0.0, y: 0.0 }, Velocity { dx: 0.0, dy: 0.0 }),
-        (Position { x: 1.0, y: 1.0 }, Velocity { dx: 0.0, dy: 0.0 }),
-        (Position { x: 2.0, y: 2.0 }, Velocity { dx: 0.0, dy: 0.0 }),
-    ]);
+    for i in 10..13 {
+        destination
+            .create_entity()
+            .with(Position {
+                x: i as f32,
+                y: i as f32,
+            })
+            .with(Velocity::default())
+            .build();
 
-    destination.world.extend(vec![
-        (Position { x: 0.0, y: 0.0 },),
-        (Position { x: 1.0, y: 1.0 },),
-        (Position { x: 2.0, y: 2.0 },),
-    ]);
+        destination
+            .create_entity()
+            .with(Position {
+                x: (i + 10) as f32,
+                y: (i + 10) as f32,
+            })
+            .build();
+    }
+
+    drop(destination);
 
     // Here is the move logic
 
-    let new_entity = move_entity(entity, &mut source, &mut destination);
+    let new_entity = ecs.move_entity(entity, "SOURCE", "DESTINATION");
 
-    if let Some(_) = source.world.entry(entity) {
-        println!("ERROR - Original entity still there!");
+    {
+        let source = ecs.get_world("SOURCE").unwrap();
+        if source.entities().is_alive(entity) {
+            println!("ERROR - Original entity still there!");
+        }
     }
 
-    let entry = destination.world.entry(new_entity).unwrap();
+    let destination = ecs.get_world("DESTINATION").unwrap();
     println!("Moved entity({:?}) -> new entity({:?})", entity, new_entity);
-    println!("- pos = {:?}", entry.get_component::<Position>().unwrap());
+    println!(
+        "- pos = {:?}",
+        destination
+            .read_component::<Position>()
+            .get(new_entity)
+            .unwrap()
+    );
 }

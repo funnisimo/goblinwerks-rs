@@ -1,12 +1,9 @@
 use super::goblin::calculate_fov;
 use super::FovTarget;
-use crate::level::get_current_level;
 use crate::map::Map;
 use crate::position::Position;
-use gw_app::ecs::world::EntityStore;
-use gw_app::ecs::Entity;
 use gw_app::log;
-use gw_app::Ecs;
+use gw_ecs::{Entity, World};
 use gw_util::point::Point;
 use lazy_static::lazy_static;
 use std::fmt::Debug;
@@ -215,15 +212,13 @@ impl<'a> Iterator for FovIter<'a> {
     }
 }
 
-pub fn get_fov_mask(ecs: &Ecs, entity: Entity, radius: u32) -> FOVMask {
-    let level = get_current_level(ecs);
-
-    let origin: Point = match level.world.entry_ref(entity) {
-        Err(_) => panic!("Trying to get FOV mask for non-existant entity"),
-        Ok(obj) => obj.get_component::<Position>().unwrap().point(),
+pub fn get_fov_mask(world: &World, entity: Entity, radius: u32) -> FOVMask {
+    let origin: Point = match world.read_component::<Position>().get(entity) {
+        None => panic!("Trying to get FOV mask for non-existant entity"),
+        Some(obj) => obj.point(),
     };
 
-    let map = level.resources.get::<Map>().unwrap();
+    let map = world.read_resource::<Map>();
     let size = map.size();
     let mut mask = FOVMask::new(size.0 as i32, size.1 as i32);
 
@@ -235,21 +230,22 @@ pub fn get_fov_mask(ecs: &Ecs, entity: Entity, radius: u32) -> FOVMask {
 mod test {
     use super::*;
     use crate::tile::Tiles;
-    use gw_app::ecs::Ecs;
+    use gw_ecs::{Builder, World};
 
     #[test]
     fn simple() {
-        let mut ecs = Ecs::new();
+        let mut world = World::empty(1);
+        world.register::<Position>();
 
         let mut map = Map::new(20, 20);
         let tiles = Tiles::default();
         map.fill(tiles.get("FLOOR").unwrap());
 
-        ecs.resources.insert(map);
+        world.insert_resource(map);
 
-        let entity = ecs.world.push((Position::new(10, 10),));
+        let entity = world.create_entity().with(Position::new(10, 10)).build();
 
-        let mask = get_fov_mask(&ecs, entity, 7);
+        let mask = get_fov_mask(&world, entity, 7);
 
         println!("{:?}", mask);
         assert_eq!(mask.in_fov(0, 0), false);
@@ -258,17 +254,18 @@ mod test {
 
     #[test]
     fn corner() {
-        let mut ecs = Ecs::new();
+        let mut world = World::empty(1);
+        world.register::<Position>();
 
         let mut map = Map::new(20, 20);
         let tiles = Tiles::default();
         map.fill(tiles.get("FLOOR").unwrap());
 
-        ecs.resources.insert(map);
+        world.insert_resource(map);
 
-        let entity = ecs.world.push((Position::new(3, 3),));
+        let entity = world.create_entity().with(Position::new(3, 3)).build();
 
-        let mask = get_fov_mask(&ecs, entity, 7);
+        let mask = get_fov_mask(&world, entity, 7);
 
         println!("{:?}", mask);
         assert_eq!(mask.in_fov(0, 0), true);
@@ -277,7 +274,8 @@ mod test {
 
     #[test]
     fn with_blockers() {
-        let mut ecs = Ecs::new();
+        let mut world = World::empty(1);
+        world.register::<Position>();
 
         let mut map = Map::new(20, 20);
         let tiles = Tiles::default();
@@ -293,11 +291,11 @@ mod test {
 
         let idx = map.get_wrapped_index(10, 11).unwrap();
         map.reset_tiles(idx, tiles.get("WALL").unwrap());
-        ecs.resources.insert(map);
+        world.insert_resource(map);
 
-        let entity = ecs.world.push((Position::new(10, 10),));
+        let entity = world.create_entity().with(Position::new(10, 10)).build();
 
-        let mask = get_fov_mask(&ecs, entity, 9);
+        let mask = get_fov_mask(&world, entity, 9);
 
         println!("{:?}", mask);
         assert_eq!(mask.in_fov(0, 0), false);
@@ -308,7 +306,8 @@ mod test {
 
     #[test]
     fn iter() {
-        let mut ecs = Ecs::new();
+        let mut world = World::empty(1);
+        world.register::<Position>();
 
         let mut map = Map::new(20, 20);
         let tiles = Tiles::default();
@@ -324,11 +323,11 @@ mod test {
 
         let idx = map.get_wrapped_index(10, 11).unwrap();
         map.reset_tiles(idx, tiles.get("WALL").unwrap());
-        ecs.resources.insert(map);
+        world.insert_resource(map);
 
-        let entity = ecs.world.push((Position::new(10, 10),));
+        let entity = world.create_entity().with(Position::new(10, 10)).build();
 
-        let mask = get_fov_mask(&ecs, entity, 9);
+        let mask = get_fov_mask(&world, entity, 9);
 
         println!("{:?}", mask);
         let mut count = 0;

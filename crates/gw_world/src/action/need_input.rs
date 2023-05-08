@@ -1,7 +1,5 @@
 use crate::action::{Action, ActionResult};
-use crate::level::get_current_level;
-use gw_app::ecs::Entity;
-use gw_app::Ecs;
+use gw_ecs::{Entity, World};
 
 #[derive(Copy, Clone, Debug)]
 pub struct NeedInputAction {
@@ -15,9 +13,8 @@ impl NeedInputAction {
 }
 
 impl Action for NeedInputAction {
-    fn execute(&mut self, ecs: &mut Ecs) -> ActionResult {
-        let level = get_current_level(ecs);
-        match level.world.contains(self.entity) {
+    fn execute(&mut self, world: &mut World) -> ActionResult {
+        match world.entities().is_alive(self.entity) {
             false => {
                 // TODO - log?  This is an action on a non-existant entity.
                 ActionResult::Dead(self.entity)

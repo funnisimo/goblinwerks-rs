@@ -14,7 +14,7 @@ impl MessageInfo {
 }
 
 // TODO - Location recording/filtering
-
+#[derive(Default)]
 pub struct Logger {
     msgs: VecDeque<MessageInfo>,
     count: usize,
@@ -42,6 +42,7 @@ impl Logger {
 
     pub fn set_max_len(&mut self, count: usize) {
         self.count = count;
+        self.trim();
     }
 
     pub fn len(&self) -> usize {

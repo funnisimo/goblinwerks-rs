@@ -1,12 +1,9 @@
-use std::fs::read_to_string;
-
 use super::{make_level, LevelData, MapData};
 use gw_app::{
-    ecs::{ResourceSet, Write},
     loader::{LoadError, LoadHandler},
     log,
 };
-use gw_world::level::Levels;
+use std::fs::read_to_string;
 
 pub struct LevelDataLoader {
     level_data: Option<LevelData>,
@@ -42,12 +39,8 @@ impl LoadHandler for LevelDataLoader {
 
         self.level_data.as_mut().unwrap().map_data = Some(MapData::Data(lines));
 
-        let (mut levels,) = <(Write<Levels>,)>::fetch_mut(&mut ecs.resources);
-
-        let level = make_level(self.level_data.take().unwrap());
-        log(format!("Adding Level - {}", level.id));
-
-        levels.insert(level);
+        let level = make_level(ecs, self.level_data.take().unwrap());
+        log(format!("Adding Level - {}", level.id()));
 
         Ok(())
     }

@@ -2,7 +2,6 @@ use acanja::map::prefab::{PrefabFileLoader, Prefabs};
 use acanja::map::town::build_town_map;
 use acanja::map::world::build_world_map;
 use gw_app::ecs::*;
-use gw_app::ecs::{systems::ResourceSet, Read};
 use gw_app::*;
 use gw_util::point::Point;
 use gw_world::action::move_step::MoveStepAction;
@@ -10,11 +9,12 @@ use gw_world::being::Being;
 use gw_world::camera::{update_camera_follows, Camera};
 use gw_world::effect::BoxedEffect;
 use gw_world::hero::Hero;
-use gw_world::level::{Level, Levels};
+use gw_world::level::NeedsDraw;
+use gw_world::log::Logger;
 use gw_world::map::{cell_flavor, Map};
 use gw_world::position::Position;
 use gw_world::sprite::Sprite;
-use gw_world::task::{do_next_task, DoNextTaskResult, Task, UserAction};
+use gw_world::task::{do_next_task, DoNextTaskResult, Executor, Task, UserAction};
 use gw_world::tile::{Tiles, TilesLoader};
 use gw_world::widget::Viewport;
 
@@ -29,9 +29,10 @@ impl MainScreen {
         Box::new(MainScreen { viewport })
     }
 
-    fn build_new_world(&mut self, ecs: &mut Ecs) -> Level {
+    fn build_new_world<'a>(&mut self, ecs: &'a mut Ecs) -> &'a mut World {
         let mut map = {
-            let (tiles, prefabs) = <(Read<Tiles>, Read<Prefabs>)>::fetch(&ecs.resources);
+            let tiles = ecs.read_global::<Tiles>();
+            let prefabs = ecs.read_global::<Prefabs>();
             build_world_map(&tiles, &prefabs, 160, 100)
         };
 
@@ -42,35 +43,42 @@ impl MainScreen {
 
         log(format!("locations = {:?}", &map.locations));
 
-        let mut level = Level::new("WORLD");
+        let level = ecs.create_world("WORLD");
 
-        level.resources.insert(map);
+        level.insert_resource(map);
 
         // add position + sprite for actor
-        let entity = level.world.push((
-            Position::new(start_loc.x, start_loc.y),
-            Sprite::new('@' as Glyph, WHITE.into(), RGBA::new()),
-            Being::new("HERO".to_string()),
-            Task::new("USER_CONTROL"),
-        ));
+        let entity = level
+            .create_entity()
+            .with(Position::new(start_loc.x, start_loc.y))
+            .with(Sprite::new('@' as Glyph, WHITE.into(), RGBA::new()))
+            .with(Being::new("HERO".to_string()))
+            .with(Task::new("USER_CONTROL"))
+            .build();
 
-        level.executor.insert(entity, 0);
+        level.ensure_resource::<Executor>();
+        level.write_resource::<Executor>().insert(entity, 0);
 
         let mut camera = Camera::new(80, 50);
         camera.set_follows(entity);
-        level.resources.insert(camera);
+        level.insert_resource(camera);
 
-        level.resources.insert(Hero::new(entity));
-        // level.reset_tasks();
+        level.insert_resource(Hero::new(entity));
+        level.insert_resource(NeedsDraw::default());
+        level.insert_resource(UserAction::default());
+        level.insert_resource(Logger::default());
+
+        // log(format!("CAMERA = {:?}", *level.read_resource::<Camera>()));
 
         level
     }
 
-    fn build_new_town(&mut self, ecs: &mut Ecs, idx: u8) -> Level {
+    fn build_new_town<'a>(&mut self, ecs: &'a mut Ecs, idx: u8) -> &'a mut World {
         let town_name = format!("TOWN{}", idx);
 
         let mut map = {
-            let (tiles, prefabs) = <(Read<Tiles>, Read<Prefabs>)>::fetch(&ecs.resources);
+            let tiles = ecs.read_global::<Tiles>();
+            let prefabs = ecs.read_global::<Prefabs>();
 
             log(format!("- prefabs: {}", prefabs.len()));
             // let mut map = dig_room_level(&tiles, 80, 50);
@@ -80,52 +88,47 @@ impl MainScreen {
         map.reveal_all();
         map.make_fully_visible();
 
-        let mut level = Level::new(&town_name);
+        let level = ecs.create_world(town_name.as_str());
 
-        level.resources.insert(map);
-        level.resources.insert(Camera::new(80, 50));
+        level.insert_resource(map);
+        level.insert_resource(Camera::new(80, 50));
+        level.insert_resource(Executor::new());
+        level.insert_resource(NeedsDraw::default());
+        level.insert_resource(UserAction::default());
+        level.insert_resource(Logger::default());
         level
     }
 
     fn build_new_levels(&mut self, ecs: &mut Ecs) {
-        let mut levels = Levels::new();
+        self.build_new_world(ecs);
 
-        levels.insert(self.build_new_world(ecs));
+        self.build_new_town(ecs, 1);
+        self.build_new_town(ecs, 2);
+        self.build_new_town(ecs, 3);
+        self.build_new_town(ecs, 4);
 
-        levels.insert(self.build_new_town(ecs, 1));
-        levels.insert(self.build_new_town(ecs, 2));
-        levels.insert(self.build_new_town(ecs, 3));
-        levels.insert(self.build_new_town(ecs, 4));
+        log(format!("Built 4 town maps - total levels = {}", ecs.len()));
 
-        log(format!(
-            "Built 4 town maps - total levels = {}",
-            levels.len()
-        ));
-
-        ecs.resources.insert(levels);
+        ecs.set_current_world("WORLD").unwrap();
     }
 
     #[allow(dead_code)]
     fn post_action(&mut self, ecs: &mut Ecs) {
         // Post Update
-        let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-        let level = levels.current_mut();
-        update_camera_follows(level);
+        update_camera_follows(ecs.current_world_mut());
     }
 }
 
 impl Screen for MainScreen {
     fn setup(&mut self, ecs: &mut Ecs) {
-        let resources = &mut ecs.resources;
-        resources.get_or_insert_with(|| Tiles::default());
-        resources.get_or_insert_with(|| Prefabs::default());
-        resources.insert(Levels::new());
+        ecs.ensure_global::<Tiles>();
+        ecs.ensure_global::<Prefabs>();
 
         self.build_new_levels(ecs);
     }
 
     fn input(&mut self, ecs: &mut Ecs, ev: &AppEvent) -> ScreenResult {
-        if let Some(result) = self.viewport.input(ecs, ev) {
+        if let Some(result) = self.viewport.input(ecs.current_world_mut(), ev) {
             return result;
         }
 
@@ -138,23 +141,19 @@ impl Screen for MainScreen {
                     return ScreenResult::Quit;
                 }
                 VirtualKeyCode::Down => {
-                    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-                    let level = levels.current_mut();
+                    let level = ecs.current_world_mut();
                     move_hero(level, 0, 1);
                 }
                 VirtualKeyCode::Left => {
-                    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-                    let level = levels.current_mut();
+                    let level = ecs.current_world_mut();
                     move_hero(level, -1, 0);
                 }
                 VirtualKeyCode::Up => {
-                    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-                    let level = levels.current_mut();
+                    let level = ecs.current_world_mut();
                     move_hero(level, 0, -1);
                 }
                 VirtualKeyCode::Right => {
-                    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-                    let level = levels.current_mut();
+                    let level = ecs.current_world_mut();
                     move_hero(level, 1, 0);
                 }
                 VirtualKeyCode::Equals => {
@@ -164,8 +163,8 @@ impl Screen for MainScreen {
                     log(format!("Viewport size={:?}", self.viewport.size()));
                 }
                 VirtualKeyCode::Minus => {
-                    let level = ecs.resources.get::<Level>().unwrap();
-                    let map_size = level.resources.get::<Map>().unwrap().size();
+                    let level = ecs.current_world();
+                    let map_size = level.read_resource::<Map>().size();
                     let size = self.viewport.size();
                     self.viewport
                         .resize((size.0 + 8).min(map_size.0), (size.1 + 5).min(map_size.1));
@@ -177,13 +176,13 @@ impl Screen for MainScreen {
             AppEvent::CharEvent(ch) => match ch {
                 '<' => {
                     // Climb
-                    try_fire_hero_action(ecs, "climb");
+                    try_fire_hero_action(ecs.current_world_mut(), "climb");
                     // let hero_point = get_hero_point(ecs);
                     // try_move_hero_world(ecs, &hero_point, PortalFlags::ON_CLIMB);
                 }
                 '>' => {
                     // Descend
-                    try_fire_hero_action(ecs, "descend");
+                    try_fire_hero_action(ecs.current_world_mut(), "descend");
                     // let hero_point = get_hero_point(ecs);
                     // try_move_hero_world(ecs, &hero_point, PortalFlags::ON_DESCEND);
                 }
@@ -210,7 +209,7 @@ impl Screen for MainScreen {
             // } else if !world.animations().is_empty() {
             //     return ScreenResult::Continue;
             // }
-            let res = do_next_task(ecs);
+            let res = do_next_task(ecs.current_world_mut());
             self.post_action(ecs);
             match res {
                 DoNextTaskResult::Done => {
@@ -233,14 +232,13 @@ impl Screen for MainScreen {
         match id {
             "VIEWPORT_MOVE" => {
                 let pt: Point = value.unwrap().try_into().unwrap();
-                let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-                let level = levels.current_mut();
-                let map = level.resources.get::<Map>().unwrap();
+                let level = ecs.current_world();
+                let map = level.read_resource::<Map>();
                 let index = map.get_wrapped_index(pt.x, pt.y).unwrap();
                 log(format!(
                     "Mouse Pos = {} - {}",
                     pt,
-                    cell_flavor(&*map, &mut level.world, index)
+                    cell_flavor(&*map, ecs.current_world(), index)
                 ));
             }
             "VIEWPORT_CLICK" => {
@@ -258,12 +256,11 @@ impl Screen for MainScreen {
     }
 
     fn render(&mut self, app: &mut Ecs) {
-        {
-            let mut levels = app.resources.get_mut::<Levels>().unwrap();
-            let level = levels.current_mut();
-            self.viewport.draw_level(level);
-        }
+        self.viewport.draw_level(app.current_world_mut());
         self.viewport.render(app);
+
+        // TODO - This should be in APP
+        app.maintain();
     }
 }
 
@@ -278,11 +275,8 @@ fn main() {
             "assets/store_prefab.toml",
             Box::new(PrefabFileLoader::new().with_dump()),
         )
-        .register_components(|registry| {
-            registry.register::<gw_world::position::Position>("Position".to_string());
-            registry.register::<gw_world::sprite::Sprite>("Sprite".to_string());
-            registry.register::<gw_world::being::Being>("Being".to_string());
-            registry.register::<gw_world::task::Task>("Task".to_string());
+        .register_components(|ecs| {
+            gw_world::register_components(ecs);
         })
         .vsync(false)
         .build();
@@ -291,41 +285,31 @@ fn main() {
 }
 
 #[allow(dead_code)]
-fn move_camera(levels: &mut Levels, dx: i32, dy: i32) {
-    let level = levels.current_mut();
-    let mut camera = level.resources.get_mut::<Camera>().unwrap();
+fn move_camera(level: &mut World, dx: i32, dy: i32) {
+    let mut camera = level.write_resource::<Camera>();
     camera.move_center(dx, dy);
 }
 
-fn move_hero(level: &mut Level, dx: i32, dy: i32) {
-    let hero_entity = level.resources.get::<Hero>().unwrap().entity;
+fn move_hero(level: &mut World, dx: i32, dy: i32) {
+    let hero_entity = level.read_resource::<Hero>().entity;
 
-    level
-        .resources
-        .insert(UserAction::new(Box::new(MoveStepAction::new(
-            hero_entity,
-            dx,
-            dy,
-        ))));
+    let mut user_action = level.write_resource::<UserAction>();
+    user_action.set(Box::new(MoveStepAction::new(hero_entity, dx, dy)));
 }
 
 fn get_hero_action_effects(
-    ecs: &mut Ecs,
+    level: &mut World,
     action: &str,
 ) -> Option<(Entity, Point, Vec<BoxedEffect>)> {
-    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-    let level = levels.current_mut();
-    let hero_entity = level.resources.get::<Hero>().unwrap().entity;
+    let hero_entity = level.read_resource::<Hero>().entity;
 
     let hero_point = level
-        .world
-        .entry(hero_entity)
-        .unwrap()
-        .get_component::<Position>()
+        .read_component::<Position>()
+        .get(hero_entity)
         .unwrap()
         .point();
 
-    let map = level.resources.get::<Map>().unwrap();
+    let map = level.read_resource::<Map>();
 
     let index = map.get_index(hero_point.x, hero_point.y).unwrap();
 
@@ -338,12 +322,13 @@ fn get_hero_action_effects(
     }
 }
 
-fn try_fire_hero_action(ecs: &mut Ecs, action: &str) -> bool {
-    match get_hero_action_effects(ecs, action) {
+fn try_fire_hero_action(world: &mut World, action: &str) -> bool {
+    match get_hero_action_effects(world, action) {
         None => false,
         Some((entity, pos, effects)) => {
+            log(format!("Firing hero actions - {:?}", effects));
             for eff in effects.iter() {
-                eff.fire(ecs, pos, Some(entity));
+                eff.fire(world, pos, Some(entity));
             }
             true
         }

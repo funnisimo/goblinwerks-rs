@@ -15,6 +15,7 @@ use gw_util::xy::Wrap;
 use std::collections::HashMap;
 use std::sync::Arc; // For FOV Calc
 
+#[derive(Default)]
 pub struct Map {
     pub id: u32,
     pub width: u32,
@@ -834,7 +835,10 @@ mod test {
 
         assert_eq!(map.get_wrapped_index(5, 5).unwrap(), 505);
         assert_eq!(map.try_wrap_xy(5, 5).unwrap(), (5, 5));
-        assert_eq!(map.get_wrapped_index(15, 15).unwrap(), 1515);
+        assert_eq!(map.get_wrapped_index(15, 15).unwrap(), 505);
         assert_eq!(map.try_wrap_xy(15, 15).unwrap(), (5, 5));
+
+        map.select_region(10, 10, 10, 10);
+        assert_eq!(map.get_wrapped_index(5, 5).unwrap(), 1515);
     }
 }

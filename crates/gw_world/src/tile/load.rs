@@ -1,11 +1,10 @@
-use std::fs::read_to_string;
-
 use super::TileBuilder;
 use super::Tiles;
-use gw_app::ecs::Ecs;
 use gw_app::loader::{LoadError, LoadHandler};
 use gw_app::log;
+use gw_ecs::Ecs;
 use gw_util::value::Value;
+use std::fs::read_to_string;
 
 pub fn load_tile_data(dest: &mut Tiles, data: Value) -> Result<u32, String> {
     let map = match data.to_map() {
@@ -81,7 +80,8 @@ impl TilesLoader {
 
 impl LoadHandler for TilesLoader {
     fn file_loaded(&mut self, path: &str, data: Vec<u8>, ecs: &mut Ecs) -> Result<(), LoadError> {
-        let mut tiles = ecs.resources.get_mut_or_insert_with(|| Tiles::default());
+        ecs.ensure_global::<Tiles>();
+        let mut tiles = ecs.write_global::<Tiles>();
 
         let string = match String::from_utf8(data) {
             Err(e) => {

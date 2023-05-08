@@ -4,7 +4,7 @@ use crate::loader::Loader;
 use crate::screen::BoxedScreen;
 use crate::{color::RGBA, draw, log};
 use crate::{Ecs, Panel, Screen, ScreenResult};
-use gw_ecs::ReadGlobalExpect;
+use gw_ecs::ReadGlobal;
 
 pub struct LoadingScreen {
     con: Panel,
@@ -24,9 +24,8 @@ impl LoadingScreen {
 
 impl Screen for LoadingScreen {
     fn update(&mut self, ecs: &mut Ecs) -> ScreenResult {
-        let (loader, time) =
-            <(ReadGlobalExpect<Loader>, ReadGlobalExpect<Time>)>::fetch(ecs.current_world());
-
+        let loader = ecs.read_global::<Loader>();
+        let time = ecs.read_global::<Time>();
         let ms = time.delta.floor();
 
         if !loader.has_files_to_load() {

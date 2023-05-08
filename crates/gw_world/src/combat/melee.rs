@@ -1,9 +1,8 @@
 use super::DamageInfo;
-use crate::{
-    effect::{parse_damage, BoxedEffect},
-    level::Level,
-};
-use gw_app::ecs::Entity;
+use crate::effect::{parse_damage, BoxedEffect};
+use crate::log::Logger;
+use gw_ecs::{Component, DenseVecStorage};
+use gw_ecs::{Entity, World};
 use gw_util::value::Value;
 use serde::{Deserialize, Serialize};
 
@@ -21,21 +20,20 @@ pub enum CombatMessage {
 }
 
 impl CombatMessage {
-    pub fn log(&self, level: &mut Level, attacker: Entity, target: Entity, damage: DamageInfo) {
+    pub fn log(&self, world: &mut World, attacker: Entity, target: Entity, damage: DamageInfo) {
         let attack_name = "attacker";
         let target_name = "target";
+        let mut logger = world.write_resource::<Logger>();
         match self {
-            CombatMessage::Hit => level
-                .logger
-                .log(format!("{} hit {} [{}]", attack_name, target_name, damage)),
-            CombatMessage::Miss => level
-                .logger
-                .log(format!("{} miss {}", attack_name, target_name)),
-            CombatMessage::Verb(v) => level.logger.log(format!(
+            CombatMessage::Hit => {
+                logger.log(format!("{} hit {} [{}]", attack_name, target_name, damage))
+            }
+            CombatMessage::Miss => logger.log(format!("{} miss {}", attack_name, target_name)),
+            CombatMessage::Verb(v) => logger.log(format!(
                 "{} {} {} [{}]",
                 attack_name, v, target_name, damage
             )),
-            CombatMessage::Replace(m) => level.logger.log(m),
+            CombatMessage::Replace(m) => logger.log(m),
         }
     }
 }
@@ -109,7 +107,7 @@ pub fn parse_attack(value: &Value) -> Result<Attack, CombatParseError> {
     }
 }
 
-#[derive(Debug, Clone /*Serialize, Deserialize */)]
+#[derive(Debug, Clone, Component /*Serialize, Deserialize */)]
 pub struct Melee {
     attacks: Vec<Attack>,
 }

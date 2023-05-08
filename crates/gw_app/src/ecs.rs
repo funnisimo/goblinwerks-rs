@@ -30,7 +30,7 @@ pub use gw_ecs::*;
 //     }
 // }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct WindowInfo {
     pub size: (u32, u32),
     pub real_size: (u32, u32),

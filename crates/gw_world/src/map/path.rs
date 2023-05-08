@@ -1,7 +1,5 @@
-use crate::level::get_current_level_mut;
-
 use super::{Cell, Map};
-use gw_app::Ecs;
+use gw_ecs::World;
 use gw_util::{
     grid::Grid,
     mask::get_area_mask,
@@ -89,12 +87,11 @@ impl AreaGrid {
     }
 }
 
-pub fn ensure_area_grid(ecs: &mut Ecs) {
-    let mut level = get_current_level_mut(ecs);
-    if !level.resources.contains::<AreaGrid>() {
-        let map = level.resources.get::<Map>().unwrap();
+pub fn ensure_area_grid(world: &mut World) {
+    if !world.has_resource::<AreaGrid>() {
+        let map = world.read_resource::<Map>();
         let grid = get_area_mask(&*map);
         drop(map);
-        level.resources.insert(AreaGrid(grid));
+        world.insert_resource(AreaGrid(grid));
     }
 }

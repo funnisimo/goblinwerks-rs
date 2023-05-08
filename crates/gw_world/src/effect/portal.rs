@@ -1,23 +1,30 @@
 use super::{BoxedEffect, Effect, EffectResult};
-use crate::{camera::Camera, hero::Hero, level::Levels, map::Map, position::Position};
-use gw_app::{ecs::Entity, log, Ecs};
+use crate::log::Logger;
+use crate::task::Executor;
+use crate::{camera::Camera, hero::Hero, map::Map, position::Position};
+use gw_app::log;
+use gw_ecs::atomize::Atom;
+use gw_ecs::{Entity, LazyUpdate, World};
 use gw_util::point::Point;
 use gw_util::value::Value;
 
 #[derive(Debug, Clone)]
-pub struct Portal(String, String);
+pub struct Portal(Atom, String);
 
 impl Portal {
     pub fn new(map_id: String, location: String) -> Self {
-        Portal(map_id.to_uppercase(), location.to_uppercase())
+        Portal(
+            Atom::from(map_id.to_uppercase().as_str()),
+            location.to_uppercase(),
+        )
     }
 }
 
 impl Effect for Portal {
-    fn fire(&self, ecs: &mut Ecs, _pos: Point, entity: Option<Entity>) -> EffectResult {
+    fn fire(&self, world: &mut World, _pos: Point, entity: Option<Entity>) -> EffectResult {
         match entity {
-            None => try_change_world(ecs, &self.0, &self.1),
-            Some(entity) => try_move_hero_world(ecs, entity, &self.0, &self.1),
+            None => try_change_world(world, self.0, &self.1),
+            Some(entity) => try_move_hero_world(world, entity, self.0, &self.1),
         }
     }
 }
@@ -51,108 +58,125 @@ pub(super) fn parse_portal(value: &Value) -> Result<BoxedEffect, String> {
 }
 
 fn try_move_hero_world(
-    ecs: &mut Ecs,
+    world: &mut World,
     entity: Entity,
-    new_map_id: &String,
+    new_map_id: Atom,
     location: &String,
 ) -> EffectResult {
-    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-    if !levels.has_map(&new_map_id) {
-        log(format!("UNKNOWN MAP - {}", new_map_id));
-        return EffectResult::Fail;
-    }
+    // TODO - Change this to an event with a change world system...
+    let lazy_update = world.read_resource::<LazyUpdate>();
+    let current_map_id = world.id();
+    let location = location.clone();
 
-    let level = levels.current_mut();
+    log("EXEC MOVE WORLD");
 
-    let hero_entity = level.resources.get::<Hero>().unwrap().entity;
-    let is_hero = hero_entity == entity;
+    lazy_update.exec_ecs(move |ecs| {
+        if !ecs.has_world(new_map_id) {
+            log(format!("UNKNOWN DEST MAP - {}", new_map_id));
+            return;
+        }
 
-    let map = level.resources.get_mut::<Map>().unwrap();
+        #[allow(unused_assignments)]
+        let mut is_hero = false;
 
-    let current_pt = level
-        .world
-        .entry(hero_entity)
-        .unwrap()
-        .get_component::<Position>()
-        .unwrap()
-        .point();
+        let hero_entity = match ecs.get_world(current_map_id) {
+            None => {
+                log(format!("UNKNOWN SOURCE MAP - {}", current_map_id));
+                return;
+            }
+            Some(current_world) => {
+                let hero_entity = current_world.read_resource::<Hero>().entity;
+                let mut map = current_world.write_resource::<Map>();
+                let positions = current_world.read_component::<Position>();
 
-    drop(map);
-    drop(level);
+                is_hero = hero_entity == entity;
 
-    let level = levels.current_mut();
-    let mut map = level.resources.get_mut::<Map>().unwrap();
-    let index = map.get_wrapped_index(current_pt.x, current_pt.y).unwrap();
+                let current_pt = positions.get(hero_entity).unwrap().point();
 
-    map.remove_being(index, hero_entity);
+                let index = map.get_wrapped_index(current_pt.x, current_pt.y).unwrap();
 
-    drop(map);
-    drop(level);
+                map.remove_being(index, hero_entity);
 
-    log("Moving hero to new world");
-    let new_entity = levels.move_current_entity(hero_entity, &new_map_id);
-    log("Changing current world");
-    levels.set_current(&new_map_id).unwrap(); // We checked to make sure the map was there earlier
+                hero_entity
+            }
+        };
 
-    let level = levels.current_mut();
-    if is_hero {
-        level.resources.insert(Hero::new(hero_entity));
-    }
+        log("Moving hero to new world");
+        let new_entity = ecs.move_entity(hero_entity, current_map_id, new_map_id);
 
-    let map_size = level.resources.get::<Map>().unwrap().size();
+        log("Changing current world");
+        ecs.set_current_world(new_map_id); // We checked to make sure the map was there earlier
 
-    {
-        let mut camera = level
-            .resources
-            .get_mut_or_insert_with(|| Camera::new(map_size.0, map_size.1));
+        let new_world = ecs.current_world_mut();
         if is_hero {
-            camera.set_follows(new_entity);
+            new_world.ensure_resource::<Hero>();
+            let mut hero = new_world.write_resource::<Hero>();
+            hero.entity = new_entity;
         }
-    }
 
-    let new_pt = {
-        let mut map = level.resources.get_mut::<Map>().unwrap();
-        let pt = map.locations.get(location).unwrap().clone();
-        map.add_being(pt, new_entity, true);
-        map.to_point(pt)
-    };
-    {
-        let mut entry = level.world.entry(new_entity).unwrap();
-        let pos = entry.get_component_mut::<Position>().unwrap();
-        pos.set(new_pt.x, new_pt.y);
-    }
-    {
-        let map = level.resources.get::<Map>().unwrap();
-        if let Some(ref welcome) = map.welcome {
-            level.logger.log(welcome);
+        let map_size = new_world.read_resource::<Map>().size();
+
+        {
+            let mut camera =
+                new_world.write_resource_or_insert_with(|| Camera::new(map_size.0, map_size.1));
+            if is_hero {
+                camera.set_follows(new_entity);
+            }
         }
-    }
+
+        let mut map = new_world.write_resource::<Map>();
+
+        let new_pt = {
+            let pt = map.locations.get(&location).unwrap().clone();
+            map.add_being(pt, new_entity, true);
+            map.to_point(pt)
+        };
+        {
+            let mut positions = new_world.write_component::<Position>();
+            let pos = positions.get_mut(new_entity).unwrap();
+            pos.set(new_pt.x, new_pt.y);
+        }
+        {
+            if let Some(ref welcome) = map.welcome {
+                let mut logger = new_world.write_resource::<Logger>();
+                logger.log(welcome);
+            }
+        }
+
+        let mut executor = new_world.write_resource::<Executor>();
+        executor.remove(new_entity); // just in case
+        executor.insert(new_entity, 0);
+    });
+
     EffectResult::Success
 }
 
-fn try_change_world(ecs: &mut Ecs, new_map_id: &String, _location: &String) -> EffectResult {
-    let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
+fn try_change_world(world: &mut World, new_map_id: Atom, _location: &String) -> EffectResult {
+    // let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
 
-    if !levels.has_map(&new_map_id) {
-        log(format!("UNKNOWN MAP - {}", new_map_id));
-        return EffectResult::Fail;
-    }
+    let lazy_update = world.read_resource::<LazyUpdate>();
 
-    levels.set_current(&new_map_id).unwrap(); // We checked to make sure the map was there earlier
-
-    let level = levels.current_mut();
-
-    let map_size = {
-        let map = level.resources.get::<Map>().unwrap();
-        if let Some(ref welcome) = map.welcome {
-            level.logger.log(welcome);
+    lazy_update.exec_ecs(move |ecs| {
+        if !ecs.has_world(new_map_id) {
+            log(format!("UNKNOWN DEST MAP - {}", new_map_id));
+            return;
         }
-        map.size()
-    };
 
-    level
-        .resources
-        .get_or_insert_with(|| Camera::new(map_size.0, map_size.1));
+        ecs.set_current_world(new_map_id); // We checked to make sure the map was there earlier
+
+        let world = ecs.current_world_mut();
+
+        let map_size = {
+            let map = world.read_resource::<Map>();
+            if let Some(ref welcome) = map.welcome {
+                let mut logger = world.write_resource::<Logger>();
+                logger.log(welcome);
+            }
+            map.size()
+        };
+
+        world.ensure_resource_with(|| Camera::new(map_size.0, map_size.1));
+    });
 
     EffectResult::Success
 }

@@ -224,27 +224,25 @@ impl<'t> Builder<'t> {
     pub fn add_connected_rooms(
         &mut self,
         max_count: i32,
-        min_size: i32,
-        max_size: i32,
+        min_size: u32,
+        max_size: u32,
         floor: &str,
         hall: &str,
     ) -> Vec<Rect> {
         let mut rooms: Vec<Rect> = vec![];
 
         for _ in 0..max_count {
-            let w = self.rng.range(min_size, max_size);
-            let h = self.rng.range(min_size, max_size);
+            let w = self.rng.range(min_size as i32, max_size as i32);
+            let h = self.rng.range(min_size as i32, max_size as i32);
             let x = self
                 .rng
                 .roll_dice(1, self.map.width.saturating_sub(w as u32).saturating_sub(1))
-                as i32
-                - 1;
+                as i32;
             let y = self.rng.roll_dice(
                 1,
                 self.map.height.saturating_sub(h as u32).saturating_sub(1),
-            ) as i32
-                - 1;
-            let room = Rect::with_size(x, y, w as u32, h as u32);
+            ) as i32;
+            let room = Rect::with_size(x.max(0), y.max(0), (w as u32).max(1), (h as u32).max(1));
 
             if self.try_add_room(room, floor) {
                 if !rooms.is_empty() {

@@ -1,8 +1,8 @@
-use gw_app::{ecs::Entity, Ecs};
+use gw_ecs::{Entity, SystemData, World, WriteComp, WriteRes};
 use gw_util::point::Point;
 use gw_util::value::Value;
 use gw_world::effect::{BoxedEffect, Effect, EffectResult};
-use gw_world::level::{get_current_level_mut, Level};
+use gw_world::log::Logger;
 use gw_world::map::Map;
 use gw_world::position::Position;
 
@@ -20,28 +20,25 @@ impl MoongateTravel {
 }
 
 impl Effect for MoongateTravel {
-    fn fire(&self, ecs: &mut Ecs, _pos: Point, entity: Option<Entity>) -> EffectResult {
+    fn fire(&self, world: &mut World, _pos: Point, entity: Option<Entity>) -> EffectResult {
         if entity.is_none() {
             return EffectResult::Nothing;
         }
 
         let dest = {
-            let moons = ecs.resources.get::<Moons>().unwrap();
+            let moons = world.read_resource::<Moons>();
             moons.destination()
         };
 
-        let mut level = get_current_level_mut(ecs);
-        level.logger.log("MoongateTravel");
+        world.with_resource_mut(|logger: &mut Logger| logger.log("MoongateTravel"));
 
         let new_xy = {
-            let map = level.resources.get::<Map>().unwrap();
+            let map = world.read_resource::<Map>();
             let new_index = map.get_location(dest).unwrap();
             map.to_point(new_index)
         };
 
-        drop(level);
-
-        teleport_being(ecs, entity.unwrap(), new_xy);
+        teleport_being(world, entity.unwrap(), new_xy);
 
         EffectResult::Success
     }
@@ -58,21 +55,12 @@ pub fn parse_moongate_travel(value: &Value) -> Result<BoxedEffect, String> {
     }
 }
 
-pub fn teleport_being(ecs: &mut Ecs, entity: Entity, point: Point) {
+pub fn teleport_being(world: &mut World, entity: Entity, point: Point) {
     // TODO - Return something?  Result?
 
-    let mut level = get_current_level_mut(ecs);
+    let (mut map, mut positions) = <(WriteRes<Map>, WriteComp<Position>)>::fetch(world);
 
-    let Level {
-        resources,
-        world,
-        // logger,
-        ..
-    } = &mut *level;
-
-    let mut map = resources.get_mut::<Map>().unwrap();
-    let mut entry = world.entry(entity).unwrap();
-    let mut pos = entry.get_component_mut::<Position>().unwrap();
+    let mut pos = positions.get_mut(entity).unwrap();
 
     println!("teleport being - {} -> {}", pos.point(), point);
 

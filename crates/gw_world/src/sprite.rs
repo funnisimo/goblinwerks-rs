@@ -3,6 +3,7 @@ use gw_app::color::ColorParseErr;
 use gw_app::log;
 use gw_app::Glyph;
 use gw_app::RGBA;
+use gw_ecs::{Component, DenseVecStorage};
 use gw_util::text::find_first_of;
 use gw_util::value::Value;
 use serde::{Deserialize, Serialize};
@@ -30,7 +31,7 @@ impl Display for SpriteParseError {
 }
 
 // #[derive(Component, Default, Clone, Copy, Debug)]
-#[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize, Component)]
 pub struct Sprite {
     pub glyph: Glyph,
     pub fg: RGBA,

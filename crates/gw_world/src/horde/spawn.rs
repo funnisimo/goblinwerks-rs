@@ -1,7 +1,7 @@
-use super::Horde;
-use crate::{being::spawn_being, horde::HordeFlags, level::Level};
-use gw_app::ecs::Entity;
+use super::{Horde, HordeRef};
+use crate::{being::spawn_being, horde::HordeFlags};
 use gw_app::log;
+use gw_ecs::{Entity, World};
 use gw_util::point::Point;
 use gw_util::value::{Key, Value};
 use std::collections::HashMap;
@@ -142,21 +142,22 @@ fn parse_spawn_map(value: &HashMap<Key, Value>) -> Result<HordeSpawn, HordeSpawn
 // B) Otherwise, the map is automatically created from the tiles around the horde and the attacker (the hero)
 //
 
-pub fn spawn_horde(horde: &Arc<Horde>, level: &mut Level, point: Point) -> Entity {
+pub fn spawn_horde(horde: &Arc<Horde>, world: &mut World, point: Point) -> Entity {
     // 	if (horde.machine) {
     // 		// Build the accompanying machine (e.g. a goblin encampment)
     // 		RUT.Map.Blueprint.build(horde.machine, map, x, y);
     // 	}
 
-    let leader_entity = spawn_being(&horde.leader, level, point);
+    let leader_entity = spawn_being(&horde.leader, world, point);
 
     if horde.flags.intersects(HordeFlags::SPAWN_AS_AVATAR) {
-        let mut entry = level.world.entry(leader_entity).unwrap();
+        world
+            .write_component()
+            .insert(leader_entity, HordeRef::new(Arc::clone(horde)));
         log(format!(
             "Spawn Horde Avatar - {} @ {:?}",
             horde.leader.id, point
         ));
-        entry.add_component(Arc::clone(horde));
         return leader_entity;
     }
 

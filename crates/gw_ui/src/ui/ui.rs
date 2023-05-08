@@ -346,10 +346,10 @@ impl UI {
         self.root.draw(buf, ecs);
     }
 
-    pub fn render(&mut self, app: &mut Ecs) {
+    pub fn render(&mut self, ecs: &mut Ecs) {
         self.console.buffer_mut().clear(true, true, true);
-        self.root.draw(self.console.buffer_mut(), app);
-        self.console.render(app);
+        self.root.draw(self.console.buffer_mut(), ecs);
+        self.console.render(ecs);
     }
 
     pub fn dump(&self) {

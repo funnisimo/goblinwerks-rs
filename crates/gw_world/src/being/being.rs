@@ -2,9 +2,10 @@ use super::AIFlags;
 use super::BeingFlags;
 use super::BeingKindFlags;
 use super::MoveFlags;
+use gw_ecs::{Component, DenseVecStorage};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Component)]
 pub struct Being {
     pub id: String,
 

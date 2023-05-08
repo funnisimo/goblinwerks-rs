@@ -1,9 +1,7 @@
-extern crate ron;
-
-use std::{convert::Infallible, hash::Hash};
-
 use super::*;
-use crate::{error::Error, prelude::*};
+use crate::specs::{error::Error, prelude::*};
+use ron;
+use std::{convert::Infallible, hash::Hash};
 
 mod marker_test {
     use super::*;
@@ -41,9 +39,9 @@ mod marker_test {
         <M as Marker>::Identifier: Clone + Hash + Eq,
         <M as Marker>::Allocator: Default + Clone,
     {
-        let mut world = World::new();
+        let mut world = World::empty(0);
 
-        world.insert(allocator.clone());
+        world.insert_resource(allocator.clone());
         world.register::<A>();
         world.register::<B>();
         world.register::<M>();
@@ -71,10 +69,10 @@ mod marker_test {
         world.exec(
             |(ents, comp_a, comp_b, markers, _alloc): (
                 Entities,
-                ReadStorage<A>,
-                ReadStorage<B>,
-                ReadStorage<M>,
-                Read<M::Allocator>,
+                ReadComp<A>,
+                ReadComp<B>,
+                ReadComp<M>,
+                ReadRes<M::Allocator>,
             )| {
                 SerializeComponents::<Infallible, M>::serialize(
                     &(&comp_a, &comp_b),
@@ -91,9 +89,9 @@ mod marker_test {
         let mut de = ron::de::Deserializer::from_str(&serial).unwrap();
 
         // Throw the old world away and deserialize into a new world
-        let mut world = World::new();
+        let mut world = World::empty("TEST");
 
-        world.insert(allocator);
+        world.insert_resource(allocator);
         world.register::<A>();
         world.register::<B>();
         world.register::<M>();
@@ -101,10 +99,10 @@ mod marker_test {
         world.exec(
             |(ents, comp_a, comp_b, mut markers, mut alloc): (
                 Entities,
-                WriteStorage<A>,
-                WriteStorage<B>,
-                WriteStorage<M>,
-                Write<M::Allocator>,
+                WriteComp<A>,
+                WriteComp<B>,
+                WriteComp<M>,
+                WriteRes<M::Allocator>,
             )| {
                 DeserializeComponents::<Error, _>::deserialize(
                     &mut (comp_a, comp_b),
@@ -121,7 +119,7 @@ mod marker_test {
         assert_marked_entity_count::<M>(&mut world, 2);
 
         // Queue lazy creation of 2 more entities
-        world.exec(|(ents, lazy): (Entities, Read<LazyUpdate>)| {
+        world.exec(|(ents, lazy): (Entities, ReadRes<LazyUpdate>)| {
             lazy.create_entity(&ents)
                 .with(A(128))
                 .with(B(false))
@@ -162,7 +160,7 @@ mod marker_test {
     /// Assert that the number of entities marked with `SimpleMarker` is equal
     /// to `count`
     fn assert_marked_entity_count<M: Marker>(world: &mut World, count: usize) {
-        world.exec(|(ents, markers): (Entities, ReadStorage<M>)| {
+        world.exec(|(ents, markers): (Entities, ReadComp<M>)| {
             let marked_entity_count = (&ents, &markers).join().count();
 
             assert_eq!(marked_entity_count, count);
@@ -174,7 +172,7 @@ mod marker_test {
     where
         <M as Marker>::Identifier: Clone + Eq + Hash,
     {
-        world.exec(|(ents, markers): (Entities, ReadStorage<M>)| {
+        world.exec(|(ents, markers): (Entities, ReadComp<M>)| {
             use std::collections::HashSet;
 
             let marker_ids: Vec<_> = (&ents, &markers)

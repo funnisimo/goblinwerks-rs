@@ -3,29 +3,25 @@ use crate::{
     action::{idle::IdleAction, move_step::MoveStepAction, BoxedAction},
     being::Being,
     fov::FOV,
-    level::get_current_level,
     map::Map,
     position::Position,
 };
-use gw_app::{
-    ecs::{Entity, IntoQuery, Read},
-    Ecs,
-};
+use gw_ecs::{Entity, ReadComp, SystemData, World};
 use gw_util::path::a_star_search;
 
-pub fn basic_monster_ai(ecs: &mut Ecs, entity: Entity) -> TaskResult {
-    let hero_entity = get_hero_entity(ecs);
+pub fn basic_monster_ai(world: &mut World, entity: Entity) -> TaskResult {
+    let hero_entity = get_hero_entity(world);
 
-    let level = get_current_level(ecs);
+    let (beings, positions) = <(ReadComp<Being>, ReadComp<Position>)>::fetch(world);
 
-    let mut query = <(Read<Being>, Read<Position>)>::query();
+    let being = beings.get(entity).unwrap();
+    let pos = positions.get(entity).unwrap();
 
-    let (being, pos) = query.get(&level.world, entity).unwrap();
     let (act_time, _ai_flags) = (being.act_time, being.ai_flags.clone());
     let mons_pt = pos.point();
 
     // Can player see me?  If so, I can see player...
-    let can_see_player = match level.resources.get::<FOV>() {
+    let can_see_player = match world.try_read_resource::<FOV>() {
         None => {
             // TODO - do a line test?
             false
@@ -37,9 +33,10 @@ pub fn basic_monster_ai(ecs: &mut Ecs, entity: Entity) -> TaskResult {
         Box::new(IdleAction::new(entity, act_time as u32))
     } else {
         // world.set_update_sidebar(); // something is probably going to change
-        let (_hero_being, hero_pos) = query.get(&level.world, hero_entity).unwrap();
+        let hero_pos = positions.get(hero_entity).unwrap();
+        // let (_hero_being, hero_pos) = query.get(&level.world, hero_entity).unwrap();
 
-        let map = level.resources.get::<Map>().unwrap();
+        let map = world.read_resource::<Map>();
         match a_star_search(mons_pt, hero_pos.point(), &*map, false) {
             Some(path) => {
                 if path.len() > 1 {
@@ -60,7 +57,8 @@ pub fn basic_monster_ai(ecs: &mut Ecs, entity: Entity) -> TaskResult {
         }
     };
 
-    drop(level);
+    drop(beings);
+    drop(positions);
 
-    return execute_actor_action(action, ecs, entity);
+    return execute_actor_action(action, world, entity);
 }

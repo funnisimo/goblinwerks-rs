@@ -1,17 +1,15 @@
 //! Provides `Marker` and `MarkerAllocator` traits
 
+use crate::specs::{
+    prelude::*,
+    world::{EntitiesRes, LazyBuilder},
+};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fmt::{self, Debug},
     hash::{Hash, Hasher},
     marker::PhantomData,
-};
-
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-
-use crate::{
-    prelude::*,
-    world::{EntitiesRes, EntityResBuilder, LazyBuilder},
 };
 
 /// A common trait for `EntityBuilder` and `LazyBuilder` with a marker function,
@@ -51,7 +49,7 @@ impl<'a> MarkedBuilder for EntityBuilder<'a> {
         M: Marker,
     {
         let mut alloc = self.world.write_resource::<M::Allocator>();
-        alloc.mark(self.entity, &mut self.world.write_storage::<M>());
+        alloc.mark(self.entity, &mut self.world.write_component::<M>());
 
         self
     }
@@ -96,49 +94,49 @@ impl<'a> MarkedBuilder for LazyBuilder<'a> {
         let entity = self.entity;
         self.lazy.exec(move |world| {
             let mut alloc = world.write_resource::<M::Allocator>();
-            alloc.mark(entity, &mut world.write_storage::<M>());
+            alloc.mark(entity, &mut world.write_component::<M>());
         });
 
         self
     }
 }
 
-impl<'a> EntityResBuilder<'a> {
-    /// Add a `Marker` to the entity with the associated allocator,
-    /// and component storage.
-    ///
-    /// ## Examples
-    ///
-    /// ```
-    /// use specs::{
-    ///     prelude::*,
-    ///     saveload::{SimpleMarker, SimpleMarkerAllocator},
-    /// };
-    ///
-    /// struct NetworkSync;
-    ///
-    /// let mut world = World::new();
-    /// world.register::<SimpleMarker<NetworkSync>>();
-    /// world.insert(SimpleMarkerAllocator::<NetworkSync>::new());
-    ///
-    /// let mut storage = world.write_storage::<SimpleMarker<NetworkSync>>();
-    /// let mut alloc = world.write_resource::<SimpleMarkerAllocator<NetworkSync>>();
-    ///
-    /// let entities = world.entities();
-    /// entities
-    ///     .build_entity()
-    ///     /* .with(Component1) */
-    ///     .marked(&mut storage, &mut alloc)
-    ///     .build();
-    /// ```
-    pub fn marked<M>(self, storage: &mut WriteStorage<M>, alloc: &mut M::Allocator) -> Self
-    where
-        M: Marker,
-    {
-        alloc.mark(self.entity, storage);
-        self
-    }
-}
+// impl<'a> EntityResBuilder<'a> {
+//     /// Add a `Marker` to the entity with the associated allocator,
+//     /// and component storage.
+//     ///
+//     /// ## Examples
+//     ///
+//     /// ```
+//     /// use specs::{
+//     ///     prelude::*,
+//     ///     saveload::{SimpleMarker, SimpleMarkerAllocator},
+//     /// };
+//     ///
+//     /// struct NetworkSync;
+//     ///
+//     /// let mut world = World::new();
+//     /// world.register::<SimpleMarker<NetworkSync>>();
+//     /// world.insert(SimpleMarkerAllocator::<NetworkSync>::new());
+//     ///
+//     /// let mut storage = world.write_storage::<SimpleMarker<NetworkSync>>();
+//     /// let mut alloc = world.write_resource::<SimpleMarkerAllocator<NetworkSync>>();
+//     ///
+//     /// let entities = world.entities();
+//     /// entities
+//     ///     .build_entity()
+//     ///     /* .with(Component1) */
+//     ///     .marked(&mut storage, &mut alloc)
+//     ///     .build();
+//     /// ```
+//     pub fn marked<M>(self, storage: &mut WriteComp<M>, alloc: &mut M::Allocator) -> Self
+//     where
+//         M: Marker,
+//     {
+//         alloc.mark(self.entity, storage);
+//         self
+//     }
+// }
 
 /// This trait should be implemented by a component which is going to be used as
 /// marker. This marker should be set to entity that should be serialized.
@@ -209,7 +207,7 @@ impl<'a> EntityResBuilder<'a> {
 ///         self.mapping.get(&id).cloned()
 ///     }
 ///
-///     fn maintain(&mut self, entities: &EntitiesRes, storage: &ReadStorage<NetMarker>) {
+///     fn maintain(&mut self, entities: &EntitiesRes, storage: &ReadComp<NetMarker>) {
 ///         self.mapping = (entities, storage)
 ///             .join()
 ///             .map(|(e, m)| (m.id(), e))
@@ -319,13 +317,12 @@ pub trait MarkerAllocator<M: Marker>: Resource {
     fn retrieve_entity(
         &mut self,
         marker: M,
-        storage: &mut WriteStorage<M>,
+        storage: &mut WriteComp<M>,
         entities: &EntitiesRes,
     ) -> Entity {
         if let Some(entity) = self.retrieve_entity_internal(marker.id()) {
-            if let Some(mut marker_comp) = storage.get_mut(entity) {
+            if let Some(marker_comp) = storage.get_mut(entity) {
                 marker_comp.update(marker);
-
                 return entity;
             }
         }
@@ -342,11 +339,7 @@ pub trait MarkerAllocator<M: Marker>: Resource {
     /// Create new unique marker `M` and attach it to entity.
     /// Or get old marker if this entity is already marked.
     /// If entity is dead then this will return `None`.
-    fn mark<'m>(
-        &mut self,
-        entity: Entity,
-        storage: &'m mut WriteStorage<M>,
-    ) -> Option<(&'m M, bool)> {
+    fn mark<'m>(&mut self, entity: Entity, storage: &'m mut WriteComp<M>) -> Option<(&'m M, bool)> {
         let new = if let Ok(entry) = storage.entry(entity) {
             let mut new = false;
             let _marker = entry.or_insert_with(|| {
@@ -362,7 +355,7 @@ pub trait MarkerAllocator<M: Marker>: Resource {
     }
 
     /// Maintain internal data. Cleanup if necessary.
-    fn maintain(&mut self, _entities: &EntitiesRes, _storage: &ReadStorage<M>);
+    fn maintain(&mut self, _entities: &EntitiesRes, _storage: &ReadComp<M>);
 }
 
 /// Basic marker implementation usable for saving and loading, uses `u64` as
@@ -489,7 +482,7 @@ where
         self.mapping.get(&id).cloned()
     }
 
-    fn maintain(&mut self, entities: &EntitiesRes, storage: &ReadStorage<SimpleMarker<T>>) {
+    fn maintain(&mut self, entities: &EntitiesRes, storage: &ReadComp<SimpleMarker<T>>) {
         // FIXME: may be too slow
         self.mapping = (entities, storage)
             .join()

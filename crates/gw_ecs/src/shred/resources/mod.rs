@@ -1,9 +1,9 @@
 //! Module for resource related types
 
 pub use self::{
-    data::{ReadRes, ReadResExpect, TryReadRes, TryWriteRes, WriteRes, WriteResExpect},
+    data::{ReadRes, ReadResSetup, TryReadRes, TryWriteRes, WriteRes, WriteResSetup},
     // entry::Entry,
-    setup::{DefaultIfMissing, PanicIfMissing, SetupHandler},
+    setup::{NoSetup, SetupDefault, SetupHandler},
 };
 
 mod data;

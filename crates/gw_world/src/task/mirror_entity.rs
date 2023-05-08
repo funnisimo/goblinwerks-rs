@@ -1,18 +1,10 @@
 use super::{execute_actor_action, get_hero_entity_point, TaskResult};
-use crate::{
-    action::move_step::MoveStepAction,
-    being::Being,
-    level::{get_current_level, get_current_level_mut, Level},
-    position::Position,
-};
-use gw_app::{
-    ecs::{systems::CommandBuffer, Entity, IntoQuery, Read, TryRead},
-    Ecs,
-};
+use crate::{action::move_step::MoveStepAction, position::Position};
+use gw_ecs::{Component, DenseVecStorage, Entity, ReadComp, SystemData, World, WriteComp};
 use gw_util::point::Point;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Component, Serialize, Deserialize)]
 struct MirrorEntity {
     last_xy: Point,
     entity: Entity,
@@ -28,21 +20,22 @@ impl MirrorEntity {
 }
 
 pub fn start_mirror_entity(
-    level: &mut Level,
+    world: &mut World,
     entity: Entity,
     mirror_entity: Entity,
 ) -> Result<(), String> {
-    let last_xy = match level.world.entry(mirror_entity) {
-        None => return Err("No such mirror entity.".to_string()),
-        Some(entry) => match entry.get_component::<Position>() {
-            Err(_) => return Err("Entity does not have a position.".to_string()),
-            Ok(pos) => pos.point(),
-        },
+    let last_xy = match world.read_component::<Position>().get(mirror_entity) {
+        None => return Err("Entity does not have a position.".to_string()),
+        Some(pos) => pos.point(),
     };
 
-    match level.world.entry(entity) {
-        None => return Err("No such entity.".to_string()),
-        Some(mut entry) => entry.add_component(MirrorEntity::new(mirror_entity, last_xy)),
+    match world.entities().is_alive(entity) {
+        false => return Err("No such entity.".to_string()),
+        true => {
+            world
+                .write_component()
+                .insert(entity, MirrorEntity::new(mirror_entity, last_xy));
+        }
     }
 
     Ok(())
@@ -57,16 +50,17 @@ command_buffer.remove(entity);
 command_buffer.flush(&mut world, &mut resources);
  */
 
-pub fn mirror_entity_ai(ecs: &mut Ecs, entity: Entity) -> TaskResult {
-    let level = get_current_level(ecs);
-    let mut command_buffer = CommandBuffer::new(&level.world);
-    let mut query = <(Read<Being>, TryRead<MirrorEntity>, Read<Position>)>::query();
+pub fn mirror_entity_ai(world: &mut World, entity: Entity) -> TaskResult {
+    let unit = {
+        let (mut mirror, positions) = <(
+            // ReadComp<Being>,
+            WriteComp<MirrorEntity>,
+            ReadComp<Position>,
+            // ReadRes<LazyUpdate>,
+        )>::fetch(world);
 
-    let entity_info = query.get(&level.world, entity).unwrap();
-
-    let mut me = match entity_info.1 {
-        None => {
-            let (hero_entity, hero_pt) = get_hero_entity_point(ecs);
+        if !mirror.contains(entity) {
+            let (hero_entity, hero_pt) = get_hero_entity_point(world);
             // We are not setup to mirror anyone, so lets mirror the hero
             if hero_entity == entity {
                 // We are the hero though...  Lets fail...
@@ -74,41 +68,29 @@ pub fn mirror_entity_ai(ecs: &mut Ecs, entity: Entity) -> TaskResult {
             }
 
             let me = MirrorEntity::new(hero_entity, hero_pt);
-            command_buffer.add_component(entity, me.clone());
-            me
+            mirror.insert(entity, me);
         }
-        Some(me) => me.clone(),
+
+        let me = mirror.get_mut(entity).unwrap();
+
+        // let _mirror_info = match beings.get(me.entity) {
+        //     None => {
+        //         // Remove MirrorEntity
+        //         return TaskResult::Finished;
+        //     }
+        //     Some(info) => info,
+        // };
+
+        let new_mirror_pt = positions.get(me.entity).unwrap().point();
+
+        let delta = new_mirror_pt - me.last_xy;
+        let unit = delta.as_dir();
+
+        me.last_xy = new_mirror_pt; // update in place
+        unit
     };
-
-    let mirror_info = match query.get(&level.world, me.entity) {
-        Err(_) => {
-            // Remove MirrorEntity
-            return TaskResult::Finished;
-        }
-        Ok(info) => info,
-    };
-
-    let new_mirror_pt = mirror_info.2.point();
-
-    let delta = new_mirror_pt - me.last_xy;
-    let unit = delta.as_dir();
-
-    me.last_xy = new_mirror_pt;
 
     // move in that direction
     let action = Box::new(MoveStepAction::new(entity, unit.x, unit.y));
-
-    drop(mirror_info);
-    drop(entity_info);
-    drop(level);
-
-    command_buffer.add_component(entity, me);
-    let mut level = get_current_level_mut(ecs);
-    let Level {
-        world, resources, ..
-    } = &mut *level;
-    command_buffer.flush(world, resources);
-    drop(level);
-
-    return execute_actor_action(action, ecs, entity);
+    return execute_actor_action(action, world, entity);
 }

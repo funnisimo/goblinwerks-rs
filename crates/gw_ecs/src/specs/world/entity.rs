@@ -1,15 +1,17 @@
+use crate::specs::{error::WrongGeneration, join::Join};
+use crate::{shred::ReadRes, WriteRes};
+use hibitset::{AtomicBitSet, BitSet, BitSetOr};
 use std::{
     fmt,
     num::NonZeroI32,
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use crate::{shred::ReadRes, WriteRes};
-use hibitset::{AtomicBitSet, BitSet, BitSetOr};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "parallel")]
 use crate::specs::join::ParJoin;
-use crate::specs::{error::WrongGeneration, join::Join, storage::WriteComp, world::Component};
 
 /// An index is basically the id of an `Entity`.
 pub type Index = u32;
@@ -92,12 +94,16 @@ pub(crate) struct EntityAllocator {
 
 impl EntityAllocator {
     /// Kills a list of entities immediately.
-    pub fn kill(&mut self, delete: &[Entity]) -> Result<(), WrongGeneration> {
+    /// Returns true if all of the entities were alive and are now dead.
+    pub fn kill(&mut self, delete: &[Entity]) -> bool {
+        let mut all_killed = true;
         for &entity in delete {
             let id = entity.id() as usize;
 
             if !self.is_alive(entity) {
-                return self.del_err(entity);
+                // return self.del_err(entity);
+                all_killed = false;
+                continue;
             }
 
             self.alive.remove(entity.id());
@@ -114,30 +120,30 @@ impl EntityAllocator {
 
         self.cache.extend(delete.iter().map(|e| e.0));
 
-        Ok(())
+        all_killed
     }
 
     /// Kills and entity atomically (will be updated when the allocator is
     /// maintained).
-    pub fn kill_atomic(&self, e: Entity) -> Result<(), WrongGeneration> {
+    /// Returns true if entity was alive and is now dead.
+    pub fn kill_atomic(&self, e: Entity) -> bool {
         if !self.is_alive(e) {
-            return self.del_err(e);
+            return false;
         }
 
         self.killed.add_atomic(e.id());
-
-        Ok(())
+        true
     }
 
-    pub(crate) fn del_err(&self, e: Entity) -> Result<(), WrongGeneration> {
-        Err(WrongGeneration {
-            action: "delete",
-            actual_gen: self.generations[e.id() as usize]
-                .0
-                .unwrap_or_else(Generation::one),
-            entity: e,
-        })
-    }
+    // pub(crate) fn del_err(&self, e: Entity) -> Result<(), WrongGeneration> {
+    //     Err(WrongGeneration {
+    //         action: "delete",
+    //         actual_gen: self.generations[e.id() as usize]
+    //             .0
+    //             .unwrap_or_else(Generation::one),
+    //         entity: e,
+    //     })
+    // }
 
     /// Return `true` if the entity is alive.
     pub fn is_alive(&self, e: Entity) -> bool {
@@ -251,6 +257,7 @@ impl<'a> Iterator for CreateIterAtomic<'a> {
 }
 
 /// `Entity` type, as seen by the user.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Copy, Debug, Hash, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Entity(Index, Generation);
 
@@ -259,6 +266,11 @@ impl Entity {
     #[cfg(test)]
     pub fn new(index: Index, gen: Generation) -> Self {
         Self(index, gen)
+    }
+
+    /// Creates a dead entity that can be a placeholder in structs.
+    pub fn dead() -> Self {
+        Self(0, Generation::zero())
     }
 
     /// Returns the index of the `Entity`.
@@ -312,24 +324,24 @@ impl EntitiesRes {
         CreateIterAtomic(&self.alloc)
     }
 
-    /// Similar to the `create` method above this
-    /// creates an entity atomically, and then returns a
-    /// builder which can be used to insert components into
-    /// various storages if available.
-    pub fn build_entity(&self) -> EntityResBuilder {
-        let entity = self.create();
-        EntityResBuilder {
-            entity,
-            entities: self,
-            built: false,
-        }
-    }
+    // /// Similar to the `create` method above this
+    // /// creates an entity atomically, and then returns a
+    // /// builder which can be used to insert components into
+    // /// various storages if available.
+    // pub fn build_entity(&self) -> EntityResBuilder {
+    //     let entity = self.create();
+    //     EntityResBuilder {
+    //         entity,
+    //         entities: self,
+    //         built: false,
+    //     }
+    // }
 
     /// Deletes an entity atomically.
     /// The associated components will be
     /// deleted as soon as you call `World::maintain`.
-    pub fn delete(&self, e: Entity) -> Result<(), WrongGeneration> {
-        self.alloc.kill_atomic(e)
+    pub fn delete(&self, e: Entity) {
+        let _ = self.alloc.kill_atomic(e);
     }
 
     /// Returns an entity with a given `id`. There's no guarantee for validity,
@@ -372,43 +384,44 @@ impl<'a> Join for &'a EntitiesRes {
 #[cfg(feature = "parallel")]
 unsafe impl<'a> ParJoin for &'a EntitiesRes {}
 
-/// An entity builder from `EntitiesRes`.  Allows building an entity with its
-/// components if you have mutable access to the component storages.
-#[must_use = "Please call .build() on this to finish building it."]
-pub struct EntityResBuilder<'a> {
-    /// The entity being built
-    pub entity: Entity,
-    /// The active borrow to `EntitiesRes`, used to delete the entity if the
-    /// builder is dropped without called `build()`.
-    pub entities: &'a EntitiesRes,
-    built: bool,
-}
+// /// An entity builder from `EntitiesRes`.  Allows building an entity with its
+// /// components if you have mutable access to the component storages.
+// #[must_use = "Please call .build() on this to finish building it."]
+// pub struct EntityResBuilder<'a> {
+//     /// The entity being built
+//     pub entity: Entity,
+//     /// The active borrow to `EntitiesRes`, used to delete the entity if the
+//     /// builder is dropped without called `build()`.
+//     pub entities: &'a EntitiesRes,
+//     built: bool,
+// }
 
-impl<'a> EntityResBuilder<'a> {
-    /// Appends a component and associates it with the entity.
-    pub fn with<T: Component>(self, c: T, storage: &mut WriteComp<T>) -> Self {
-        storage.insert(self.entity, c).unwrap();
-        self
-    }
+// impl<'a> EntityResBuilder<'a> {
+//     /// Appends a component and associates it with the entity.
+//     pub fn with<T: Component>(self, c: T, storage: &mut WriteComp<T>) -> Self {
+//         storage.insert(self.entity, c).unwrap();
+//         self
+//     }
 
-    /// Finishes the building and returns the entity.
-    pub fn build(mut self) -> Entity {
-        self.built = true;
-        self.entity
-    }
-}
+//     /// Finishes the building and returns the entity.
+//     pub fn build(mut self) -> Entity {
+//         self.built = true;
+//         self.entity
+//     }
+// }
 
-impl<'a> Drop for EntityResBuilder<'a> {
-    fn drop(&mut self) {
-        if !self.built {
-            self.entities.delete(self.entity).unwrap();
-        }
-    }
-}
+// impl<'a> Drop for EntityResBuilder<'a> {
+//     fn drop(&mut self) {
+//         if !self.built {
+//             self.entities.delete(self.entity).unwrap();
+//         }
+//     }
+// }
 
 /// Index generation. When a new entity is placed at an old index,
 /// it bumps the `Generation` by 1. This allows to avoid using components
 /// from the entities that were deleted.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Copy, Hash, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Generation(NonZeroI32);
 
@@ -422,6 +435,10 @@ impl fmt::Debug for Generation {
 impl Generation {
     pub(crate) fn one() -> Self {
         Generation(unsafe { NonZeroI32::new_unchecked(1) })
+    }
+
+    pub(crate) fn zero() -> Self {
+        Generation(unsafe { NonZeroI32::new_unchecked(0) })
     }
 
     #[cfg(test)]
@@ -581,7 +598,7 @@ mod tests {
         let entity = allocator.allocate();
         assert_eq!(entity.id(), 0);
 
-        allocator.kill_atomic(entity).unwrap();
+        allocator.kill_atomic(entity);
 
         assert_ne!(allocator.allocate(), entity);
 
@@ -595,15 +612,43 @@ mod tests {
 
         let entity = allocator.allocate();
 
-        allocator.kill_atomic(entity).unwrap();
+        allocator.kill_atomic(entity);
 
         assert_ne!(allocator.allocate(), entity);
 
-        allocator.kill(&[entity]).unwrap();
+        allocator.kill(&[entity]);
 
         allocator.allocate();
 
         assert_eq!(allocator.killed.contains(entity.id()), false);
         assert_eq!(allocator.merge(), vec![]);
+    }
+
+    #[test]
+    fn dead_entity() {
+        let mut entities = EntitiesRes::default();
+
+        let dead = Entity::dead();
+
+        assert!(!entities.is_alive(dead));
+
+        let a = entities.create();
+        let b = entities.create();
+
+        assert!(!entities.is_alive(dead));
+
+        entities.delete(a);
+
+        assert!(!entities.is_alive(dead));
+
+        entities.delete(a);
+        entities.delete(b);
+        entities.delete(dead);
+
+        assert!(!entities.is_alive(dead));
+
+        entities.maintain();
+
+        assert!(!entities.is_alive(dead));
     }
 }

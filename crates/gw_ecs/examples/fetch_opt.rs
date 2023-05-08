@@ -1,4 +1,7 @@
-use gw_ecs::{DispatcherBuilder, ReadRes, ReadResExpect, System, World, WriteRes};
+use gw_ecs::{
+    shred::{SetupDefault, SetupHandler},
+    DispatcherBuilder, ReadRes, System, World, WriteRes,
+};
 
 #[derive(Debug, Default)]
 struct ResA;
@@ -11,17 +14,26 @@ struct ResWithoutSensibleDefault {
     magic_number_that_we_cant_compute: u32,
 }
 
+impl SetupHandler<ResWithoutSensibleDefault> for ResWithoutSensibleDefault {
+    fn setup(world: &mut World) {
+        let res = ResWithoutSensibleDefault {
+            magic_number_that_we_cant_compute: 32,
+        };
+        world.insert_resource(res);
+    }
+}
+
 struct PrintSystem;
 
 impl<'a> System<'a> for PrintSystem {
     // We can simply use `Option<Read>` or `Option<Write>` if a resource
     // isn't strictly required or can't be created (by a `Default` implementation).
     type SystemData = (
-        ReadRes<'a, ResA>,
-        Option<WriteRes<'a, ResB>>,
+        ReadRes<'a, ResA, SetupDefault>,
+        Option<WriteRes<'a, ResB, SetupDefault>>,
         // WARNING: using `ReadExpect` might lead to a panic!
         // If `ResWithoutSensibleDefault` does not exist, fetching will `panic!`.
-        ReadResExpect<'a, ResWithoutSensibleDefault>,
+        ReadRes<'a, ResWithoutSensibleDefault, ResWithoutSensibleDefault>,
     );
 
     fn run(&mut self, data: Self::SystemData) {

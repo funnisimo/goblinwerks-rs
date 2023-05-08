@@ -1,10 +1,10 @@
 use acanja::map::prefab::{PrefabFileLoader, Prefabs};
 use acanja::map::world::build_world_map;
-use gw_app::ecs::{systems::ResourceSet, Read};
 use gw_app::*;
 use gw_util::point::Point;
+use gw_world::being::BeingKinds;
 use gw_world::camera::Camera;
-use gw_world::level::Level;
+use gw_world::level::NeedsDraw;
 use gw_world::map::Map;
 use gw_world::memory::MapMemory;
 use gw_world::tile::{Tiles, TilesLoader};
@@ -28,7 +28,8 @@ impl MainScreen {
 
     fn build_new_level(&self, ecs: &mut Ecs) {
         let mut map = {
-            let (tiles, prefabs) = <(Read<Tiles>, Read<Prefabs>)>::fetch(&ecs.resources);
+            let tiles = ecs.read_global::<Tiles>();
+            let prefabs = ecs.read_global::<Prefabs>();
 
             log(format!("- prefabs: {}", prefabs.len()));
             // let mut map = dig_room_level(&tiles, 80, 50);
@@ -38,26 +39,25 @@ impl MainScreen {
         map.reveal_all();
         map.make_fully_visible();
 
-        let mut level = Level::new("WORLD");
-
-        level.resources.insert(map);
-        level.resources.insert(MapMemory::new(160, 100));
-
-        ecs.resources.insert(level);
+        // TODO - ecs.delete_world("WORLD");
+        let level = ecs.create_world("WORLD");
+        level.insert_resource(map);
+        level.insert_resource(MapMemory::new(160, 100));
+        level.insert_resource(NeedsDraw::default());
+        ecs.set_current_world("WORLD").unwrap();
     }
 }
 
 impl Screen for MainScreen {
     fn setup(&mut self, ecs: &mut Ecs) {
-        let resources = &mut ecs.resources;
-        resources.get_or_insert_with(|| Tiles::default());
-        resources.get_or_insert_with(|| Prefabs::default());
+        ecs.ensure_global::<Tiles>();
+        ecs.ensure_global::<Prefabs>();
 
         self.build_new_level(ecs);
     }
 
     fn input(&mut self, ecs: &mut Ecs, ev: &AppEvent) -> ScreenResult {
-        if let Some(result) = self.viewport.input(ecs, ev) {
+        if let Some(result) = self.viewport.input(ecs.current_world_mut(), ev) {
             return result;
         }
 
@@ -70,33 +70,21 @@ impl Screen for MainScreen {
                     return ScreenResult::Quit;
                 }
                 VirtualKeyCode::Down => {
-                    let level = ecs.resources.get::<Level>().unwrap();
-                    if let Some(mut camera) = level.resources.get_mut::<Camera>() {
-                        log("Camera down");
-                        camera.move_center(0, 1);
-                    }
-                    drop(level);
+                    let mut camera = ecs.write_resource::<Camera>();
+                    log("Camera down");
+                    camera.move_center(0, 1);
                 }
                 VirtualKeyCode::Left => {
-                    let level = ecs.resources.get::<Level>().unwrap();
-                    if let Some(mut camera) = level.resources.get_mut::<Camera>() {
-                        camera.move_center(-1, 0);
-                    }
-                    drop(level);
+                    let mut camera = ecs.write_resource::<Camera>();
+                    camera.move_center(-1, 0);
                 }
                 VirtualKeyCode::Up => {
-                    let level = ecs.resources.get::<Level>().unwrap();
-                    if let Some(mut camera) = level.resources.get_mut::<Camera>() {
-                        camera.move_center(0, -1);
-                    }
-                    drop(level);
+                    let mut camera = ecs.write_resource::<Camera>();
+                    camera.move_center(0, -1);
                 }
                 VirtualKeyCode::Right => {
-                    let level = ecs.resources.get::<Level>().unwrap();
-                    if let Some(mut camera) = level.resources.get_mut::<Camera>() {
-                        camera.move_center(1, 0);
-                    }
-                    drop(level);
+                    let mut camera = ecs.write_resource::<Camera>();
+                    camera.move_center(1, 0);
                 }
                 VirtualKeyCode::Equals => {
                     let size = self.viewport.size();
@@ -105,13 +93,11 @@ impl Screen for MainScreen {
                     log(format!("Viewport size={:?}", self.viewport.size()));
                 }
                 VirtualKeyCode::Minus => {
-                    let level = ecs.resources.get::<Level>().unwrap();
-                    let map_size = level.resources.get::<Map>().unwrap().size();
+                    let map_size = ecs.read_resource::<Map>().size();
                     let size = self.viewport.size();
                     self.viewport
                         .resize((size.0 + 8).min(map_size.0), (size.1 + 5).min(map_size.1));
                     log(format!("Viewport size={:?}", self.viewport.size()));
-                    drop(level);
                 }
                 _ => {}
             },
@@ -137,10 +123,7 @@ impl Screen for MainScreen {
     }
 
     fn render(&mut self, app: &mut Ecs) {
-        {
-            let mut level = app.resources.get_mut::<Level>().unwrap();
-            self.viewport.draw_level(&mut *level);
-        }
+        self.viewport.draw_level(app.current_world_mut());
         self.viewport.render(app);
     }
 }
@@ -156,6 +139,12 @@ fn main() {
             "assets/store_prefab.toml",
             Box::new(PrefabFileLoader::new().with_dump()),
         )
+        .register_components(|ecs| {
+            gw_world::register_components(ecs);
+            ecs.ensure_global::<Tiles>();
+            ecs.ensure_global::<Prefabs>();
+            ecs.ensure_global::<BeingKinds>();
+        })
         .vsync(false)
         .build();
 

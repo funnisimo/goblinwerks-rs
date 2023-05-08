@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-
+use gw_ecs::{Component, DenseVecStorage};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Clone, Debug, Copy, Serialize, Deserialize)]
 pub struct StatValue {
@@ -52,7 +52,7 @@ pub enum Stat {
     MAGIC,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Component)]
 pub struct Stats {
     data: HashMap<Stat, StatValue>,
 }

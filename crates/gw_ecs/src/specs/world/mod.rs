@@ -3,11 +3,8 @@
 pub(crate) use self::entity::EntityAllocator;
 pub use self::{
     comp::Component,
-    entity::{
-        CreateIterAtomic, Entities, EntitiesMut, EntitiesRes, Entity, EntityResBuilder, Generation,
-        Index,
-    },
-    lazy::{LazyBuilder, LazyUpdate},
+    entity::{CreateIterAtomic, Entities, EntitiesMut, EntitiesRes, Entity, Generation, Index},
+    lazy::{LazyBuilder, LazyUpdate, LazyUpdateEcs},
     world_ext::WorldExt,
 };
 use crate::shred::SystemData;
@@ -225,7 +222,7 @@ impl<'a> Builder for EntityBuilder<'a> {
 impl<'a> Drop for EntityBuilder<'a> {
     fn drop(&mut self) {
         if !self.built {
-            self.world.entities().delete(self.entity).unwrap();
+            self.world.entities().delete(self.entity);
         }
     }
 }

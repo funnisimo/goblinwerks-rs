@@ -10,8 +10,8 @@ pub mod world;
 pub mod utils;
 
 pub use ecs::Ecs;
-pub use globals::{ReadGlobal, ReadGlobalExpect, WriteGlobal, WriteGlobalExpect};
-pub use shred::{ReadRes, ReadResExpect, TryReadRes, TryWriteRes, WriteRes, WriteResExpect};
+pub use globals::{ReadGlobal, ReadGlobalDefault, WriteGlobal, WriteGlobalDefault};
+pub use shred::{ReadRes, ReadResSetup, TryReadRes, TryWriteRes, WriteRes, WriteResSetup};
 pub use shred::{Resource, ResourceId, Resources, SystemData};
 pub use world::World;
 
@@ -19,7 +19,7 @@ pub use shred::{Dispatcher, DispatcherBuilder};
 pub use specs::{
     join::*,
     storage::{DenseVecStorage, MaskedStorage, Storage, VecStorage},
-    world::Builder,
+    world::{Builder, LazyUpdate},
     Component, Entities, Entity, EntityBuilder, ReadComp, System, WriteComp,
 };
 

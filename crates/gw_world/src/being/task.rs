@@ -2,10 +2,10 @@ use crate::{
     action::{ActionResult, BoxedAction},
     task::TaskResult,
 };
-use gw_app::{ecs::Entity, Ecs};
+use gw_ecs::{Entity, World};
 
 // #[must_use]
-// fn get_next_action(entity: Entity, ecs: &mut Ecs) -> BoxedAction {
+// fn get_next_action(entity: Entity, ecs: &mut World) -> BoxedAction {
 //     let (ai_fn, idle_time) = {
 //         let mut level = get_current_level_mut(ecs);
 //         let mut entry = match level.world.entry(entity) {
@@ -23,10 +23,10 @@ use gw_app::{ecs::Entity, Ecs};
 //     ai_fn(ecs, entity).unwrap_or(Box::new(IdleAction::new(entity, idle_time)))
 // }
 
-pub fn do_entity_action(action: BoxedAction, ecs: &mut Ecs, _entity: Entity) -> TaskResult {
+pub fn do_entity_action(action: BoxedAction, world: &mut World, _entity: Entity) -> TaskResult {
     let mut action = action;
     loop {
-        match action.execute(ecs) {
+        match action.execute(world) {
             ActionResult::Dead(_) => {
                 // no rescedule - entity dead
                 return TaskResult::Finished;

@@ -1,6 +1,7 @@
+use crate::log::Logger;
+
 use super::{BoxedEffect, Effect, EffectResult};
-use crate::level::Levels;
-use gw_app::{ecs::Entity, Ecs};
+use gw_ecs::{Entity, World};
 use gw_util::point::Point;
 use gw_util::value::Value;
 
@@ -10,11 +11,9 @@ use gw_util::value::Value;
 pub struct StoreItems;
 
 impl Effect for StoreItems {
-    fn fire(&self, ecs: &mut Ecs, _pos: Point, _entity: Option<Entity>) -> EffectResult {
-        let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-        let level = levels.current_mut();
-
-        level.logger.log(format!("StoreItems!"));
+    fn fire(&self, world: &mut World, _pos: Point, _entity: Option<Entity>) -> EffectResult {
+        let mut logger = world.write_resource::<Logger>();
+        logger.log(format!("StoreItems!"));
         EffectResult::Success
     }
 }
@@ -36,11 +35,10 @@ pub(super) fn parse_store_items(value: &Value) -> Result<BoxedEffect, String> {
 pub struct RestoreItems;
 
 impl Effect for RestoreItems {
-    fn fire(&self, ecs: &mut Ecs, _pos: Point, _entity: Option<Entity>) -> EffectResult {
-        let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
-        let level = levels.current_mut();
+    fn fire(&self, world: &mut World, _pos: Point, _entity: Option<Entity>) -> EffectResult {
+        let mut logger = world.write_resource::<Logger>();
 
-        level.logger.log(format!("RestoreItems!"));
+        logger.log(format!("RestoreItems!"));
         EffectResult::Success
     }
 }

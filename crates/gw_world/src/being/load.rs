@@ -3,9 +3,10 @@ use std::fs::read_to_string;
 use super::set_field;
 use super::BeingKindBuilder;
 use super::BeingKinds;
-use gw_app::ecs::Ecs;
 use gw_app::loader::{LoadError, LoadHandler};
 use gw_app::log;
+use gw_ecs::Ecs;
+use gw_ecs::World;
 use gw_util::value::Value;
 
 /*
@@ -107,9 +108,8 @@ impl LoadHandler for BeingKindsLoader {
             ));
         };
 
-        let mut being_kinds = ecs
-            .resources
-            .get_mut_or_insert_with(|| BeingKinds::default());
+        ecs.ensure_global::<BeingKinds>();
+        let mut being_kinds = ecs.write_global::<BeingKinds>();
 
         match load_being_data(&mut being_kinds, string_table) {
             Err(e) => return Err(LoadError::ProcessError(e)),
