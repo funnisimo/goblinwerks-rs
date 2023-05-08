@@ -258,9 +258,6 @@ impl Screen for MainScreen {
     fn render(&mut self, app: &mut Ecs) {
         self.viewport.draw_level(app.current_world_mut());
         self.viewport.render(app);
-
-        // TODO - This should be in APP
-        app.maintain();
     }
 }
 

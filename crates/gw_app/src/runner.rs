@@ -423,6 +423,8 @@ impl Runner {
                 *next_frame += 1.0 / fps_goal as f64;
             }
         }
+
+        ecs.maintain();
     }
 
     fn update(&mut self, ctx: &mut Ecs) -> Option<RunnerEvent> {
