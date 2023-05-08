@@ -28,12 +28,14 @@ pub fn register_components(ecs: &mut Ecs) {
     ecs.register::<being::Being>();
     ecs.register::<combat::Melee>();
     ecs.register::<being::Stats>();
+    ecs.register::<horde::HordeRef>();
 }
 
 pub fn setup_ecs(ecs: &mut Ecs) {
     ecs.ensure_global::<tile::Tiles>();
     ecs.ensure_global::<being::BeingKinds>();
     ecs.ensure_global::<horde::Hordes>();
+    ecs.ensure_global::<log::Logger>();
 }
 
 /// Ensure all the standard resources for gw_world
@@ -42,7 +44,6 @@ pub fn setup_world(world: &mut World) {
     world.ensure_resource::<task::Executor>();
     world.ensure_resource::<level::NeedsDraw>();
     world.ensure_resource::<task::UserAction>();
-    world.ensure_resource::<log::Logger>();
     world.ensure_resource::<hero::Hero>();
     world.ensure_resource::<RandomNumberGenerator>();
 }

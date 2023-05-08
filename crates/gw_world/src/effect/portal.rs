@@ -138,7 +138,7 @@ fn try_move_hero_world(
         }
         {
             if let Some(ref welcome) = map.welcome {
-                let mut logger = new_world.write_resource::<Logger>();
+                let mut logger = new_world.write_global::<Logger>();
                 logger.log(welcome);
             }
         }
@@ -169,7 +169,7 @@ fn try_change_world(world: &mut World, new_map_id: Atom, _location: &String) -> 
         let map_size = {
             let map = world.read_resource::<Map>();
             if let Some(ref welcome) = map.welcome {
-                let mut logger = world.write_resource::<Logger>();
+                let mut logger = world.write_global::<Logger>();
                 logger.log(welcome);
             }
             map.size()

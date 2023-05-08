@@ -23,7 +23,7 @@ impl CombatMessage {
     pub fn log(&self, world: &mut World, attacker: Entity, target: Entity, damage: DamageInfo) {
         let attack_name = "attacker";
         let target_name = "target";
-        let mut logger = world.write_resource::<Logger>();
+        let mut logger = world.write_global::<Logger>();
         match self {
             CombatMessage::Hit => {
                 logger.log(format!("{} hit {} [{}]", attack_name, target_name, damage))

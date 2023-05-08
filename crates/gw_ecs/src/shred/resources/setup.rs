@@ -9,7 +9,7 @@ macro_rules! fetch_panic {
 \n\
             You may ensure the resource exists through one of the following methods:\n\
 \n\
-            * Inserting it when the world is created: `world.insert(..)`.\n\
+            * Inserting it when the world is created: `world.insert_resource(..)`.\n\
             * If the resource implements `Default`, include it in a system's `SystemData`, \
               and ensure the system is registered in the dispatcher.\n\
             * If the resource does not implement `Default`, insert it in the world during \

@@ -12,7 +12,7 @@ pub struct StoreItems;
 
 impl Effect for StoreItems {
     fn fire(&self, world: &mut World, _pos: Point, _entity: Option<Entity>) -> EffectResult {
-        let mut logger = world.write_resource::<Logger>();
+        let mut logger = world.write_global::<Logger>();
         logger.log(format!("StoreItems!"));
         EffectResult::Success
     }
@@ -36,7 +36,7 @@ pub struct RestoreItems;
 
 impl Effect for RestoreItems {
     fn fire(&self, world: &mut World, _pos: Point, _entity: Option<Entity>) -> EffectResult {
-        let mut logger = world.write_resource::<Logger>();
+        let mut logger = world.write_global::<Logger>();
 
         logger.log(format!("RestoreItems!"));
         EffectResult::Success

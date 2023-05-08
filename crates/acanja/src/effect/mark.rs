@@ -19,7 +19,7 @@ impl Mark {
 
 impl Effect for Mark {
     fn fire(&self, world: &mut World, _pos: Point, _entity: Option<Entity>) -> EffectResult {
-        let mut logger = world.write_resource::<Logger>();
+        let mut logger = world.write_global::<Logger>();
         logger.log(format!("Mark = {}", self.0));
         EffectResult::Success
     }

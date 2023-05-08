@@ -17,7 +17,7 @@ impl Winds {
 
 impl Effect for Winds {
     fn fire(&self, world: &mut World, _pos: Point, _entity: Option<Entity>) -> EffectResult {
-        let mut logger = world.write_resource::<Logger>();
+        let mut logger = world.write_global::<Logger>();
         logger.log("Winds");
         EffectResult::Success
     }

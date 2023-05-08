@@ -766,7 +766,7 @@ pub fn make_level<'a>(ecs: &'a mut Ecs, mut level_data: LevelData) -> &'a World 
 
     world.ensure_resource::<NeedsDraw>();
     world.ensure_resource::<UserAction>();
-    world.ensure_resource::<Logger>();
+    world.ensure_global::<Logger>();
 
     world
 }

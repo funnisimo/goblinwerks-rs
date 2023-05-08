@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct HordeSpawn {
+    pub id: String,
     pub next_time: u64,
     pub check_delay: u64,
     pub max_alive: u32,
@@ -19,6 +20,7 @@ pub struct HordeSpawn {
 impl HordeSpawn {
     pub fn new() -> Self {
         HordeSpawn {
+            id: "DEFAULT".to_string(),
             next_time: 0,
             check_delay: 1000,
             max_alive: 5,
@@ -50,6 +52,7 @@ pub fn parse_spawn(value: &Value) -> Result<Vec<HordeSpawn>, HordeSpawnParseErro
         }
         return Ok(out);
     } else if value.is_map() {
+        // Single spawn instance
         match parse_spawn_map(value.as_map().unwrap()) {
             Err(e) => return Err(e),
             Ok(v) => {
@@ -57,6 +60,7 @@ pub fn parse_spawn(value: &Value) -> Result<Vec<HordeSpawn>, HordeSpawnParseErro
             }
         }
     } else if value.is_list() {
+        // Multiple...
         for val in value.as_list().unwrap().iter() {
             match parse_spawn_map(val.as_map().unwrap()) {
                 Err(e) => return Err(e),
@@ -77,6 +81,7 @@ fn parse_spawn_map(value: &HashMap<Key, Value>) -> Result<HordeSpawn, HordeSpawn
 
     for (k, v) in value.iter() {
         match k.as_str().unwrap() {
+            "id" => out.id = v.to_string(),
             "check_delay" => match v.as_int() {
                 None => return Err(HordeSpawnParseError::InvalidField(k.clone(), v.clone())),
                 Some(v) => out.check_delay = v as u64,
@@ -181,7 +186,7 @@ pub fn spawn_horde(horde: &Arc<Horde>, world: &mut World, point: Point) -> Entit
 
     // 	spawn_minions(horde, leader_entity, point, false);
 
-    leader_entity
+    panic!("Only support spawn as avatar right now");
 }
 
 // pub fn populate_generic_spawn_map(map, spawnMap, originX, originY, maxDist, blockingTileFlags, blockingCellFlags)

@@ -8,7 +8,7 @@ use crate::map::cell_flavor;
 use crate::map::Map;
 use crate::position::Position;
 use gw_app::log;
-use gw_ecs::{Entity, ReadComp, ReadRes, SystemData, World, WriteRes};
+use gw_ecs::{Entity, ReadComp, ReadRes, SystemData, World, WriteGlobal, WriteRes};
 use gw_util::point::Point;
 
 #[derive(Copy, Clone, Debug)]
@@ -29,7 +29,7 @@ impl MoveStepAction {
             ReadRes<Hero>,
             ReadComp<Being>,
             ReadComp<Position>,
-            WriteRes<Logger>,
+            WriteGlobal<Logger>,
         )>::fetch(world);
 
         let being = match beings.get(self.entity) {

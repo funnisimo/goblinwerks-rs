@@ -15,7 +15,7 @@ use gw_world::combat::Melee;
 use gw_world::effect::{register_effect_parser, BoxedEffect};
 use gw_world::fov::update_fov;
 use gw_world::hero::Hero;
-use gw_world::horde::{pick_random_horde, spawn_horde, HordeSpawn};
+use gw_world::horde::{pick_random_horde, spawn_horde, HordeRef, HordeSpawn};
 use gw_world::map::{ensure_area_grid, AreaGrid, Cell, Map};
 use gw_world::position::Position;
 use gw_world::task::{do_next_task, DoNextTaskResult, Executor, Task, UserAction};
@@ -106,7 +106,7 @@ impl Screen for MainScreen {
 
             // level.ensure_resource::<NeedsDraw>();
             // level.ensure_resource::<UserAction>();
-            // level.ensure_resource::<Logger>();
+            // level.ensure_global::<Logger>();
         }
 
         ecs.maintain();
@@ -374,25 +374,23 @@ fn spawn_hordes(ecs: &mut Ecs) {
         info.max_alive
     };
 
-    {
-        let beings = ecs.read_component::<Being>();
-
-        let count = beings
-            .join()
-            .filter(|b| b.has_flag(BeingFlags::SPAWNED))
-            .count() as u32;
-        if count >= max_alive {
-            log(format!(
-                "spawn_hordes - too many alive => count:{} > max_alive:{}",
-                count, max_alive
-            ));
-            return;
-        }
-    }
-
     // We got to here so we need to spawn a horde...
     if let Some(horde) = pick_random_horde(ecs.current_world_mut(), depth) {
-        log(format!("SPAWN - {:?}", horde));
+        log(format!("SPAWN TEST - {:?}", horde));
+
+        {
+            let beings = ecs.read_component::<HordeRef>();
+
+            let count = beings.join().filter(|b| b.is(&horde)).count() as u32;
+            if count >= max_alive {
+                log(format!(
+                    "spawn_hordes - too many alive => count:{} > max_alive:{}",
+                    count, max_alive
+                ));
+                return;
+            }
+            log(format!("alive count = {} / {}", count, max_alive));
+        }
 
         // need spawn point...
 

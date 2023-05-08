@@ -7,7 +7,7 @@
     "counts": [5], // count of other members
     "tile": false, // tile (if any) that this horde must spawn into
     "machine": false, // machine (if any) that this horde must spawn into
-    "flags": 0, // Any horde flags
+    "flags": "SPAWN_AS_AVATAR", // Any horde flags
     "tags": "SOSARIA", // tags (can be matched on by map spawner)
     "map_tags": false // These are tags that have to match the map tags to be eligible to be matched
     // A match means the map has ALL of the required flags and NONE of the forbidden flags
@@ -22,7 +22,7 @@
     "counts": [5], // count of other members
     "tile": false, // tile (if any) that this horde must spawn into
     "machine": false, // machine (if any) that this horde must spawn into
-    "flags": 0, // Any horde flags
+    "flags": "SPAWN_AS_AVATAR", // Any horde flags
     "tags": "SOSARIA" // tags (can be matched on)
   }
 ]

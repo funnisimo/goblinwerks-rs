@@ -76,6 +76,10 @@ impl HordeRef {
     pub fn new(horde: Arc<Horde>) -> Self {
         HordeRef(horde)
     }
+
+    pub fn is(&self, horde: &Arc<Horde>) -> bool {
+        Arc::ptr_eq(&self.0, horde)
+    }
 }
 
 impl Deref for HordeRef {

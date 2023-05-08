@@ -13,7 +13,7 @@ pub struct Cure;
 impl Effect for Cure {
     fn fire(&self, world: &mut World, _pos: Point, _entity: Option<Entity>) -> EffectResult {
         // TODO - Logger is a global now!!!!
-        let mut logger = world.write_resource::<Logger>();
+        let mut logger = world.write_global::<Logger>();
         logger.log(format!("Cured!"));
         EffectResult::Success
     }
