@@ -76,7 +76,6 @@ impl MainScreen {
         level.insert_resource(NeedsDraw::default());
         level.insert_resource(UserAction::default());
         level.insert_resource(Logger::default());
-        // level.reset_tasks();
         level.write_resource::<Executor>().insert(entity, 0);
     }
 
