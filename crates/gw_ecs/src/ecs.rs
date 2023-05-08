@@ -1,8 +1,8 @@
 use crate::globals::{GlobalRef, GlobalRefMut, Globals};
 use crate::shred::Resource;
-use crate::specs::world::LazyUpdateEcs;
+use crate::specs::world::CommandsEcsInternal;
+use crate::{Commands, SystemData};
 use crate::{Component, Entity, EntityBuilder, ReadComp, ReadRes, World, WriteComp, WriteRes};
-use crate::{LazyUpdate, SystemData};
 use atomize::Atom;
 
 pub struct Ecs {
@@ -138,9 +138,9 @@ impl Ecs {
             world.maintain();
         }
 
-        let mut queue = Vec::<Box<dyn LazyUpdateEcs>>::new();
+        let mut queue = Vec::<Box<dyn CommandsEcsInternal>>::new();
         for world in self.worlds.iter() {
-            let lazy = world.write_resource::<LazyUpdate>();
+            let lazy = world.write_resource::<Commands>();
             queue.extend(lazy.take_ecs_funcs());
         }
 

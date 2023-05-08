@@ -2,18 +2,18 @@
 
 pub(crate) use self::entity::EntityAllocator;
 pub use self::{
+    commands::{Commands, CommandsEcsInternal, LazyBuilder},
     comp::Component,
     entity::{CreateIterAtomic, Entities, EntitiesMut, EntitiesRes, Entity, Generation, Index},
-    lazy::{LazyBuilder, LazyUpdate, LazyUpdateEcs},
     world_ext::WorldExt,
 };
 use crate::shred::SystemData;
 use crate::specs::storage::WriteComp;
 pub use crate::World;
 
+mod commands;
 mod comp;
 mod entity;
-mod lazy;
 #[cfg(test)]
 mod tests;
 mod world_ext;

@@ -10,8 +10,7 @@ use crate::specs::storage::{AnyStorage, MaskedStorage};
 use crate::specs::world::EntityAllocator;
 use crate::specs::world::{CreateIter, EntitiesRes};
 use crate::specs::{
-    Component, Entities, EntitiesMut, Entity, EntityBuilder, LazyUpdate, ReadComp, Storage,
-    WriteComp,
+    Commands, Component, Entities, EntitiesMut, Entity, EntityBuilder, ReadComp, Storage, WriteComp,
 };
 use crate::utils::MetaTable;
 use crate::Builder;
@@ -38,7 +37,7 @@ impl World {
         let mut resources = Resources::empty();
         resources.insert(EntitiesRes::default());
         resources.insert(MetaTable::<dyn AnyStorage>::default());
-        resources.insert(LazyUpdate::default());
+        resources.insert(Commands::default());
 
         World {
             id: id.into(),
@@ -641,8 +640,8 @@ impl World {
 
     // Lazy Update
 
-    pub fn lazy_update(&self) -> ReadRes<LazyUpdate> {
-        self.resources.get::<LazyUpdate>().unwrap().into()
+    pub fn commands(&self) -> ReadRes<Commands> {
+        self.resources.get::<Commands>().unwrap().into()
     }
 
     // ENTITIES
@@ -715,7 +714,7 @@ impl World {
     }
 
     pub fn maintain(&mut self) {
-        let lazy = self.resources.get_mut::<LazyUpdate>().unwrap().clone();
+        let lazy = self.resources.get_mut::<Commands>().unwrap().clone();
         lazy.maintain(self);
 
         let deleted = self.entities_mut().maintain();

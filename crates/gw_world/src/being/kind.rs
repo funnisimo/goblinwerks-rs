@@ -8,7 +8,7 @@ use crate::sprite::Sprite;
 use crate::task::Task;
 use crate::{combat::Melee, task::Executor};
 use gw_app::{ecs::Entity, log};
-use gw_ecs::{specs::LazyUpdate, Builder, Entities, ReadRes, SystemData, World, WriteRes};
+use gw_ecs::{specs::Commands, Builder, Entities, ReadRes, SystemData, World, WriteRes};
 use gw_util::point::Point;
 
 #[derive(Debug, Clone)]
@@ -41,7 +41,7 @@ impl BeingKind {
 pub fn spawn_being(kind: &Arc<BeingKind>, world: &World, point: Point) -> Entity {
     let (mut map, lazy_update, entities, mut executor) = <(
         WriteRes<Map>,
-        ReadRes<LazyUpdate>,
+        ReadRes<Commands>,
         Entities,
         WriteRes<Executor>,
     )>::fetch(world);

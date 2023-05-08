@@ -19,7 +19,7 @@ pub use shred::{Dispatcher, DispatcherBuilder};
 pub use specs::{
     join::*,
     storage::{DenseVecStorage, MaskedStorage, Storage, VecStorage},
-    world::{Builder, LazyUpdate},
+    world::{Builder, Commands},
     Component, Entities, Entity, EntityBuilder, ReadComp, System, WriteComp,
 };
 

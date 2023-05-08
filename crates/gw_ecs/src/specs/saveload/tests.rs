@@ -119,7 +119,7 @@ mod marker_test {
         assert_marked_entity_count::<M>(&mut world, 2);
 
         // Queue lazy creation of 2 more entities
-        world.exec(|(ents, lazy): (Entities, ReadRes<LazyUpdate>)| {
+        world.exec(|(ents, lazy): (Entities, ReadRes<Commands>)| {
             lazy.create_entity(&ents)
                 .with(A(128))
                 .with(B(false))

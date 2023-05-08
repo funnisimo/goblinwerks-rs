@@ -244,7 +244,7 @@ pub use self::{
         Storage, Tracked, VecStorage, WriteComp,
     },
     world::{
-        Builder, Component, Entities, EntitiesMut, EntitiesRes, Entity, EntityBuilder, LazyUpdate,
+        Builder, Commands, Component, Entities, EntitiesMut, EntitiesRes, Entity, EntityBuilder,
         WorldExt,
     },
 };

@@ -14,24 +14,24 @@ impl<T> Default for Queue<T> {
 }
 
 #[cfg(feature = "parallel")]
-pub trait LazyUpdateInternal: Send + Sync {
+pub trait CommandsInternal: Send + Sync {
     fn update(self: Box<Self>, world: &mut World);
 }
 
 #[cfg(not(feature = "parallel"))]
-pub trait LazyUpdateInternal {
+pub trait CommandsInternal {
     fn update(self: Box<Self>, world: &mut World);
 }
 
 /// An updte that works on the whole Ecs
 #[cfg(feature = "parallel")]
-pub trait LazyUpdateEcs: Send + Sync {
+pub trait CommandsEcsInternal: Send + Sync {
     /// Do the update
     fn update(self: Box<Self>, ecs: &mut Ecs);
 }
 
 #[cfg(not(feature = "parallel"))]
-pub trait LazyUpdateEcs {
+pub trait CommandsEcsInternal {
     fn update(self: Box<Self>, ecs: &mut Ecs);
 }
 
@@ -97,7 +97,7 @@ pub struct LazyBuilder<'a> {
     /// The entity that we're inserting components for.
     pub entity: Entity,
     /// The lazy update reference.
-    pub lazy: &'a LazyUpdate,
+    pub lazy: &'a Commands,
 }
 
 impl<'a> Builder for LazyBuilder<'a> {
@@ -134,7 +134,7 @@ impl<'a> Builder for LazyBuilder<'a> {
 }
 
 #[cfg(feature = "parallel")]
-impl<F> LazyUpdateInternal for F
+impl<F> CommandsInternal for F
 where
     F: FnOnce(&mut World) + Send + Sync + 'static,
 {
@@ -144,7 +144,7 @@ where
 }
 
 #[cfg(not(feature = "parallel"))]
-impl<F> LazyUpdateInternal for F
+impl<F> CommandsInternal for F
 where
     F: FnOnce(&mut World) + 'static,
 {
@@ -154,7 +154,7 @@ where
 }
 
 #[cfg(feature = "parallel")]
-impl<F> LazyUpdateEcs for F
+impl<F> CommandsEcsInternal for F
 where
     F: FnOnce(&mut Ecs) + Send + Sync + 'static,
 {
@@ -164,7 +164,7 @@ where
 }
 
 #[cfg(not(feature = "parallel"))]
-impl<F> LazyUpdateEcs for F
+impl<F> CommandsEcsInternal for F
 where
     F: FnOnce(&mut Ecs) + 'static,
 {
@@ -187,12 +187,12 @@ where
 /// so there's no need to get `LazyUpdate` mutably.
 /// This resource is added to the world by default.
 #[derive(Default)]
-pub struct LazyUpdate {
-    queue: Arc<Queue<Box<dyn LazyUpdateInternal>>>,
-    pub(crate) queue_ecs: Arc<Queue<Box<dyn LazyUpdateEcs>>>,
+pub struct Commands {
+    queue: Arc<Queue<Box<dyn CommandsInternal>>>,
+    pub(crate) queue_ecs: Arc<Queue<Box<dyn CommandsEcsInternal>>>,
 }
 
-impl LazyUpdate {
+impl Commands {
     parallel_feature! {
 
         /// Lazily inserts a global.
@@ -537,8 +537,8 @@ impl LazyUpdate {
         }
     }
 
-    pub(crate) fn take_ecs_funcs(&self) -> Vec<Box<dyn LazyUpdateEcs>> {
-        let mut result = Vec::<Box<dyn LazyUpdateEcs>>::new();
+    pub(crate) fn take_ecs_funcs(&self) -> Vec<Box<dyn CommandsEcsInternal>> {
+        let mut result = Vec::<Box<dyn CommandsEcsInternal>>::new();
         while let Some(l) = self.queue_ecs.0.pop() {
             result.push(l);
         }
@@ -546,7 +546,7 @@ impl LazyUpdate {
     }
 }
 
-impl Drop for LazyUpdate {
+impl Drop for Commands {
     fn drop(&mut self) {
         // TODO: remove as soon as leak is fixed in crossbeam
         while self.queue.0.pop().is_some() {}

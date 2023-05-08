@@ -1,7 +1,7 @@
 // use super::{WorldExt, *};
 use crate::specs::world::{Builder, EntitiesRes};
 use crate::specs::{join::Join, storage::VecStorage};
-use crate::specs::{Component, LazyUpdate};
+use crate::specs::{Commands, Component};
 use crate::World;
 
 struct Pos;
@@ -45,7 +45,7 @@ fn lazy_insertion() {
     let e2;
     {
         let entities = world.read_resource::<EntitiesRes>();
-        let lazy = world.read_resource::<LazyUpdate>();
+        let lazy = world.read_resource::<Commands>();
 
         e1 = entities.create();
         e2 = entities.create();
@@ -66,7 +66,7 @@ fn lazy_removal() {
 
     let e = world.create_entity().with(Pos).build();
     {
-        let lazy = world.read_resource::<LazyUpdate>();
+        let lazy = world.read_resource::<Commands>();
         lazy.remove_component::<Pos>(e);
     }
 
@@ -83,8 +83,8 @@ fn super_lazy_execution() {
         let entity_res = world.read_resource::<EntitiesRes>();
         entity_res.create()
     };
-    world.read_resource::<LazyUpdate>().exec(move |world| {
-        world.read_resource::<LazyUpdate>().exec(move |world| {
+    world.read_resource::<Commands>().exec(move |world| {
+        world.read_resource::<Commands>().exec(move |world| {
             if let Err(err) = world.write_component::<Pos>().insert(e, Pos) {
                 panic!("Unable to lazily insert component! {:?}", err);
             }
@@ -105,7 +105,7 @@ fn lazy_execution() {
         entity_res.create()
     };
     {
-        let lazy = world.read_resource::<LazyUpdate>();
+        let lazy = world.read_resource::<Commands>();
         lazy.exec(move |world| {
             if let Err(err) = world.write_component::<Pos>().insert(e, Pos) {
                 panic!("Unable to lazily insert component! {:?}", err);
@@ -122,7 +122,7 @@ fn lazy_execution_order() {
     let mut world = World::empty(0);
     world.insert_resource(Vec::<u32>::new());
     {
-        let lazy = world.read_resource::<LazyUpdate>();
+        let lazy = world.read_resource::<Commands>();
         lazy.exec(move |world| {
             let mut v = world.write_resource::<Vec<u32>>();
             v.push(1);
@@ -151,7 +151,7 @@ fn delete_twice() {
 fn delete_and_lazy() {
     let mut world = World::empty(0);
     {
-        let lazy_update = world.write_resource::<crate::specs::LazyUpdate>();
+        let lazy_update = world.write_resource::<crate::specs::Commands>();
         lazy_update.exec(|world| {
             world.entities().create();
         })
@@ -159,7 +159,7 @@ fn delete_and_lazy() {
 
     world.maintain();
     {
-        let lazy_update = world.write_resource::<crate::specs::LazyUpdate>();
+        let lazy_update = world.write_resource::<crate::specs::Commands>();
         lazy_update.exec(|world| {
             world.entities().create();
         })

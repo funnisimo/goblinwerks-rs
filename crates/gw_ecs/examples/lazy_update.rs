@@ -1,6 +1,4 @@
-use gw_ecs::{
-    Builder, Component, DenseVecStorage, Entities, LazyUpdate, ReadRes, SystemData, World,
-};
+use gw_ecs::{Builder, Commands, Component, DenseVecStorage, Entities, ReadRes, SystemData, World};
 
 #[derive(Default, Component, Debug)]
 struct CompA(u32);
@@ -35,7 +33,7 @@ fn main() {
     world.maintain();
 
     let e2 = {
-        let (commands, entities) = <(ReadRes<LazyUpdate>, Entities)>::fetch(&world);
+        let (commands, entities) = <(ReadRes<Commands>, Entities)>::fetch(&world);
 
         commands.insert_global(GlobalA(32));
         commands.insert_resource(ResA(24));
@@ -57,7 +55,7 @@ fn main() {
     assert!(world.read_component::<CompB>().get(entity).is_none());
 
     {
-        let (commands,) = <(ReadRes<LazyUpdate>,)>::fetch(&world);
+        let (commands,) = <(ReadRes<Commands>,)>::fetch(&world);
         commands.remove_global::<GlobalA>();
         commands.remove_resource::<ResA>();
         commands.delete_entity(e2);

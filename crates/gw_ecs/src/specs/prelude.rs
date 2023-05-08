@@ -25,5 +25,5 @@ pub use super::{
         ComponentEvent, DefaultVecStorage, DenseVecStorage, FlaggedStorage, HashMapStorage,
         NullStorage, ReadComp, Storage, Tracked, VecStorage, WriteComp,
     },
-    world::{Builder, Component, Entities, Entity, EntityBuilder, LazyUpdate, WorldExt},
+    world::{Builder, Commands, Component, Entities, Entity, EntityBuilder, WorldExt},
 };

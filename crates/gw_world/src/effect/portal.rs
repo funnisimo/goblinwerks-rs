@@ -4,7 +4,7 @@ use crate::task::Executor;
 use crate::{camera::Camera, hero::Hero, map::Map, position::Position};
 use gw_app::log;
 use gw_ecs::atomize::Atom;
-use gw_ecs::{Entity, LazyUpdate, World};
+use gw_ecs::{Commands, Entity, World};
 use gw_util::point::Point;
 use gw_util::value::Value;
 
@@ -64,7 +64,7 @@ fn try_move_hero_world(
     location: &String,
 ) -> EffectResult {
     // TODO - Change this to an event with a change world system...
-    let lazy_update = world.read_resource::<LazyUpdate>();
+    let lazy_update = world.read_resource::<Commands>();
     let current_map_id = world.id();
     let location = location.clone();
 
@@ -154,7 +154,7 @@ fn try_move_hero_world(
 fn try_change_world(world: &mut World, new_map_id: Atom, _location: &String) -> EffectResult {
     // let mut levels = ecs.resources.get_mut::<Levels>().unwrap();
 
-    let lazy_update = world.read_resource::<LazyUpdate>();
+    let lazy_update = world.read_resource::<Commands>();
 
     lazy_update.exec_ecs(move |ecs| {
         if !ecs.has_world(new_map_id) {
