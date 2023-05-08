@@ -1,11 +1,5 @@
-use std::any::TypeId;
-
-use atomize::Atom;
-use tynm::TypeName;
-
 use crate::globals::{GlobalRef, GlobalRefMut, Globals};
 use crate::shred::{Resources, SystemData};
-use crate::specs::error::WrongGeneration;
 use crate::specs::storage::{AnyStorage, MaskedStorage};
 use crate::specs::world::EntityAllocator;
 use crate::specs::world::{CreateIter, EntitiesRes};
@@ -14,7 +8,8 @@ use crate::specs::{
 };
 use crate::utils::MetaTable;
 use crate::Builder;
-use crate::{ReadGlobal, ReadRes, Resource, ResourceId, WriteGlobal, WriteRes};
+use crate::{ReadRes, Resource, ResourceId, WriteGlobal, WriteRes};
+use atomize::Atom;
 
 // pub use crate::shred::Entry;
 
