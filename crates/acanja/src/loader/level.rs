@@ -16,14 +16,18 @@ use gw_world::{
     camera::Camera,
     effect::{parse_effects, BoxedEffect, Message, Portal},
     fov::FOV,
-    horde::{parse_spawn, HordeSpawn},
+    horde::{parse_spawn, HordeSpawner},
     level::NeedsDraw,
     log::Logger,
     map::Map,
     task::UserAction,
     tile::{Tile, Tiles},
 };
-use std::{collections::HashMap, fs::read_to_string, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    fs::read_to_string,
+    sync::Arc,
+};
 
 pub enum MapData {
     Data(Vec<String>),
@@ -65,7 +69,7 @@ pub struct LevelData {
     pub region: Option<Rect>,
     pub fov: Option<u32>,
     pub groups: HashMap<String, HashMap<String, Value>>,
-    pub spawn: Option<Vec<HordeSpawn>>,
+    pub spawn: Option<HashSet<HordeSpawner>>,
 }
 
 impl LevelData {
@@ -757,8 +761,9 @@ pub fn make_level<'a>(ecs: &'a mut Ecs, mut level_data: LevelData) -> &'a World 
         log(format!("[[[[ FOV ]]]] = {}", range));
     }
 
-    if let Some(mut spawn) = level_data.spawn {
-        if let Some(first) = spawn.drain(0..1).next() {
+    if let Some(spawn) = level_data.spawn {
+        // TODO - Need to support multiple live spawners (e.g. Land and Sea)
+        if let Some(first) = spawn.into_iter().next() {
             log(format!("CONFIGURED SPAWN - {:?}", first));
             world.insert_resource(first);
         }

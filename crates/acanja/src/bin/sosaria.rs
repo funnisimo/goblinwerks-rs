@@ -15,7 +15,7 @@ use gw_world::combat::Melee;
 use gw_world::effect::{register_effect_parser, BoxedEffect};
 use gw_world::fov::update_fov;
 use gw_world::hero::Hero;
-use gw_world::horde::{pick_random_horde, spawn_horde, HordeRef, HordeSpawn};
+use gw_world::horde::{pick_random_horde, spawn_horde, HordeRef, HordeSpawner, SpawnRef};
 use gw_world::map::{ensure_area_grid, AreaGrid, Cell, Map};
 use gw_world::position::Position;
 use gw_world::task::{do_next_task, DoNextTaskResult, Executor, Task, UserAction};
@@ -356,9 +356,9 @@ fn spawn_hordes(ecs: &mut Ecs) {
     let current_time = ecs.read_resource::<Executor>().time();
     let depth = 1;
 
-    let max_alive = {
+    let (max_alive, spawn_id) = {
         let level = ecs.current_world_mut();
-        let mut info = match level.try_write_resource::<HordeSpawn>() {
+        let mut info = match level.try_write_resource::<HordeSpawner>() {
             None => {
                 return;
             }
@@ -368,26 +368,26 @@ fn spawn_hordes(ecs: &mut Ecs) {
             return;
         }
         info.next_time += info.check_delay;
-        info.max_alive
+        (info.max_alive, info.id.clone())
     };
+
+    {
+        let beings = ecs.read_component::<SpawnRef>();
+
+        let count = beings.join().filter(|b| b.is(&spawn_id)).count() as u32;
+        if count >= max_alive {
+            log(format!(
+                "spawn_hordes - too many alive => count:{} >= max_alive:{}",
+                count, max_alive
+            ));
+            return;
+        }
+        log(format!("alive count = {} / {}", count, max_alive));
+    }
 
     // We got to here so we need to spawn a horde...
     if let Some(horde) = pick_random_horde(ecs.current_world_mut(), depth) {
         log(format!("SPAWN TEST - {:?}", horde));
-
-        {
-            let beings = ecs.read_component::<HordeRef>();
-
-            let count = beings.join().filter(|b| b.is(&horde)).count() as u32;
-            if count >= max_alive {
-                log(format!(
-                    "spawn_hordes - too many alive => count:{} > max_alive:{}",
-                    count, max_alive
-                ));
-                return;
-            }
-            log(format!("alive count = {} / {}", count, max_alive));
-        }
 
         // need spawn point...
 
@@ -419,8 +419,16 @@ fn spawn_hordes(ecs: &mut Ecs) {
             spawn_point
         };
 
-        let entity = spawn_horde(&horde, level.deref_mut(), spawn_point);
-        log(format!("Spawned entity {:?} @ {:?}", entity, spawn_point));
+        let leader_entity = spawn_horde(&horde, level.deref_mut(), spawn_point);
+
+        let _ = level
+            .write_component()
+            .insert(leader_entity, SpawnRef::new(spawn_id));
+
+        log(format!(
+            "Spawned horde leader = {:?} @ {:?}",
+            leader_entity, spawn_point
+        ));
     }
 }
 

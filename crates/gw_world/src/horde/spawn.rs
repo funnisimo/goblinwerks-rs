@@ -1,14 +1,17 @@
 use super::{Horde, HordeRef};
 use crate::{being::spawn_being, horde::HordeFlags};
 use gw_app::log;
-use gw_ecs::{Entity, World};
+use gw_ecs::{Component, DenseVecStorage, Entity, World};
 use gw_util::point::Point;
 use gw_util::value::{Key, Value};
-use std::collections::HashMap;
+use std::cmp::{Eq, PartialEq};
+use std::collections::{HashMap, HashSet};
+use std::hash::Hash;
+use std::ops::Deref;
 use std::sync::Arc;
 
-#[derive(Debug, Clone)]
-pub struct HordeSpawn {
+#[derive(Debug, Clone, Eq)]
+pub struct HordeSpawner {
     pub id: String,
     pub next_time: u64,
     pub check_delay: u64,
@@ -17,9 +20,9 @@ pub struct HordeSpawn {
     pub forbidden_tags: Vec<String>,
 }
 
-impl HordeSpawn {
+impl HordeSpawner {
     pub fn new() -> Self {
-        HordeSpawn {
+        HordeSpawner {
             id: "DEFAULT".to_string(),
             next_time: 0,
             check_delay: 1000,
@@ -30,9 +33,21 @@ impl HordeSpawn {
     }
 }
 
-impl Default for HordeSpawn {
+impl Default for HordeSpawner {
     fn default() -> Self {
-        HordeSpawn::new()
+        HordeSpawner::new()
+    }
+}
+
+impl Hash for HordeSpawner {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
+impl PartialEq for HordeSpawner {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
     }
 }
 
@@ -43,12 +58,12 @@ pub enum HordeSpawnParseError {
     UnknownField(Key),
 }
 
-pub fn parse_spawn(value: &Value) -> Result<Vec<HordeSpawn>, HordeSpawnParseError> {
-    let mut out = Vec::new();
+pub fn parse_spawn(value: &Value) -> Result<HashSet<HordeSpawner>, HordeSpawnParseError> {
+    let mut out = HashSet::new();
 
     if value.is_bool() {
         if value.as_bool().unwrap() {
-            out.push(HordeSpawn::default());
+            out.insert(HordeSpawner::default());
         }
         return Ok(out);
     } else if value.is_map() {
@@ -56,7 +71,7 @@ pub fn parse_spawn(value: &Value) -> Result<Vec<HordeSpawn>, HordeSpawnParseErro
         match parse_spawn_map(value.as_map().unwrap()) {
             Err(e) => return Err(e),
             Ok(v) => {
-                out.push(v);
+                out.insert(v);
             }
         }
     } else if value.is_list() {
@@ -64,8 +79,13 @@ pub fn parse_spawn(value: &Value) -> Result<Vec<HordeSpawn>, HordeSpawnParseErro
         for val in value.as_list().unwrap().iter() {
             match parse_spawn_map(val.as_map().unwrap()) {
                 Err(e) => return Err(e),
-                Ok(v) => {
-                    out.push(v);
+                Ok(mut v) => {
+                    if v.id == "DEFAULT" {
+                        v.id = format!("SPAWN_{}", out.len() + 1);
+                    }
+                    if let Some(old) = out.replace(v) {
+                        panic!("Spawner config overwrites existing value - change the id's to be unique! - {}", old.id);
+                    }
                 }
             }
         }
@@ -76,8 +96,8 @@ pub fn parse_spawn(value: &Value) -> Result<Vec<HordeSpawn>, HordeSpawnParseErro
     Ok(out)
 }
 
-fn parse_spawn_map(value: &HashMap<Key, Value>) -> Result<HordeSpawn, HordeSpawnParseError> {
-    let mut out = HordeSpawn::new();
+fn parse_spawn_map(value: &HashMap<Key, Value>) -> Result<HordeSpawner, HordeSpawnParseError> {
+    let mut out = HordeSpawner::new();
 
     for (k, v) in value.iter() {
         match k.as_str().unwrap() {
@@ -128,6 +148,27 @@ fn parse_spawn_map(value: &HashMap<Key, Value>) -> Result<HordeSpawn, HordeSpawn
     Ok(out)
 }
 
+#[derive(Component)]
+pub struct SpawnRef(String);
+
+impl SpawnRef {
+    pub fn new(id: String) -> Self {
+        SpawnRef(id)
+    }
+
+    pub fn is(&self, id: &str) -> bool {
+        self.0 == id
+    }
+}
+
+impl Deref for SpawnRef {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 // There are 2 ways to spawn hordes:
 // 1) Spawn all members
 // 2) Leader as avatar
@@ -155,10 +196,11 @@ pub fn spawn_horde(horde: &Arc<Horde>, world: &mut World, point: Point) -> Entit
 
     let leader_entity = spawn_being(&horde.leader, world, point);
 
+    let _ = world
+        .write_component()
+        .insert(leader_entity, HordeRef::new(Arc::clone(horde)));
+
     if horde.flags.intersects(HordeFlags::SPAWN_AS_AVATAR) {
-        world
-            .write_component()
-            .insert(leader_entity, HordeRef::new(Arc::clone(horde)));
         log(format!(
             "Spawn Horde Avatar - {} @ {:?}",
             horde.leader.id, point

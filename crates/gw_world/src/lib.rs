@@ -29,6 +29,7 @@ pub fn register_components(ecs: &mut Ecs) {
     ecs.register::<combat::Melee>();
     ecs.register::<being::Stats>();
     ecs.register::<horde::HordeRef>();
+    ecs.register::<horde::SpawnRef>();
 }
 
 pub fn setup_ecs(ecs: &mut Ecs) {
