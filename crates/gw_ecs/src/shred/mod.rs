@@ -86,11 +86,10 @@
 
 pub mod cell;
 
-mod dispatch;
-// mod meta;
+// mod dispatch;
+mod meta;
 mod system;
-#[macro_use]
-mod resources;
+mod world;
 
 /// A reexport of the `#[derive(SystemData]` macro provided by `shred-derive`.
 /// This requires that the `shred-derive` feature is enabled.
@@ -100,16 +99,25 @@ mod resources;
 // #[cfg(feature = "parallel")]
 // pub use self::dispatch::AsyncDispatcher;
 
-#[cfg(feature = "parallel")]
-pub use self::dispatch::{Par, ParSeq, RunWithPool, Seq};
+// #[cfg(feature = "parallel")]
+// pub use self::dispatch::{Par, ParSeq, RunWithPool, Seq};
 pub use self::{
-    dispatch::{
-        // BatchAccessor, BatchController, BatchUncheckedWorld,
-        Dispatcher,
-        DispatcherBuilder,
-        // MultiDispatchController, MultiDispatcher,
+    // dispatch::{
+    //     // BatchAccessor, BatchController, BatchUncheckedWorld,
+    //     Dispatcher,
+    //     DispatcherBuilder,
+    //     // MultiDispatchController, MultiDispatcher,
+    // },
+    meta::{CastFrom, MetaIter, MetaIterMut, MetaTable},
+    system::{
+        // Accessor, AccessorCow, DynamicSystemData,
+        RunNow,
+        RunningTime,
+        // StaticAccessor,
+        System,
+        SystemData,
     },
-    resources::{
+    world::{
         NoSetup,
         // Entry, Fetch, FetchMut,
         ReadRes,
@@ -124,11 +132,4 @@ pub use self::{
         WriteRes,
         WriteResSetup,
     },
-    // meta::{CastFrom, MetaIter, MetaIterMut, MetaTable},
-    system::{
-        Accessor, AccessorCow, DynamicSystemData, RunNow, RunningTime, StaticAccessor, System,
-        SystemData,
-    },
 };
-
-pub(crate) use resources::fetch_panic;

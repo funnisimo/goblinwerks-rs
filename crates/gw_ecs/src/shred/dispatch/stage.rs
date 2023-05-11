@@ -38,13 +38,12 @@ use crate::shred::{
         dispatcher::{SystemExecSend, SystemId},
         util::check_intersection,
     },
-    resources::ResourceId,
     system::{RunningTime, System},
 };
-use crate::World;
-use ahash::AHashMap as HashMap;
+use crate::{ResourceId, World};
 use arrayvec::ArrayVec;
 use smallvec::SmallVec;
+use std::collections::HashMap;
 use std::fmt;
 
 const MAX_SYSTEMS_PER_GROUP: usize = 5;
@@ -96,7 +95,7 @@ impl<'a> Stage<'a> {
     pub fn dispose(self, world: &mut World) {
         for group in self.groups {
             for sys in group {
-                sys.dispose(world);
+                sys.teardown(world);
             }
         }
     }
@@ -180,8 +179,8 @@ impl<'a> StagesBuilder<'a> {
         let mut reads = system.accessor().reads();
         let writes = system.accessor().writes();
 
-        reads.sort();
-        reads.dedup();
+        // reads.sort();
+        // reads.dedup();
 
         let new_time = system.running_time();
 

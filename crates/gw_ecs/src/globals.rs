@@ -2,6 +2,7 @@ use crate::atomic_refcell::{AtomicBorrowRef, AtomicRef, AtomicRefCell, AtomicRef
 use crate::shred::Resources;
 use crate::shred::{Resource, ResourceId, SetupDefault, SetupHandler, SystemData};
 use crate::World;
+use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
@@ -227,16 +228,16 @@ where
         }
     }
 
-    fn reads() -> Vec<ResourceId> {
-        vec![
-            ResourceId::new::<Globals>(),
-            ResourceId::new::<GlobalRes<T>>(),
-        ]
+    fn reads() -> HashSet<ResourceId> {
+        let mut reads = HashSet::new();
+        reads.insert(ResourceId::new::<Globals>());
+        reads.insert(ResourceId::new::<GlobalRes<T>>());
+        reads
     }
 
-    fn writes() -> Vec<ResourceId> {
-        vec![]
-    }
+    // fn writes() -> HashSet<ResourceId> {
+    //     vec![]
+    // }
 }
 
 /// Allows to fetch a resource in a system mutably.
@@ -297,12 +298,16 @@ where
         }
     }
 
-    fn reads() -> Vec<ResourceId> {
-        vec![ResourceId::new::<Globals>()]
+    fn reads() -> HashSet<ResourceId> {
+        let mut reads = HashSet::new();
+        reads.insert(ResourceId::new::<Globals>());
+        reads
     }
 
-    fn writes() -> Vec<ResourceId> {
-        vec![ResourceId::new::<GlobalRes<T>>()]
+    fn writes() -> HashSet<ResourceId> {
+        let mut writes = HashSet::new();
+        writes.insert(ResourceId::new::<GlobalRes<T>>());
+        writes
     }
 }
 
@@ -324,16 +329,16 @@ where
         }
     }
 
-    fn reads() -> Vec<ResourceId> {
-        vec![
-            ResourceId::new::<Globals>(),
-            ResourceId::new::<GlobalRes<T>>(),
-        ]
+    fn reads() -> HashSet<ResourceId> {
+        let mut reads = HashSet::new();
+        reads.insert(ResourceId::new::<Globals>());
+        reads.insert(ResourceId::new::<GlobalRes<T>>());
+        reads
     }
 
-    fn writes() -> Vec<ResourceId> {
-        vec![]
-    }
+    // fn writes() -> Vec<ResourceId> {
+    //     vec![]
+    // }
 }
 
 impl<'a, T, F> SystemData<'a> for Option<WriteGlobal<'a, T, F>>
@@ -352,12 +357,16 @@ where
         }
     }
 
-    fn reads() -> Vec<ResourceId> {
-        vec![ResourceId::new::<Globals>()]
+    fn reads() -> HashSet<ResourceId> {
+        let mut reads = HashSet::new();
+        reads.insert(ResourceId::new::<Globals>());
+        reads
     }
 
-    fn writes() -> Vec<ResourceId> {
-        vec![ResourceId::new::<GlobalRes<T>>()]
+    fn writes() -> HashSet<ResourceId> {
+        let mut writes = HashSet::new();
+        writes.insert(ResourceId::new::<GlobalRes<T>>());
+        writes
     }
 }
 

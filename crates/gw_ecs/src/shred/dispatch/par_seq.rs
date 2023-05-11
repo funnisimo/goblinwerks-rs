@@ -1,9 +1,8 @@
 use crate::shred::{
     dispatch::util::check_intersection,
-    resources::ResourceId,
     system::{RunNow, System},
 };
-use crate::World;
+use crate::{ResourceId, World};
 use rayon::{join, ThreadPool};
 use std::borrow::Borrow;
 

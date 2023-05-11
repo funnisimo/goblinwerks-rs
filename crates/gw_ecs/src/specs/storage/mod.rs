@@ -20,7 +20,7 @@ pub use self::{
 use self::storages::SliceAccess;
 
 // use crate::shred::Fetch;
-use crate::{atomic_refcell::AtomicRef, utils::CastFrom, EntityBuilder, World};
+use crate::{atomic_refcell::AtomicRef, shred::CastFrom, EntityBuilder, World};
 use hibitset::{BitSet, BitSetLike, BitSetNot};
 use std::{
     self,

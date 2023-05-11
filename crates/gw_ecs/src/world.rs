@@ -1,4 +1,5 @@
 use crate::globals::{GlobalRef, GlobalRefMut, Globals};
+use crate::shred::MetaTable;
 use crate::shred::{Resources, SystemData};
 use crate::specs::storage::{AnyStorage, MaskedStorage};
 use crate::specs::world::EntityAllocator;
@@ -6,7 +7,6 @@ use crate::specs::world::{CreateIter, EntitiesRes};
 use crate::specs::{
     Commands, Component, Entities, EntitiesMut, Entity, EntityBuilder, ReadComp, Storage, WriteComp,
 };
-use crate::utils::MetaTable;
 use crate::Builder;
 use crate::{ReadRes, Resource, ResourceId, WriteGlobal, WriteRes};
 use atomize::Atom;
@@ -751,8 +751,8 @@ mod tests {
 
     #[test]
     fn fetch_aspects() {
-        assert_eq!(ReadRes::<Res>::reads(), vec![ResourceId::new::<Res>()]);
-        assert_eq!(ReadRes::<Res>::writes(), vec![]);
+        assert!(ReadRes::<Res>::reads().contains(&ResourceId::new::<Res>()));
+        assert!(ReadRes::<Res>::writes().is_empty());
 
         let mut world = World::empty(a!(DEFAULT));
         world.insert_resource(Res);
@@ -761,8 +761,8 @@ mod tests {
 
     #[test]
     fn fetch_mut_aspects() {
-        assert_eq!(WriteRes::<Res>::reads(), vec![]);
-        assert_eq!(WriteRes::<Res>::writes(), vec![ResourceId::new::<Res>()]);
+        assert!(WriteRes::<Res>::reads().is_empty());
+        assert!(WriteRes::<Res>::writes().contains(&ResourceId::new::<Res>()));
 
         let mut world = World::empty("DEFAULT");
         world.insert_resource(Res);

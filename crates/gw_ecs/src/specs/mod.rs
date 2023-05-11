@@ -209,16 +209,16 @@ pub mod storage;
 pub mod world;
 
 pub use crate::shred::{
-    Accessor,
-    AccessorCow,
+    // Accessor,
+    // AccessorCow,
     // BatchAccessor, BatchController, BatchUncheckedWorld,
-    Dispatcher,
-    DispatcherBuilder,
+    // Dispatcher,
+    // DispatcherBuilder,
     ReadRes,
     ReadResSetup,
     RunNow,
     RunningTime,
-    StaticAccessor,
+    // StaticAccessor,
     System,
     SystemData,
     WriteRes,

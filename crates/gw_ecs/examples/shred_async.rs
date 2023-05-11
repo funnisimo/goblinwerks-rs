@@ -1,4 +1,4 @@
-use gw_ecs::{DispatcherBuilder, ReadRes, ResourceId, System, SystemData, World, WriteRes};
+use gw_ecs::{schedule::Schedule, ReadRes, ResourceId, System, SystemData, World, WriteRes};
 
 #[derive(Debug, Default)]
 struct ResA;
@@ -45,11 +45,10 @@ fn main() {
     let mut resources = World::empty(123);
     resources.insert_resource(ResA);
     resources.insert_resource(ResB);
-    let mut dispatcher = DispatcherBuilder::new()
-        .with(PrintSystem, "print", &[]) // Adds a system "print" without dependencies
-        .with_thread_local(EmptySystem(&mut x))
-        .build();
+    let mut dispatcher = Schedule::new()
+        .with("UPDATE", PrintSystem) // Adds a system "print" without dependencies
+        .with_local("UPDATE", EmptySystem(&mut x));
 
-    dispatcher.dispatch(&resources);
-    dispatcher.dispatch(&resources);
+    dispatcher.run(&mut resources);
+    dispatcher.run(&mut resources);
 }

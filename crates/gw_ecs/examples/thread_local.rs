@@ -1,4 +1,4 @@
-use gw_ecs::{DispatcherBuilder, ReadRes, ResourceId, System, SystemData, World, WriteRes};
+use gw_ecs::{schedule::Schedule, ReadRes, ResourceId, System, SystemData, World, WriteRes};
 
 #[derive(Debug, Default)]
 struct ResA;
@@ -27,13 +27,11 @@ impl<'a> System<'a> for EmptySystem {
 fn main() {
     let mut x = 5;
 
-    let mut resources = World::empty(0);
-    let mut dispatcher = DispatcherBuilder::new()
-        .with_thread_local(EmptySystem(&mut x))
-        .build();
-    dispatcher.setup(&mut resources);
+    let mut world = World::empty(0);
+    let mut dispatcher = Schedule::new().with_local("UPDATE", EmptySystem(&mut x));
 
-    dispatcher.dispatch(&resources);
+    dispatcher.setup(&mut world);
+    dispatcher.run(&mut world);
 }
 
 // The following is required for the example to compile without the

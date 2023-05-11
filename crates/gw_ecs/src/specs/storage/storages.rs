@@ -1,14 +1,12 @@
 //! Different types of storages you can use for your components.
 
-use std::{collections::BTreeMap, mem::MaybeUninit};
-
-use hashbrown::HashMap;
-use hibitset::BitSetLike;
-
 use crate::specs::{
     storage::{DistinctStorage, UnprotectedStorage},
     world::Index,
 };
+use hibitset::BitSetLike;
+use std::collections::HashMap;
+use std::{collections::BTreeMap, mem::MaybeUninit};
 
 /// Some storages can provide slices to access the underlying data.
 ///

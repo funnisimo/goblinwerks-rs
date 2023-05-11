@@ -1,6 +1,7 @@
 use gw_ecs::{
+    schedule::Schedule,
     shred::{SetupDefault, SetupHandler},
-    DispatcherBuilder, ReadRes, System, World, WriteRes,
+    ReadRes, System, World, WriteRes,
 };
 
 #[derive(Debug, Default)]
@@ -56,9 +57,7 @@ impl<'a> System<'a> for PrintSystem {
 
 fn main() {
     let mut resources = World::empty("MAIN");
-    let mut dispatcher = DispatcherBuilder::new()
-        .with(PrintSystem, "print", &[]) // Adds a system "print" without dependencies
-        .build();
+    let mut dispatcher = Schedule::new().with("UPDATE", PrintSystem); // Adds a system "print" without dependencies
 
     // Will automatically insert `ResB` (the only one that has a default provider).
     dispatcher.setup(&mut resources);
@@ -67,10 +66,10 @@ fn main() {
     });
 
     // `ResB` is not in resources, but `PrintSystem` still works.
-    dispatcher.dispatch(&resources);
+    dispatcher.run(&mut resources);
 
     resources.insert_resource(ResB);
 
     // Now `ResB` can be printed, too.
-    dispatcher.dispatch(&resources);
+    dispatcher.run(&mut resources);
 }

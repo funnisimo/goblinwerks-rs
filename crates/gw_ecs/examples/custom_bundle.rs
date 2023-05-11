@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use gw_ecs::{ReadRes, ResourceId, SystemData, World, WriteRes};
 
 #[derive(Debug, Default)]
@@ -24,12 +26,16 @@ impl<'a> SystemData<'a> for ExampleBundle<'a> {
         }
     }
 
-    fn reads() -> Vec<ResourceId> {
-        vec![ResourceId::new::<ResA>()]
+    fn reads() -> HashSet<ResourceId> {
+        let mut reads = HashSet::new();
+        reads.insert(ResourceId::new::<ResA>());
+        reads
     }
 
-    fn writes() -> Vec<ResourceId> {
-        vec![ResourceId::new::<ResB>()]
+    fn writes() -> HashSet<ResourceId> {
+        let mut writes = HashSet::new();
+        writes.insert(ResourceId::new::<ResB>());
+        writes
     }
 }
 

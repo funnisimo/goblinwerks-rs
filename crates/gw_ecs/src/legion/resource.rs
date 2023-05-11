@@ -1,6 +1,6 @@
 use std::any::{Any, TypeId};
 
-// SOURCE - SHRED
+// SOURCE - SHRED + LEGION
 
 /// The id of a [`Resource`], which simply wraps a type id and a "dynamic ID".
 /// The "dynamic ID" is usually just left `0`, and, unless such documentation

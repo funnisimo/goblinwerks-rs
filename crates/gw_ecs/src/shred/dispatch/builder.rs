@@ -1,4 +1,4 @@
-use ahash::AHashMap as HashMap;
+use std::collections::HashMap;
 use std::{collections::hash_map::Entry, fmt};
 
 #[cfg(feature = "parallel")]

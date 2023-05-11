@@ -1,3 +1,4 @@
+use gw_ecs::schedule::Schedule;
 use rand::prelude::*;
 
 #[cfg(feature = "parallel")]
@@ -143,11 +144,10 @@ impl<'a> System<'a> for ShrapnelSystem {
 fn main() {
     let mut world = World::empty(0);
 
-    let mut dispatcher = DispatcherBuilder::new()
-        .with(PhysicsSystem, "physics", &[])
-        .with(ClusterBombSystem, "cluster_bombs", &[])
-        .with(ShrapnelSystem, "shrapnels", &[])
-        .build();
+    let mut dispatcher = Schedule::new()
+        .with("UPDATE", PhysicsSystem)
+        .with("UPDATE", ClusterBombSystem)
+        .with("UPDATE", ShrapnelSystem);
 
     dispatcher.setup(&mut world);
 
@@ -191,7 +191,7 @@ fn main() {
             break;
         }
 
-        dispatcher.dispatch(&world);
+        dispatcher.run(&mut world);
 
         // Maintain dynamically added and removed entities in dispatch.
         // This is what actually executes changes done by `LazyUpdate`.

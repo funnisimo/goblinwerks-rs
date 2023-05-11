@@ -1,5 +1,5 @@
-use gw_ecs::{specs::storage::HashMapStorage, *};
-use gw_macro::SystemData;
+use gw_ecs::SystemData;
+use gw_ecs::{schedule::Schedule, specs::storage::HashMapStorage, *};
 
 // -- Components --
 // A component exists for 0..n
@@ -221,22 +221,23 @@ fn main() {
     // because we want to print the components before executing
     // `SysCheckPositive`.
     #[allow(unused_mut)]
-    let mut dispatcher_builder = DispatcherBuilder::new()
-        .with(SysPrintBool, "print_bool", &[])
-        .with(SysCheckPositive, "check_positive", &["print_bool"])
-        .with(SysStoreMax::new(), "store_max", &["check_positive"])
-        .with(SysSpawn::new(), "spawn", &[])
-        .with(SysPrintBool, "print_bool2", &["check_positive"]);
+    let mut dispatcher = Schedule::new()
+        .with("UPDATE", SysPrintBool)
+        .with("UPDATE", SysCheckPositive)
+        .with("UPDATE", SysStoreMax::new())
+        .with("UPDATE", SysSpawn::new())
+        .with("UPDATE", SysPrintBool);
 
     #[cfg(feature = "parallel")]
     {
-        dispatcher_builder = dispatcher_builder.with(JoinParallel, "join_par", &[])
+        dispatcher.add_system("UPDATE", JoinParallel)
     }
 
-    let mut dispatcher = dispatcher_builder
-        .with_barrier() // we want to make sure all systems finished before running the last one
-        .with(AddIntToFloat, "add_float_int", &[])
-        .build();
+    dispatcher
+        .get_stage_mut("POST_UPDATE")
+        .unwrap()
+        .do_maintain_before() // .with_barrier() // we want to make sure all systems finished before running the last one
+        .add_system(AddIntToFloat);
 
     // setup() will setup all Systems we added, registering all resources and
     // components that they will try to read from and write to
@@ -262,7 +263,7 @@ fn main() {
     w.create_entity().with(CompBool(false)).build();
     w.create_entity().with(CompFloat(0.1)).build();
 
-    dispatcher.dispatch(&w);
+    dispatcher.run(&mut w);
     w.maintain();
 
     // Insert a component, associated with `e`.
@@ -270,6 +271,6 @@ fn main() {
         eprintln!("Failed to insert component! {:?}", err);
     }
 
-    dispatcher.dispatch(&w);
+    dispatcher.run(&mut w);
     w.maintain();
 }

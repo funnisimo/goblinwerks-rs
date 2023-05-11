@@ -6,8 +6,18 @@ pub use super::join::Join;
 #[cfg(feature = "parallel")]
 pub use super::join::ParJoin;
 pub use crate::shred::{
-    Accessor, Dispatcher, DispatcherBuilder, ReadRes, ReadResSetup, Resource, ResourceId, RunNow,
-    StaticAccessor, System, SystemData, WriteRes, WriteResSetup,
+    // Accessor,
+    // Dispatcher, DispatcherBuilder,
+    ReadRes,
+    ReadResSetup,
+    Resource,
+    ResourceId,
+    RunNow,
+    // StaticAccessor,
+    System,
+    SystemData,
+    WriteRes,
+    WriteResSetup,
 };
 pub use crate::World;
 pub use hibitset::BitSet;

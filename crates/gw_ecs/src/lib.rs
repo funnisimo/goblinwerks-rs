@@ -3,11 +3,11 @@ pub mod ecs;
 pub mod globals;
 #[macro_use]
 pub mod shred;
+pub mod legion;
 pub mod specs;
 
+pub mod schedule;
 pub mod world;
-
-pub mod utils;
 
 pub use ecs::Ecs;
 pub use globals::{ReadGlobal, ReadGlobalDefault, WriteGlobal, WriteGlobalDefault};
@@ -15,7 +15,7 @@ pub use shred::{ReadRes, ReadResSetup, TryReadRes, TryWriteRes, WriteRes, WriteR
 pub use shred::{Resource, ResourceId, Resources, SystemData};
 pub use world::World;
 
-pub use shred::{Dispatcher, DispatcherBuilder};
+// pub use shred::{Dispatcher, DispatcherBuilder};
 pub use specs::{
     join::*,
     storage::{DenseVecStorage, MaskedStorage, Storage, VecStorage},

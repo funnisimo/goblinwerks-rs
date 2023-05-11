@@ -1,6 +1,7 @@
 use crate::atomic_refcell::{AtomicRef, AtomicRefMut};
 use crate::shred::{Resource, ResourceId, SetupDefault, SetupHandler, SystemData};
 use crate::World;
+use std::collections::HashSet;
 use std::{
     marker::PhantomData,
     ops::{Deref, DerefMut},
@@ -55,13 +56,15 @@ where
         }
     }
 
-    fn reads() -> Vec<ResourceId> {
-        vec![ResourceId::new::<T>()]
+    fn reads() -> HashSet<ResourceId> {
+        let mut reads = HashSet::new();
+        reads.insert(ResourceId::new::<T>());
+        reads
     }
 
-    fn writes() -> Vec<ResourceId> {
-        vec![]
-    }
+    // fn writes() -> Vec<ResourceId> {
+    //     vec![]
+    // }
 }
 
 /// Allows to fetch a resource in a system mutably.
@@ -122,12 +125,14 @@ where
         }
     }
 
-    fn reads() -> Vec<ResourceId> {
-        vec![]
-    }
+    // fn reads() -> Vec<ResourceId> {
+    //     vec![]
+    // }
 
-    fn writes() -> Vec<ResourceId> {
-        vec![ResourceId::new::<T>()]
+    fn writes() -> HashSet<ResourceId> {
+        let mut writes = HashSet::new();
+        writes.insert(ResourceId::new::<T>());
+        writes
     }
 }
 
@@ -149,13 +154,15 @@ where
         }
     }
 
-    fn reads() -> Vec<ResourceId> {
-        vec![ResourceId::new::<T>()]
+    fn reads() -> HashSet<ResourceId> {
+        let mut reads = HashSet::new();
+        reads.insert(ResourceId::new::<T>());
+        reads
     }
 
-    fn writes() -> Vec<ResourceId> {
-        vec![]
-    }
+    // fn writes() -> Vec<ResourceId> {
+    //     vec![]
+    // }
 }
 
 impl<'a, T, F> SystemData<'a> for Option<WriteRes<'a, T, F>>
@@ -174,12 +181,14 @@ where
         }
     }
 
-    fn reads() -> Vec<ResourceId> {
-        vec![]
-    }
+    // fn reads() -> Vec<ResourceId> {
+    //     vec![]
+    // }
 
-    fn writes() -> Vec<ResourceId> {
-        vec![ResourceId::new::<T>()]
+    fn writes() -> HashSet<ResourceId> {
+        let mut writes = HashSet::new();
+        writes.insert(ResourceId::new::<T>());
+        writes
     }
 }
 

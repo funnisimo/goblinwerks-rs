@@ -45,23 +45,25 @@ pub fn impl_system_data(ast: &DeriveInput) -> proc_macro2::TokenStream {
                 #fetch_return
             }
 
-            fn reads() -> Vec<ResourceId> {
-                let mut r = Vec::new();
+            fn reads() -> std::collections::HashSet<ResourceId> {
+                let mut r = std::collections::HashSet::new();
 
                 #( {
-                        let mut reads = <#tys as SystemData> :: reads();
-                        r.append(&mut reads);
+                        for i in <#tys as SystemData>::reads().into_iter() {
+                            r.insert(i);
+                        }
                     } )*
 
                 r
             }
 
-            fn writes() -> Vec<ResourceId> {
-                let mut r = Vec::new();
+            fn writes() -> std::collections::HashSet<ResourceId> {
+                let mut r = std::collections::HashSet::new();
 
                 #( {
-                        let mut writes = <#tys as SystemData> :: writes();
-                        r.append(&mut writes);
+                        for i in <#tys as SystemData>::writes().into_iter() {
+                            r.insert(i);
+                        }
                     } )*
 
                 r

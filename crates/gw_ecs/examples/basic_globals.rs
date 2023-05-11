@@ -1,7 +1,8 @@
 use gw_ecs::{
     ecs::Ecs,
     globals::ReadGlobal,
-    shred::{DispatcherBuilder, ReadRes, System},
+    schedule::Schedule,
+    shred::{ReadRes, System},
     World,
 };
 
@@ -45,17 +46,16 @@ fn main() {
 
     assert!(ecs.try_read_global::<GlobalA>().is_some());
 
-    let mut dispatcher = DispatcherBuilder::new()
-        .with(GlobalSystem, "global", &[])
-        .build();
+    let mut dispatcher = Schedule::new();
+    dispatcher.add_system("UPDATE", GlobalSystem);
 
-    dispatcher.dispatch(ecs.current_world());
+    dispatcher.run(ecs.current_world_mut());
 
-    let mut world = World::empty(0);
+    let mut world = World::empty("TACO");
     world.insert_resource(UniqueA(2));
 
-    let index = ecs.insert_world(world);
-    ecs.set_current_world(0);
+    ecs.insert_world(world);
+    ecs.set_current_world("TACO").unwrap();
 
-    dispatcher.dispatch(ecs.current_world());
+    dispatcher.run(ecs.current_world_mut());
 }

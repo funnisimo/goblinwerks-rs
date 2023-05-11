@@ -1,5 +1,5 @@
 use gw_ecs::ecs::Ecs;
-use gw_ecs::shred::DispatcherBuilder;
+use gw_ecs::schedule::Schedule;
 use gw_ecs::shred::System;
 use gw_ecs::shred::{ReadRes, WriteRes};
 
@@ -57,15 +57,14 @@ impl<'a> System<'a> for NotSyncSystem {
 
 fn main() {
     let mut ecs = Ecs::default();
-    let mut dispatcher = DispatcherBuilder::new()
-        .with(PrintSystem, "print", &[]) // Adds a system "print" without dependencies
+    let mut dispatcher = Schedule::new()
+        .with("UPDATE", PrintSystem) // Adds a system "print" without dependencies
         // .with(NotSyncSystem, "not_sync", &[]) // Adds a system "print" without dependencies
-        .with_thread_local(NotSyncSystem)
-        .build();
+        .with_local("UPDATE", NotSyncSystem);
     dispatcher.setup(ecs.current_world_mut());
 
     // Dispatch as often as you want to
-    dispatcher.dispatch(ecs.current_world());
-    dispatcher.dispatch(ecs.current_world());
+    dispatcher.run(ecs.current_world_mut());
+    dispatcher.run(ecs.current_world_mut());
     // ...
 }

@@ -1,8 +1,11 @@
 // SOURCE - SHRED
 
 use crate::{Resource, ResourceId, World};
-use ahash::AHashMap as HashMap;
-use std::{any::TypeId, collections::hash_map::Entry, marker::PhantomData};
+use std::{
+    any::TypeId,
+    collections::{hash_map::Entry, HashMap},
+    marker::PhantomData,
+};
 
 /// This implements `Send` and `Sync` unconditionally.
 /// (the trait itself doesn't need to have these bounds and the

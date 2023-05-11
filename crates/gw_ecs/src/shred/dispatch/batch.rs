@@ -1,20 +1,20 @@
-use crate::shred::resources::ResourceId;
 use crate::shred::{
     Accessor, AccessorCow, Dispatcher, DynamicSystemData, RunningTime, System, SystemData,
 };
-use crate::World;
+use crate::{ResourceId, World};
+use std::collections::HashSet;
 
 /// The `BatchAccessor` is used to notify the main dispatcher of the read and
 /// write resources of the `System`s contained in the batch ("sub systems").
 #[derive(Debug)]
 pub struct BatchAccessor {
-    reads: Vec<ResourceId>,
-    writes: Vec<ResourceId>,
+    reads: HashSet<ResourceId>,
+    writes: HashSet<ResourceId>,
 }
 
 impl BatchAccessor {
     /// Creates a `BatchAccessor`
-    pub fn new(reads: Vec<ResourceId>, writes: Vec<ResourceId>) -> Self {
+    pub fn new(reads: HashSet<ResourceId>, writes: HashSet<ResourceId>) -> Self {
         BatchAccessor { reads, writes }
     }
 }
@@ -24,11 +24,11 @@ impl Accessor for BatchAccessor {
         None
     }
 
-    fn reads(&self) -> Vec<ResourceId> {
+    fn reads(&self) -> HashSet<ResourceId> {
         self.reads.clone()
     }
 
-    fn writes(&self) -> Vec<ResourceId> {
+    fn writes(&self) -> HashSet<ResourceId> {
         self.writes.clone()
     }
 }

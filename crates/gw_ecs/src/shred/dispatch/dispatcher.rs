@@ -38,7 +38,7 @@ impl<'a, 'b> Dispatcher<'a, 'b> {
         }
 
         for sys in self.thread_local {
-            sys.dispose(world);
+            sys.teardown(world);
         }
     }
 
@@ -135,7 +135,7 @@ impl<'a, 'b, 'c> RunNow<'a> for Dispatcher<'b, 'c> {
         self.setup(world);
     }
 
-    fn dispose(self: Box<Self>, world: &mut World) {
+    fn teardown(self: Box<Self>, world: &mut World) {
         (*self).dispose(world);
     }
 }

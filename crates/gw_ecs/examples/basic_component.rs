@@ -1,4 +1,4 @@
-use gw_ecs::*;
+use gw_ecs::{schedule::Schedule, *};
 
 // A component contains data which is associated with an entity.
 
@@ -48,7 +48,7 @@ fn main() {
     // logical dependencies on other systems.
     // Since we only have one, we don't depend on anything.
     // See the `full` example for dependencies.
-    let mut dispatcher = DispatcherBuilder::new().with(SysA, "sys_a", &[]).build();
+    let mut dispatcher = Schedule::new().with("UPDATE", SysA);
 
     // setup() must be called before creating any entity, it will register
     // all Components and Resources that Systems depend on
@@ -64,5 +64,5 @@ fn main() {
     world.create_entity().with(Pos(2.0)).build();
 
     // This dispatches all the systems in parallel (but blocking).
-    dispatcher.dispatch(&world);
+    dispatcher.run(&mut world);
 }
