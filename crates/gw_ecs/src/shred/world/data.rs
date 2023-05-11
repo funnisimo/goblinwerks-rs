@@ -51,7 +51,7 @@ where
 
     fn fetch(world: &'a World) -> Self {
         ReadRes::<'a, T, F> {
-            inner: world.read_resource::<T>().inner,
+            inner: world.read_resource::<T>(),
             phantom: PhantomData,
         }
     }
@@ -120,7 +120,7 @@ where
 
     fn fetch(world: &'a World) -> Self {
         WriteRes::<'a, T, F> {
-            inner: world.write_resource::<T>().inner,
+            inner: world.write_resource::<T>(),
             phantom: PhantomData,
         }
     }
@@ -148,7 +148,7 @@ where
         match world.try_read_resource::<T>() {
             None => None,
             Some(fetch) => Some(ReadRes::<'a, T, F> {
-                inner: fetch.inner,
+                inner: fetch,
                 phantom: PhantomData,
             }),
         }
@@ -175,7 +175,7 @@ where
         match world.try_write_resource::<T>() {
             None => None,
             Some(fetch) => Some(WriteRes::<'a, T, F> {
-                inner: fetch.inner,
+                inner: fetch,
                 phantom: PhantomData,
             }),
         }

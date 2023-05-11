@@ -57,17 +57,17 @@ impl Globals {
         }
     }
 
-    pub fn fetch_mut<G: Resource>(&self) -> GlobalRefMut<G> {
+    pub fn fetch_mut<G: Resource>(&self) -> GlobalMut<G> {
         let (globals, borrow) = self.resources.borrow().destructure();
         let fetch = globals.get_mut::<G>().unwrap();
-        GlobalRefMut::new(borrow, fetch)
+        GlobalMut::new(borrow, fetch)
     }
 
-    pub fn try_fetch_mut<G: Resource>(&self) -> Option<GlobalRefMut<G>> {
+    pub fn try_fetch_mut<G: Resource>(&self) -> Option<GlobalMut<G>> {
         let (globals, borrow) = self.resources.borrow().destructure();
         match globals.get_mut::<G>() {
             None => None,
-            Some(fetch) => Some(GlobalRefMut::new(borrow, fetch)),
+            Some(fetch) => Some(GlobalMut::new(borrow, fetch)),
         }
     }
 }
@@ -94,7 +94,7 @@ impl Clone for Globals {
 ///
 /// * `T`: The type of the resource
 pub struct GlobalRef<'a, T: 'a> {
-    borrow: AtomicBorrowRef<'a>,
+    borrow: AtomicBorrowRef<'a>, // borrow of globals
     fetch: AtomicRef<'a, T>,
 }
 
@@ -132,19 +132,19 @@ impl<'a, T> Clone for GlobalRef<'a, T> {
 /// # Type parameters
 ///
 /// * `T`: The type of the resource
-pub struct GlobalRefMut<'a, T: 'a> {
+pub struct GlobalMut<'a, T: 'a> {
     #[allow(dead_code)]
-    borrow: AtomicBorrowRef<'a>,
+    borrow: AtomicBorrowRef<'a>, // borrow of globals
     fetch: AtomicRefMut<'a, T>,
 }
 
-impl<'a, T: 'a> GlobalRefMut<'a, T> {
+impl<'a, T: 'a> GlobalMut<'a, T> {
     pub(crate) fn new(borrow: AtomicBorrowRef<'a>, fetch: AtomicRefMut<'a, T>) -> Self {
-        GlobalRefMut { borrow, fetch }
+        GlobalMut { borrow, fetch }
     }
 }
 
-impl<'a, T> Deref for GlobalRefMut<'a, T>
+impl<'a, T> Deref for GlobalMut<'a, T>
 where
     T: Resource,
 {
@@ -155,7 +155,7 @@ where
     }
 }
 
-impl<'a, T> DerefMut for GlobalRefMut<'a, T>
+impl<'a, T> DerefMut for GlobalMut<'a, T>
 where
     T: Resource,
 {
@@ -249,7 +249,7 @@ where
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
 pub struct WriteGlobal<'a, T: 'a, F = ()> {
-    fetch: GlobalRefMut<'a, T>,
+    fetch: GlobalMut<'a, T>,
     phantom: PhantomData<F>,
 }
 
@@ -273,8 +273,8 @@ where
     }
 }
 
-impl<'a, T, F> From<GlobalRefMut<'a, T>> for WriteGlobal<'a, T, F> {
-    fn from(fetch: GlobalRefMut<'a, T>) -> Self {
+impl<'a, T, F> From<GlobalMut<'a, T>> for WriteGlobal<'a, T, F> {
+    fn from(fetch: GlobalMut<'a, T>) -> Self {
         WriteGlobal {
             fetch,
             phantom: PhantomData,

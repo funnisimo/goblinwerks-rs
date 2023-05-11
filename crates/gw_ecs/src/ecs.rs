@@ -1,8 +1,9 @@
-use crate::globals::{GlobalRef, GlobalRefMut, Globals};
+use crate::atomic_refcell::{AtomicRef, AtomicRefMut};
+use crate::globals::{GlobalMut, GlobalRef, Globals};
 use crate::shred::Resource;
 use crate::specs::world::CommandsEcsInternal;
 use crate::{Commands, SystemData};
-use crate::{Component, Entity, EntityBuilder, ReadComp, ReadRes, World, WriteComp, WriteRes};
+use crate::{Component, Entity, EntityBuilder, ReadComp, World, WriteComp};
 use atomize::Atom;
 
 pub struct Ecs {
@@ -185,44 +186,44 @@ impl Ecs {
         self.globals.try_fetch::<G>()
     }
 
-    pub fn write_global<G: Resource>(&self) -> GlobalRefMut<G> {
+    pub fn write_global<G: Resource>(&self) -> GlobalMut<G> {
         self.globals.fetch_mut::<G>()
     }
 
-    pub fn try_write_global<G: Resource>(&self) -> Option<GlobalRefMut<G>> {
+    pub fn try_write_global<G: Resource>(&self) -> Option<GlobalMut<G>> {
         self.globals.try_fetch_mut::<G>()
     }
 
     // RESOURCES
 
-    pub fn has_resource<G: Resource>(&self) -> bool {
-        self.current_world().has_resource::<G>()
+    pub fn has_resource<R: Resource>(&self) -> bool {
+        self.current_world().has_resource::<R>()
     }
 
     /// Inserts a resource
-    pub fn insert_resource<G: Resource>(&mut self, resource: G) {
+    pub fn insert_resource<R: Resource>(&mut self, resource: R) {
         self.current_world_mut().insert_resource(resource)
     }
 
     /// Removes a resource
-    pub fn remove_resource<G: Resource>(&mut self) -> Option<G> {
-        self.current_world_mut().remove_resource::<G>()
+    pub fn remove_resource<R: Resource>(&mut self) -> Option<R> {
+        self.current_world_mut().remove_resource::<R>()
     }
 
-    pub fn read_resource<G: Resource>(&self) -> ReadRes<G> {
-        self.current_world().read_resource::<G>()
+    pub fn read_resource<R: Resource>(&self) -> AtomicRef<R> {
+        self.current_world().read_resource::<R>()
     }
 
-    pub fn try_read_resource<G: Resource>(&self) -> Option<ReadRes<G>> {
-        self.current_world().try_read_resource::<G>()
+    pub fn try_read_resource<R: Resource>(&self) -> Option<AtomicRef<R>> {
+        self.current_world().try_read_resource::<R>()
     }
 
-    pub fn write_resource<G: Resource>(&self) -> WriteRes<G> {
-        self.current_world().write_resource::<G>()
+    pub fn write_resource<R: Resource>(&self) -> AtomicRefMut<R> {
+        self.current_world().write_resource::<R>()
     }
 
-    pub fn try_write_resource<G: Resource>(&self) -> Option<WriteRes<G>> {
-        self.current_world().try_write_resource::<G>()
+    pub fn try_write_resource<R: Resource>(&self) -> Option<AtomicRefMut<R>> {
+        self.current_world().try_write_resource::<R>()
     }
 
     // COMPONENTS

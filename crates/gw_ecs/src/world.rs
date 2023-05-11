@@ -1,4 +1,5 @@
-use crate::globals::{GlobalRef, GlobalRefMut, Globals};
+use crate::atomic_refcell::{AtomicRef, AtomicRefMut};
+use crate::globals::{GlobalMut, GlobalRef, Globals};
 use crate::shred::MetaTable;
 use crate::shred::{Resources, SystemData};
 use crate::specs::storage::{AnyStorage, MaskedStorage};
@@ -380,12 +381,12 @@ impl World {
     }
 
     /// Fetch a global value as mutable
-    pub fn write_global<G: Resource>(&self) -> GlobalRefMut<G> {
+    pub fn write_global<G: Resource>(&self) -> GlobalMut<G> {
         self.globals.fetch_mut::<G>()
     }
 
     /// Fetch a global value as mutable
-    pub fn write_global_or_insert<G: Resource + Default>(&mut self) -> GlobalRefMut<G> {
+    pub fn write_global_or_insert<G: Resource + Default>(&mut self) -> GlobalMut<G> {
         self.ensure_global::<G>();
         self.globals.fetch_mut::<G>().into()
     }
@@ -405,7 +406,7 @@ impl World {
     }
 
     /// Try to fetch a global value mutably
-    pub fn try_write_global<G: Resource>(&self) -> Option<GlobalRefMut<G>> {
+    pub fn try_write_global<G: Resource>(&self) -> Option<GlobalMut<G>> {
         self.globals.try_fetch_mut::<G>().map(|v| v.into())
     }
 
@@ -480,82 +481,82 @@ impl World {
 
     /// Makes sure there is a value for the given resource.
     /// If not found, inserts a default value.
-    pub fn ensure_resource<G: Resource + Default>(&mut self) {
-        self.resources.ensure(G::default);
+    pub fn ensure_resource<R: Resource + Default>(&mut self) {
+        self.resources.ensure(R::default);
     }
 
     /// Makes sure there is a value for the given resource.
     /// If not found, inserts a default value.
-    pub fn ensure_resource_with<G: Resource, F: FnOnce() -> G>(&mut self, func: F) {
+    pub fn ensure_resource_with<R: Resource, F: FnOnce() -> R>(&mut self, func: F) {
         self.resources.ensure(func);
     }
 
-    pub fn with_resource<G: Resource, F: FnOnce(&G) -> R, R>(&self, f: F) -> R {
-        let res = self.read_resource::<G>();
+    pub fn with_resource<R: Resource, F: FnOnce(&R) -> T, T>(&self, f: F) -> T {
+        let res = self.read_resource::<R>();
         f(&res)
     }
 
-    pub fn read_resource<T: Resource>(&self) -> ReadRes<T> {
-        match self.resources.get::<T>() {
+    pub fn read_resource<R: Resource>(&self) -> AtomicRef<R> {
+        match self.resources.get::<R>() {
             None => {
-                let name = std::any::type_name::<T>();
+                let name = std::any::type_name::<R>();
                 panic!(
                     "Failed to find resource [{name}].  Either ensure it is there or use 'try_read_resource'"
                 );
             }
-            Some(r) => r.into(),
+            Some(r) => r,
         }
     }
 
-    pub fn read_resource_or_insert<T: Resource + Default>(&mut self) -> ReadRes<T> {
-        self.ensure_resource::<T>();
-        self.resources.get::<T>().unwrap().into()
+    pub fn read_resource_or_insert<R: Resource + Default>(&mut self) -> AtomicRef<R> {
+        self.ensure_resource::<R>();
+        self.resources.get::<R>().unwrap()
     }
 
-    pub fn read_resource_or_insert_with<T: Resource, F: FnOnce() -> T>(
+    pub fn read_resource_or_insert_with<R: Resource, F: FnOnce() -> R>(
         &mut self,
         f: F,
-    ) -> ReadRes<T> {
+    ) -> AtomicRef<R> {
         self.ensure_resource_with(f);
-        self.resources.get::<T>().unwrap().into()
+        self.resources.get::<R>().unwrap().into()
     }
 
-    pub fn try_read_resource<T: Resource>(&self) -> Option<ReadRes<T>> {
-        self.resources.get::<T>().map(|v| v.into())
+    pub fn try_read_resource<R: Resource>(&self) -> Option<AtomicRef<R>> {
+        self.resources.get::<R>().map(|v| v.into())
     }
 
-    pub fn with_resource_mut<G: Resource, F: FnOnce(&mut G) -> R, R>(&self, f: F) -> R {
-        let mut res = self.write_resource::<G>();
+    pub fn with_resource_mut<R: Resource, F: FnOnce(&mut R) -> T, T>(&self, f: F) -> T {
+        let mut res = self.write_resource::<R>();
         f(&mut res)
     }
 
-    pub fn write_resource<T: Resource>(&self) -> WriteRes<T> {
-        match self.resources.get_mut::<T>() {
+    pub fn write_resource<R: Resource>(&self) -> AtomicRefMut<R> {
+        match self.resources.get_mut::<R>() {
             None => {
-                let name = std::any::type_name::<T>();
+                let name = std::any::type_name::<R>();
                 panic!(
                     "Failed to find resource [{name}].  Either ensure it is there or use 'try_write_resource'"
                 );
             }
-            Some(r) => r.into(),
+            Some(r) => r,
         }
     }
 
-    pub fn write_resource_or_insert<T: Resource + Default>(&mut self) -> WriteRes<T> {
-        self.ensure_resource::<T>();
-        self.resources.get_mut::<T>().unwrap().into()
+    pub fn write_resource_or_insert<R: Resource + Default>(&mut self) -> AtomicRefMut<R> {
+        self.ensure_resource::<R>();
+        self.resources.get_mut::<R>().unwrap().into()
     }
 
-    pub fn write_resource_or_insert_with<T: Resource, F: FnOnce() -> T>(
+    pub fn write_resource_or_insert_with<R: Resource, F: FnOnce() -> R>(
         &mut self,
         f: F,
-    ) -> WriteRes<T> {
+    ) -> AtomicRefMut<R> {
         self.ensure_resource_with(f);
-        self.resources.get_mut::<T>().unwrap().into()
+        self.resources.get_mut::<R>().unwrap()
     }
 
-    pub fn try_write_resource<T: Resource>(&self) -> Option<WriteRes<T>> {
-        self.resources.get_mut::<T>().map(|v| v.into())
+    pub fn try_write_resource<R: Resource>(&self) -> Option<AtomicRefMut<R>> {
+        self.resources.get_mut::<R>()
     }
 
     // COMPONENTS

@@ -57,13 +57,13 @@ impl UnsafeResources {
         self.map.entry(type_id)
     }
 
-    /// # Safety
-    /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
-    unsafe fn ensure<T: Resource, F: FnOnce() -> T>(&mut self, f: F) {
-        if !self.contains(&ResourceId::of::<T>()) {
-            self.insert(f())
-        }
-    }
+    // /// # Safety
+    // /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
+    // unsafe fn ensure<T: Resource, F: FnOnce() -> T>(&mut self, f: F) {
+    //     if !self.contains(&ResourceId::of::<T>()) {
+    //         self.insert(f())
+    //     }
+    // }
 
     /// # Safety
     /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
@@ -111,17 +111,17 @@ impl Resources {
         Default::default()
     }
 
-    pub(crate) fn internal(&self) -> &UnsafeResources {
-        &self.internal
-    }
+    // pub(crate) fn internal(&self) -> &UnsafeResources {
+    //     &self.internal
+    // }
 
-    /// Creates an accessor to resources which are Send and Sync, which itself can be sent
-    /// between threads.
-    pub fn sync(&mut self) -> SyncResources {
-        SyncResources {
-            internal: &self.internal,
-        }
-    }
+    // /// Creates an accessor to resources which are Send and Sync, which itself can be sent
+    // /// between threads.
+    // pub fn sync(&mut self) -> SyncResources {
+    //     SyncResources {
+    //         internal: &self.internal,
+    //     }
+    // }
 
     /// Returns `true` if type `T` exists in the store. Otherwise, returns `false`.
     pub fn contains<T: Resource>(&self) -> bool {
@@ -315,28 +315,28 @@ impl Resources {
     }
 }
 
-/// A resource collection which is `Send` and `Sync`, but which only allows access to resources
-/// which are `Sync`.
-pub struct SyncResources<'a> {
-    internal: &'a UnsafeResources,
-}
+// /// A resource collection which is `Send` and `Sync`, but which only allows access to resources
+// /// which are `Sync`.
+// pub struct SyncResources<'a> {
+//     internal: &'a UnsafeResources,
+// }
 
-impl<'a> SyncResources<'a> {
-    /// Retrieve an immutable reference to  `T` from the store if it exists. Otherwise, return `None`.
-    ///
-    /// # Panics
-    /// Panics if the resource is already borrowed mutably.
-    pub fn get<T: Resource + Sync>(&self) -> Option<AtomicRef<T>> {
-        let type_id = &ResourceId::of::<T>();
-        self.internal.get(&type_id).map(|x| x.get::<T>())
-    }
+// impl<'a> SyncResources<'a> {
+//     /// Retrieve an immutable reference to  `T` from the store if it exists. Otherwise, return `None`.
+//     ///
+//     /// # Panics
+//     /// Panics if the resource is already borrowed mutably.
+//     pub fn get<T: Resource + Sync>(&self) -> Option<AtomicRef<T>> {
+//         let type_id = &ResourceId::of::<T>();
+//         self.internal.get(&type_id).map(|x| x.get::<T>())
+//     }
 
-    /// Retrieve a mutable reference to  `T` from the store if it exists. Otherwise, return `None`.
-    pub fn get_mut<T: Resource + Send>(&self) -> Option<AtomicRefMut<T>> {
-        let type_id = &ResourceId::of::<T>();
-        self.internal.get(&type_id).map(|x| x.get_mut::<T>())
-    }
-}
+//     /// Retrieve a mutable reference to  `T` from the store if it exists. Otherwise, return `None`.
+//     pub fn get_mut<T: Resource + Send>(&self) -> Option<AtomicRefMut<T>> {
+//         let type_id = &ResourceId::of::<T>();
+//         self.internal.get(&type_id).map(|x| x.get_mut::<T>())
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
