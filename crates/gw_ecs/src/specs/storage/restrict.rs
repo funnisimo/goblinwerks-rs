@@ -1,20 +1,17 @@
+use crate::specs::{
+    storage::{AccessMutReturn, MaskedStorage, Storage, UnprotectedStorage},
+    world::{Component, EntitiesRes, Entity, Index},
+};
+use crate::{legion::ResRef, specs::join::Join};
+use hibitset::BitSet;
 use std::{
     borrow::{Borrow, BorrowMut},
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };
 
-// use crate::shred::Fetch;
-use hibitset::BitSet;
-
-use crate::{atomic_refcell::AtomicRef, specs::join::Join};
-
 #[cfg(feature = "parallel")]
 use crate::specs::join::ParJoin;
-use crate::specs::{
-    storage::{AccessMutReturn, MaskedStorage, Storage, UnprotectedStorage},
-    world::{Component, EntitiesRes, Entity, Index},
-};
 
 /// Specifies that the `RestrictedStorage` cannot run in parallel.
 ///
@@ -75,7 +72,7 @@ where
 {
     bitset: B,
     data: S,
-    entities: &'rf AtomicRef<'st, EntitiesRes>,
+    entities: &'rf ResRef<'st, EntitiesRes>,
     phantom: PhantomData<(C, Restrict)>,
 }
 
@@ -108,11 +105,7 @@ where
 {
     type Mask = &'rf BitSet;
     type Type = PairedStorage<'rf, 'st, C, &'rf C::Storage, &'rf BitSet, Restrict>;
-    type Value = (
-        &'rf C::Storage,
-        &'rf AtomicRef<'st, EntitiesRes>,
-        &'rf BitSet,
-    );
+    type Value = (&'rf C::Storage, &'rf ResRef<'st, EntitiesRes>, &'rf BitSet);
 
     unsafe fn open(self) -> (Self::Mask, Self::Value) {
         let bitset = self.bitset.borrow();
@@ -141,7 +134,7 @@ where
     type Type = PairedStorage<'rf, 'st, C, &'rf mut C::Storage, &'rf BitSet, Restrict>;
     type Value = (
         &'rf mut C::Storage,
-        &'rf AtomicRef<'st, EntitiesRes>,
+        &'rf ResRef<'st, EntitiesRes>,
         &'rf BitSet,
     );
 
@@ -227,7 +220,7 @@ pub struct PairedStorage<'rf, 'st: 'rf, C, S, B, Restrict> {
     index: Index,
     storage: S,
     bitset: B,
-    entities: &'rf AtomicRef<'st, EntitiesRes>,
+    entities: &'rf ResRef<'st, EntitiesRes>,
     phantom: PhantomData<(C, Restrict)>,
 }
 

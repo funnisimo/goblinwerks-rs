@@ -1,5 +1,5 @@
-use crate::atomic_refcell::{AtomicRef, AtomicRefMut};
 use crate::globals::{GlobalMut, GlobalRef, Globals};
+use crate::legion::{ResMut, ResRef};
 use crate::shred::Resource;
 use crate::specs::world::CommandsEcsInternal;
 use crate::{Commands, SystemData};
@@ -210,19 +210,19 @@ impl Ecs {
         self.current_world_mut().remove_resource::<R>()
     }
 
-    pub fn read_resource<R: Resource>(&self) -> AtomicRef<R> {
+    pub fn read_resource<R: Resource>(&self) -> ResRef<R> {
         self.current_world().read_resource::<R>()
     }
 
-    pub fn try_read_resource<R: Resource>(&self) -> Option<AtomicRef<R>> {
+    pub fn try_read_resource<R: Resource>(&self) -> Option<ResRef<R>> {
         self.current_world().try_read_resource::<R>()
     }
 
-    pub fn write_resource<R: Resource>(&self) -> AtomicRefMut<R> {
+    pub fn write_resource<R: Resource>(&self) -> ResMut<R> {
         self.current_world().write_resource::<R>()
     }
 
-    pub fn try_write_resource<R: Resource>(&self) -> Option<AtomicRefMut<R>> {
+    pub fn try_write_resource<R: Resource>(&self) -> Option<ResMut<R>> {
         self.current_world().try_write_resource::<R>()
     }
 

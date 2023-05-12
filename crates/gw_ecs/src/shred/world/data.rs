@@ -7,6 +7,8 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+use super::{ResMut, ResRef};
+
 /// Allows to fetch a resource in a system immutably.
 ///
 /// If the resource isn't strictly required, you should use `Option<Read<T>>`.
@@ -16,7 +18,7 @@ use std::{
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
 pub struct ReadRes<'a, T: 'a, F = ()> {
-    inner: AtomicRef<'a, T>,
+    inner: ResRef<'a, T>,
     phantom: PhantomData<F>,
 }
 
@@ -31,8 +33,8 @@ where
     }
 }
 
-impl<'a, T, F> From<AtomicRef<'a, T>> for ReadRes<'a, T, F> {
-    fn from(inner: AtomicRef<'a, T>) -> Self {
+impl<'a, T, F> From<ResRef<'a, T>> for ReadRes<'a, T, F> {
+    fn from(inner: ResRef<'a, T>) -> Self {
         ReadRes {
             inner,
             phantom: PhantomData,
@@ -76,7 +78,7 @@ where
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
 pub struct WriteRes<'a, T: 'a, F = ()> {
-    inner: AtomicRefMut<'a, T>,
+    inner: ResMut<'a, T>,
     phantom: PhantomData<F>,
 }
 
@@ -100,8 +102,8 @@ where
     }
 }
 
-impl<'a, T, F> From<AtomicRefMut<'a, T>> for WriteRes<'a, T, F> {
-    fn from(inner: AtomicRefMut<'a, T>) -> Self {
+impl<'a, T, F> From<ResMut<'a, T>> for WriteRes<'a, T, F> {
+    fn from(inner: ResMut<'a, T>) -> Self {
         WriteRes {
             inner,
             phantom: PhantomData,

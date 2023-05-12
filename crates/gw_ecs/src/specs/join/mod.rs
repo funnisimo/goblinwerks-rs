@@ -1,7 +1,7 @@
 //! Joining of components for iteration over entities with specific components.
 
 use crate::{
-    atomic_refcell::{AtomicRef, AtomicRefMut},
+    legion::{ResMut, ResRef},
     shred::{ReadRes, ReadResSetup, Resource, WriteRes, WriteResSetup},
 };
 use hibitset::{BitIter, BitSetAll, BitSetAnd, BitSetLike};
@@ -643,5 +643,5 @@ macro_rules! mutable_resource_join {
     };
 }
 
-immutable_resource_join!(AtomicRef<'b, T>, ReadRes<'b, T>, ReadResSetup<'b, T>);
-mutable_resource_join!(AtomicRefMut<'b, T>, WriteRes<'b, T>, WriteResSetup<'b, T>);
+immutable_resource_join!(ResRef<'b, T>, ReadRes<'b, T>, ReadResSetup<'b, T>);
+mutable_resource_join!(ResMut<'b, T>, WriteRes<'b, T>, WriteResSetup<'b, T>);

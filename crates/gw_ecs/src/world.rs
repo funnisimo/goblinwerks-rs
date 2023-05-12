@@ -1,5 +1,6 @@
 use crate::atomic_refcell::{AtomicRef, AtomicRefMut};
 use crate::globals::{GlobalMut, GlobalRef, Globals};
+use crate::legion::{ResMut, ResRef, Ticks};
 use crate::shred::MetaTable;
 use crate::shred::{Resources, SystemData};
 use crate::specs::storage::{AnyStorage, MaskedStorage};
@@ -9,13 +10,31 @@ use crate::specs::{
     Commands, Component, Entities, EntitiesMut, Entity, EntityBuilder, ReadComp, Storage, WriteComp,
 };
 use crate::Builder;
-use crate::{ReadRes, Resource, ResourceId, WriteGlobal, WriteRes};
+use crate::{ReadRes, Resource, ResourceId, WriteGlobal};
 use atomize::Atom;
 
 // pub use crate::shred::Entry;
 
+pub type WorldId = Atom;
+
+/// Creates an instance of the type this trait is implemented for
+/// using data from the supplied [World].
+///
+/// This can be helpful for complex initialization or context-aware defaults.
+pub trait FromWorld {
+    /// Creates `Self` using data from the given [World]
+    fn from_world(world: &mut World) -> Self;
+}
+
+impl<T: Default> FromWorld for T {
+    fn from_world(_world: &mut World) -> Self {
+        T::default()
+    }
+}
+
 pub struct World {
-    id: Atom,
+    id: WorldId,
+    ticks: Ticks,
     pub(crate) resources: Resources,
     pub(crate) globals: Globals,
 }
@@ -23,13 +42,13 @@ pub struct World {
 impl World {
     /// Creates a new World with a new empty Globals.
     ///
-    pub fn empty<I: Into<Atom>>(id: I) -> Self {
+    pub fn empty<I: Into<WorldId>>(id: I) -> Self {
         Self::new(id, Globals::default())
     }
 
     /// Creates a new World with the given Globals.
     ///
-    pub fn new<I: Into<Atom>>(id: I, globals: Globals) -> Self {
+    pub fn new<I: Into<WorldId>>(id: I, globals: Globals) -> Self {
         let mut resources = Resources::empty();
         resources.insert(EntitiesRes::default());
         resources.insert(MetaTable::<dyn AnyStorage>::default());
@@ -37,6 +56,7 @@ impl World {
 
         World {
             id: id.into(),
+            ticks: 0,
             resources,
             globals,
         }
@@ -48,7 +68,7 @@ impl World {
         self.globals = globals;
     }
 
-    pub fn id(&self) -> Atom {
+    pub fn id(&self) -> WorldId {
         self.id
     }
 
@@ -327,7 +347,7 @@ impl World {
     // GLOBALS
 
     pub fn has_global<G: Resource>(&self) -> bool {
-        self.globals.has_value::<G>()
+        self.globals.contains::<G>()
     }
 
     /// Makes sure there is a value for the given resource.
@@ -496,7 +516,7 @@ impl World {
         f(&res)
     }
 
-    pub fn read_resource<R: Resource>(&self) -> AtomicRef<R> {
+    pub fn read_resource<R: Resource>(&self) -> ResRef<R> {
         match self.resources.get::<R>() {
             None => {
                 let name = std::any::type_name::<R>();
@@ -508,7 +528,7 @@ impl World {
         }
     }
 
-    pub fn read_resource_or_insert<R: Resource + Default>(&mut self) -> AtomicRef<R> {
+    pub fn read_resource_or_insert<R: Resource + Default>(&mut self) -> ResRef<R> {
         self.ensure_resource::<R>();
         self.resources.get::<R>().unwrap()
     }
@@ -516,12 +536,12 @@ impl World {
     pub fn read_resource_or_insert_with<R: Resource, F: FnOnce() -> R>(
         &mut self,
         f: F,
-    ) -> AtomicRef<R> {
+    ) -> ResRef<R> {
         self.ensure_resource_with(f);
         self.resources.get::<R>().unwrap().into()
     }
 
-    pub fn try_read_resource<R: Resource>(&self) -> Option<AtomicRef<R>> {
+    pub fn try_read_resource<R: Resource>(&self) -> Option<ResRef<R>> {
         self.resources.get::<R>().map(|v| v.into())
     }
 
@@ -530,7 +550,7 @@ impl World {
         f(&mut res)
     }
 
-    pub fn write_resource<R: Resource>(&self) -> AtomicRefMut<R> {
+    pub fn write_resource<R: Resource>(&self) -> ResMut<R> {
         match self.resources.get_mut::<R>() {
             None => {
                 let name = std::any::type_name::<R>();
@@ -542,7 +562,7 @@ impl World {
         }
     }
 
-    pub fn write_resource_or_insert<R: Resource + Default>(&mut self) -> AtomicRefMut<R> {
+    pub fn write_resource_or_insert<R: Resource + Default>(&mut self) -> ResMut<R> {
         self.ensure_resource::<R>();
         self.resources.get_mut::<R>().unwrap().into()
     }
@@ -550,12 +570,12 @@ impl World {
     pub fn write_resource_or_insert_with<R: Resource, F: FnOnce() -> R>(
         &mut self,
         f: F,
-    ) -> AtomicRefMut<R> {
+    ) -> ResMut<R> {
         self.ensure_resource_with(f);
         self.resources.get_mut::<R>().unwrap()
     }
 
-    pub fn try_write_resource<R: Resource>(&self) -> Option<AtomicRefMut<R>> {
+    pub fn try_write_resource<R: Resource>(&self) -> Option<ResMut<R>> {
         self.resources.get_mut::<R>()
     }
 
@@ -710,6 +730,8 @@ impl World {
     }
 
     pub fn maintain(&mut self) {
+        self.ticks = self.ticks.wrapping_add(1);
+
         let lazy = self.resources.get_mut::<Commands>().unwrap().clone();
         lazy.maintain(self);
 
@@ -717,6 +739,10 @@ impl World {
         if !deleted.is_empty() {
             self.delete_components(&deleted);
         }
+
+        // Increment ticks after lazy update
+        self.globals.maintain(self.ticks);
+        self.resources.maintain(self.ticks);
     }
 
     pub fn delete_components(&mut self, delete: &[Entity]) {
@@ -781,7 +807,7 @@ mod tests {
 
     #[test]
     fn setup() {
-        let mut world = World::empty(Atom::from("TEST"));
+        let mut world = World::empty(WorldId::from("TEST"));
 
         world.insert_resource(5u32);
         world.setup::<ReadRes<u32>>();
@@ -821,7 +847,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn exec_panic() {
-        let mut world = World::empty(Atom::from(123));
+        let mut world = World::empty(WorldId::from(123));
 
         world.exec(|(_float, _boolean): (WriteRes<f32>, WriteRes<bool>)| {
             panic!();

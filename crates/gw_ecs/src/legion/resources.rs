@@ -1,16 +1,35 @@
+use super::{ResMut, ResRef};
 use super::{Resource, ResourceId};
 use crate::atomic_refcell::{AtomicRef, AtomicRefCell, AtomicRefMut};
-use std::collections::{hash_map::Entry, HashMap};
-use std::marker::PhantomData;
+use std::collections::{hash_map::Entry, HashMap, VecDeque};
+
+pub type Ticks = u32;
+pub const KEEP_DELETED_TIME: u32 = 10; // 10 calls to maintain??
+
+pub struct ChangeTicks {
+    pub(crate) inserted: Ticks,
+    pub(crate) updated: Ticks,
+}
+
+impl ChangeTicks {
+    fn new(ticks: Ticks) -> Self {
+        ChangeTicks {
+            inserted: ticks,
+            updated: ticks,
+        }
+    }
+}
 
 pub struct ResourceCell {
     pub(crate) data: AtomicRefCell<Box<dyn Resource>>,
+    pub(crate) ticks: AtomicRefCell<ChangeTicks>,
 }
 
 impl ResourceCell {
-    fn new(resource: Box<dyn Resource>) -> Self {
+    fn new(resource: Box<dyn Resource>, ticks: Ticks) -> Self {
         Self {
             data: AtomicRefCell::new(resource),
+            ticks: AtomicRefCell::new(ChangeTicks::new(ticks)),
         }
     }
 
@@ -21,18 +40,21 @@ impl ResourceCell {
     /// # Safety
     /// Types which are !Sync should only be retrieved on the thread which owns the resource
     /// collection.
-    pub fn get<T: Resource>(&self) -> AtomicRef<T> {
-        let borrow = self.data.borrow();
-        AtomicRef::map(borrow, |inner| inner.downcast_ref::<T>().unwrap())
+    pub fn get<T: Resource>(&self) -> ResRef<T> {
+        let data = self.data.borrow();
+        let data_ref = AtomicRef::map(data, |inner| inner.downcast_ref::<T>().unwrap());
+        let ticks = self.ticks.borrow();
+        ResRef::new(data_ref, ticks)
     }
 
     /// # Safety
     /// Types which are !Send should only be retrieved on the thread which owns the resource
     /// collection.
-    pub fn get_mut<T: Resource>(&self) -> AtomicRefMut<T> {
-        let borrow = self.data.borrow_mut(); // panics if this is borrowed already
-
-        AtomicRefMut::map(borrow, |inner| inner.downcast_mut::<T>().unwrap())
+    pub fn get_mut<T: Resource>(&self, current: Ticks) -> ResMut<T> {
+        let data = self.data.borrow_mut(); // panics if this is borrowed already
+        let data_ref = AtomicRefMut::map(data, |inner| inner.downcast_mut::<T>().unwrap());
+        let ticks = self.ticks.borrow_mut();
+        ResMut::new(data_ref, ticks, current)
     }
 }
 
@@ -41,6 +63,8 @@ impl ResourceCell {
 #[derive(Default)]
 pub struct UnsafeResources {
     map: HashMap<ResourceId, ResourceCell>, // , BuildHasherDefault<ComponentTypeIdHasher>>,
+    ticks: Ticks,
+    deleted: VecDeque<(ResourceId, Ticks)>,
 }
 
 unsafe impl Send for UnsafeResources {}
@@ -68,20 +92,29 @@ impl UnsafeResources {
     /// # Safety
     /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
     unsafe fn insert<T: Resource>(&mut self, resource: T) {
-        self.map
-            .insert(ResourceId::of::<T>(), ResourceCell::new(Box::new(resource)));
+        self.map.insert(
+            ResourceId::of::<T>(),
+            ResourceCell::new(Box::new(resource), self.ticks),
+        );
     }
 
     /// # Safety
     /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
     unsafe fn insert_by_id<T: Resource>(&mut self, id: ResourceId, resource: T) {
-        self.map.insert(id, ResourceCell::new(Box::new(resource)));
+        self.map
+            .insert(id, ResourceCell::new(Box::new(resource), self.ticks));
     }
 
     /// # Safety
     /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
     unsafe fn remove(&mut self, type_id: &ResourceId) -> Option<Box<dyn Resource>> {
-        self.map.remove(type_id).map(|cell| cell.into_inner())
+        match self.map.remove(type_id).map(|cell| cell.into_inner()) {
+            None => None,
+            Some(v) => {
+                self.deleted.push_back((type_id.clone(), self.ticks));
+                Some(v)
+            }
+        }
     }
 
     fn get(&self, type_id: &ResourceId) -> Option<&ResourceCell> {
@@ -194,7 +227,7 @@ impl Resources {
     ///
     /// # Panics
     /// Panics if the resource is already borrowed mutably.
-    pub fn get<T: Resource>(&self) -> Option<AtomicRef<T>> {
+    pub fn get<T: Resource>(&self) -> Option<ResRef<T>> {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
@@ -206,7 +239,7 @@ impl Resources {
     ///
     /// # Panics
     /// Panics if the resource is already borrowed mutably.
-    pub(crate) fn get_by_id<T: Resource>(&self, id: ResourceId) -> Option<AtomicRef<T>> {
+    pub(crate) fn get_by_id<T: Resource>(&self, id: ResourceId) -> Option<ResRef<T>> {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
@@ -225,64 +258,67 @@ impl Resources {
     }
 
     /// Retrieve a mutable reference to  `T` from the store if it exists. Otherwise, return `None`.
-    pub fn get_mut<T: Resource>(&self) -> Option<AtomicRefMut<T>> {
+    pub fn get_mut<T: Resource>(&self) -> Option<ResMut<T>> {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
         let type_id = &ResourceId::of::<T>();
-        self.internal.get(&type_id).map(|x| x.get_mut::<T>())
+        self.internal
+            .get(&type_id)
+            .map(|x| x.get_mut::<T>(self.internal.ticks))
     }
 
     /// Retrieve a mutable reference to  `T` from the store if it exists. Otherwise, return `None`.
-    pub fn get_mut_by_id<T: Resource>(&self, id: ResourceId) -> Option<AtomicRefMut<T>> {
+    pub fn get_mut_by_id<T: Resource>(&self, id: ResourceId) -> Option<ResMut<T>> {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
-        self.internal.get(&id).map(|x| x.get_mut::<T>())
+        self.internal
+            .get(&id)
+            .map(|x| x.get_mut::<T>(self.internal.ticks))
     }
 
     /// Attempts to retrieve an immutable reference to `T` from the store. If it does not exist,
     /// the closure `f` is called to construct the object and it is then inserted into the store.
-    pub fn get_or_insert_with<T: Resource, F: FnOnce() -> T>(&mut self, f: F) -> AtomicRef<T> {
+    pub fn get_or_insert_with<T: Resource, F: FnOnce() -> T>(&mut self, f: F) -> ResRef<T> {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
         let type_id = ResourceId::of::<T>();
+        let ticks = self.internal.ticks;
         unsafe {
             self.internal
                 .entry(type_id)
-                .or_insert_with(|| ResourceCell::new(Box::new((f)())))
+                .or_insert_with(|| ResourceCell::new(Box::new((f)()), ticks))
                 .get()
         }
     }
 
     /// Attempts to retrieve a mutable reference to `T` from the store. If it does not exist,
     /// the closure `f` is called to construct the object and it is then inserted into the store.
-    pub fn get_mut_or_insert_with<T: Resource, F: FnOnce() -> T>(
-        &mut self,
-        f: F,
-    ) -> AtomicRefMut<T> {
+    pub fn get_mut_or_insert_with<T: Resource, F: FnOnce() -> T>(&mut self, f: F) -> ResMut<T> {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
         let type_id = ResourceId::of::<T>();
+        let ticks = self.internal.ticks;
         unsafe {
             self.internal
                 .entry(type_id)
-                .or_insert_with(|| ResourceCell::new(Box::new((f)())))
-                .get_mut()
+                .or_insert_with(|| ResourceCell::new(Box::new((f)()), ticks))
+                .get_mut(ticks)
         }
     }
 
     /// Attempts to retrieve an immutable reference to `T` from the store. If it does not exist,
     /// the provided value is inserted and then a reference to it is returned.
-    pub fn get_or_insert<T: Resource>(&mut self, value: T) -> AtomicRef<T> {
+    pub fn get_or_insert<T: Resource>(&mut self, value: T) -> ResRef<T> {
         self.get_or_insert_with(|| value)
     }
 
     /// Attempts to retrieve a mutable reference to `T` from the store. If it does not exist,
     /// the provided value is inserted and then a reference to it is returned.
-    pub fn get_mut_or_insert<T: Resource>(&mut self, value: T) -> AtomicRefMut<T> {
+    pub fn get_mut_or_insert<T: Resource>(&mut self, value: T) -> ResMut<T> {
         self.get_mut_or_insert_with(|| value)
     }
 
@@ -290,7 +326,7 @@ impl Resources {
     /// the default constructor for `T` is called.
     ///
     /// `T` must implement `Default` for this method.
-    pub fn get_or_default<T: Resource + Default>(&mut self) -> AtomicRef<T> {
+    pub fn get_or_default<T: Resource + Default>(&mut self) -> ResRef<T> {
         self.get_or_insert_with(T::default)
     }
 
@@ -298,7 +334,7 @@ impl Resources {
     /// the default constructor for `T` is called.
     ///
     /// `T` must implement `Default` for this method.
-    pub fn get_mut_or_default<T: Resource + Default>(&mut self) -> AtomicRefMut<T> {
+    pub fn get_mut_or_default<T: Resource + Default>(&mut self) -> ResMut<T> {
         self.get_mut_or_insert_with(T::default)
     }
 
@@ -312,6 +348,32 @@ impl Resources {
         unsafe {
             self.internal.merge(other.internal);
         }
+    }
+
+    pub fn maintain(&mut self, ticks: Ticks) {
+        self.internal.ticks = ticks;
+        loop {
+            match self.internal.deleted.front() {
+                None => return,
+                Some((_id, time)) => {
+                    if ticks.wrapping_sub(*time) < KEEP_DELETED_TIME {
+                        return;
+                    }
+                    self.internal.deleted.pop_front();
+                }
+            }
+        }
+    }
+
+    pub fn deleted<T: Resource>(&self) -> Option<Ticks> {
+        let r = ResourceId::of::<T>();
+        self.internal
+            .deleted
+            .iter()
+            .find_map(|(id, t)| match r == *id {
+                false => None,
+                true => Some(*t),
+            })
     }
 }
 
@@ -492,8 +554,8 @@ mod tests {
         let mut resources = Resources::empty();
         resources.insert(Res);
 
-        let read: AtomicRef<Res> = resources.get::<Res>().unwrap();
-        let write: AtomicRefMut<Res> = resources.get_mut::<Res>().unwrap();
+        let read: ResRef<Res> = resources.get::<Res>().unwrap();
+        let write: ResMut<Res> = resources.get_mut::<Res>().unwrap();
     }
 
     #[allow(unused)]
@@ -503,8 +565,8 @@ mod tests {
         let mut resources = Resources::empty();
         resources.insert(Res);
 
-        let write: AtomicRefMut<Res> = resources.get_mut::<Res>().unwrap();
-        let read: AtomicRef<Res> = resources.get::<Res>().unwrap();
+        let write: ResMut<Res> = resources.get_mut::<Res>().unwrap();
+        let read: ResRef<Res> = resources.get::<Res>().unwrap();
     }
 
     #[test]
@@ -586,5 +648,44 @@ mod tests {
         // test re-ownership
         let owned = resources.remove::<TestTwo>();
         assert_eq!(owned.unwrap().value, "two");
+    }
+
+    #[test]
+    fn change_ticks() {
+        struct Data(u32);
+
+        let mut res = Resources::default();
+
+        res.maintain(123);
+
+        res.insert(Data(5));
+
+        res.maintain(124);
+
+        {
+            let data = res.get::<Data>().unwrap();
+            assert_eq!(data.0, 5);
+            assert_eq!(data.inserted(), 123);
+            assert_eq!(data.updated(), 123);
+        }
+
+        res.maintain(125);
+
+        {
+            let mut data = res.get_mut::<Data>().unwrap();
+            assert_eq!(data.0, 5);
+            assert_eq!(data.inserted(), 123);
+            assert_eq!(data.updated(), 123);
+            data.0 = 8;
+            assert_eq!(data.inserted(), 123);
+            assert_eq!(data.updated(), 125);
+        }
+
+        res.maintain(126);
+
+        {
+            res.remove::<Data>();
+            assert_eq!(res.deleted::<Data>().unwrap(), 126);
+        }
     }
 }

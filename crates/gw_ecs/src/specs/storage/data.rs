@@ -1,14 +1,11 @@
-use std::collections::HashSet;
-
-use crate::atomic_refcell::{AtomicRef, AtomicRefMut};
-use crate::shred::MetaTable;
+use crate::legion::{ResMut, ResRef};
 use crate::shred::{ResourceId, SystemData};
-use crate::World;
-
 use crate::specs::{
-    storage::{AnyStorage, MaskedStorage, Storage, TryDefault},
+    storage::{MaskedStorage, Storage},
     world::{Component, EntitiesRes},
 };
+use crate::World;
+use std::collections::HashSet;
 
 /// A storage with read access.
 ///
@@ -119,21 +116,22 @@ use crate::specs::{
 /// Note that you can also use `LazyUpdate` , which does insertions on
 /// `World::maintain`. This allows more concurrency and is designed
 /// to be used for entity initialization.
-pub type ReadComp<'a, T> = Storage<'a, T, AtomicRef<'a, MaskedStorage<T>>>;
+pub type ReadComp<'a, T> = Storage<'a, T, ResRef<'a, MaskedStorage<T>>>;
 
 impl<'a, T> SystemData<'a> for ReadComp<'a, T>
 where
     T: Component,
 {
     fn setup(world: &mut World) {
-        world.resources.get_or_insert_with(|| {
-            MaskedStorage::<T>::new(<T::Storage as TryDefault>::unwrap_default())
-        });
-        world
-            .resources
-            .get_mut::<MetaTable<dyn AnyStorage>>()
-            .unwrap()
-            .register(&*world.resources.get::<MaskedStorage<T>>().unwrap());
+        // world.resources.get_or_insert_with(|| {
+        //     MaskedStorage::<T>::new(<T::Storage as TryDefault>::unwrap_default())
+        // });
+        // world
+        //     .resources
+        //     .get_mut::<MetaTable<dyn AnyStorage>>()
+        //     .unwrap()
+        //     .register(&*world.resources.get::<MaskedStorage<T>>().unwrap());
+        world.register::<T>();
     }
 
     fn fetch(world: &'a World) -> Self {
@@ -210,21 +208,22 @@ where
 ///
 /// There's also an Entry-API similar to the one provided by
 /// `std::collections::HashMap`.
-pub type WriteComp<'a, T> = Storage<'a, T, AtomicRefMut<'a, MaskedStorage<T>>>;
+pub type WriteComp<'a, T> = Storage<'a, T, ResMut<'a, MaskedStorage<T>>>;
 
 impl<'a, T> SystemData<'a> for WriteComp<'a, T>
 where
     T: Component,
 {
     fn setup(world: &mut World) {
-        world.resources.get_or_insert_with(|| {
-            MaskedStorage::<T>::new(<T::Storage as TryDefault>::unwrap_default())
-        });
-        world
-            .resources
-            .get_mut::<MetaTable<dyn AnyStorage>>()
-            .unwrap()
-            .register(&*world.resources.get::<MaskedStorage<T>>().unwrap());
+        // world.resources.get_or_insert_with(|| {
+        //     MaskedStorage::<T>::new(<T::Storage as TryDefault>::unwrap_default())
+        // });
+        // world
+        //     .resources
+        //     .get_mut::<MetaTable<dyn AnyStorage>>()
+        //     .unwrap()
+        //     .register(&*world.resources.get::<MaskedStorage<T>>().unwrap());
+        world.register::<T>();
     }
 
     fn fetch(world: &'a World) -> Self {
@@ -246,7 +245,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::specs::{prelude::*, storage::MaskedStorage};
+    use crate::{
+        schedule::Schedule,
+        specs::{prelude::*, storage::MaskedStorage},
+    };
 
     struct Foo;
     impl Component for Foo {
@@ -262,16 +264,16 @@ mod tests {
         }
     }
 
-    // #[test]
-    // fn uses_setup() {
-    //     let mut w = World::empty(0);
+    #[test]
+    fn uses_setup() {
+        let mut w = World::empty(1);
 
-    //     let mut d = DispatcherBuilder::new().with(Sys, "sys", &[]).build();
+        let mut d = Schedule::new().with("UPDATE", Sys);
 
-    //     assert!(!w.has_resource::<MaskedStorage<Foo>>());
+        assert!(!w.has_resource::<MaskedStorage<Foo>>());
 
-    //     d.setup(&mut w);
+        d.setup(&mut w);
 
-    //     assert!(w.has_resource::<MaskedStorage<Foo>>());
-    // }
+        assert!(w.has_resource::<MaskedStorage<Foo>>());
+    }
 }

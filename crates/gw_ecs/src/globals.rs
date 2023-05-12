@@ -1,4 +1,5 @@
-use crate::atomic_refcell::{AtomicBorrowRef, AtomicRef, AtomicRefCell, AtomicRefMut};
+use crate::atomic_refcell::{AtomicBorrowRef, AtomicRefCell};
+use crate::legion::{ResMut, ResRef, Ticks};
 use crate::shred::Resources;
 use crate::shred::{Resource, ResourceId, SetupDefault, SetupHandler, SystemData};
 use crate::World;
@@ -23,7 +24,7 @@ impl Globals {
     }
 
     /// Returns true if the resource is in the Globals
-    pub fn has_value<G: Resource>(&self) -> bool {
+    pub fn contains<G: Resource>(&self) -> bool {
         self.resources.borrow().contains::<G>()
     }
 
@@ -70,6 +71,14 @@ impl Globals {
             Some(fetch) => Some(GlobalMut::new(borrow, fetch)),
         }
     }
+
+    pub fn maintain(&mut self, ticks: Ticks) {
+        self.resources.borrow_mut().maintain(ticks);
+    }
+
+    pub fn deleted<G: Resource>(&self) -> Option<Ticks> {
+        self.resources.borrow().deleted::<G>()
+    }
 }
 
 impl Default for Globals {
@@ -95,12 +104,23 @@ impl Clone for Globals {
 /// * `T`: The type of the resource
 pub struct GlobalRef<'a, T: 'a> {
     borrow: AtomicBorrowRef<'a>, // borrow of globals
-    fetch: AtomicRef<'a, T>,
+    fetch: ResRef<'a, T>,
 }
 
-impl<'a, T: 'a> GlobalRef<'a, T> {
-    pub(crate) fn new(borrow: AtomicBorrowRef<'a>, fetch: AtomicRef<'a, T>) -> Self {
+impl<'a, T: 'a> GlobalRef<'a, T>
+where
+    T: Resource,
+{
+    pub(crate) fn new(borrow: AtomicBorrowRef<'a>, fetch: ResRef<'a, T>) -> Self {
         GlobalRef { borrow, fetch }
+    }
+
+    pub fn inserted(&self) -> Ticks {
+        self.fetch.inserted()
+    }
+
+    pub fn updated(&self) -> Ticks {
+        self.fetch.updated()
     }
 }
 
@@ -119,7 +139,7 @@ impl<'a, T> Clone for GlobalRef<'a, T> {
     fn clone(&self) -> Self {
         GlobalRef {
             borrow: AtomicBorrowRef::clone(&self.borrow),
-            fetch: AtomicRef::clone(&self.fetch),
+            fetch: ResRef::clone(&self.fetch),
         }
     }
 }
@@ -135,12 +155,23 @@ impl<'a, T> Clone for GlobalRef<'a, T> {
 pub struct GlobalMut<'a, T: 'a> {
     #[allow(dead_code)]
     borrow: AtomicBorrowRef<'a>, // borrow of globals
-    fetch: AtomicRefMut<'a, T>,
+    fetch: ResMut<'a, T>,
 }
 
-impl<'a, T: 'a> GlobalMut<'a, T> {
-    pub(crate) fn new(borrow: AtomicBorrowRef<'a>, fetch: AtomicRefMut<'a, T>) -> Self {
+impl<'a, T: 'a> GlobalMut<'a, T>
+where
+    T: Resource,
+{
+    pub(crate) fn new(borrow: AtomicBorrowRef<'a>, fetch: ResMut<'a, T>) -> Self {
         GlobalMut { borrow, fetch }
+    }
+
+    pub fn inserted(&self) -> Ticks {
+        self.fetch.inserted()
+    }
+
+    pub fn updated(&self) -> Ticks {
+        self.fetch.updated()
     }
 }
 
@@ -196,9 +227,9 @@ impl<'a, T, F> Deref for ReadGlobal<'a, T, F>
 where
     T: Resource,
 {
-    type Target = T;
+    type Target = GlobalRef<'a, T>;
 
-    fn deref(&self) -> &T {
+    fn deref(&self) -> &Self::Target {
         &self.fetch
     }
 }
@@ -257,9 +288,9 @@ impl<'a, T, F> Deref for WriteGlobal<'a, T, F>
 where
     T: Resource,
 {
-    type Target = T;
+    type Target = GlobalMut<'a, T>;
 
-    fn deref(&self) -> &T {
+    fn deref(&self) -> &Self::Target {
         &self.fetch
     }
 }
@@ -268,7 +299,7 @@ impl<'a, T, F> DerefMut for WriteGlobal<'a, T, F>
 where
     T: Resource,
 {
-    fn deref_mut(&mut self) -> &mut T {
+    fn deref_mut(&mut self) -> &mut GlobalMut<'a, T> {
         &mut self.fetch
     }
 }
@@ -377,3 +408,301 @@ pub type ReadGlobalDefault<'a, T> = ReadGlobal<'a, T, SetupDefault>;
 /// Allows to fetch a resource in a system mutably.
 /// **This will add a default value in a `System` setup if the resource does not exist.**
 pub type WriteGlobalDefault<'a, T> = WriteGlobal<'a, T, SetupDefault>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    // use crate::shred::{RunNow, System};
+
+    #[derive(Default)]
+    struct Res;
+
+    // #[test]
+    // fn fetch_aspects() {
+    //     assert_eq!(Read::<Res>::reads(), vec![ResourceId::new::<Res>()]);
+    //     assert_eq!(Read::<Res>::writes(), vec![]);
+
+    //     let mut world = World::empty(0);
+    //     world.insert(Res);
+    //     <Read<Res> as SystemData>::fetch(&world);
+    // }
+
+    // #[test]
+    // fn fetch_mut_aspects() {
+    //     assert_eq!(Write::<Res>::reads(), vec![]);
+    //     assert_eq!(Write::<Res>::writes(), vec![ResourceId::new::<Res>()]);
+
+    //     let mut world = World::empty(0);
+    //     world.insert(Res);
+    //     <Write<Res> as SystemData>::fetch(&world);
+    // }
+
+    // #[test]
+    // fn fetch_by_id() {
+    //     #![allow(clippy::map_clone)] // False positive
+
+    //     let mut globals = Globals::empty();
+
+    //     globals.insert_by_id(ResourceId::new_with_dynamic_id::<i32>(1), 5);
+    //     globals.insert_by_id(ResourceId::new_with_dynamic_id::<i32>(2), 15);
+    //     globals.insert_by_id(ResourceId::new_with_dynamic_id::<i32>(3), 45);
+
+    //     assert_eq!(
+    //         globals
+    //             .get_by_id::<i32>(ResourceId::new_with_dynamic_id::<i32>(2))
+    //             .map(|x| *x),
+    //         Some(15)
+    //     );
+    //     assert_eq!(
+    //         globals
+    //             .get_by_id::<i32>(ResourceId::new_with_dynamic_id::<i32>(1))
+    //             .map(|x| *x),
+    //         Some(5)
+    //     );
+    //     assert_eq!(
+    //         globals
+    //             .get_by_id::<i32>(ResourceId::new_with_dynamic_id::<i32>(3))
+    //             .map(|x| *x),
+    //         Some(45)
+    //     );
+    // }
+
+    // #[test]
+    // fn system_data() {
+    //     let mut resources = World::empty(0);
+
+    //     resources.insert(5u32);
+    //     let x = *resources.system_data::<Read<u32>>();
+    //     assert_eq!(x, 5);
+    // }
+
+    // #[test]
+    // fn setup() {
+    //     let mut resources = World::empty(0);
+
+    //     resources.insert(5u32);
+    //     resources.setup::<Read<u32>>();
+    //     let x = *resources.system_data::<Read<u32>>();
+    //     assert_eq!(x, 5);
+
+    //     resources.remove::<u32>();
+    //     resources.setup::<Read<u32>>();
+    //     let x = *resources.system_data::<Read<u32>>();
+    //     assert_eq!(x, 0);
+    // }
+
+    // #[test]
+    // fn exec() {
+    //     #![allow(clippy::float_cmp)]
+
+    //     let mut resources = World::empty(0);
+
+    //     resources.exec(|(float, boolean): (Read<f32>, Read<bool>)| {
+    //         assert_eq!(*float, 0.0);
+    //         assert!(!*boolean);
+    //     });
+
+    //     resources.exec(|(mut float, mut boolean): (Write<f32>, Write<bool>)| {
+    //         *float = 4.3;
+    //         *boolean = true;
+    //     });
+
+    //     resources.exec(|(float, boolean): (Read<f32>, ReadExpect<bool>)| {
+    //         assert_eq!(*float, 4.3);
+    //         assert!(*boolean);
+    //     });
+    // }
+
+    // #[test]
+    // #[should_panic]
+    // fn exec_panic() {
+    //     let mut resources = World::empty(0);
+
+    //     resources.exec(|(_float, _boolean): (Write<f32>, Write<bool>)| {
+    //         panic!();
+    //     });
+    // }
+
+    // #[test]
+    // fn invalid_fetch_by_id0() {
+    //     let mut globals = Globals::empty();
+
+    //     globals.insert(5i32);
+
+    //     assert!(globals
+    //         .get_by_id::<u32>(ResourceId::new_with_dynamic_id::<i32>(111))
+    //         .is_none());
+    // }
+
+    // #[test]
+    // fn invalid_fetch_by_id1() {
+    //     let mut globals = Globals::empty();
+
+    //     globals.insert(5i32);
+
+    //     assert!(globals
+    //         .get_by_id::<i32>(ResourceId::new_with_dynamic_id::<u32>(111))
+    //         .is_none());
+    // }
+
+    #[test]
+    fn add() {
+        struct Foo;
+
+        let mut globals = Globals::empty();
+        globals.insert(Res);
+
+        assert!(globals.contains::<Res>());
+        assert!(!globals.contains::<Foo>());
+    }
+
+    #[allow(unused)]
+    #[test]
+    #[should_panic(expected = "already immutably borrowed")]
+    fn read_write_fails() {
+        let mut globals = Globals::empty();
+        globals.insert(Res);
+
+        let read: GlobalRef<Res> = globals.fetch::<Res>();
+        let write: GlobalMut<Res> = globals.fetch_mut::<Res>();
+    }
+
+    #[allow(unused)]
+    #[test]
+    #[should_panic(expected = "already mutably borrowed")]
+    fn write_read_fails() {
+        let mut globals = Globals::empty();
+        globals.insert(Res);
+
+        let write: GlobalMut<Res> = globals.fetch_mut::<Res>();
+        let read: GlobalRef<Res> = globals.fetch::<Res>();
+    }
+
+    #[test]
+    fn remove_insert() {
+        let mut globals = Globals::empty();
+
+        globals.insert(Res);
+
+        assert!(globals.contains::<Res>());
+
+        // println!("{:#?}", resources.hashmap.keys().collect::<Vec<_>>());
+
+        globals.remove::<Res>().unwrap();
+
+        assert!(!globals.contains::<Res>());
+
+        globals.insert(Res);
+
+        assert!(globals.contains::<Res>());
+    }
+
+    // #[test]
+    // fn default_works() {
+    //     struct Sys;
+
+    //     impl<'a> System<'a> for Sys {
+    //         type SystemData = Write<'a, i32>;
+
+    //         fn run(&mut self, mut data: Self::SystemData) {
+    //             assert_eq!(*data, 0);
+
+    //             *data = 33;
+    //         }
+    //     }
+
+    //     let mut resources = Globals::empty();
+    //     assert!(resources.try_fetch::<i32>().is_none());
+
+    //     let mut sys = Sys;
+    //     RunNow::setup(&mut sys, &mut resources);
+
+    //     sys.run_now(&resources);
+
+    //     assert!(resources.try_fetch::<i32>().is_some());
+    //     assert_eq!(*resources.fetch::<i32>(), 33);
+    // }
+
+    #[test]
+    fn simple_read_write_test() {
+        struct TestOne {
+            value: String,
+        }
+
+        struct TestTwo {
+            value: String,
+        }
+
+        struct NotSync {
+            ptr: *const u8,
+        }
+
+        let mut globals = Globals::default();
+        globals.insert(TestOne {
+            value: "one".to_string(),
+        });
+
+        globals.insert(TestTwo {
+            value: "two".to_string(),
+        });
+
+        globals.insert(NotSync {
+            ptr: std::ptr::null(),
+        });
+
+        assert_eq!(globals.fetch::<TestOne>().value, "one");
+        assert_eq!(globals.fetch::<TestTwo>().value, "two");
+        assert_eq!(globals.fetch::<NotSync>().ptr, std::ptr::null());
+
+        // test re-ownership
+        let owned = globals.remove::<TestTwo>();
+        assert_eq!(owned.unwrap().value, "two");
+    }
+
+    #[test]
+    fn change_ticks() {
+        struct Data(u32);
+
+        let mut globals = Globals::default();
+
+        globals.maintain(123);
+
+        globals.insert(Data(5));
+
+        globals.maintain(124);
+
+        {
+            let borrow = globals.fetch::<Data>();
+            assert_eq!(borrow.0, 5);
+            assert_eq!(borrow.inserted(), 123);
+            assert_eq!(borrow.updated(), 123);
+        }
+
+        globals.maintain(125);
+
+        {
+            let mut borrow = globals.fetch_mut::<Data>();
+            assert_eq!(borrow.0, 5);
+            assert_eq!(borrow.inserted(), 123);
+            assert_eq!(borrow.updated(), 123);
+            borrow.0 = 8;
+            assert_eq!(borrow.inserted(), 123);
+            assert_eq!(borrow.updated(), 125);
+            assert_eq!(borrow.0, 8);
+        }
+
+        globals.maintain(126);
+
+        {
+            let borrow = globals.fetch::<Data>();
+            assert_eq!(borrow.0, 8);
+            assert_eq!(borrow.inserted(), 123);
+            assert_eq!(borrow.updated(), 125);
+        }
+
+        {
+            globals.remove::<Data>();
+            assert_eq!(globals.deleted::<Data>().unwrap(), 126);
+        }
+    }
+}
