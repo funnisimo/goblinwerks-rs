@@ -9,9 +9,9 @@ use crate::specs::{
         marker::{Marker, MarkerAllocator},
         EntityData,
     },
-    storage::{GenericReadComp, ReadComp, WriteComp},
     world::{Component, EntitiesRes, Entity},
 };
+use crate::storage::{GenericReadComp, ReadComp, WriteComp};
 
 /// A trait which allows to serialize entities and their components.
 pub trait SerializeComponents<E, M>

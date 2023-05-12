@@ -3,13 +3,8 @@ use super::{
     entity::{EntitiesRes, Entity},
     CreateIter, EntityBuilder,
 };
-
-use crate::specs::{
-    error::WrongGeneration,
-    // storage::{AnyStorage, MaskedStorage},
-    ReadComp,
-    WriteComp,
-};
+use crate::specs::error::WrongGeneration;
+use crate::storage::{ReadComp, WriteComp};
 use crate::{
     atomic_refcell::{AtomicRef, AtomicRefMut},
     shred::Resource,

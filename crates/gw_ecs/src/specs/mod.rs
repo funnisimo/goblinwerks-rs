@@ -205,7 +205,7 @@ pub mod changeset;
 pub mod error;
 pub mod join;
 pub mod prelude;
-pub mod storage;
+// pub mod storage;
 pub mod world;
 
 pub use crate::shred::{
@@ -239,15 +239,15 @@ pub use self::join::ParJoin;
 pub use self::{
     changeset::ChangeSet,
     join::Join,
-    storage::{
-        DefaultVecStorage, DenseVecStorage, FlaggedStorage, HashMapStorage, NullStorage, ReadComp,
-        Storage, Tracked, VecStorage, WriteComp,
-    },
+    // storage::{
+    //     DefaultVecStorage, DenseVecStorage, FlaggedStorage, HashMapStorage, NullStorage, ReadComp,
+    //     Storage, Tracked, VecStorage, WriteComp,
+    // },
     world::{
         Builder, Commands, Component, Entities, EntitiesMut, EntitiesRes, Entity, EntityBuilder,
         WorldExt,
     },
 };
 
-#[cfg(feature = "nightly")]
-pub use self::storage::DerefFlaggedStorage;
+// #[cfg(feature = "nightly")]
+// pub use self::storage::DerefFlaggedStorage;

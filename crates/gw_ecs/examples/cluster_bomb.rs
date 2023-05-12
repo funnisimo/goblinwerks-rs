@@ -4,7 +4,8 @@ use rand::prelude::*;
 #[cfg(feature = "parallel")]
 use rayon::iter::ParallelIterator;
 
-use gw_ecs::specs::{prelude::*, storage::HashMapStorage};
+use gw_ecs::specs::prelude::*;
+use gw_ecs::storage::HashMapStorage;
 use gw_ecs::World;
 
 const TAU: f32 = 2. * std::f32::consts::PI;

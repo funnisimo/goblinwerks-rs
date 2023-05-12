@@ -1,6 +1,6 @@
 use super::horde_flags::HordeFlags;
 use crate::being::BeingKind;
-use gw_ecs::{specs::storage, Component, DenseVecStorage};
+use gw_ecs::Component;
 use gw_util::frequency::Frequency;
 use std::{
     fmt::{Debug, Formatter, Result},

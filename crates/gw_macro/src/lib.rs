@@ -87,15 +87,20 @@ fn impl_component(ast: &DeriveInput) -> proc_macro2::TokenStream {
             //     .storage
         });
 
-    let storage = match storage {
-        None => format_ident!("DenseVecStorage"),
-        Some(Ok(ident)) => ident,
-        Some(Err(_)) => format_ident!("DenseVecStorage"),
-    };
-
-    quote! {
-        impl #impl_generics Component for #name #ty_generics #where_clause {
-            type Storage = #storage<Self>;
+    match storage {
+        Some(Ok(storage)) => {
+            quote! {
+                impl #impl_generics Component for #name #ty_generics #where_clause {
+                    type Storage = #storage<Self>;
+                }
+            }
+        }
+        _ => {
+            quote! {
+                impl #impl_generics Component for #name #ty_generics #where_clause {
+                    type Storage = gw_ecs::storage::DenseVecStorage<Self>;
+                }
+            }
         }
     }
 }

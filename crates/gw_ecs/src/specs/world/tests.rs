@@ -1,7 +1,8 @@
 // use super::{WorldExt, *};
+use crate::specs::join::Join;
 use crate::specs::world::{Builder, EntitiesRes};
-use crate::specs::{join::Join, storage::VecStorage};
 use crate::specs::{Commands, Component};
+use crate::storage::VecStorage;
 use crate::World;
 
 struct Pos;

@@ -8,7 +8,7 @@ pub use self::{
     world_ext::WorldExt,
 };
 use crate::shred::SystemData;
-use crate::specs::storage::WriteComp;
+use crate::storage::WriteComp;
 pub use crate::World;
 
 mod commands;

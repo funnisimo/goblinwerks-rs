@@ -1,7 +1,8 @@
 use crate::specs::{
-    storage::{AccessMutReturn, MaskedStorage, Storage, UnprotectedStorage},
+    storage::{AccessMutReturn, MaskedStorage, Storage},
     world::{Component, EntitiesRes, Entity, Index},
 };
+use crate::storage::UnprotectedStorage;
 use crate::{legion::ResRef, specs::join::Join};
 use hibitset::BitSet;
 use std::{

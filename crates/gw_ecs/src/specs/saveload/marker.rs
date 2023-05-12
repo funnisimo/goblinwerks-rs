@@ -340,17 +340,25 @@ pub trait MarkerAllocator<M: Marker>: Resource {
     /// Or get old marker if this entity is already marked.
     /// If entity is dead then this will return `None`.
     fn mark<'m>(&mut self, entity: Entity, storage: &'m mut WriteComp<M>) -> Option<(&'m M, bool)> {
-        let new = if let Ok(entry) = storage.entry(entity) {
-            let mut new = false;
-            let _marker = entry.or_insert_with(|| {
-                new = true;
-                self.allocate(entity, None)
-            });
-
-            new
+        let new = if storage.contains(entity) {
+            false
+        } else if storage.entities.is_alive(entity) {
+            storage.insert(entity, self.allocate(entity, None));
+            true
         } else {
             return None;
         };
+        // let new = if let Ok(entry) = storage.entry(entity) {
+        //     let mut new = false;
+        //     let _marker = entry.or_insert_with(|| {
+        //         new = true;
+        //         self.allocate(entity, None)
+        //     });
+
+        //     new
+        // } else {
+        //     return None;
+        // };
         Some((storage.get(entity).unwrap(), new))
     }
 

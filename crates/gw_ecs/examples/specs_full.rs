@@ -1,5 +1,5 @@
 use gw_ecs::SystemData;
-use gw_ecs::{schedule::Schedule, specs::storage::HashMapStorage, *};
+use gw_ecs::{schedule::Schedule, storage::HashMapStorage, *};
 
 // -- Components --
 // A component exists for 0..n

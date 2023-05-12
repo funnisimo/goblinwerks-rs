@@ -1,7 +1,4 @@
-use gw_ecs::{
-    specs::storage::{DenseVecStorage, VecStorage},
-    Component, Ecs,
-};
+use gw_ecs::{storage::VecStorage, Component, Ecs};
 
 #[derive(Default, PartialEq, Debug, Component)]
 pub struct Clock(u32);

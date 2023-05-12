@@ -13,9 +13,9 @@ use crate::specs::{
         marker::{Marker, MarkerAllocator},
         EntityData,
     },
-    storage::{GenericWriteComp, WriteComp},
     world::{Component, EntitiesRes, Entity},
 };
+use crate::storage::{GenericWriteComp, WriteComp};
 
 /// A trait which allows to deserialize entities and their components.
 pub trait DeserializeComponents<E, M>

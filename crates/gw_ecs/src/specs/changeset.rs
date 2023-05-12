@@ -1,8 +1,8 @@
 //! Provides a changeset that can be collected from an iterator.
 
+use super::{prelude::*, world::Index};
+use crate::storage::UnprotectedStorage;
 use std::{iter::FromIterator, ops::AddAssign};
-
-use super::{prelude::*, storage::UnprotectedStorage, world::Index};
 
 /// Change set that can be collected from an iterator, and joined on for easy
 /// application to components.
@@ -173,9 +173,9 @@ mod tests {
     use super::ChangeSet;
     use crate::specs::{
         join::Join,
-        storage::DenseVecStorage,
         world::{Builder, Component},
     };
+    use crate::storage::DenseVecStorage;
     use crate::World;
 
     pub struct Health(i32);

@@ -8,6 +8,7 @@ pub mod specs;
 
 pub mod schedule;
 // pub mod system;
+pub mod storage;
 pub mod world;
 
 pub use ecs::Ecs;
@@ -19,10 +20,10 @@ pub use world::World;
 // pub use shred::{Dispatcher, DispatcherBuilder};
 pub use specs::{
     join::*,
-    storage::{DenseVecStorage, MaskedStorage, Storage, VecStorage},
     world::{Builder, Commands},
-    Component, Entities, Entity, EntityBuilder, ReadComp, System, WriteComp,
+    Component, Entities, Entity, EntityBuilder, System,
 };
+pub use storage::{DenseVecStorage, MaskedStorage, ReadComp, Storage, VecStorage, WriteComp};
 
 // #[cfg(feature = "parallel")]
 // pub use crate::shred::AsyncDispatcher;

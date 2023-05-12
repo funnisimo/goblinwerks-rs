@@ -1,6 +1,5 @@
+use crate::storage::UnprotectedStorage;
 use std::any::Any;
-
-use crate::specs::storage::UnprotectedStorage;
 
 /// Abstract component type.
 /// Doesn't have to be Copy or even Clone.
