@@ -1,7 +1,7 @@
 #![recursion_limit = "256"]
 
 use proc_macro::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::{
     // parenthesized,
     // parse::{Parse, ParseStream, Result},
