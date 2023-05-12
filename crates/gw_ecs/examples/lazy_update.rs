@@ -1,4 +1,4 @@
-use gw_ecs::{Builder, Commands, Component, DenseVecStorage, Entities, ReadRes, SystemData, World};
+use gw_ecs::{Builder, Commands, Component, Entities, ReadRes, SystemData, World};
 
 #[derive(Default, Component, Debug)]
 struct CompA(u32);

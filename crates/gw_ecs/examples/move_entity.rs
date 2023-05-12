@@ -1,5 +1,5 @@
 use gw_ecs::Builder; // For create_entity
-use gw_ecs::{Component, DenseVecStorage};
+use gw_ecs::Component;
 use gw_ecs::{Entity, World}; // For Component derive
 
 // a component is any type that is 'static, sized, send and sync

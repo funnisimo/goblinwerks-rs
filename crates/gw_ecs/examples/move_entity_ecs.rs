@@ -1,5 +1,5 @@
 use gw_ecs::Builder; // For create_entity
-use gw_ecs::{Component, DenseVecStorage};
+use gw_ecs::Component;
 use gw_ecs::{Ecs, Entity}; // For Component derive
 
 // a component is any type that is 'static, sized, send and sync
@@ -29,7 +29,7 @@ fn main() {
     ecs.register::<Velocity>();
 
     let entity = {
-        let mut world = ecs.create_world("MAIN");
+        let world = ecs.create_world("MAIN");
 
         println!("world 1 = {}", world.id());
 
