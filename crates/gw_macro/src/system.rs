@@ -35,17 +35,17 @@ pub fn impl_system_data(ast: &DeriveInput) -> proc_macro2::TokenStream {
             SystemData< #impl_fetch_lt >
             for #name #ty_generics #where_clause
         {
-            fn setup(world: &mut World) {
+            fn setup(world: &mut gw_ecs::World) {
                 #(
                     <#tys as SystemData> :: setup(world);
                 )*
             }
 
-            fn fetch(world: &'a World) -> Self {
+            fn fetch(world: &'a gw_ecs::World) -> Self {
                 #fetch_return
             }
 
-            fn reads() -> std::collections::HashSet<ResourceId> {
+            fn reads() -> std::collections::HashSet<gw_ecs::ResourceId> {
                 let mut r = std::collections::HashSet::new();
 
                 #( {
@@ -57,7 +57,7 @@ pub fn impl_system_data(ast: &DeriveInput) -> proc_macro2::TokenStream {
                 r
             }
 
-            fn writes() -> std::collections::HashSet<ResourceId> {
+            fn writes() -> std::collections::HashSet<gw_ecs::ResourceId> {
                 let mut r = std::collections::HashSet::new();
 
                 #( {

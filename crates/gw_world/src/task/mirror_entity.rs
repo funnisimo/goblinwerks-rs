@@ -71,7 +71,7 @@ pub fn mirror_entity_ai(world: &mut World, entity: Entity) -> TaskResult {
             mirror.insert(entity, me);
         }
 
-        let me = mirror.get_mut(entity).unwrap();
+        let mut me = mirror.get_mut(entity).unwrap();
 
         // let _mirror_info = match beings.get(me.entity) {
         //     None => {

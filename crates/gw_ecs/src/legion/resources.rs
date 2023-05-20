@@ -239,6 +239,7 @@ impl Resources {
     ///
     /// # Panics
     /// Panics if the resource is already borrowed mutably.
+    #[allow(dead_code)] // for tests
     pub(crate) fn get_by_id<T: Resource>(&self, id: ResourceId) -> Option<ResRef<T>> {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which

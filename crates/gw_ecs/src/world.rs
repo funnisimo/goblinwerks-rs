@@ -1,4 +1,4 @@
-// use crate::atomic_refcell::{AtomicRef, AtomicRefMut};
+use crate::bevy::{Event, Events, ManualEventReader};
 use crate::globals::{GlobalMut, GlobalRef, Globals};
 use crate::legion::{ResMut, ResRef, Ticks};
 use crate::shred::MetaTable;
@@ -514,7 +514,7 @@ impl World {
         f(&res)
     }
 
-    pub fn read_resource<R: Resource>(&self) -> ResRef<R> {
+    pub fn read_resource<'world, R: Resource>(&'world self) -> ResRef<'world, R> {
         match self.resources.get::<R>() {
             None => {
                 let name = std::any::type_name::<R>();
@@ -652,6 +652,28 @@ impl World {
         }
     }
 
+    // Events
+
+    pub fn register_event<T: Event>(&mut self) {
+        self.ensure_resource::<Events<T>>();
+    }
+
+    pub fn send_event<T: Event>(&self, event: T) {
+        self.write_resource::<Events<T>>().send(event);
+    }
+
+    pub fn event_reader<T: Event>(&self) -> ManualEventReader<T> {
+        self.read_events::<T>().get_reader_current()
+    }
+
+    pub fn read_events<T: Event>(&self) -> ResRef<Events<T>> {
+        self.read_resource::<Events<T>>()
+    }
+
+    pub fn write_events<T: Event>(&self) -> ResMut<Events<T>> {
+        self.write_resource::<Events<T>>()
+    }
+
     // Lazy Update
 
     pub fn commands(&self) -> ReadRes<Commands> {
@@ -725,6 +747,10 @@ impl World {
         };
         let _ = self.delete_entity(entity); // Ignore
         new_entity
+    }
+
+    pub fn change_tick(&self) -> u32 {
+        self.ticks
     }
 
     pub fn maintain(&mut self) {
@@ -876,5 +902,40 @@ mod tests {
 
         assert!(world.try_read_resource::<i32>().is_some());
         assert_eq!(*world.read_resource::<i32>(), 33);
+    }
+
+    struct EnterStore(u32);
+
+    #[test]
+    fn basic_event() {
+        let mut world = World::empty(1);
+
+        world.register_event::<EnterStore>();
+        let mut reader = world.event_reader::<EnterStore>();
+
+        world.send_event(EnterStore(1));
+
+        {
+            let events = world.read_events::<EnterStore>();
+            assert_eq!(reader.iter(&events).count(), 1);
+        }
+
+        {
+            let events = world.read_events::<EnterStore>();
+            assert_eq!(reader.iter(&events).count(), 0);
+        }
+
+        world.maintain();
+
+        world.send_event(EnterStore(1));
+        world.send_event(EnterStore(2));
+        world.send_event(EnterStore(3));
+
+        world.maintain();
+
+        {
+            let events = world.read_events::<EnterStore>();
+            assert_eq!(reader.iter(&events).count(), 3);
+        }
     }
 }

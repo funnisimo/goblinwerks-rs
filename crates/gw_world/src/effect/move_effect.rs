@@ -20,7 +20,7 @@ impl Effect for MoveEntity {
         let mut map = world.write_resource::<Map>();
 
         let mut positions = world.write_component::<Position>();
-        let pos = positions.get_mut(entity).unwrap();
+        let mut pos = positions.get_mut(entity).unwrap();
         let orig_pt = pos.point();
 
         let old_idx = map.get_index(orig_pt.x, orig_pt.y).unwrap();
@@ -33,7 +33,7 @@ impl Effect for MoveEntity {
 
         log(format!(
             "Move entity({},{}) from: {:?}, to: {:?}",
-            self.0, self.1, orig_pt, pos
+            self.0, self.1, orig_pt, *pos
         ));
 
         // let new_idx = map.get_wrapped_index(pos.x, pos.y).unwrap();

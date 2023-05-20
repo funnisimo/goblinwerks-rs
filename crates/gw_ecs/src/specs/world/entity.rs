@@ -1,4 +1,4 @@
-use crate::specs::{error::WrongGeneration, join::Join};
+use crate::specs::join::Join;
 use crate::{shred::ReadRes, WriteRes};
 use hibitset::{AtomicBitSet, BitSet, BitSetOr};
 use std::{

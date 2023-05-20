@@ -343,7 +343,7 @@ pub trait MarkerAllocator<M: Marker>: Resource {
         let new = if storage.contains(entity) {
             false
         } else if storage.entities.is_alive(entity) {
-            storage.insert(entity, self.allocate(entity, None));
+            storage.insert(entity, self.allocate(entity, None)).unwrap();
             true
         } else {
             return None;

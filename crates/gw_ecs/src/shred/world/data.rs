@@ -1,8 +1,9 @@
-use crate::atomic_refcell::{AtomicRef, AtomicRefMut};
+use crate::bevy::{ReadOnlySystemParam, SystemParam};
 use crate::shred::{Resource, ResourceId, SetupDefault, SetupHandler, SystemData};
 use crate::World;
 use std::collections::HashSet;
 use std::{
+    fmt::Debug,
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };
@@ -21,6 +22,8 @@ pub struct ReadRes<'a, T: 'a, F = ()> {
     inner: ResRef<'a, T>,
     phantom: PhantomData<F>,
 }
+
+unsafe impl<'a, T, F> ReadOnlySystemParam for ReadRes<'a, T, F> where T: Resource {}
 
 impl<'a, T, F> Deref for ReadRes<'a, T, F>
 where
@@ -67,6 +70,39 @@ where
     // fn writes() -> Vec<ResourceId> {
     //     vec![]
     // }
+}
+
+unsafe impl<'a, T, F> SystemParam for ReadRes<'a, T, F>
+where
+    T: Resource,
+{
+    type State = ();
+    type Item<'world, 'state> = ReadRes<'world, T, F>;
+
+    fn init_state(_world: &mut World, _system_meta: &mut crate::bevy::SystemMeta) -> Self::State {
+        ()
+    }
+
+    fn apply(_state: &mut Self::State, _system_meta: &crate::bevy::SystemMeta, _world: &mut World) {
+    }
+
+    unsafe fn get_param<'world, 'state>(
+        _state: &'state mut Self::State,
+        _system_meta: &crate::bevy::SystemMeta,
+        world: &'world World,
+        _change_tick: u32,
+    ) -> Self::Item<'world, 'state> {
+        world.read_resource::<T>().into()
+    }
+}
+
+impl<'a, T> Debug for ReadRes<'a, T>
+where
+    T: Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.inner)
+    }
 }
 
 /// Allows to fetch a resource in a system mutably.
@@ -135,6 +171,15 @@ where
         let mut writes = HashSet::new();
         writes.insert(ResourceId::new::<T>());
         writes
+    }
+}
+
+impl<'a, T> Debug for WriteRes<'a, T>
+where
+    T: Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.inner)
     }
 }
 

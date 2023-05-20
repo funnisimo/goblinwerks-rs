@@ -3,7 +3,10 @@ use crate::{
     atomic_refcell::{AtomicRef, AtomicRefMut},
     Resource,
 };
-use std::ops::{Deref, DerefMut};
+use std::{
+    fmt::Debug,
+    ops::{Deref, DerefMut},
+};
 
 /// Allows to fetch a resource in a system immutably.
 ///
@@ -51,6 +54,15 @@ impl<'a, T> Clone for ResRef<'a, T> {
             data: AtomicRef::clone(&self.data),
             ticks: AtomicRef::clone(&self.ticks),
         }
+    }
+}
+
+impl<'a, T> Debug for ResRef<'a, T>
+where
+    T: Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.data)
     }
 }
 
@@ -110,5 +122,14 @@ where
     fn deref_mut(&mut self) -> &mut T {
         self.ticks.updated = self.current;
         self.data.deref_mut()
+    }
+}
+
+impl<'a, T> Debug for ResMut<'a, T>
+where
+    T: Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.data)
     }
 }

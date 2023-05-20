@@ -58,6 +58,7 @@ impl ResourceId {
         }
     }
 
+    #[allow(dead_code)]
     pub(crate) fn assert_same_type_id<R: Resource>(&self) {
         let res_id0 = ResourceId::new::<R>();
         assert_eq!(

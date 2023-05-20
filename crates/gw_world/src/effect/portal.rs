@@ -133,7 +133,7 @@ fn try_move_hero_world(
         };
         {
             let mut positions = new_world.write_component::<Position>();
-            let pos = positions.get_mut(new_entity).unwrap();
+            let mut pos = positions.get_mut(new_entity).unwrap();
             pos.set(new_pt.x, new_pt.y);
         }
         {

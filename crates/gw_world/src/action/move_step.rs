@@ -8,7 +8,7 @@ use crate::map::cell_flavor;
 use crate::map::Map;
 use crate::position::Position;
 use gw_app::log;
-use gw_ecs::{Entity, ReadComp, ReadRes, SystemData, World, WriteGlobal, WriteRes};
+use gw_ecs::{Entity, ReadComp, ReadRes, SystemData, World, WriteGlobal};
 use gw_util::point::Point;
 
 #[derive(Copy, Clone, Debug)]
@@ -155,7 +155,7 @@ impl MoveStepAction {
         // println!("changed : {}", old_idx);
         let blocks_move = {
             let mut positions = world.write_component::<Position>();
-            let pos = positions.get_mut(self.entity).unwrap();
+            let mut pos = positions.get_mut(self.entity).unwrap();
             pos.set(new_pt.x, new_pt.y);
             pos.blocks_move
         };

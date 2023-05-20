@@ -1,0 +1,14 @@
+* Implement SystemParam for: 
+    [] ReadGlobal
+    [] WriteGlobal
+    [X] ReadRes
+    [] WriteRes
+    [] ReadComp
+    [] WriteComp
+    [X] EventWriter
+    [X] EventReader
+    [X] local
+
+* Create FunctionSystem
+* Create IntoSytem
+* Test Basic FunctionSystem

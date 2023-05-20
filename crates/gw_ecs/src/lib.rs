@@ -3,11 +3,11 @@ pub mod ecs;
 pub mod globals;
 #[macro_use]
 pub mod shred;
+pub mod bevy;
 pub mod legion;
 pub mod specs;
 
 pub mod schedule;
-// pub mod system;
 pub mod storage;
 pub mod world;
 

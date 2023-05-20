@@ -59,7 +59,7 @@ use std::any::Any;
 ///     type Storage = HashMapStorage<Self>;
 /// }
 /// ```
-pub trait Component: Any + Sized {
+pub trait Component: Any + Sized + Send + Sync {
     /// Associated storage type for this component.
     #[cfg(feature = "parallel")]
     type Storage: UnprotectedStorage<Self> + Any + Send + Sync + Default;
