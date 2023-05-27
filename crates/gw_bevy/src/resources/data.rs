@@ -1,6 +1,7 @@
 use super::Resource;
-use super::{ChangeTicks, Ticks};
 use crate::atomic_refcell::{AtomicRef, AtomicRefMut};
+use crate::component::ComponentTicks;
+use crate::component::Tick;
 use std::{
     fmt::Debug,
     ops::{Deref, DerefMut},
@@ -16,22 +17,22 @@ use std::{
 /// * `F`: The setup handler (default: `DefaultProvider`)
 pub struct ResRef<'a, T: 'a> {
     pub(crate) data: AtomicRef<'a, T>,
-    pub(crate) ticks: AtomicRef<'a, ChangeTicks>,
+    pub(crate) ticks: AtomicRef<'a, ComponentTicks>,
 }
 
 impl<'a, T> ResRef<'a, T>
 where
     T: Resource,
 {
-    pub fn new(data: AtomicRef<'a, T>, ticks: AtomicRef<'a, ChangeTicks>) -> Self {
+    pub fn new(data: AtomicRef<'a, T>, ticks: AtomicRef<'a, ComponentTicks>) -> Self {
         ResRef { data, ticks }
     }
 
-    pub fn inserted(&self) -> Ticks {
-        self.ticks.inserted
+    pub fn inserted(&self) -> Tick {
+        self.ticks.added
     }
-    pub fn updated(&self) -> Ticks {
-        self.ticks.updated
+    pub fn updated(&self) -> Tick {
+        self.ticks.changed
     }
 }
 
@@ -74,8 +75,8 @@ where
 /// * `F`: The setup handler (default: `DefaultProvider`)
 pub struct ResMut<'a, T: 'a> {
     data: AtomicRefMut<'a, T>,
-    ticks: AtomicRefMut<'a, ChangeTicks>,
-    current: Ticks,
+    ticks: AtomicRefMut<'a, ComponentTicks>,
+    current: Tick,
 }
 
 impl<'a, T> ResMut<'a, T>
@@ -84,8 +85,8 @@ where
 {
     pub fn new(
         data: AtomicRefMut<'a, T>,
-        ticks: AtomicRefMut<'a, ChangeTicks>,
-        current: Ticks,
+        ticks: AtomicRefMut<'a, ComponentTicks>,
+        current: Tick,
     ) -> Self {
         ResMut {
             data,
@@ -94,11 +95,11 @@ where
         }
     }
 
-    pub fn inserted(&self) -> Ticks {
-        self.ticks.inserted
+    pub fn inserted(&self) -> Tick {
+        self.ticks.added
     }
-    pub fn updated(&self) -> Ticks {
-        self.ticks.updated
+    pub fn updated(&self) -> Tick {
+        self.ticks.changed
     }
 }
 
@@ -118,7 +119,7 @@ where
     T: Resource,
 {
     fn deref_mut(&mut self) -> &mut T {
-        self.ticks.updated = self.current;
+        self.ticks.changed = self.current;
         self.data.deref_mut()
     }
 }

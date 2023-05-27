@@ -10,6 +10,7 @@ use crate::{
 pub use bevy_ecs_macros::Component;
 use bevy_ptr::{OwningPtr, UnsafeCellDeref};
 use std::cell::UnsafeCell;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::{
     alloc::Layout,
     any::{Any, TypeId},
@@ -586,13 +587,25 @@ impl Components {
     }
 }
 
+pub static mut CURRENT_TICK: AtomicU32 = AtomicU32::new(0);
+
+pub fn current_tick() -> u32 {
+    unsafe { CURRENT_TICK.load(Ordering::Relaxed) }
+}
+
 /// Used to track changes in state between system runs, e.g. components being added or accessed mutably.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Tick {
     pub(crate) tick: u32,
 }
 
 impl Tick {
+    pub fn current() -> Self {
+        Self {
+            tick: unsafe { CURRENT_TICK.load(Ordering::Relaxed) },
+        }
+    }
+
     pub const fn new(tick: u32) -> Self {
         Self { tick }
     }
@@ -664,7 +677,7 @@ impl<'a> TickCells<'a> {
 }
 
 /// Records when a component was added and when it was last mutably dereferenced (or added).
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct ComponentTicks {
     pub(crate) added: Tick,
     pub(crate) changed: Tick,

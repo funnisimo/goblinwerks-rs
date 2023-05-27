@@ -16,7 +16,6 @@ use crate::{
     TypeIdMap,
 };
 use bevy_ptr::OwningPtr;
-use bevy_utils::all_tuples;
 use std::any::TypeId;
 
 /// The `Bundle` trait enables insertion and removal of [`Component`]s from an entity.
@@ -215,9 +214,9 @@ macro_rules! tuple_impl {
 
             #[allow(unused_variables, unused_mut)]
             #[allow(clippy::unused_unit)]
-            unsafe fn from_components<T, F>(ctx: &mut T, func: &mut F) -> Self
+            unsafe fn from_components<T, FN>(ctx: &mut T, func: &mut FN) -> Self
             where
-                F: FnMut(&mut T) -> OwningPtr<'_>
+                FN: FnMut(&mut T) -> OwningPtr<'_>
             {
                 // Rust guarantees that tuple calls are evaluated 'left to right'.
                 // https://doc.rust-lang.org/reference/expressions.html#evaluation-order-of-operands
@@ -237,7 +236,15 @@ macro_rules! tuple_impl {
     }
 }
 
-all_tuples!(tuple_impl, 0, 15, B);
+tuple_impl!();
+tuple_impl!(A);
+tuple_impl!(A, B);
+tuple_impl!(A, B, C);
+tuple_impl!(A, B, C, D);
+tuple_impl!(A, B, C, D, E);
+tuple_impl!(A, B, C, D, E, F);
+tuple_impl!(A, B, C, D, E, F, G);
+tuple_impl!(A, B, C, D, E, F, G, H);
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct BundleId(usize);
