@@ -1042,102 +1042,102 @@ mod tests {
         world.spawn((W(0u32), W(42u64)));
     }
 
-    #[test]
-    fn commands() {
-        let mut world = World::default();
-        let mut command_queue = CommandQueue::default();
-        let entity = Commands::new(&mut command_queue, &world)
-            .spawn((W(1u32), W(2u64)))
-            .id();
-        command_queue.apply(&mut world);
-        assert!(world.entities().len() == 1);
-        let results = world
-            .query::<(&W<u32>, &W<u64>)>()
-            .iter(&world)
-            .map(|(a, b)| (a.0, b.0))
-            .collect::<Vec<_>>();
-        assert_eq!(results, vec![(1u32, 2u64)]);
-        // test entity despawn
-        {
-            let mut commands = Commands::new(&mut command_queue, &world);
-            commands.entity(entity).despawn();
-            commands.entity(entity).despawn(); // double despawn shouldn't panic
-        }
-        command_queue.apply(&mut world);
-        let results2 = world
-            .query::<(&W<u32>, &W<u64>)>()
-            .iter(&world)
-            .map(|(a, b)| (a.0, b.0))
-            .collect::<Vec<_>>();
-        assert_eq!(results2, vec![]);
+    // #[test]
+    // fn commands() {
+    //     let mut world = World::default();
+    //     let mut command_queue = CommandQueue::default();
+    //     let entity = Commands::new(&mut command_queue, &world)
+    //         .spawn((W(1u32), W(2u64)))
+    //         .id();
+    //     command_queue.apply(&mut world);
+    //     assert!(world.entities().len() == 1);
+    //     let results = world
+    //         .query::<(&W<u32>, &W<u64>)>()
+    //         .iter(&world)
+    //         .map(|(a, b)| (a.0, b.0))
+    //         .collect::<Vec<_>>();
+    //     assert_eq!(results, vec![(1u32, 2u64)]);
+    //     // test entity despawn
+    //     {
+    //         let mut commands = Commands::new(&mut command_queue, &world);
+    //         commands.entity(entity).despawn();
+    //         commands.entity(entity).despawn(); // double despawn shouldn't panic
+    //     }
+    //     command_queue.apply(&mut world);
+    //     let results2 = world
+    //         .query::<(&W<u32>, &W<u64>)>()
+    //         .iter(&world)
+    //         .map(|(a, b)| (a.0, b.0))
+    //         .collect::<Vec<_>>();
+    //     assert_eq!(results2, vec![]);
 
-        // test adding simple (FnOnce) commands
-        {
-            let mut commands = Commands::new(&mut command_queue, &world);
+    //     // test adding simple (FnOnce) commands
+    //     {
+    //         let mut commands = Commands::new(&mut command_queue, &world);
 
-            // set up a simple command using a closure that adds one additional entity
-            commands.add(|world: &mut World| {
-                world.spawn((W(42u32), W(0u64)));
-            });
+    //         // set up a simple command using a closure that adds one additional entity
+    //         commands.add(|world: &mut World| {
+    //             world.spawn((W(42u32), W(0u64)));
+    //         });
 
-            // set up a simple command using a function that adds one additional entity
-            commands.add(simple_command);
-        }
-        command_queue.apply(&mut world);
-        let results3 = world
-            .query::<(&W<u32>, &W<u64>)>()
-            .iter(&world)
-            .map(|(a, b)| (a.0, b.0))
-            .collect::<Vec<_>>();
+    //         // set up a simple command using a function that adds one additional entity
+    //         commands.add(simple_command);
+    //     }
+    //     command_queue.apply(&mut world);
+    //     let results3 = world
+    //         .query::<(&W<u32>, &W<u64>)>()
+    //         .iter(&world)
+    //         .map(|(a, b)| (a.0, b.0))
+    //         .collect::<Vec<_>>();
 
-        assert_eq!(results3, vec![(42u32, 0u64), (0u32, 42u64)]);
-    }
+    //     assert_eq!(results3, vec![(42u32, 0u64), (0u32, 42u64)]);
+    // }
 
-    #[test]
-    fn remove_components() {
-        let mut world = World::default();
+    // #[test]
+    // fn remove_components() {
+    //     let mut world = World::default();
 
-        let mut command_queue = CommandQueue::default();
-        let (dense_dropck, dense_is_dropped) = DropCk::new_pair();
-        let (sparse_dropck, sparse_is_dropped) = DropCk::new_pair();
-        let sparse_dropck = SparseDropCk(sparse_dropck);
+    //     let mut command_queue = CommandQueue::default();
+    //     let (dense_dropck, dense_is_dropped) = DropCk::new_pair();
+    //     let (sparse_dropck, sparse_is_dropped) = DropCk::new_pair();
+    //     let sparse_dropck = SparseDropCk(sparse_dropck);
 
-        let entity = Commands::new(&mut command_queue, &world)
-            .spawn((W(1u32), W(2u64), dense_dropck, sparse_dropck))
-            .id();
-        command_queue.apply(&mut world);
-        let results_before = world
-            .query::<(&W<u32>, &W<u64>)>()
-            .iter(&world)
-            .map(|(a, b)| (a.0, b.0))
-            .collect::<Vec<_>>();
-        assert_eq!(results_before, vec![(1u32, 2u64)]);
+    //     let entity = Commands::new(&mut command_queue, &world)
+    //         .spawn((W(1u32), W(2u64), dense_dropck, sparse_dropck))
+    //         .id();
+    //     command_queue.apply(&mut world);
+    //     let results_before = world
+    //         .query::<(&W<u32>, &W<u64>)>()
+    //         .iter(&world)
+    //         .map(|(a, b)| (a.0, b.0))
+    //         .collect::<Vec<_>>();
+    //     assert_eq!(results_before, vec![(1u32, 2u64)]);
 
-        // test component removal
-        Commands::new(&mut command_queue, &world)
-            .entity(entity)
-            .remove::<W<u32>>()
-            .remove::<(W<u32>, W<u64>, SparseDropCk, DropCk)>();
+    //     // test component removal
+    //     Commands::new(&mut command_queue, &world)
+    //         .entity(entity)
+    //         .remove::<W<u32>>()
+    //         .remove::<(W<u32>, W<u64>, SparseDropCk, DropCk)>();
 
-        assert_eq!(dense_is_dropped.load(Ordering::Relaxed), 0);
-        assert_eq!(sparse_is_dropped.load(Ordering::Relaxed), 0);
-        command_queue.apply(&mut world);
-        assert_eq!(dense_is_dropped.load(Ordering::Relaxed), 1);
-        assert_eq!(sparse_is_dropped.load(Ordering::Relaxed), 1);
+    //     assert_eq!(dense_is_dropped.load(Ordering::Relaxed), 0);
+    //     assert_eq!(sparse_is_dropped.load(Ordering::Relaxed), 0);
+    //     command_queue.apply(&mut world);
+    //     assert_eq!(dense_is_dropped.load(Ordering::Relaxed), 1);
+    //     assert_eq!(sparse_is_dropped.load(Ordering::Relaxed), 1);
 
-        let results_after = world
-            .query::<(&W<u32>, &W<u64>)>()
-            .iter(&world)
-            .map(|(a, b)| (a.0, b.0))
-            .collect::<Vec<_>>();
-        assert_eq!(results_after, vec![]);
-        let results_after_u64 = world
-            .query::<&W<u64>>()
-            .iter(&world)
-            .map(|v| v.0)
-            .collect::<Vec<_>>();
-        assert_eq!(results_after_u64, vec![]);
-    }
+    //     let results_after = world
+    //         .query::<(&W<u32>, &W<u64>)>()
+    //         .iter(&world)
+    //         .map(|(a, b)| (a.0, b.0))
+    //         .collect::<Vec<_>>();
+    //     assert_eq!(results_after, vec![]);
+    //     let results_after_u64 = world
+    //         .query::<&W<u64>>()
+    //         .iter(&world)
+    //         .map(|v| v.0)
+    //         .collect::<Vec<_>>();
+    //     assert_eq!(results_after_u64, vec![]);
+    // }
 
     #[test]
     fn remove_resources() {

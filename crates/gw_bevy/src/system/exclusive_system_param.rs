@@ -1,6 +1,6 @@
 use crate::{
-    prelude::{FromWorld, QueryState},
-    query::{ReadOnlyWorldQuery, WorldQuery},
+    prelude::FromWorld,
+    // query::{QueryState, ReadOnlyWorldQuery, WorldQuery},
     system::{Local, SystemMeta, SystemParam, SystemState},
     world::World,
 };
@@ -18,20 +18,20 @@ pub trait ExclusiveSystemParam: Sized {
 
 pub type ExclusiveSystemParamItem<'s, P> = <P as ExclusiveSystemParam>::Item<'s>;
 
-impl<'a, Q: WorldQuery + 'static, F: ReadOnlyWorldQuery + 'static> ExclusiveSystemParam
-    for &'a mut QueryState<Q, F>
-{
-    type State = QueryState<Q, F>;
-    type Item<'s> = &'s mut QueryState<Q, F>;
+// impl<'a, Q: WorldQuery + 'static, F: ReadOnlyWorldQuery + 'static> ExclusiveSystemParam
+//     for &'a mut QueryState<Q, F>
+// {
+//     type State = QueryState<Q, F>;
+//     type Item<'s> = &'s mut QueryState<Q, F>;
 
-    fn init(world: &mut World, _system_meta: &mut SystemMeta) -> Self::State {
-        QueryState::new(world)
-    }
+//     fn init(world: &mut World, _system_meta: &mut SystemMeta) -> Self::State {
+//         QueryState::new(world)
+//     }
 
-    fn get_param<'s>(state: &'s mut Self::State, _system_meta: &SystemMeta) -> Self::Item<'s> {
-        state
-    }
-}
+//     fn get_param<'s>(state: &'s mut Self::State, _system_meta: &SystemMeta) -> Self::Item<'s> {
+//         state
+//     }
+// }
 
 impl<'a, P: SystemParam + 'static> ExclusiveSystemParam for &'a mut SystemState<P> {
     type State = SystemState<P>;

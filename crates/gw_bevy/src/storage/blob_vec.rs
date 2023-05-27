@@ -609,27 +609,27 @@ mod tests {
         let _ = unsafe { BlobVec::new(item_layout, Some(drop), 0) };
     }
 
-    #[test]
-    fn aligned_zst() {
-        // NOTE: This test is explicitly for uncovering potential UB with miri.
+    // #[test]
+    // fn aligned_zst() {
+    //     // NOTE: This test is explicitly for uncovering potential UB with miri.
 
-        #[derive(Component)]
-        #[repr(align(32))]
-        struct Zst;
+    //     #[derive(Component)]
+    //     #[repr(align(32))]
+    //     struct Zst;
 
-        let mut world = World::default();
-        world.spawn(Zst);
-        world.spawn(Zst);
-        world.spawn(Zst);
-        world.spawn_empty();
+    //     let mut world = World::default();
+    //     world.spawn(Zst);
+    //     world.spawn(Zst);
+    //     world.spawn(Zst);
+    //     world.spawn_empty();
 
-        let mut count = 0;
+    //     let mut count = 0;
 
-        let mut q = world.query::<&Zst>();
-        for &Zst in q.iter(&world) {
-            count += 1;
-        }
+    //     let mut q = world.query::<&Zst>();
+    //     for &Zst in q.iter(&world) {
+    //         count += 1;
+    //     }
 
-        assert_eq!(count, 3);
-    }
+    //     assert_eq!(count, 3);
+    // }
 }

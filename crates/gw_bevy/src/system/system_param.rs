@@ -6,9 +6,12 @@ use crate::{
     component::{ComponentId, ComponentTicks, Components},
     entity::Entities,
     query::{
-        Access, FilteredAccess, FilteredAccessSet, QueryState, ReadOnlyWorldQuery, WorldQuery,
+        Access,
+        FilteredAccess,
+        FilteredAccessSet,
+        //QueryState, ReadOnlyWorldQuery, WorldQuery, Query
     },
-    system::{Query, SystemMeta},
+    system::SystemMeta,
     world::{FromWorld, World},
 };
 use bevy_ecs_macros::impl_param_set;
@@ -188,62 +191,62 @@ pub unsafe trait ReadOnlySystemParam: SystemParam {}
 /// Shorthand way of accessing the associated type [`SystemParam::Item`] for a given [`SystemParam`].
 pub type SystemParamItem<'w, 's, P> = <P as SystemParam>::Item<'w, 's>;
 
-// SAFETY: QueryState is constrained to read-only fetches, so it only reads World.
-unsafe impl<'w, 's, Q: ReadOnlyWorldQuery + 'static, F: ReadOnlyWorldQuery + 'static>
-    ReadOnlySystemParam for Query<'w, 's, Q, F>
-{
-}
+// // SAFETY: QueryState is constrained to read-only fetches, so it only reads World.
+// unsafe impl<'w, 's, Q: ReadOnlyWorldQuery + 'static, F: ReadOnlyWorldQuery + 'static>
+//     ReadOnlySystemParam for Query<'w, 's, Q, F>
+// {
+// }
 
-// SAFETY: Relevant query ComponentId and ArchetypeComponentId access is applied to SystemMeta. If
-// this Query conflicts with any prior access, a panic will occur.
-unsafe impl<Q: WorldQuery + 'static, F: ReadOnlyWorldQuery + 'static> SystemParam
-    for Query<'_, '_, Q, F>
-{
-    type State = QueryState<Q, F>;
-    type Item<'w, 's> = Query<'w, 's, Q, F>;
+// // SAFETY: Relevant query ComponentId and ArchetypeComponentId access is applied to SystemMeta. If
+// // this Query conflicts with any prior access, a panic will occur.
+// unsafe impl<Q: WorldQuery + 'static, F: ReadOnlyWorldQuery + 'static> SystemParam
+//     for Query<'_, '_, Q, F>
+// {
+//     type State = QueryState<Q, F>;
+//     type Item<'w, 's> = Query<'w, 's, Q, F>;
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        let state = QueryState::new(world);
-        assert_component_access_compatibility(
-            &system_meta.name,
-            std::any::type_name::<Q>(),
-            std::any::type_name::<F>(),
-            &system_meta.component_access_set,
-            &state.component_access,
-            world,
-        );
-        system_meta
-            .component_access_set
-            .add(state.component_access.clone());
-        system_meta
-            .archetype_component_access
-            .extend(&state.archetype_component_access);
-        state
-    }
+//     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+//         let state = QueryState::new(world);
+//         assert_component_access_compatibility(
+//             &system_meta.name,
+//             std::any::type_name::<Q>(),
+//             std::any::type_name::<F>(),
+//             &system_meta.component_access_set,
+//             &state.component_access,
+//             world,
+//         );
+//         system_meta
+//             .component_access_set
+//             .add(state.component_access.clone());
+//         system_meta
+//             .archetype_component_access
+//             .extend(&state.archetype_component_access);
+//         state
+//     }
 
-    fn new_archetype(state: &mut Self::State, archetype: &Archetype, system_meta: &mut SystemMeta) {
-        state.new_archetype(archetype);
-        system_meta
-            .archetype_component_access
-            .extend(&state.archetype_component_access);
-    }
+//     fn new_archetype(state: &mut Self::State, archetype: &Archetype, system_meta: &mut SystemMeta) {
+//         state.new_archetype(archetype);
+//         system_meta
+//             .archetype_component_access
+//             .extend(&state.archetype_component_access);
+//     }
 
-    #[inline]
-    unsafe fn get_param<'w, 's>(
-        state: &'s mut Self::State,
-        system_meta: &SystemMeta,
-        world: &'w World,
-        change_tick: u32,
-    ) -> Self::Item<'w, 's> {
-        Query::new(
-            world,
-            state,
-            system_meta.last_change_tick,
-            change_tick,
-            false,
-        )
-    }
-}
+//     #[inline]
+//     unsafe fn get_param<'w, 's>(
+//         state: &'s mut Self::State,
+//         system_meta: &SystemMeta,
+//         world: &'w World,
+//         change_tick: u32,
+//     ) -> Self::Item<'w, 's> {
+//         Query::new(
+//             world,
+//             state,
+//             system_meta.last_change_tick,
+//             change_tick,
+//             false,
+//         )
+//     }
+// }
 
 fn assert_component_access_compatibility(
     system_name: &str,
@@ -1430,7 +1433,7 @@ macro_rules! impl_system_param_tuple {
 all_tuples!(impl_system_param_tuple, 0, 16, P);
 
 pub mod lifetimeless {
-    pub type SQuery<Q, F = ()> = super::Query<'static, 'static, Q, F>;
+    // pub type SQuery<Q, F = ()> = super::Query<'static, 'static, Q, F>;
     pub type Read<T> = &'static T;
     pub type Write<T> = &'static mut T;
     pub type SRes<T> = super::Res<'static, T>;
@@ -1572,21 +1575,21 @@ mod tests {
     use super::*;
     use crate::{
         self as bevy_ecs, // Necessary for the `SystemParam` Derive when used inside `bevy_ecs`.
-        query::{ReadOnlyWorldQuery, WorldQuery},
-        system::Query,
+                          // query::{ReadOnlyWorldQuery, WorldQuery},
+                          // system::Query,
     };
     use std::marker::PhantomData;
 
-    // Compile test for https://github.com/bevyengine/bevy/pull/2838.
-    #[derive(SystemParam)]
-    pub struct SpecialQuery<
-        'w,
-        's,
-        Q: WorldQuery + Send + Sync + 'static,
-        F: ReadOnlyWorldQuery + Send + Sync + 'static = (),
-    > {
-        _query: Query<'w, 's, Q, F>,
-    }
+    // // Compile test for https://github.com/bevyengine/bevy/pull/2838.
+    // #[derive(SystemParam)]
+    // pub struct SpecialQuery<
+    //     'w,
+    //     's,
+    //     Q: WorldQuery + Send + Sync + 'static,
+    //     F: ReadOnlyWorldQuery + Send + Sync + 'static = (),
+    // > {
+    //     _query: Query<'w, 's, Q, F>,
+    // }
 
     // Compile tests for https://github.com/bevyengine/bevy/pull/6694.
 
@@ -1662,18 +1665,18 @@ mod tests {
     #[derive(SystemParam)]
     pub struct EncapsulatedParam<'w>(Res<'w, PrivateResource>);
 
-    // regression test for https://github.com/bevyengine/bevy/issues/7103.
-    #[derive(SystemParam)]
-    pub struct WhereParam<'w, 's, Q>
-    where
-        Q: 'static + WorldQuery,
-    {
-        _q: Query<'w, 's, Q, ()>,
-    }
+    // // regression test for https://github.com/bevyengine/bevy/issues/7103.
+    // #[derive(SystemParam)]
+    // pub struct WhereParam<'w, 's, Q>
+    // where
+    //     Q: 'static + WorldQuery,
+    // {
+    //     _q: Query<'w, 's, Q, ()>,
+    // }
 
-    // Regression test for https://github.com/bevyengine/bevy/issues/8192.
-    #[derive(SystemParam)]
-    pub struct InvariantParam<'w, 's> {
-        _set: ParamSet<'w, 's, (Query<'w, 's, ()>,)>,
-    }
+    // // Regression test for https://github.com/bevyengine/bevy/issues/8192.
+    // #[derive(SystemParam)]
+    // pub struct InvariantParam<'w, 's> {
+    //     _set: ParamSet<'w, 's, (Query<'w, 's, ()>,)>,
+    // }
 }

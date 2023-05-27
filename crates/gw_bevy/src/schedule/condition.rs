@@ -135,7 +135,8 @@ pub mod common_conditions {
     use crate::{
         change_detection::DetectChanges,
         event::{Event, EventReader},
-        prelude::{Component, Query, With},
+        prelude::Component,
+        // prelude::{With, Query}
         schedule::{State, States},
         system::{In, IntoPipeSystem, Res, Resource},
     };
@@ -849,42 +850,42 @@ pub mod common_conditions {
         move |mut reader: EventReader<T>| reader.iter().count() > 0
     }
 
-    /// Generates a [`Condition`](super::Condition)-satisfying closure that returns `true`
-    /// if there are any entities with the given component type.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use bevy_ecs::prelude::*;
-    /// # #[derive(Resource, Default)]
-    /// # struct Counter(u8);
-    /// # let mut app = Schedule::new();
-    /// # let mut world = World::new();
-    /// # world.init_resource::<Counter>();
-    /// app.add_system(
-    ///     my_system.run_if(any_with_component::<MyComponent>()),
-    /// );
-    ///
-    /// #[derive(Component)]
-    /// struct MyComponent;
-    ///
-    /// fn my_system(mut counter: ResMut<Counter>) {
-    ///     counter.0 += 1;
-    /// }
-    ///
-    /// // No entities exist yet with a `MyComponent` component so `my_system` won't run
-    /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 0);
-    ///
-    /// world.spawn(MyComponent);
-    ///
-    /// // An entities with `MyComponent` now exists so `my_system` will run
-    /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 1);
-    /// ```
-    pub fn any_with_component<T: Component>() -> impl FnMut(Query<(), With<T>>) -> bool + Clone {
-        move |query: Query<(), With<T>>| !query.is_empty()
-    }
+    // /// Generates a [`Condition`](super::Condition)-satisfying closure that returns `true`
+    // /// if there are any entities with the given component type.
+    // ///
+    // /// # Example
+    // ///
+    // /// ```
+    // /// # use bevy_ecs::prelude::*;
+    // /// # #[derive(Resource, Default)]
+    // /// # struct Counter(u8);
+    // /// # let mut app = Schedule::new();
+    // /// # let mut world = World::new();
+    // /// # world.init_resource::<Counter>();
+    // /// app.add_system(
+    // ///     my_system.run_if(any_with_component::<MyComponent>()),
+    // /// );
+    // ///
+    // /// #[derive(Component)]
+    // /// struct MyComponent;
+    // ///
+    // /// fn my_system(mut counter: ResMut<Counter>) {
+    // ///     counter.0 += 1;
+    // /// }
+    // ///
+    // /// // No entities exist yet with a `MyComponent` component so `my_system` won't run
+    // /// app.run(&mut world);
+    // /// assert_eq!(world.resource::<Counter>().0, 0);
+    // ///
+    // /// world.spawn(MyComponent);
+    // ///
+    // /// // An entities with `MyComponent` now exists so `my_system` will run
+    // /// app.run(&mut world);
+    // /// assert_eq!(world.resource::<Counter>().0, 1);
+    // /// ```
+    // pub fn any_with_component<T: Component>() -> impl FnMut(Query<(), With<T>>) -> bool + Clone {
+    //     move |query: Query<(), With<T>>| !query.is_empty()
+    // }
 
     /// Generates a [`Condition`](super::Condition) that inverses the result of passed one.
     ///

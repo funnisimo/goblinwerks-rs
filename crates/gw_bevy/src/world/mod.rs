@@ -15,7 +15,8 @@ use crate::{
     component::{Component, ComponentDescriptor, ComponentId, ComponentInfo, Components},
     entity::{AllocAtWithoutReplacement, Entities, Entity, EntityLocation},
     event::{Event, Events},
-    query::{DebugCheckedUnwrap, QueryState, ReadOnlyWorldQuery, WorldQuery},
+    query::DebugCheckedUnwrap,
+    // query::{ QueryState, ReadOnlyWorldQuery, WorldQuery},
     removal_detection::RemovedComponentEvents,
     schedule::{Schedule, ScheduleLabel, Schedules},
     storage::{ResourceData, Storages},
@@ -678,96 +679,96 @@ impl World {
         self.last_change_tick = self.increment_change_tick();
     }
 
-    /// Returns [`QueryState`] for the given [`WorldQuery`], which is used to efficiently
-    /// run queries on the [`World`] by storing and reusing the [`QueryState`].
-    /// ```
-    /// use bevy_ecs::{component::Component, entity::Entity, world::World};
-    ///
-    /// #[derive(Component, Debug, PartialEq)]
-    /// struct Position {
-    ///   x: f32,
-    ///   y: f32,
-    /// }
-    ///
-    /// #[derive(Component)]
-    /// struct Velocity {
-    ///   x: f32,
-    ///   y: f32,
-    /// }
-    ///
-    /// let mut world = World::new();
-    /// let entities = world.spawn_batch(vec![
-    ///     (Position { x: 0.0, y: 0.0}, Velocity { x: 1.0, y: 0.0 }),
-    ///     (Position { x: 0.0, y: 0.0}, Velocity { x: 0.0, y: 1.0 }),
-    /// ]).collect::<Vec<Entity>>();
-    ///
-    /// let mut query = world.query::<(&mut Position, &Velocity)>();
-    /// for (mut position, velocity) in query.iter_mut(&mut world) {
-    ///    position.x += velocity.x;
-    ///    position.y += velocity.y;
-    /// }
-    ///
-    /// assert_eq!(world.get::<Position>(entities[0]).unwrap(), &Position { x: 1.0, y: 0.0 });
-    /// assert_eq!(world.get::<Position>(entities[1]).unwrap(), &Position { x: 0.0, y: 1.0 });
-    /// ```
-    ///
-    /// To iterate over entities in a deterministic order,
-    /// sort the results of the query using the desired component as a key.
-    /// Note that this requires fetching the whole result set from the query
-    /// and allocation of a [Vec] to store it.
-    ///
-    /// ```
-    /// use bevy_ecs::{component::Component, entity::Entity, world::World};
-    ///
-    /// #[derive(Component, PartialEq, Eq, PartialOrd, Ord, Debug)]
-    /// struct Order(i32);
-    /// #[derive(Component, PartialEq, Debug)]
-    /// struct Label(&'static str);
-    ///
-    /// let mut world = World::new();
-    /// let a = world.spawn((Order(2), Label("second"))).id();
-    /// let b = world.spawn((Order(3), Label("third"))).id();
-    /// let c = world.spawn((Order(1), Label("first"))).id();
-    /// let mut entities = world.query::<(Entity, &Order, &Label)>()
-    ///     .iter(&world)
-    ///     .collect::<Vec<_>>();
-    /// // Sort the query results by their `Order` component before comparing
-    /// // to expected results. Query iteration order should not be relied on.
-    /// entities.sort_by_key(|e| e.1);
-    /// assert_eq!(entities, vec![
-    ///     (c, &Order(1), &Label("first")),
-    ///     (a, &Order(2), &Label("second")),
-    ///     (b, &Order(3), &Label("third")),
-    /// ]);
-    /// ```
-    #[inline]
-    pub fn query<Q: WorldQuery>(&mut self) -> QueryState<Q, ()> {
-        self.query_filtered::<Q, ()>()
-    }
+    // /// Returns [`QueryState`] for the given [`WorldQuery`], which is used to efficiently
+    // /// run queries on the [`World`] by storing and reusing the [`QueryState`].
+    // /// ```
+    // /// use bevy_ecs::{component::Component, entity::Entity, world::World};
+    // ///
+    // /// #[derive(Component, Debug, PartialEq)]
+    // /// struct Position {
+    // ///   x: f32,
+    // ///   y: f32,
+    // /// }
+    // ///
+    // /// #[derive(Component)]
+    // /// struct Velocity {
+    // ///   x: f32,
+    // ///   y: f32,
+    // /// }
+    // ///
+    // /// let mut world = World::new();
+    // /// let entities = world.spawn_batch(vec![
+    // ///     (Position { x: 0.0, y: 0.0}, Velocity { x: 1.0, y: 0.0 }),
+    // ///     (Position { x: 0.0, y: 0.0}, Velocity { x: 0.0, y: 1.0 }),
+    // /// ]).collect::<Vec<Entity>>();
+    // ///
+    // /// let mut query = world.query::<(&mut Position, &Velocity)>();
+    // /// for (mut position, velocity) in query.iter_mut(&mut world) {
+    // ///    position.x += velocity.x;
+    // ///    position.y += velocity.y;
+    // /// }
+    // ///
+    // /// assert_eq!(world.get::<Position>(entities[0]).unwrap(), &Position { x: 1.0, y: 0.0 });
+    // /// assert_eq!(world.get::<Position>(entities[1]).unwrap(), &Position { x: 0.0, y: 1.0 });
+    // /// ```
+    // ///
+    // /// To iterate over entities in a deterministic order,
+    // /// sort the results of the query using the desired component as a key.
+    // /// Note that this requires fetching the whole result set from the query
+    // /// and allocation of a [Vec] to store it.
+    // ///
+    // /// ```
+    // /// use bevy_ecs::{component::Component, entity::Entity, world::World};
+    // ///
+    // /// #[derive(Component, PartialEq, Eq, PartialOrd, Ord, Debug)]
+    // /// struct Order(i32);
+    // /// #[derive(Component, PartialEq, Debug)]
+    // /// struct Label(&'static str);
+    // ///
+    // /// let mut world = World::new();
+    // /// let a = world.spawn((Order(2), Label("second"))).id();
+    // /// let b = world.spawn((Order(3), Label("third"))).id();
+    // /// let c = world.spawn((Order(1), Label("first"))).id();
+    // /// let mut entities = world.query::<(Entity, &Order, &Label)>()
+    // ///     .iter(&world)
+    // ///     .collect::<Vec<_>>();
+    // /// // Sort the query results by their `Order` component before comparing
+    // /// // to expected results. Query iteration order should not be relied on.
+    // /// entities.sort_by_key(|e| e.1);
+    // /// assert_eq!(entities, vec![
+    // ///     (c, &Order(1), &Label("first")),
+    // ///     (a, &Order(2), &Label("second")),
+    // ///     (b, &Order(3), &Label("third")),
+    // /// ]);
+    // /// ```
+    // #[inline]
+    // pub fn query<Q: WorldQuery>(&mut self) -> QueryState<Q, ()> {
+    //     self.query_filtered::<Q, ()>()
+    // }
 
-    /// Returns [`QueryState`] for the given filtered [`WorldQuery`], which is used to efficiently
-    /// run queries on the [`World`] by storing and reusing the [`QueryState`].
-    /// ```
-    /// use bevy_ecs::{component::Component, entity::Entity, world::World, query::With};
-    ///
-    /// #[derive(Component)]
-    /// struct A;
-    /// #[derive(Component)]
-    /// struct B;
-    ///
-    /// let mut world = World::new();
-    /// let e1 = world.spawn(A).id();
-    /// let e2 = world.spawn((A, B)).id();
-    ///
-    /// let mut query = world.query_filtered::<Entity, With<B>>();
-    /// let matching_entities = query.iter(&world).collect::<Vec<Entity>>();
-    ///
-    /// assert_eq!(matching_entities, vec![e2]);
-    /// ```
-    #[inline]
-    pub fn query_filtered<Q: WorldQuery, F: ReadOnlyWorldQuery>(&mut self) -> QueryState<Q, F> {
-        QueryState::new(self)
-    }
+    // /// Returns [`QueryState`] for the given filtered [`WorldQuery`], which is used to efficiently
+    // /// run queries on the [`World`] by storing and reusing the [`QueryState`].
+    // /// ```
+    // /// use bevy_ecs::{component::Component, entity::Entity, world::World, query::With};
+    // ///
+    // /// #[derive(Component)]
+    // /// struct A;
+    // /// #[derive(Component)]
+    // /// struct B;
+    // ///
+    // /// let mut world = World::new();
+    // /// let e1 = world.spawn(A).id();
+    // /// let e2 = world.spawn((A, B)).id();
+    // ///
+    // /// let mut query = world.query_filtered::<Entity, With<B>>();
+    // /// let matching_entities = query.iter(&world).collect::<Vec<Entity>>();
+    // ///
+    // /// assert_eq!(matching_entities, vec![e2]);
+    // /// ```
+    // #[inline]
+    // pub fn query_filtered<Q: WorldQuery, F: ReadOnlyWorldQuery>(&mut self) -> QueryState<Q, F> {
+    //     QueryState::new(self)
+    // }
 
     /// Returns an iterator of entities that had components of type `T` removed
     /// since the last call to [`World::clear_trackers`].
