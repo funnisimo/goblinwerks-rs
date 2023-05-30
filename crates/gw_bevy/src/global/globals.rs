@@ -1,7 +1,10 @@
+#![feature(negative_impls)]
+
 use crate::atomic_refcell::{AtomicBorrowRef, AtomicRefCell};
 use crate::component::Tick;
 use crate::resources::{ResMut, ResRef, Resource, Resources};
 use std::collections::HashSet;
+use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
@@ -204,7 +207,7 @@ where
 ///
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
-pub struct ReadGlobal<'a, T: 'a> {
+pub struct ReadGlobal<'a, T: Resource + Send + Sync> {
     fetch: GlobalRef<'a, T>,
     last_change_tick: u32,
     change_tick: u32,
@@ -212,7 +215,7 @@ pub struct ReadGlobal<'a, T: 'a> {
 
 impl<'a, T> ReadGlobal<'a, T>
 where
-    T: Resource,
+    T: Resource + Send + Sync,
 {
     pub(crate) fn new(fetch: GlobalRef<'a, T>, last_change_tick: u32, change_tick: u32) -> Self {
         ReadGlobal {
@@ -221,11 +224,43 @@ where
             change_tick,
         }
     }
+
+    /// Returns `true` if the resource was added after the system last ran.
+    pub fn is_added(&self) -> bool {
+        self.fetch
+            .fetch
+            .ticks
+            .is_added(self.last_change_tick, self.change_tick)
+    }
+
+    /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
+    pub fn is_changed(&self) -> bool {
+        self.fetch
+            .fetch
+            .ticks
+            .is_changed(self.last_change_tick, self.change_tick)
+    }
+
+    #[inline]
+    fn last_changed(&self) -> u32 {
+        self.fetch.fetch.ticks.changed.tick
+    }
+}
+
+impl<'w, T> Debug for ReadGlobal<'w, T>
+where
+    T: Debug + Resource + Send + Sync,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("ReadGlobal")
+            .field(self.fetch.deref())
+            .finish()
+    }
 }
 
 impl<'a, T> Deref for ReadGlobal<'a, T>
 where
-    T: Resource,
+    T: Resource + Send + Sync,
 {
     type Target = GlobalRef<'a, T>;
 
@@ -279,13 +314,16 @@ where
 ///
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
-pub struct WriteGlobal<'a, T: 'a> {
+pub struct WriteGlobal<'a, T: Resource + Send + Sync> {
     fetch: GlobalMut<'a, T>,
     last_change_tick: u32,
     change_tick: u32,
 }
 
-impl<'a, T> WriteGlobal<'a, T> {
+impl<'a, T> WriteGlobal<'a, T>
+where
+    T: Resource + Send + Sync,
+{
     pub(crate) fn new(fetch: GlobalMut<'a, T>, last_change_tick: u32, change_tick: u32) -> Self {
         WriteGlobal {
             fetch,
@@ -293,11 +331,43 @@ impl<'a, T> WriteGlobal<'a, T> {
             change_tick,
         }
     }
+
+    /// Returns `true` if the resource was added after the system last ran.
+    pub fn is_added(&self) -> bool {
+        self.fetch
+            .fetch
+            .ticks
+            .is_added(self.last_change_tick, self.change_tick)
+    }
+
+    /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
+    pub fn is_changed(&self) -> bool {
+        self.fetch
+            .fetch
+            .ticks
+            .is_changed(self.last_change_tick, self.change_tick)
+    }
+
+    #[inline]
+    fn last_changed(&self) -> u32 {
+        self.fetch.fetch.ticks.changed.tick
+    }
+}
+
+impl<'w, T> Debug for WriteGlobal<'w, T>
+where
+    T: Debug + Resource + Send + Sync,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("WriteGlobal")
+            .field(self.fetch.deref())
+            .finish()
+    }
 }
 
 impl<'a, T> Deref for WriteGlobal<'a, T>
 where
-    T: Resource,
+    T: Resource + Send + Sync,
 {
     type Target = GlobalMut<'a, T>;
 
@@ -308,7 +378,7 @@ where
 
 impl<'a, T> DerefMut for WriteGlobal<'a, T>
 where
-    T: Resource,
+    T: Resource + Send + Sync,
 {
     fn deref_mut(&mut self) -> &mut GlobalMut<'a, T> {
         &mut self.fetch
@@ -411,6 +481,149 @@ where
 //         writes
 //     }
 // }
+
+/// Allows to fetch a resource in a system immutably.
+///
+/// If the resource isn't strictly required, you should use `Option<Read<T>>`.
+///
+/// # Type parameters
+///
+/// * `T`: The type of the resource
+/// * `F`: The setup handler (default: `DefaultProvider`)
+pub struct ReadNonSendGlobal<'a, T: 'a> {
+    fetch: GlobalRef<'a, T>,
+    last_change_tick: u32,
+    change_tick: u32,
+    phantom: PhantomData<*mut ()>,
+}
+
+impl<'a, T> ReadNonSendGlobal<'a, T>
+where
+    T: Resource,
+{
+    pub(crate) fn new(fetch: GlobalRef<'a, T>, last_change_tick: u32, change_tick: u32) -> Self {
+        ReadNonSendGlobal {
+            fetch,
+            last_change_tick,
+            change_tick,
+            phantom: PhantomData,
+        }
+    }
+
+    /// Returns `true` if the resource was added after the system last ran.
+    pub fn is_added(&self) -> bool {
+        self.fetch
+            .fetch
+            .ticks
+            .is_added(self.last_change_tick, self.change_tick)
+    }
+
+    /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
+    pub fn is_changed(&self) -> bool {
+        self.fetch
+            .fetch
+            .ticks
+            .is_changed(self.last_change_tick, self.change_tick)
+    }
+
+    #[inline]
+    fn last_changed(&self) -> u32 {
+        self.fetch.fetch.ticks.changed.tick
+    }
+}
+
+impl<'w, T> Debug for ReadNonSendGlobal<'w, T>
+where
+    T: Debug + Resource,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("ReadNonSendGlobal")
+            .field(self.fetch.deref())
+            .finish()
+    }
+}
+
+impl<'a, T> Deref for ReadNonSendGlobal<'a, T>
+where
+    T: Resource,
+{
+    type Target = GlobalRef<'a, T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.fetch
+    }
+}
+
+/// Allows to fetch a resource in a system immutably.
+///
+/// If the resource isn't strictly required, you should use `Option<Read<T>>`.
+///
+/// # Type parameters
+///
+/// * `T`: The type of the resource
+pub struct WriteNonSendGlobal<'a, T: 'a> {
+    fetch: GlobalMut<'a, T>,
+    last_change_tick: u32,
+    change_tick: u32,
+    phantom: PhantomData<*mut ()>,
+}
+
+impl<'a, T> WriteNonSendGlobal<'a, T>
+where
+    T: Resource,
+{
+    pub(crate) fn new(fetch: GlobalMut<'a, T>, last_change_tick: u32, change_tick: u32) -> Self {
+        WriteNonSendGlobal {
+            fetch,
+            last_change_tick,
+            change_tick,
+            phantom: PhantomData,
+        }
+    }
+
+    /// Returns `true` if the resource was added after the system last ran.
+    pub fn is_added(&self) -> bool {
+        self.fetch
+            .fetch
+            .ticks
+            .is_added(self.last_change_tick, self.change_tick)
+    }
+
+    /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
+    pub fn is_changed(&self) -> bool {
+        self.fetch
+            .fetch
+            .ticks
+            .is_changed(self.last_change_tick, self.change_tick)
+    }
+
+    #[inline]
+    fn last_changed(&self) -> u32 {
+        self.fetch.fetch.ticks.changed.tick
+    }
+}
+
+impl<'w, T> Debug for WriteNonSendGlobal<'w, T>
+where
+    T: Debug + Resource,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("WriteGlobal")
+            .field(self.fetch.deref())
+            .finish()
+    }
+}
+
+impl<'a, T> Deref for WriteNonSendGlobal<'a, T>
+where
+    T: Resource,
+{
+    type Target = GlobalMut<'a, T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.fetch
+    }
+}
 
 // /// Allows to fetch a resource in a system immutably.
 // /// **This will add a default value in a `System` setup if the resource does not exist.**

@@ -1,12 +1,7 @@
-use std::{borrow::Cow, cell::UnsafeCell, marker::PhantomData};
-
-use bevy_ptr::UnsafeCellDeref;
-
-use crate::{
-    archetype::ArchetypeComponentId, component::ComponentId, prelude::World, query::Access,
-};
-
 use super::{ReadOnlySystem, System};
+use crate::{access::AccessTracker, prelude::World};
+use bevy_ptr::UnsafeCellDeref;
+use std::{borrow::Cow, cell::UnsafeCell, marker::PhantomData};
 
 /// Customizes the behavior of a [`CombinatorSystem`].
 ///
@@ -104,19 +99,19 @@ pub struct CombinatorSystem<Func, A, B> {
     a: A,
     b: B,
     name: Cow<'static, str>,
-    component_access: Access<ComponentId>,
-    archetype_component_access: Access<ArchetypeComponentId>,
+    component_access: AccessTracker,
+    archetype_component_access: AccessTracker,
 }
 
 impl<Func, A, B> CombinatorSystem<Func, A, B> {
-    pub const fn new(a: A, b: B, name: Cow<'static, str>) -> Self {
+    pub fn new(a: A, b: B, name: Cow<'static, str>) -> Self {
         Self {
             _marker: PhantomData,
             a,
             b,
             name,
-            component_access: Access::new(),
-            archetype_component_access: Access::new(),
+            component_access: AccessTracker::new(),
+            archetype_component_access: AccessTracker::new(),
         }
     }
 }
@@ -138,11 +133,11 @@ where
         std::any::TypeId::of::<Self>()
     }
 
-    fn component_access(&self) -> &Access<ComponentId> {
+    fn component_access(&self) -> &AccessTracker {
         &self.component_access
     }
 
-    fn archetype_component_access(&self) -> &Access<ArchetypeComponentId> {
+    fn archetype_component_access(&self) -> &AccessTracker {
         &self.archetype_component_access
     }
 

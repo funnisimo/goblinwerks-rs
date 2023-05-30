@@ -1,7 +1,8 @@
 use crate::{
+    // query::Access,
+    access::AccessTracker,
     archetype::ArchetypeComponentId,
     prelude::Resource,
-    query::Access,
     schedule::{
         is_apply_system_buffers, BoxedCondition, ExecutorKind, SystemExecutor, SystemSchedule,
     },
@@ -51,7 +52,7 @@ impl SyncUnsafeSchedule<'_> {
 // Copied here because it can't be read from the system when it's running.
 struct SystemTaskMetadata {
     /// The `ArchetypeComponentId` access of the system.
-    archetype_component_access: Access<ArchetypeComponentId>,
+    archetype_component_access: AccessTracker,
     /// Indices of the systems that directly depend on the system.
     dependents: Vec<usize>,
     /// Is `true` if the system does not access `!Send` data.
@@ -69,7 +70,7 @@ pub struct MultiThreadedExecutor {
     /// Metadata for scheduling and running system tasks.
     system_task_metadata: Vec<SystemTaskMetadata>,
     /// Union of the accesses of all currently running systems.
-    active_access: Access<ArchetypeComponentId>,
+    active_access: AccessTracker,
     /// Returns `true` if a system with non-`Send` access is running.
     local_thread_running: bool,
     /// Returns `true` if an exclusive system is running.

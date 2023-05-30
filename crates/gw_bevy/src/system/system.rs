@@ -1,11 +1,6 @@
+use crate::{access::AccessTracker, change_detection::MAX_CHANGE_AGE, world::World};
 use bevy_utils::tracing::warn;
 use core::fmt::Debug;
-
-use crate::{
-    archetype::ArchetypeComponentId, change_detection::MAX_CHANGE_AGE, component::ComponentId,
-    query::Access, world::World,
-};
-
 use std::any::TypeId;
 use std::borrow::Cow;
 
@@ -31,9 +26,9 @@ pub trait System: Send + Sync + 'static {
     /// Returns the [`TypeId`] of the underlying system type.
     fn type_id(&self) -> TypeId;
     /// Returns the system's component [`Access`].
-    fn component_access(&self) -> &Access<ComponentId>;
+    fn component_access(&self) -> &AccessTracker;
     /// Returns the system's archetype component [`Access`].
-    fn archetype_component_access(&self) -> &Access<ArchetypeComponentId>;
+    fn archetype_component_access(&self) -> &AccessTracker;
     /// Returns true if the system is [`Send`].
     fn is_send(&self) -> bool;
 

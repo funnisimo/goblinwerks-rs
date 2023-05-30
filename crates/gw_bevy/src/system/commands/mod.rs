@@ -1008,7 +1008,7 @@ mod tests {
     use crate::{
         self as bevy_ecs,
         component::Component,
-        system::{CommandQueue, Commands, Resource},
+        system::{CommandQueue, Commands},
         world::World,
     };
     use std::sync::{

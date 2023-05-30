@@ -1,4 +1,7 @@
-use std::any::{Any, TypeId};
+use std::{
+    any::{Any, TypeId},
+    fmt::Debug,
+};
 
 // SOURCE - SHRED + LEGION
 
@@ -10,10 +13,11 @@ use std::any::{Any, TypeId};
 /// at run time, without having different static types.
 ///
 /// [`Resource`]: trait.Resource.html
-#[derive(Clone, Debug, Eq, Ord, Hash, PartialEq, PartialOrd)]
+#[derive(Clone, Eq, Ord, Hash, PartialEq, PartialOrd)]
 pub struct ResourceId {
     type_id: TypeId,
     dynamic_id: u64,
+    name: &'static str,
 }
 
 impl ResourceId {
@@ -28,11 +32,11 @@ impl ResourceId {
         ResourceId::new_with_dynamic_id::<T>(0)
     }
 
-    /// Create a new resource id from a raw type ID.
-    #[inline]
-    pub fn from_type_id(type_id: TypeId) -> Self {
-        ResourceId::from_type_id_and_dynamic_id(type_id, 0)
-    }
+    // /// Create a new resource id from a raw type ID.
+    // #[inline]
+    // pub fn from_type_id(type_id: TypeId) -> Self {
+    //     ResourceId::from_type_id_and_dynamic_id(type_id, 0)
+    // }
 
     /// Creates a new resource id from a given type and a `dynamic_id`.
     ///
@@ -45,16 +49,25 @@ impl ResourceId {
     /// identified only by their type.
     #[inline]
     pub fn new_with_dynamic_id<T: Resource>(dynamic_id: u64) -> Self {
-        ResourceId::from_type_id_and_dynamic_id(TypeId::of::<T>(), dynamic_id)
+        ResourceId::from_type_id_and_dynamic_id(
+            TypeId::of::<T>(),
+            dynamic_id,
+            std::any::type_name::<T>(),
+        )
     }
 
     /// Create a new resource id from a raw type ID and a "dynamic ID" (see type
     /// documentation).
     #[inline]
-    pub(crate) fn from_type_id_and_dynamic_id(type_id: TypeId, dynamic_id: u64) -> Self {
+    pub(crate) fn from_type_id_and_dynamic_id(
+        type_id: TypeId,
+        dynamic_id: u64,
+        name: &'static str,
+    ) -> Self {
         ResourceId {
             type_id,
             dynamic_id,
+            name,
         }
     }
 
@@ -65,6 +78,20 @@ impl ResourceId {
             res_id0.type_id, self.type_id,
             "Passed a `ResourceId` with a wrong type ID"
         );
+    }
+
+    pub fn name(&self) -> &'static str {
+        self.name
+    }
+}
+
+impl Debug for ResourceId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.dynamic_id != 0 {
+            write!(f, "<{}[{}]>", self.name, self.dynamic_id)
+        } else {
+            write!(f, "<{}>", self.name)
+        }
     }
 }
 

@@ -1,8 +1,6 @@
 use crate::{
-    archetype::ArchetypeComponentId,
+    access::AccessTracker,
     change_detection::MAX_CHANGE_AGE,
-    component::ComponentId,
-    query::Access,
     system::{
         check_system_change_tick, ExclusiveSystemParam, ExclusiveSystemParamItem, In, IntoSystem,
         System, SystemMeta,
@@ -71,12 +69,12 @@ where
     }
 
     #[inline]
-    fn component_access(&self) -> &Access<ComponentId> {
-        self.system_meta.component_access_set.combined_access()
+    fn component_access(&self) -> &AccessTracker {
+        &self.system_meta.component_access_set
     }
 
     #[inline]
-    fn archetype_component_access(&self) -> &Access<ArchetypeComponentId> {
+    fn archetype_component_access(&self) -> &AccessTracker {
         &self.system_meta.archetype_component_access
     }
 

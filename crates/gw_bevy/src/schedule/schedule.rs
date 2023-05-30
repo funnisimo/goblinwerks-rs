@@ -17,6 +17,7 @@ use fixedbitset::FixedBitSet;
 
 use crate::{
     self as bevy_ecs,
+    access::AccessItem,
     component::{ComponentId, Components},
     schedule::*,
     system::{BoxedSystem, Resource, System},
@@ -423,7 +424,7 @@ pub struct ScheduleGraph {
     ambiguous_with: UnGraphMap<NodeId, ()>,
     ambiguous_with_flattened: UnGraphMap<NodeId, ()>,
     ambiguous_with_all: HashSet<NodeId>,
-    conflicting_systems: Vec<(NodeId, NodeId, Vec<ComponentId>)>,
+    conflicting_systems: Vec<(NodeId, NodeId, Vec<AccessItem>)>,
     changed: bool,
     settings: ScheduleBuildSettings,
     default_base_set: Option<BoxedSystemSet>,
@@ -552,7 +553,7 @@ impl ScheduleGraph {
     ///
     /// If the `Vec<ComponentId>` is empty, the systems conflict on [`World`] access.
     /// Must be called after [`ScheduleGraph::build_schedule`] to be non-empty.
-    pub fn conflicting_systems(&self) -> &[(NodeId, NodeId, Vec<ComponentId>)] {
+    pub fn conflicting_systems(&self) -> &[(NodeId, NodeId, Vec<AccessItem>)] {
         &self.conflicting_systems
     }
 
@@ -1511,7 +1512,7 @@ impl ScheduleGraph {
         error!("{}", message);
     }
 
-    fn contains_conflicts(&self, conflicts: &[(NodeId, NodeId, Vec<ComponentId>)]) -> bool {
+    fn contains_conflicts(&self, conflicts: &[(NodeId, NodeId, Vec<AccessItem>)]) -> bool {
         if conflicts.is_empty() {
             return false;
         }
@@ -1521,7 +1522,7 @@ impl ScheduleGraph {
 
     fn report_conflicts(
         &self,
-        ambiguities: &[(NodeId, NodeId, Vec<ComponentId>)],
+        ambiguities: &[(NodeId, NodeId, Vec<AccessItem>)],
         components: &Components,
     ) {
         let n_ambiguities = ambiguities.len();
@@ -1540,12 +1541,7 @@ impl ScheduleGraph {
 
             writeln!(string, " -- {name_a} and {name_b}").unwrap();
             if !conflicts.is_empty() {
-                let conflict_names: Vec<_> = conflicts
-                    .iter()
-                    .map(|id| components.get_name(*id).unwrap())
-                    .collect();
-
-                writeln!(string, "    conflict on: {conflict_names:?}").unwrap();
+                writeln!(string, "    conflict on: {conflicts:?}").unwrap();
             } else {
                 // one or both systems must be exclusive
                 let world = std::any::type_name::<World>();

@@ -1,9 +1,9 @@
 use crate::{
-    archetype::{ArchetypeComponentId, ArchetypeGeneration, ArchetypeId},
+    // query::{Access, FilteredAccessSet},
+    access::AccessTracker,
+    archetype::{ArchetypeGeneration, ArchetypeId},
     change_detection::MAX_CHANGE_AGE,
-    component::ComponentId,
     prelude::FromWorld,
-    query::{Access, FilteredAccessSet},
     system::{check_system_change_tick, ReadOnlySystemParam, System, SystemParam, SystemParamItem},
     world::{World, WorldId},
 };
@@ -17,8 +17,8 @@ use super::ReadOnlySystem;
 #[derive(Clone)]
 pub struct SystemMeta {
     pub(crate) name: Cow<'static, str>,
-    pub(crate) component_access_set: FilteredAccessSet<ComponentId>,
-    pub(crate) archetype_component_access: Access<ArchetypeComponentId>,
+    pub(crate) component_access_set: AccessTracker,
+    pub(crate) archetype_component_access: AccessTracker,
     // NOTE: this must be kept private. making a SystemMeta non-send is irreversible to prevent
     // SystemParams from overriding each other
     is_send: bool,
@@ -29,8 +29,8 @@ impl SystemMeta {
     pub(crate) fn new<T>() -> Self {
         Self {
             name: std::any::type_name::<T>().into(),
-            archetype_component_access: Access::default(),
-            component_access_set: FilteredAccessSet::default(),
+            archetype_component_access: AccessTracker::default(),
+            component_access_set: AccessTracker::default(),
             is_send: true,
             last_change_tick: 0,
         }
@@ -430,12 +430,12 @@ where
     }
 
     #[inline]
-    fn component_access(&self) -> &Access<ComponentId> {
-        self.system_meta.component_access_set.combined_access()
+    fn component_access(&self) -> &AccessTracker {
+        &self.system_meta.component_access_set
     }
 
     #[inline]
-    fn archetype_component_access(&self) -> &Access<ArchetypeComponentId> {
+    fn archetype_component_access(&self) -> &AccessTracker {
         &self.system_meta.archetype_component_access
     }
 

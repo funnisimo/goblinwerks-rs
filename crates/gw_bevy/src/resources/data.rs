@@ -75,7 +75,7 @@ where
 /// * `F`: The setup handler (default: `DefaultProvider`)
 pub struct ResMut<'a, T: 'a> {
     data: AtomicRefMut<'a, T>,
-    ticks: AtomicRefMut<'a, ComponentTicks>,
+    pub(crate) ticks: AtomicRefMut<'a, ComponentTicks>,
     current: Tick,
 }
 
