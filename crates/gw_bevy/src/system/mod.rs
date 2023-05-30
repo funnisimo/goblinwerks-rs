@@ -180,23 +180,23 @@ mod tests {
         world::{FromWorld, World},
     };
 
-    #[derive(Resource, PartialEq, Debug)]
+    #[derive(PartialEq, Debug)]
     enum SystemRan {
         Yes,
         No,
     }
 
-    #[derive(Component, Resource, Debug, Eq, PartialEq, Default)]
+    #[derive(Component, Debug, Eq, PartialEq, Default)]
     struct A;
-    #[derive(Component, Resource)]
+    #[derive(Component)]
     struct B;
-    #[derive(Component, Resource)]
+    #[derive(Component)]
     struct C;
-    #[derive(Component, Resource)]
+    #[derive(Component)]
     struct D;
-    #[derive(Component, Resource)]
+    #[derive(Component)]
     struct E;
-    #[derive(Component, Resource)]
+    #[derive(Component)]
     struct F;
 
     #[derive(Component, Debug)]
@@ -312,15 +312,10 @@ mod tests {
 
     #[test]
     fn changed_resource_system() {
-        use crate::system::Resource;
-
-        #[derive(Resource)]
         struct Flipper(bool);
 
-        #[derive(Resource)]
         struct Added(usize);
 
-        #[derive(Resource)]
         struct Changed(usize);
 
         fn incr_e_on_flip(
@@ -480,7 +475,7 @@ mod tests {
     //     run_system(&mut world, sys);
     // }
 
-    #[derive(Default, Resource)]
+    #[derive(Default)]
     struct BufferRes {
         _buffer: Vec<u8>,
     }
@@ -530,7 +525,6 @@ mod tests {
             value: u32,
         }
 
-        #[derive(Resource)]
         struct ProtoFoo {
             value: u32,
         }
@@ -609,16 +603,15 @@ mod tests {
         let spurious_entity = world.spawn_empty().id();
 
         // Track which entities we want to operate on
-        #[derive(Resource)]
+
         struct Despawned(Entity);
         world.insert_resource(Despawned(entity_to_despawn));
 
-        #[derive(Resource)]
         struct Removed(Entity);
         world.insert_resource(Removed(entity_to_remove_w_from));
 
         // Verify that all the systems actually ran
-        #[derive(Default, Resource)]
+        #[derive(Default)]
         struct NSystems(usize);
         world.insert_resource(NSystems::default());
 

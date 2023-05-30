@@ -691,7 +691,6 @@ impl std::fmt::Debug for MutUntyped<'_> {
 
 #[cfg(test)]
 mod tests {
-    use bevy_ecs_macros::Resource;
 
     use crate::{
         self as bevy_ecs,
@@ -709,10 +708,9 @@ mod tests {
     #[derive(Component, PartialEq)]
     struct C;
 
-    #[derive(Resource)]
     struct R;
 
-    #[derive(Resource, PartialEq)]
+    #[derive(PartialEq)]
     struct R2(u8);
 
     // #[test]

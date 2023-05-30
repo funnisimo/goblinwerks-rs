@@ -123,7 +123,7 @@ struct EventInstance<E: Event> {
 /// [Example usage.](https://github.com/bevyengine/bevy/blob/latest/examples/ecs/event.rs)
 /// [Example usage standalone.](https://github.com/bevyengine/bevy/blob/latest/crates/bevy_ecs/examples/events.rs)
 ///
-#[derive(Debug, Resource)]
+#[derive(Debug)]
 pub struct Events<E: Event> {
     /// Holds the oldest still active events.
     /// Note that a.start_event_count + a.len() should always === events_b.start_event_count.

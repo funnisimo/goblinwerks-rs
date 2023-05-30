@@ -70,7 +70,7 @@ pub struct OnUpdate<S: States>(pub S);
 /// [`apply_state_transition::<S>`] system.
 ///
 /// The starting state is defined via the [`Default`] implementation for `S`.
-#[derive(Resource, Default, Debug)]
+#[derive(Default, Debug)]
 pub struct State<S: States>(pub S);
 
 /// The next state of [`State<S>`].
@@ -78,7 +78,7 @@ pub struct State<S: States>(pub S);
 /// To queue a transition, just set the contained value to `Some(next_state)`.
 /// Note that these transitions can be overridden by other systems:
 /// only the actual value of this resource at the time of [`apply_state_transition`] matters.
-#[derive(Resource, Default, Debug)]
+#[derive(Default, Debug)]
 pub struct NextState<S: States>(pub Option<S>);
 
 impl<S: States> NextState<S> {

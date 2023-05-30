@@ -980,9 +980,8 @@ mod tests {
     use crate::schedule::IntoSystemConfig;
     use crate::system::Local;
     use crate::{change_detection::ResMut, schedule::Schedule, world::World};
-    use bevy_ecs_macros::Resource;
 
-    #[derive(Resource, Default)]
+    #[derive(Default)]
     struct Counter(usize);
 
     fn increment_counter(mut counter: ResMut<Counter>) {

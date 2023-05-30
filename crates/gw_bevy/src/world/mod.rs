@@ -15,6 +15,7 @@ use crate::{
     component::{Component, ComponentDescriptor, ComponentId, ComponentInfo, Components},
     entity::{AllocAtWithoutReplacement, Entities, Entity, EntityLocation},
     event::{Event, Events},
+    global::{GlobalMut, GlobalRef},
     query::DebugCheckedUnwrap,
     // query::{ QueryState, ReadOnlyWorldQuery, WorldQuery},
     removal_detection::RemovedComponentEvents,
@@ -1139,6 +1140,34 @@ impl World {
         Some(resource.id())
     }
 
+    // GLOBALS
+
+    pub fn ensure_global<G: Resource + Default>(&mut self) {
+        self.storages.globals.ensure_with(|| G::default())
+    }
+
+    pub fn ensure_global_with<F: FnOnce() -> G, G: Resource>(&mut self, func: F) {
+        self.storages.globals.ensure_with(func);
+    }
+
+    pub fn insert_global<G: Resource>(&mut self, global: G) {
+        self.storages.globals.insert(global);
+    }
+
+    pub fn remove_global<G: Resource>(&mut self) -> Option<G> {
+        self.storages.globals.remove::<G>()
+    }
+
+    pub fn get_global<G: Resource>(&self) -> Option<GlobalRef<G>> {
+        self.storages.globals.try_fetch::<G>()
+    }
+
+    pub fn get_global_mut<G: Resource>(&self) -> Option<GlobalMut<G>> {
+        self.storages.globals.try_fetch_mut::<G>()
+    }
+
+    // END GLOBALS
+
     /// For a given batch of ([Entity], [Bundle]) pairs, either spawns each [Entity] with the given
     /// bundle (if the entity does not exist), or inserts the [Bundle] (if the entity already exists).
     /// This is faster than doing equivalent operations one-by-one.
@@ -1514,6 +1543,7 @@ impl World {
             ref mut sparse_sets,
             ref mut resources,
             ref mut non_send_resources,
+            ref mut globals,
         } = self.storages;
 
         #[cfg(feature = "trace")]
@@ -1816,7 +1846,7 @@ mod tests {
         Drop(ID),
     }
 
-    #[derive(Resource, Component)]
+    #[derive(Component)]
     struct MayPanicInDrop {
         drop_log: Arc<Mutex<Vec<DropLogItem>>>,
         expected_panic_flag: Arc<AtomicBool>,
@@ -1922,7 +1952,6 @@ mod tests {
         );
     }
 
-    #[derive(Resource)]
     struct TestResource(u32);
 
     #[test]
@@ -2009,7 +2038,6 @@ mod tests {
         assert_eq!(DROP_COUNT.load(std::sync::atomic::Ordering::SeqCst), 1);
     }
 
-    #[derive(Resource)]
     struct TestFromWorld(u32);
     impl FromWorld for TestFromWorld {
         fn from_world(world: &mut World) -> Self {
@@ -2177,5 +2205,29 @@ mod tests {
     fn spawn_empty_bundle() {
         let mut world = World::new();
         world.spawn(());
+    }
+
+    #[derive(Default, Debug)]
+    struct GlobA(u32);
+
+    #[derive(Default, Debug)]
+    struct GlobB(u32);
+
+    #[test]
+    fn global_basics() {
+        let mut world = World::new();
+
+        world.ensure_global::<GlobA>();
+
+        {
+            let mut a = world.get_global_mut::<GlobA>().unwrap();
+            assert_eq!(a.0, 0);
+            a.0 = 10;
+        }
+
+        {
+            let b = world.get_global::<GlobA>().unwrap();
+            assert_eq!(b.0, 10);
+        }
     }
 }

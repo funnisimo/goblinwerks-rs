@@ -364,10 +364,8 @@ mod tests {
     use crate::{system::Resource, world::World};
     use std::any::TypeId;
 
-    #[derive(Resource)]
     struct A(u32);
 
-    #[derive(Resource)]
     struct B(u64);
 
     #[test]

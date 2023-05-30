@@ -44,6 +44,7 @@ pub mod prelude {
         event::{Event, EventReader, EventWriter, Events},
         // query::{Added, AnyOf, Changed, Or, QueryState, With, Without},
         removal_detection::RemovedComponents,
+        resources::Resource,
         schedule::{
             apply_state_transition, apply_system_buffers, common_conditions::*, Condition,
             IntoSystemConfig, IntoSystemConfigs, IntoSystemSet, IntoSystemSetConfig,
@@ -54,7 +55,7 @@ pub mod prelude {
             adapter as system_adapter,
             adapter::{dbg, error, ignore, info, unwrap, warn},
             Commands, Deferred, In, IntoPipeSystem, IntoSystem, Local, NonSend, NonSendMut,
-            ParallelCommands, ParamSet, Res, ResMut, Resource, System, SystemParamFunction,
+            ParallelCommands, ParamSet, Res, ResMut, System, SystemParamFunction,
         },
         world::{FromWorld, World},
     };
@@ -88,7 +89,7 @@ mod tests {
         },
     };
 
-    #[derive(Component, Resource, Debug, PartialEq, Eq, Clone, Copy)]
+    #[derive(Component, Debug, PartialEq, Eq, Clone, Copy)]
     struct A(usize);
     #[derive(Component, Debug, PartialEq, Eq, Clone, Copy)]
     struct B(usize);
@@ -1099,12 +1100,12 @@ mod tests {
 
     #[test]
     fn resource() {
-        use crate::system::Resource;
+        // use crate::system::Resource;
 
-        #[derive(Resource, PartialEq, Debug)]
+        #[derive(PartialEq, Debug)]
         struct Num(i32);
 
-        #[derive(Resource, PartialEq, Debug)]
+        #[derive(PartialEq, Debug)]
         struct BigNum(u64);
 
         let mut world = World::default();

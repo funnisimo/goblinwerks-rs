@@ -36,13 +36,13 @@ mod tests {
         X,
     }
 
-    #[derive(Resource, Default)]
+    #[derive(Default)]
     struct SystemOrder(Vec<u32>);
 
-    #[derive(Resource, Default)]
+    #[derive(Default)]
     struct RunConditionBool(pub bool);
 
-    #[derive(Resource, Default)]
+    #[derive(Default)]
     struct Counter(pub AtomicU32);
 
     fn make_exclusive_system(tag: u32) -> impl FnMut(&mut World) {
@@ -326,7 +326,7 @@ mod tests {
 
         #[test]
         fn system_conditions_and_change_detection() {
-            #[derive(Resource, Default)]
+            #[derive(Default)]
             struct Bool2(pub bool);
 
             let mut world = World::default();
@@ -374,7 +374,7 @@ mod tests {
 
         #[test]
         fn system_set_conditions_and_change_detection() {
-            #[derive(Resource, Default)]
+            #[derive(Default)]
             struct Bool2(pub bool);
 
             let mut world = World::default();
@@ -424,7 +424,7 @@ mod tests {
 
         #[test]
         fn mixed_conditions_and_change_detection() {
-            #[derive(Resource, Default)]
+            #[derive(Default)]
             struct Bool2(pub bool);
 
             let mut world = World::default();
@@ -644,7 +644,6 @@ mod tests {
 
         #[test]
         fn ambiguity() {
-            #[derive(Resource)]
             struct X;
 
             fn res_ref(_x: Res<X>) {}

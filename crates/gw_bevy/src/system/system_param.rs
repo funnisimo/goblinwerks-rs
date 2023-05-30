@@ -15,7 +15,6 @@ use crate::{
     world::{FromWorld, World},
 };
 use bevy_ecs_macros::impl_param_set;
-pub use bevy_ecs_macros::Resource;
 pub use bevy_ecs_macros::SystemParam;
 use bevy_ptr::UnsafeCellDeref;
 use bevy_utils::{all_tuples, synccell::SyncCell};
@@ -415,7 +414,8 @@ impl_param_set!();
 /// # schedule.add_system(write_resource_system.after(read_resource_system));
 /// # schedule.run(&mut world);
 /// ```
-pub trait Resource: Send + Sync + 'static {}
+// pub trait Resource: Send + Sync + 'static {}
+pub use crate::resources::Resource;
 
 // SAFETY: Res only reads a single World resource
 unsafe impl<'a, T: Resource> ReadOnlySystemParam for Res<'a, T> {}
@@ -1603,7 +1603,6 @@ mod tests {
         _local: Local<'s, T>,
     }
 
-    #[derive(Resource)]
     pub struct R<const I: usize>;
 
     // Compile test for https://github.com/bevyengine/bevy/pull/7001.
@@ -1658,7 +1657,6 @@ mod tests {
         Local<'s, L>,
     );
 
-    #[derive(Resource)]
     struct PrivateResource;
 
     // Regression test for https://github.com/bevyengine/bevy/issues/4200.

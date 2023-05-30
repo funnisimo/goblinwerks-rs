@@ -24,7 +24,7 @@ use crate::{
 };
 
 /// Resource that stores [`Schedule`]s mapped to [`ScheduleLabel`]s.
-#[derive(Default, Resource)]
+#[derive(Default)]
 pub struct Schedules {
     inner: HashMap<BoxedScheduleLabel, Schedule>,
 }

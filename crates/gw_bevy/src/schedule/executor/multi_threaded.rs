@@ -1,15 +1,3 @@
-use std::sync::Arc;
-
-use bevy_tasks::{ComputeTaskPool, Scope, TaskPool, ThreadExecutor};
-use bevy_utils::default;
-use bevy_utils::syncunsafecell::SyncUnsafeCell;
-#[cfg(feature = "trace")]
-use bevy_utils::tracing::{info_span, Instrument};
-use std::panic::AssertUnwindSafe;
-
-use async_channel::{Receiver, Sender};
-use fixedbitset::FixedBitSet;
-
 use crate::{
     archetype::ArchetypeComponentId,
     prelude::Resource,
@@ -20,6 +8,15 @@ use crate::{
     system::BoxedSystem,
     world::World,
 };
+use async_channel::{Receiver, Sender};
+use bevy_tasks::{ComputeTaskPool, Scope, TaskPool, ThreadExecutor};
+use bevy_utils::default;
+use bevy_utils::syncunsafecell::SyncUnsafeCell;
+#[cfg(feature = "trace")]
+use bevy_utils::tracing::{info_span, Instrument};
+use fixedbitset::FixedBitSet;
+use std::panic::AssertUnwindSafe;
+use std::sync::Arc;
 
 use crate as bevy_ecs;
 
@@ -620,7 +617,7 @@ fn evaluate_and_fold_conditions(conditions: &mut [BoxedCondition], world: &World
 }
 
 /// New-typed [`ThreadExecutor`] [`Resource`] that is used to run systems on the main thread
-#[derive(Resource, Clone)]
+#[derive(Clone)]
 pub struct MainThreadExecutor(pub Arc<ThreadExecutor<'static>>);
 
 impl Default for MainThreadExecutor {

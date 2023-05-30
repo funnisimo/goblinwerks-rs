@@ -443,7 +443,7 @@ impl<'w, 's> Commands<'w, 's> {
     /// # }
     /// # bevy_ecs::system::assert_is_system(initialise_scoreboard);
     /// ```
-    pub fn init_resource<R: Resource + FromWorld>(&mut self) {
+    pub fn init_resource<R: Resource + FromWorld + Send>(&mut self) {
         self.queue.push(InitResource::<R> {
             _phantom: PhantomData::<R>::default(),
         });
@@ -474,7 +474,7 @@ impl<'w, 's> Commands<'w, 's> {
     /// # }
     /// # bevy_ecs::system::assert_is_system(system);
     /// ```
-    pub fn insert_resource<R: Resource>(&mut self, resource: R) {
+    pub fn insert_resource<R: Resource + Send>(&mut self, resource: R) {
         self.queue.push(InsertResource { resource });
     }
 
@@ -498,7 +498,7 @@ impl<'w, 's> Commands<'w, 's> {
     /// # }
     /// # bevy_ecs::system::assert_is_system(system);
     /// ```
-    pub fn remove_resource<R: Resource>(&mut self) {
+    pub fn remove_resource<R: Resource + Send>(&mut self) {
         self.queue.push(RemoveResource::<R> {
             phantom: PhantomData,
         });
@@ -960,7 +960,7 @@ pub struct InitResource<R: Resource + FromWorld> {
     _phantom: PhantomData<R>,
 }
 
-impl<R: Resource + FromWorld> Command for InitResource<R> {
+impl<R: Resource + FromWorld + Send> Command for InitResource<R> {
     fn write(self, world: &mut World) {
         world.init_resource::<R>();
     }
@@ -970,7 +970,7 @@ pub struct InsertResource<R: Resource> {
     pub resource: R,
 }
 
-impl<R: Resource> Command for InsertResource<R> {
+impl<R: Resource + Send> Command for InsertResource<R> {
     fn write(self, world: &mut World) {
         world.insert_resource(self.resource);
     }
@@ -980,7 +980,7 @@ pub struct RemoveResource<R: Resource> {
     pub phantom: PhantomData<R>,
 }
 
-impl<R: Resource> Command for RemoveResource<R> {
+impl<R: Resource + Send> Command for RemoveResource<R> {
     fn write(self, world: &mut World) {
         world.remove_resource::<R>();
     }
@@ -1035,7 +1035,7 @@ mod tests {
         }
     }
 
-    #[derive(Component, Resource)]
+    #[derive(Component)]
     struct W<T>(T);
 
     fn simple_command(world: &mut World) {

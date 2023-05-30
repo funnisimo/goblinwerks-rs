@@ -25,6 +25,7 @@ mod resource;
 mod sparse_set;
 mod table;
 
+use crate::global::Globals;
 pub use resource::*;
 pub use sparse_set::*;
 pub use table::*;
@@ -40,4 +41,6 @@ pub struct Storages {
     pub resources: Resources<true>,
     /// Backing storage for `!Send` resources.
     pub non_send_resources: Resources<false>,
+
+    pub globals: Globals,
 }
