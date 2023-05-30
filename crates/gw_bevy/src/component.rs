@@ -384,6 +384,22 @@ impl ComponentDescriptor {
         }
     }
 
+    /// Create a new `ComponentDescriptor` for a resource.
+    ///
+    /// The [`StorageType`] for globals is always [`TableStorage`].
+    pub fn new_global<T: Resource>() -> Self {
+        Self {
+            name: Cow::Borrowed(std::any::type_name::<T>()),
+            // PERF: `SparseStorage` may actually be a more
+            // reasonable choice as `storage_type` for globals.
+            storage_type: StorageType::Table,
+            is_send_and_sync: true,
+            type_id: Some(TypeId::of::<T>()),
+            layout: Layout::new::<T>(),
+            drop: needs_drop::<T>().then_some(Self::drop_ptr::<T> as _),
+        }
+    }
+
     #[inline]
     pub fn storage_type(&self) -> StorageType {
         self.storage_type
@@ -405,6 +421,7 @@ pub struct Components {
     components: Vec<ComponentInfo>,
     indices: TypeIdMap<usize>,
     resource_indices: TypeIdMap<usize>,
+    global_indices: TypeIdMap<usize>,
 }
 
 impl Components {
@@ -573,6 +590,80 @@ impl Components {
     ) -> ComponentId {
         let components = &mut self.components;
         let index = self.resource_indices.entry(type_id).or_insert_with(|| {
+            let descriptor = func();
+            let index = components.len();
+            components.push(ComponentInfo::new(ComponentId(index), descriptor));
+            index
+        });
+
+        ComponentId(*index)
+    }
+
+    /// Type-erased equivalent of [`Components::resource_id`].
+    #[inline]
+    pub fn get_global_id(&self, type_id: TypeId) -> Option<ComponentId> {
+        self.global_indices
+            .get(&type_id)
+            .map(|index| ComponentId(*index))
+    }
+
+    /// Returns the [`ComponentId`] of the given [`Resource`] type `T`.
+    ///
+    /// The returned `ComponentId` is specific to the `Components` instance
+    /// it was retrieved from and should not be used with another `Components`
+    /// instance.
+    ///
+    /// Returns [`None`] if the `Resource` type has not
+    /// yet been initialized using [`Components::init_global`].
+    ///
+    /// ```rust
+    /// use bevy_ecs::prelude::*;
+    ///
+    /// let mut world = World::new();
+    ///
+    /// #[derive(Resource, Default)]
+    /// struct ResourceA;
+    ///
+    /// let global_a_id = world.init_global::<ResourceA>();
+    ///
+    /// assert_eq!(global_a_id, world.components().global_id::<ResourceA>().unwrap())
+    /// ```
+    #[inline]
+    pub fn global_id<T: Resource>(&self) -> Option<ComponentId> {
+        self.get_global_id(TypeId::of::<T>())
+    }
+
+    #[inline]
+    pub fn init_global<T: Resource>(&mut self) -> ComponentId {
+        // SAFETY: The [`ComponentDescriptor`] matches the [`TypeId`]
+        unsafe {
+            self.get_or_insert_global_with(TypeId::of::<T>(), || {
+                ComponentDescriptor::new_global::<T>()
+            })
+        }
+    }
+
+    #[inline]
+    pub fn init_non_send_global<T: Any>(&mut self) -> ComponentId {
+        // SAFETY: The [`ComponentDescriptor`] matches the [`TypeId`]
+        unsafe {
+            self.get_or_insert_global_with(TypeId::of::<T>(), || {
+                ComponentDescriptor::new_non_send::<T>(StorageType::default())
+            })
+        }
+    }
+
+    /// # Safety
+    ///
+    /// The [`ComponentDescriptor`] must match the [`TypeId`]
+    #[inline]
+    unsafe fn get_or_insert_global_with(
+        &mut self,
+        type_id: TypeId,
+        func: impl FnOnce() -> ComponentDescriptor,
+    ) -> ComponentId {
+        let components = &mut self.components;
+        let index = self.global_indices.entry(type_id).or_insert_with(|| {
             let descriptor = func();
             let index = components.len();
             components.push(ComponentInfo::new(ComponentId(index), descriptor));

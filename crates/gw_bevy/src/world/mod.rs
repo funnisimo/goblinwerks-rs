@@ -1142,11 +1142,11 @@ impl World {
 
     // GLOBALS
 
-    pub fn ensure_global<G: Resource + Default>(&mut self) {
+    pub fn init_global<G: Resource + Default>(&mut self) {
         self.storages.globals.ensure_with(|| G::default())
     }
 
-    pub fn ensure_global_with<F: FnOnce() -> G, G: Resource>(&mut self, func: F) {
+    pub fn init_global_with<F: FnOnce() -> G, G: Resource>(&mut self, func: F) {
         self.storages.globals.ensure_with(func);
     }
 
@@ -1478,6 +1478,18 @@ impl World {
     pub(crate) fn initialize_non_send_resource<R: 'static>(&mut self) -> ComponentId {
         let component_id = self.components.init_non_send::<R>();
         self.initialize_non_send_internal(component_id);
+        component_id
+    }
+
+    pub(crate) fn initialize_global<R: Resource>(&mut self) -> ComponentId {
+        let component_id = self.components.init_global::<R>();
+        // self.storages.globals.ensure_with(|| R::from_world(self));
+        component_id
+    }
+
+    pub(crate) fn initialize_non_send_global<R: 'static>(&mut self) -> ComponentId {
+        let component_id = self.components.init_non_send_global::<R>();
+        // self.storages.globals.ensure_with(|| R::from_world(self));
         component_id
     }
 
@@ -2217,7 +2229,7 @@ mod tests {
     fn global_basics() {
         let mut world = World::new();
 
-        world.ensure_global::<GlobA>();
+        world.init_global::<GlobA>();
 
         {
             let mut a = world.get_global_mut::<GlobA>().unwrap();

@@ -204,24 +204,26 @@ where
 ///
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
-pub struct ReadGlobal<'a, T: 'a, F = ()> {
+pub struct ReadGlobal<'a, T: 'a> {
     fetch: GlobalRef<'a, T>,
-    phantom: PhantomData<F>,
+    last_change_tick: u32,
+    change_tick: u32,
 }
 
-// impl<'a, T, F> ReadGlobal<'a, T, F>
-// where
-//     T: Resource,
-// {
-//     fn new(fetch: GlobalFetch<'a, T>) -> Self {
-//         ReadGlobal {
-//             fetch,
-//             phantom: PhantomData,
-//         }
-//     }
-// }
+impl<'a, T> ReadGlobal<'a, T>
+where
+    T: Resource,
+{
+    pub(crate) fn new(fetch: GlobalRef<'a, T>, last_change_tick: u32, change_tick: u32) -> Self {
+        ReadGlobal {
+            fetch,
+            last_change_tick,
+            change_tick,
+        }
+    }
+}
 
-impl<'a, T, F> Deref for ReadGlobal<'a, T, F>
+impl<'a, T> Deref for ReadGlobal<'a, T>
 where
     T: Resource,
 {
@@ -232,14 +234,14 @@ where
     }
 }
 
-impl<'a, T, F> From<GlobalRef<'a, T>> for ReadGlobal<'a, T, F> {
-    fn from(fetch: GlobalRef<'a, T>) -> Self {
-        ReadGlobal {
-            fetch,
-            phantom: PhantomData,
-        }
-    }
-}
+// impl<'a, T, F> From<GlobalRef<'a, T>> for ReadGlobal<'a, T, F> {
+//     fn from(fetch: GlobalRef<'a, T>) -> Self {
+//         ReadGlobal {
+//             fetch,
+//             phantom: PhantomData,
+//         }
+//     }
+// }
 
 // impl<'a, T, F> SystemData<'a> for ReadGlobal<'a, T, F>
 // where
@@ -277,12 +279,23 @@ impl<'a, T, F> From<GlobalRef<'a, T>> for ReadGlobal<'a, T, F> {
 ///
 /// * `T`: The type of the resource
 /// * `F`: The setup handler (default: `DefaultProvider`)
-pub struct WriteGlobal<'a, T: 'a, F = ()> {
+pub struct WriteGlobal<'a, T: 'a> {
     fetch: GlobalMut<'a, T>,
-    phantom: PhantomData<F>,
+    last_change_tick: u32,
+    change_tick: u32,
 }
 
-impl<'a, T, F> Deref for WriteGlobal<'a, T, F>
+impl<'a, T> WriteGlobal<'a, T> {
+    pub(crate) fn new(fetch: GlobalMut<'a, T>, last_change_tick: u32, change_tick: u32) -> Self {
+        WriteGlobal {
+            fetch,
+            last_change_tick,
+            change_tick,
+        }
+    }
+}
+
+impl<'a, T> Deref for WriteGlobal<'a, T>
 where
     T: Resource,
 {
@@ -293,7 +306,7 @@ where
     }
 }
 
-impl<'a, T, F> DerefMut for WriteGlobal<'a, T, F>
+impl<'a, T> DerefMut for WriteGlobal<'a, T>
 where
     T: Resource,
 {
@@ -302,14 +315,14 @@ where
     }
 }
 
-impl<'a, T, F> From<GlobalMut<'a, T>> for WriteGlobal<'a, T, F> {
-    fn from(fetch: GlobalMut<'a, T>) -> Self {
-        WriteGlobal {
-            fetch,
-            phantom: PhantomData,
-        }
-    }
-}
+// impl<'a, T, F> From<GlobalMut<'a, T>> for WriteGlobal<'a, T, F> {
+//     fn from(fetch: GlobalMut<'a, T>) -> Self {
+//         WriteGlobal {
+//             fetch,
+//             phantom: PhantomData,
+//         }
+//     }
+// }
 
 // impl<'a, T, F> SystemData<'a> for WriteGlobal<'a, T, F>
 // where
