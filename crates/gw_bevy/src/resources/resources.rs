@@ -1,7 +1,7 @@
 use super::{ResMut, ResRef};
 use super::{Resource, ResourceId};
 use crate::atomic_refcell::{AtomicRef, AtomicRefCell, AtomicRefMut};
-use crate::component::{current_tick, ComponentTicks, Tick};
+use crate::component::{ComponentTicks, Tick};
 use std::collections::{hash_map::Entry, HashMap, VecDeque};
 
 pub const KEEP_DELETED_TIME: u32 = 10; // 10 calls to maintain??
@@ -50,11 +50,11 @@ impl ResourceCell {
     /// # Safety
     /// Types which are !Send should only be retrieved on the thread which owns the resource
     /// collection.
-    pub fn get_mut<T: Resource>(&self) -> ResMut<T> {
+    pub fn get_mut<T: Resource>(&self, current_tick: u32) -> ResMut<T> {
         let data = self.data.borrow_mut(); // panics if this is borrowed already
         let data_ref = AtomicRefMut::map(data, |inner| inner.downcast_mut::<T>().unwrap());
         let ticks = self.ticks.borrow_mut();
-        ResMut::new(data_ref, ticks, Tick::current())
+        ResMut::new(data_ref, ticks, current_tick)
     }
 }
 
@@ -63,7 +63,7 @@ impl ResourceCell {
 #[derive(Default)]
 pub struct UnsafeResources {
     map: HashMap<ResourceId, ResourceCell>, // , BuildHasherDefault<ComponentTypeIdHasher>>,
-    deleted: VecDeque<(ResourceId, Tick)>,
+                                            // deleted: VecDeque<(ResourceId, Tick)>,
 }
 
 unsafe impl Send for UnsafeResources {}
@@ -90,32 +90,27 @@ impl UnsafeResources {
 
     /// # Safety
     /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
-    unsafe fn insert<T: Resource>(&mut self, resource: T) {
+    unsafe fn insert<T: Resource>(&mut self, resource: T, tick: u32) {
         self.map.insert(
             ResourceId::of::<T>(),
-            ResourceCell::new(Box::new(resource), ComponentTicks::new(current_tick())),
+            ResourceCell::new(Box::new(resource), ComponentTicks::new(tick)),
         );
     }
 
     /// # Safety
     /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
-    unsafe fn insert_by_id<T: Resource>(&mut self, id: ResourceId, resource: T) {
+    unsafe fn insert_by_id<T: Resource>(&mut self, id: ResourceId, resource: T, tick: u32) {
         self.map.insert(
             id,
-            ResourceCell::new(Box::new(resource), ComponentTicks::new(current_tick())),
+            ResourceCell::new(Box::new(resource), ComponentTicks::new(tick)),
         );
     }
 
     /// # Safety
     /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
-    unsafe fn remove(&mut self, type_id: &ResourceId) -> Option<Box<dyn Resource>> {
-        match self.map.remove(type_id).map(|cell| cell.into_inner()) {
-            None => None,
-            Some(v) => {
-                self.deleted.push_back((type_id.clone(), Tick::current()));
-                Some(v)
-            }
-        }
+    unsafe fn remove(&mut self, type_id: &ResourceId, tick: u32) -> Option<Box<dyn Resource>> {
+        // NOTE - Does not track deleted tick
+        self.map.remove(type_id).map(|cell| cell.into_inner())
     }
 
     fn get(&self, type_id: &ResourceId) -> Option<&ResourceCell> {
@@ -130,6 +125,11 @@ impl UnsafeResources {
             self.map.entry(resource.0).or_insert(resource.1);
         }
     }
+
+    fn clear(&mut self) {
+        self.map.clear();
+        // self.deleted.clear();
+    }
 }
 
 /// Resources container. Shared resources stored here can be retrieved in systems.
@@ -138,6 +138,7 @@ pub struct Resources {
     internal: UnsafeResources,
     // marker to make `Resources` !Send and !Sync
     // _not_send_sync: PhantomData<*const u8>,
+    current_tick: u32,
 }
 
 impl Resources {
@@ -176,7 +177,7 @@ impl Resources {
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
         unsafe {
-            self.internal.insert(value);
+            self.internal.insert(value, self.current_tick);
         }
     }
 
@@ -188,7 +189,7 @@ impl Resources {
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
         unsafe {
-            self.internal.insert_by_id(id, value);
+            self.internal.insert_by_id(id, value, self.current_tick);
         }
     }
 
@@ -203,7 +204,7 @@ impl Resources {
         unsafe {
             let resource = self
                 .internal
-                .remove(&ResourceId::of::<T>())?
+                .remove(&ResourceId::of::<T>(), self.current_tick)?
                 .downcast::<T>()
                 .ok()?;
             Some(*resource)
@@ -219,7 +220,11 @@ impl Resources {
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
         unsafe {
-            let resource = self.internal.remove(&id)?.downcast::<T>().ok()?;
+            let resource = self
+                .internal
+                .remove(&id, self.current_tick)?
+                .downcast::<T>()
+                .ok()?;
             Some(*resource)
         }
     }
@@ -265,7 +270,9 @@ impl Resources {
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
         let type_id = &ResourceId::of::<T>();
-        self.internal.get(&type_id).map(|x| x.get_mut::<T>())
+        self.internal
+            .get(&type_id)
+            .map(|x| x.get_mut::<T>(self.current_tick))
     }
 
     /// Retrieve a mutable reference to  `T` from the store if it exists. Otherwise, return `None`.
@@ -273,7 +280,9 @@ impl Resources {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
-        self.internal.get(&id).map(|x| x.get_mut::<T>())
+        self.internal
+            .get(&id)
+            .map(|x| x.get_mut::<T>(self.current_tick))
     }
 
     /// Attempts to retrieve an immutable reference to `T` from the store. If it does not exist,
@@ -287,7 +296,7 @@ impl Resources {
             self.internal
                 .entry(type_id)
                 .or_insert_with(|| {
-                    ResourceCell::new(Box::new((f)()), ComponentTicks::new(current_tick()))
+                    ResourceCell::new(Box::new((f)()), ComponentTicks::new(self.current_tick))
                 })
                 .get()
         }
@@ -304,9 +313,9 @@ impl Resources {
             self.internal
                 .entry(type_id)
                 .or_insert_with(|| {
-                    ResourceCell::new(Box::new((f)()), ComponentTicks::new(current_tick()))
+                    ResourceCell::new(Box::new((f)()), ComponentTicks::new(self.current_tick))
                 })
-                .get_mut()
+                .get_mut(self.current_tick)
         }
     }
 
@@ -350,7 +359,8 @@ impl Resources {
         }
     }
 
-    pub fn maintain(&mut self) {
+    pub fn maintain(&mut self, tick: u32) {
+        self.current_tick = tick;
         // loop {
         //     match self.internal.deleted.front() {
         //         None => return,
@@ -364,15 +374,19 @@ impl Resources {
         // }
     }
 
-    pub fn deleted<T: Resource>(&self) -> Option<Tick> {
-        let r = ResourceId::of::<T>();
-        self.internal
-            .deleted
-            .iter()
-            .find_map(|(id, t)| match r == *id {
-                false => None,
-                true => Some(*t),
-            })
+    // pub fn deleted<T: Resource>(&self) -> Option<Tick> {
+    //     let r = ResourceId::of::<T>();
+    //     self.internal
+    //         .deleted
+    //         .iter()
+    //         .find_map(|(id, t)| match r == *id {
+    //             false => None,
+    //             true => Some(*t),
+    //         })
+    // }
+
+    pub fn clear(&mut self) {
+        self.internal.clear();
     }
 }
 
@@ -401,9 +415,6 @@ impl Resources {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::atomic::Ordering;
-
-    use crate::component::CURRENT_TICK;
 
     use super::*;
     // use crate::shred::{RunNow, System};
@@ -653,58 +664,42 @@ mod tests {
         assert_eq!(owned.unwrap().value, "two");
     }
 
-    #[test]
-    fn change_ticks() {
-        struct Data(u32);
+    // #[test]
+    // fn change_ticks() {
+    //     struct Data(u32);
 
-        let mut res = Resources::default();
+    //     let mut res = Resources::default();
 
-        unsafe {
-            CURRENT_TICK.store(1, Ordering::Relaxed);
-        }
+    //     res.maintain();
 
-        res.maintain();
+    //     res.insert(Data(5));
 
-        res.insert(Data(5));
+    //     res.maintain();
 
-        unsafe {
-            CURRENT_TICK.store(2, Ordering::Relaxed);
-        }
+    //     {
+    //         let data = res.get::<Data>().unwrap();
+    //         assert_eq!(data.0, 5);
+    //         assert_eq!(data.inserted().tick, 1);
+    //         assert_eq!(data.updated().tick, 1);
+    //     }
 
-        res.maintain();
+    //     res.maintain();
 
-        {
-            let data = res.get::<Data>().unwrap();
-            assert_eq!(data.0, 5);
-            assert_eq!(data.inserted().tick, 1);
-            assert_eq!(data.updated().tick, 1);
-        }
+    //     {
+    //         let mut data = res.get_mut::<Data>().unwrap();
+    //         assert_eq!(data.0, 5);
+    //         assert_eq!(data.inserted().tick, 1);
+    //         assert_eq!(data.updated().tick, 1);
+    //         data.0 = 8;
+    //         assert_eq!(data.inserted().tick, 1);
+    //         assert_eq!(data.updated().tick, 3);
+    //     }
 
-        unsafe {
-            CURRENT_TICK.store(3, Ordering::Relaxed);
-        }
+    //     res.maintain();
 
-        res.maintain();
-
-        {
-            let mut data = res.get_mut::<Data>().unwrap();
-            assert_eq!(data.0, 5);
-            assert_eq!(data.inserted().tick, 1);
-            assert_eq!(data.updated().tick, 1);
-            data.0 = 8;
-            assert_eq!(data.inserted().tick, 1);
-            assert_eq!(data.updated().tick, 3);
-        }
-
-        unsafe {
-            CURRENT_TICK.store(4, Ordering::Relaxed);
-        }
-
-        res.maintain();
-
-        {
-            res.remove::<Data>();
-            assert_eq!(res.deleted::<Data>().unwrap().tick, 4);
-        }
-    }
+    //     {
+    //         res.remove::<Data>();
+    //         assert_eq!(res.deleted::<Data>().unwrap().tick, 4);
+    //     }
+    // }
 }

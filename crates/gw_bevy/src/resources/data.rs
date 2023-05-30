@@ -28,10 +28,10 @@ where
         ResRef { data, ticks }
     }
 
-    pub fn inserted(&self) -> Tick {
+    pub fn inserted_tick(&self) -> Tick {
         self.ticks.added
     }
-    pub fn updated(&self) -> Tick {
+    pub fn updated_tick(&self) -> Tick {
         self.ticks.changed
     }
 }
@@ -76,7 +76,7 @@ where
 pub struct ResMut<'a, T: 'a> {
     data: AtomicRefMut<'a, T>,
     pub(crate) ticks: AtomicRefMut<'a, ComponentTicks>,
-    current: Tick,
+    current_tick: u32,
 }
 
 impl<'a, T> ResMut<'a, T>
@@ -86,19 +86,19 @@ where
     pub fn new(
         data: AtomicRefMut<'a, T>,
         ticks: AtomicRefMut<'a, ComponentTicks>,
-        current: Tick,
+        current_tick: u32,
     ) -> Self {
         ResMut {
             data,
             ticks,
-            current,
+            current_tick,
         }
     }
 
-    pub fn inserted(&self) -> Tick {
+    pub fn inserted_tick(&self) -> Tick {
         self.ticks.added
     }
-    pub fn updated(&self) -> Tick {
+    pub fn updated_tick(&self) -> Tick {
         self.ticks.changed
     }
 }
@@ -119,7 +119,7 @@ where
     T: Resource,
 {
     fn deref_mut(&mut self) -> &mut T {
-        self.ticks.changed = self.current;
+        self.ticks.changed.set_changed(self.current_tick);
         self.data.deref_mut()
     }
 }

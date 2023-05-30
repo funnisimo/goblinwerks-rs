@@ -678,6 +678,9 @@ impl World {
     pub fn clear_trackers(&mut self) {
         self.removed_components.update();
         self.last_change_tick = self.increment_change_tick();
+
+        // TODO - Is this the right place?
+        self.storages.globals.maintain(self.last_change_tick);
     }
 
     // /// Returns [`QueryState`] for the given [`WorldQuery`], which is used to efficiently
@@ -1597,6 +1600,10 @@ impl World {
     pub fn clear_resources(&mut self) {
         self.storages.resources.clear();
         self.storages.non_send_resources.clear();
+    }
+
+    pub fn clear_globals(&mut self) {
+        self.storages.globals.clear();
     }
 }
 

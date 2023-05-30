@@ -678,11 +678,11 @@ impl Components {
     }
 }
 
-pub static mut CURRENT_TICK: AtomicU32 = AtomicU32::new(0);
+// pub static mut CURRENT_TICK: AtomicU32 = AtomicU32::new(0);
 
-pub fn current_tick() -> u32 {
-    unsafe { CURRENT_TICK.load(Ordering::Relaxed) }
-}
+// pub fn current_tick() -> u32 {
+//     unsafe { CURRENT_TICK.load(Ordering::Relaxed) }
+// }
 
 /// Used to track changes in state between system runs, e.g. components being added or accessed mutably.
 #[derive(Copy, Clone, Debug, Default)]
@@ -691,11 +691,11 @@ pub struct Tick {
 }
 
 impl Tick {
-    pub fn current() -> Self {
-        Self {
-            tick: unsafe { CURRENT_TICK.load(Ordering::Relaxed) },
-        }
-    }
+    // pub fn current() -> Self {
+    //     Self {
+    //         tick: unsafe { CURRENT_TICK.load(Ordering::Relaxed) },
+    //     }
+    // }
 
     pub const fn new(tick: u32) -> Self {
         Self { tick }

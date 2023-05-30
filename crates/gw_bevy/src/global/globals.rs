@@ -73,12 +73,16 @@ impl Globals {
         }
     }
 
-    pub fn maintain(&mut self, ticks: Tick) {
-        self.resources.borrow_mut().maintain(); // (ticks)
+    pub fn maintain(&mut self, ticks: u32) {
+        self.resources.borrow_mut().maintain(ticks);
     }
 
-    pub fn deleted<G: Resource>(&self) -> Option<Tick> {
-        self.resources.borrow().deleted::<G>()
+    // pub fn deleted<G: Resource>(&self) -> Option<Tick> {
+    //     self.resources.borrow().deleted::<G>()
+    // }
+
+    pub fn clear(&mut self) {
+        self.resources.borrow_mut().clear();
     }
 }
 
@@ -116,12 +120,12 @@ where
         GlobalRef { borrow, fetch }
     }
 
-    pub fn inserted(&self) -> Tick {
-        self.fetch.inserted()
+    pub fn inserted_tick(&self) -> Tick {
+        self.fetch.inserted_tick()
     }
 
-    pub fn updated(&self) -> Tick {
-        self.fetch.updated()
+    pub fn updated_tick(&self) -> Tick {
+        self.fetch.updated_tick()
     }
 }
 
@@ -167,12 +171,12 @@ where
         GlobalMut { borrow, fetch }
     }
 
-    pub fn inserted(&self) -> Tick {
-        self.fetch.inserted()
+    pub fn inserted_tick(&self) -> Tick {
+        self.fetch.inserted_tick()
     }
 
-    pub fn updated(&self) -> Tick {
-        self.fetch.updated()
+    pub fn updated_tick(&self) -> Tick {
+        self.fetch.updated_tick()
     }
 }
 
@@ -883,50 +887,50 @@ mod tests {
         assert_eq!(owned.unwrap().value, "two");
     }
 
-    // #[test]
-    // fn change_ticks() {
-    //     struct Data(u32);
+    #[test]
+    fn change_ticks() {
+        struct Data(u32);
 
-    //     let mut globals = Globals::default();
+        let mut globals = Globals::default();
 
-    //     globals.maintain(123);
+        globals.maintain(123);
 
-    //     globals.insert(Data(5));
+        globals.insert(Data(5));
 
-    //     globals.maintain(124);
+        globals.maintain(124);
 
-    //     {
-    //         let borrow = globals.fetch::<Data>();
-    //         assert_eq!(borrow.0, 5);
-    //         assert_eq!(borrow.inserted(), 123);
-    //         assert_eq!(borrow.updated(), 123);
-    //     }
+        {
+            let borrow = globals.fetch::<Data>();
+            assert_eq!(borrow.0, 5);
+            assert_eq!(borrow.inserted_tick().tick, 123);
+            assert_eq!(borrow.updated_tick().tick, 123);
+        }
 
-    //     globals.maintain(125);
+        globals.maintain(125);
 
-    //     {
-    //         let mut borrow = globals.fetch_mut::<Data>();
-    //         assert_eq!(borrow.0, 5);
-    //         assert_eq!(borrow.inserted(), 123);
-    //         assert_eq!(borrow.updated(), 123);
-    //         borrow.0 = 8;
-    //         assert_eq!(borrow.inserted(), 123);
-    //         assert_eq!(borrow.updated(), 125);
-    //         assert_eq!(borrow.0, 8);
-    //     }
+        {
+            let mut borrow = globals.fetch_mut::<Data>();
+            assert_eq!(borrow.0, 5);
+            assert_eq!(borrow.inserted_tick().tick, 123);
+            assert_eq!(borrow.updated_tick().tick, 123);
+            borrow.0 = 8;
+            assert_eq!(borrow.inserted_tick().tick, 123);
+            assert_eq!(borrow.updated_tick().tick, 125);
+            assert_eq!(borrow.0, 8);
+        }
 
-    //     globals.maintain(126);
+        globals.maintain(126);
 
-    //     {
-    //         let borrow = globals.fetch::<Data>();
-    //         assert_eq!(borrow.0, 8);
-    //         assert_eq!(borrow.inserted(), 123);
-    //         assert_eq!(borrow.updated(), 125);
-    //     }
+        {
+            let borrow = globals.fetch::<Data>();
+            assert_eq!(borrow.0, 8);
+            assert_eq!(borrow.inserted_tick().tick, 123);
+            assert_eq!(borrow.updated_tick().tick, 125);
+        }
 
-    //     {
-    //         globals.remove::<Data>();
-    //         assert_eq!(globals.deleted::<Data>().unwrap(), 126);
-    //     }
-    // }
+        {
+            globals.remove::<Data>();
+            // assert_eq!(globals.deleted::<Data>().unwrap(), 126);
+        }
+    }
 }
