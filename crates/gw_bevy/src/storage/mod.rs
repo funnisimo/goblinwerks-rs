@@ -25,7 +25,7 @@ mod resource;
 mod sparse_set;
 mod table;
 
-use crate::global::Globals;
+use crate::globals::Globals;
 pub use resource::*;
 pub use sparse_set::*;
 pub use table::*;
@@ -43,4 +43,5 @@ pub struct Storages {
     pub non_send_resources: Resources<false>,
 
     pub globals: Globals,
+    pub uniques: crate::resources::Resources,
 }

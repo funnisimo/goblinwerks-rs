@@ -1,4 +1,4 @@
-use super::{ReadGlobal, ReadNonSendGlobal, WriteGlobal, WriteNonSendGlobal};
+use super::{ResMut, ResRef};
 use crate::{
     access::AccessItem,
     component::ComponentId,
@@ -6,18 +6,88 @@ use crate::{
     resources::ResourceId,
     system::{ReadOnlySystemParam, Resource, SystemMeta, SystemParam},
 };
+use std::ops::{Deref, DerefMut};
+use std::{fmt::Debug, marker::PhantomData};
+
+/// Allows to fetch a resource in a system immutably.
+///
+/// If the resource isn't strictly required, you should use `Option<Read<T>>`.
+///
+/// # Type parameters
+///
+/// * `T`: The type of the resource
+/// * `F`: The setup handler (default: `DefaultProvider`)
+pub struct ReadUnique<'a, T: Resource + Send + Sync> {
+    fetch: ResRef<'a, T>,
+    last_change_tick: u32,
+    change_tick: u32,
+}
+
+impl<'a, T> ReadUnique<'a, T>
+where
+    T: Resource + Send + Sync,
+{
+    pub(crate) fn new(fetch: ResRef<'a, T>, last_change_tick: u32, change_tick: u32) -> Self {
+        ReadUnique {
+            fetch,
+            last_change_tick,
+            change_tick,
+        }
+    }
+
+    /// Returns `true` if the resource was added after the system last ran.
+    pub fn is_added(&self) -> bool {
+        self.fetch
+            .ticks
+            .is_added(self.last_change_tick, self.change_tick)
+    }
+
+    /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
+    pub fn is_changed(&self) -> bool {
+        self.fetch
+            .ticks
+            .is_changed(self.last_change_tick, self.change_tick)
+    }
+
+    #[inline]
+    fn last_changed(&self) -> u32 {
+        self.fetch.ticks.changed.tick
+    }
+}
+
+impl<'w, T> Debug for ReadUnique<'w, T>
+where
+    T: Debug + Resource + Send + Sync,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("ReadUnique")
+            .field(self.fetch.deref())
+            .finish()
+    }
+}
+
+impl<'a, T> Deref for ReadUnique<'a, T>
+where
+    T: Resource + Send + Sync,
+{
+    type Target = ResRef<'a, T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.fetch
+    }
+}
 
 // SAFETY: Res ComponentId and ArchetypeComponentId access is applied to SystemMeta. If this Res
 // conflicts with any prior access, a panic will occur.
-unsafe impl<'a, T: Resource + Send + Sync> SystemParam for ReadGlobal<'a, T> {
+unsafe impl<'a, T: Resource + Send + Sync> SystemParam for ReadUnique<'a, T> {
     type State = ComponentId;
-    type Item<'w, 's> = ReadGlobal<'w, T>;
+    type Item<'w, 's> = ReadUnique<'w, T>;
 
     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        let component_id = world.initialize_global::<T>();
+        let component_id = world.initialize_unique::<T>();
 
         let combined_access = &system_meta.component_access_set;
-        let item = AccessItem::Global(ResourceId::of::<T>());
+        let item = AccessItem::Unique(ResourceId::of::<T>());
         assert!(
             !combined_access.has_write(&item),
             "error[B0002]: Res<{}> in system {} conflicts with a previous ResMut<{0}> access. Consider removing the duplicate access.",
@@ -44,8 +114,8 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for ReadGlobal<'a, T> {
         change_tick: u32,
     ) -> Self::Item<'w, 's> {
         world
-            .get_global::<T>()
-            .map(|read| ReadGlobal::new(read, system_meta.last_change_tick, change_tick))
+            .get_unique::<T>()
+            .map(|read| ReadUnique::new(read, system_meta.last_change_tick, change_tick))
             .unwrap_or_else(|| {
                 panic!(
                     "Resource requested by {} does not exist: {}",
@@ -66,15 +136,15 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for ReadGlobal<'a, T> {
 }
 
 // SAFETY: Only reads a single World resource
-unsafe impl<'a, T: Resource + Send + Sync> ReadOnlySystemParam for Option<ReadGlobal<'a, T>> {}
+unsafe impl<'a, T: Resource + Send + Sync> ReadOnlySystemParam for Option<ReadUnique<'a, T>> {}
 
 // SAFETY: this impl defers to `Res`, which initializes and validates the correct world access.
-unsafe impl<'a, T: Resource + Send + Sync> SystemParam for Option<ReadGlobal<'a, T>> {
+unsafe impl<'a, T: Resource + Send + Sync> SystemParam for Option<ReadUnique<'a, T>> {
     type State = ComponentId;
-    type Item<'w, 's> = Option<ReadGlobal<'w, T>>;
+    type Item<'w, 's> = Option<ReadUnique<'w, T>>;
 
     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        ReadGlobal::<'a, T>::init_state(world, system_meta)
+        ReadUnique::<'a, T>::init_state(world, system_meta)
     }
 
     #[inline]
@@ -98,30 +168,109 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for Option<ReadGlobal<'a,
         //     })
 
         world
-            .get_global::<T>()
-            .map(|read| ReadGlobal::new(read, system_meta.last_change_tick, change_tick))
+            .get_unique::<T>()
+            .map(|read| ReadUnique::new(read, system_meta.last_change_tick, change_tick))
+    }
+}
+
+// WRITE UNIQUE
+
+/// Allows to fetch a resource in a system mutably.
+///
+/// If the resource isn't strictly required, you should use `Option<Write<T>>`.
+///
+/// # Type parameters
+///
+/// * `T`: The type of the resource
+/// * `F`: The setup handler (default: `DefaultProvider`)
+pub struct WriteUnique<'a, T: Resource + Send + Sync> {
+    fetch: ResMut<'a, T>,
+    last_change_tick: u32,
+    change_tick: u32,
+}
+
+impl<'a, T> WriteUnique<'a, T>
+where
+    T: Resource + Send + Sync,
+{
+    pub(crate) fn new(fetch: ResMut<'a, T>, last_change_tick: u32, change_tick: u32) -> Self {
+        WriteUnique {
+            fetch,
+            last_change_tick,
+            change_tick,
+        }
+    }
+
+    /// Returns `true` if the resource was added after the system last ran.
+    pub fn is_added(&self) -> bool {
+        self.fetch
+            .ticks
+            .is_added(self.last_change_tick, self.change_tick)
+    }
+
+    /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
+    pub fn is_changed(&self) -> bool {
+        self.fetch
+            .ticks
+            .is_changed(self.last_change_tick, self.change_tick)
+    }
+
+    #[inline]
+    fn last_changed(&self) -> u32 {
+        self.fetch.ticks.changed.tick
+    }
+}
+
+impl<'w, T> Debug for WriteUnique<'w, T>
+where
+    T: Debug + Resource + Send + Sync,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("WriteUnique")
+            .field(self.fetch.deref())
+            .finish()
+    }
+}
+
+impl<'a, T> Deref for WriteUnique<'a, T>
+where
+    T: Resource + Send + Sync,
+{
+    type Target = ResMut<'a, T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.fetch
+    }
+}
+
+impl<'a, T> DerefMut for WriteUnique<'a, T>
+where
+    T: Resource + Send + Sync,
+{
+    fn deref_mut(&mut self) -> &mut ResMut<'a, T> {
+        &mut self.fetch
     }
 }
 
 // SAFETY: Res ComponentId and ArchetypeComponentId access is applied to SystemMeta. If this Res
 // conflicts with any prior access, a panic will occur.
-unsafe impl<'a, T: Resource + Send + Sync> SystemParam for WriteGlobal<'a, T> {
+unsafe impl<'a, T: Resource + Send + Sync> SystemParam for WriteUnique<'a, T> {
     type State = ComponentId;
-    type Item<'w, 's> = WriteGlobal<'w, T>;
+    type Item<'w, 's> = WriteUnique<'w, T>;
 
     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        let component_id = world.initialize_global::<T>();
+        let component_id = world.initialize_unique::<T>();
 
         // let component_id = world.initialize_resource::<T>();
         let combined_access = &system_meta.component_access_set;
-        let item = AccessItem::Global(ResourceId::of::<T>());
+        let item = AccessItem::Unique(ResourceId::of::<T>());
         if combined_access.has_write(&item) {
             panic!(
-                "error[B0002]: WriteGlobal<{}> in system {} conflicts with a previous WriteGlobal<{0}> access. Consider removing the duplicate access.",
+                "error[B0002]: WriteUnique<{}> in system {} conflicts with a previous WriteUnique<{0}> access. Consider removing the duplicate access.",
                 std::any::type_name::<T>(), system_meta.name);
         } else if combined_access.has_read(&item) {
             panic!(
-                "error[B0002]: WriteGlobal<{}> in system {} conflicts with a previous ReadGlobal<{0}> access. Consider removing the duplicate access.",
+                "error[B0002]: WriteUnique<{}> in system {} conflicts with a previous ReadUnique<{0}> access. Consider removing the duplicate access.",
                 std::any::type_name::<T>(), system_meta.name);
         }
         system_meta.component_access_set.add_write(item);
@@ -164,8 +313,8 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for WriteGlobal<'a, T> {
         // }
 
         world
-            .get_global_mut::<T>()
-            .map(|read| WriteGlobal::new(read, system_meta.last_change_tick, change_tick))
+            .get_unique_mut::<T>()
+            .map(|read| WriteUnique::new(read, system_meta.last_change_tick, change_tick))
             .unwrap_or_else(|| {
                 panic!(
                     "Resource requested by {} does not exist: {}",
@@ -177,12 +326,12 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for WriteGlobal<'a, T> {
 }
 
 // SAFETY: this impl defers to `ResMut`, which initializes and validates the correct world access.
-unsafe impl<'a, T: Resource + Send + Sync> SystemParam for Option<WriteGlobal<'a, T>> {
+unsafe impl<'a, T: Resource + Send + Sync> SystemParam for Option<WriteUnique<'a, T>> {
     type State = ComponentId;
-    type Item<'w, 's> = Option<WriteGlobal<'w, T>>;
+    type Item<'w, 's> = Option<WriteUnique<'w, T>>;
 
     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        WriteGlobal::<T>::init_state(world, system_meta)
+        WriteUnique::<T>::init_state(world, system_meta)
     }
 
     #[inline]
@@ -206,26 +355,96 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for Option<WriteGlobal<'a
         //     })
 
         world
-            .get_global_mut::<T>()
-            .map(|read| WriteGlobal::new(read, system_meta.last_change_tick, change_tick))
+            .get_unique_mut::<T>()
+            .map(|read| WriteUnique::new(read, system_meta.last_change_tick, change_tick))
     }
 }
 
-// NonSend Globals
+// NonSend Uniques
+
+/// Allows to fetch a resource in a system immutably.
+///
+/// If the resource isn't strictly required, you should use `Option<Read<T>>`.
+///
+/// # Type parameters
+///
+/// * `T`: The type of the resource
+/// * `F`: The setup handler (default: `DefaultProvider`)
+pub struct ReadNonSendUnique<'a, T: 'a> {
+    fetch: ResRef<'a, T>,
+    last_change_tick: u32,
+    change_tick: u32,
+    phantom: PhantomData<*mut ()>,
+}
+
+impl<'a, T> ReadNonSendUnique<'a, T>
+where
+    T: Resource,
+{
+    pub(crate) fn new(fetch: ResRef<'a, T>, last_change_tick: u32, change_tick: u32) -> Self {
+        ReadNonSendUnique {
+            fetch,
+            last_change_tick,
+            change_tick,
+            phantom: PhantomData,
+        }
+    }
+
+    /// Returns `true` if the resource was added after the system last ran.
+    pub fn is_added(&self) -> bool {
+        self.fetch
+            .ticks
+            .is_added(self.last_change_tick, self.change_tick)
+    }
+
+    /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
+    pub fn is_changed(&self) -> bool {
+        self.fetch
+            .ticks
+            .is_changed(self.last_change_tick, self.change_tick)
+    }
+
+    #[inline]
+    fn last_changed(&self) -> u32 {
+        self.fetch.ticks.changed.tick
+    }
+}
+
+impl<'w, T> Debug for ReadNonSendUnique<'w, T>
+where
+    T: Debug + Resource,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("ReadNonSendUnique")
+            .field(self.fetch.deref())
+            .finish()
+    }
+}
+
+impl<'a, T> Deref for ReadNonSendUnique<'a, T>
+where
+    T: Resource,
+{
+    type Target = ResRef<'a, T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.fetch
+    }
+}
 
 // SAFETY: Only reads a single World non-send resource
-unsafe impl<'w, T: 'static> ReadOnlySystemParam for ReadNonSendGlobal<'w, T> {}
+unsafe impl<'w, T: 'static> ReadOnlySystemParam for ReadNonSendUnique<'w, T> {}
 
 // SAFETY: NonSendComponentId and ArchetypeComponentId access is applied to SystemMeta. If this
 // NonSend conflicts with any prior access, a panic will occur.
-unsafe impl<'a, T: 'static> SystemParam for ReadNonSendGlobal<'a, T> {
+unsafe impl<'a, T: 'static> SystemParam for ReadNonSendUnique<'a, T> {
     type State = ComponentId;
-    type Item<'w, 's> = ReadNonSendGlobal<'w, T>;
+    type Item<'w, 's> = ReadNonSendUnique<'w, T>;
 
     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
         system_meta.set_non_send();
 
-        let component_id = world.initialize_non_send_global::<T>();
+        let component_id = world.initialize_non_send_unique::<T>();
         let combined_access = &system_meta.component_access_set;
         let item = AccessItem::Unique(ResourceId::of::<T>());
         assert!(
@@ -254,8 +473,8 @@ unsafe impl<'a, T: 'static> SystemParam for ReadNonSendGlobal<'a, T> {
         change_tick: u32,
     ) -> Self::Item<'w, 's> {
         world
-            .get_global::<T>()
-            .map(|read| ReadNonSendGlobal::new(read, system_meta.last_change_tick, change_tick))
+            .get_unique::<T>()
+            .map(|read| ReadNonSendUnique::new(read, system_meta.last_change_tick, change_tick))
             .unwrap_or_else(|| {
                 panic!(
                     "Resource requested by {} does not exist: {}",
@@ -267,15 +486,15 @@ unsafe impl<'a, T: 'static> SystemParam for ReadNonSendGlobal<'a, T> {
 }
 
 // SAFETY: Only reads a single World non-send resource
-unsafe impl<T: 'static> ReadOnlySystemParam for Option<ReadNonSendGlobal<'_, T>> {}
+unsafe impl<T: 'static> ReadOnlySystemParam for Option<ReadNonSendUnique<'_, T>> {}
 
 // SAFETY: this impl defers to `NonSend`, which initializes and validates the correct world access.
-unsafe impl<T: 'static> SystemParam for Option<ReadNonSendGlobal<'_, T>> {
+unsafe impl<T: 'static> SystemParam for Option<ReadNonSendUnique<'_, T>> {
     type State = ComponentId;
-    type Item<'w, 's> = Option<ReadNonSendGlobal<'w, T>>;
+    type Item<'w, 's> = Option<ReadNonSendUnique<'w, T>>;
 
     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        ReadNonSendGlobal::<T>::init_state(world, system_meta)
+        ReadNonSendUnique::<T>::init_state(world, system_meta)
     }
 
     #[inline]
@@ -286,16 +505,87 @@ unsafe impl<T: 'static> SystemParam for Option<ReadNonSendGlobal<'_, T>> {
         change_tick: u32,
     ) -> Self::Item<'w, 's> {
         world
-            .get_global::<T>()
-            .map(|read| ReadNonSendGlobal::new(read, system_meta.last_change_tick, change_tick))
+            .get_unique::<T>()
+            .map(|read| ReadNonSendUnique::new(read, system_meta.last_change_tick, change_tick))
+    }
+}
+
+// WRITE NON SEND UNIQUE
+
+/// Allows to fetch a resource in a system immutably.
+///
+/// If the resource isn't strictly required, you should use `Option<Read<T>>`.
+///
+/// # Type parameters
+///
+/// * `T`: The type of the resource
+pub struct WriteNonSendUnique<'a, T: 'a> {
+    fetch: ResMut<'a, T>,
+    last_change_tick: u32,
+    change_tick: u32,
+    phantom: PhantomData<*mut ()>,
+}
+
+impl<'a, T> WriteNonSendUnique<'a, T>
+where
+    T: Resource,
+{
+    pub(crate) fn new(fetch: ResMut<'a, T>, last_change_tick: u32, change_tick: u32) -> Self {
+        WriteNonSendUnique {
+            fetch,
+            last_change_tick,
+            change_tick,
+            phantom: PhantomData,
+        }
+    }
+
+    /// Returns `true` if the resource was added after the system last ran.
+    pub fn is_added(&self) -> bool {
+        self.fetch
+            .ticks
+            .is_added(self.last_change_tick, self.change_tick)
+    }
+
+    /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
+    pub fn is_changed(&self) -> bool {
+        self.fetch
+            .ticks
+            .is_changed(self.last_change_tick, self.change_tick)
+    }
+
+    #[inline]
+    fn last_changed(&self) -> u32 {
+        self.fetch.ticks.changed.tick
+    }
+}
+
+impl<'w, T> Debug for WriteNonSendUnique<'w, T>
+where
+    T: Debug + Resource,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("WriteGlobal")
+            .field(self.fetch.deref())
+            .finish()
+    }
+}
+
+impl<'a, T> Deref for WriteNonSendUnique<'a, T>
+where
+    T: Resource,
+{
+    type Target = ResMut<'a, T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.fetch
     }
 }
 
 // SAFETY: NonSendMut ComponentId and ArchetypeComponentId access is applied to SystemMeta. If this
 // NonSendMut conflicts with any prior access, a panic will occur.
-unsafe impl<'a, T: 'static> SystemParam for WriteNonSendGlobal<'a, T> {
+unsafe impl<'a, T: 'static> SystemParam for WriteNonSendUnique<'a, T> {
     type State = ComponentId;
-    type Item<'w, 's> = WriteNonSendGlobal<'w, T>;
+    type Item<'w, 's> = WriteNonSendUnique<'w, T>;
 
     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
         system_meta.set_non_send();
@@ -333,11 +623,11 @@ unsafe impl<'a, T: 'static> SystemParam for WriteNonSendGlobal<'a, T> {
         change_tick: u32,
     ) -> Self::Item<'w, 's> {
         world
-            .get_global_mut::<T>()
-            .map(|read| WriteNonSendGlobal::new(read, system_meta.last_change_tick, change_tick))
+            .get_unique_mut::<T>()
+            .map(|read| WriteNonSendUnique::new(read, system_meta.last_change_tick, change_tick))
             .unwrap_or_else(|| {
                 panic!(
-                    "Global requested by {} does not exist: {}",
+                    "Unique requested by {} does not exist: {}",
                     system_meta.name,
                     std::any::type_name::<T>()
                 )
@@ -346,12 +636,12 @@ unsafe impl<'a, T: 'static> SystemParam for WriteNonSendGlobal<'a, T> {
 }
 
 // SAFETY: this impl defers to `NonSendMut`, which initializes and validates the correct world access.
-unsafe impl<'a, T: 'static> SystemParam for Option<WriteNonSendGlobal<'a, T>> {
+unsafe impl<'a, T: 'static> SystemParam for Option<WriteNonSendUnique<'a, T>> {
     type State = ComponentId;
-    type Item<'w, 's> = Option<WriteNonSendGlobal<'w, T>>;
+    type Item<'w, 's> = Option<WriteNonSendUnique<'w, T>>;
 
     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        WriteNonSendGlobal::<T>::init_state(world, system_meta)
+        WriteNonSendUnique::<T>::init_state(world, system_meta)
     }
 
     #[inline]
@@ -362,8 +652,8 @@ unsafe impl<'a, T: 'static> SystemParam for Option<WriteNonSendGlobal<'a, T>> {
         change_tick: u32,
     ) -> Self::Item<'w, 's> {
         world
-            .get_global_mut::<T>()
-            .map(|read| WriteNonSendGlobal::new(read, system_meta.last_change_tick, change_tick))
+            .get_unique_mut::<T>()
+            .map(|read| WriteNonSendUnique::new(read, system_meta.last_change_tick, change_tick))
     }
 }
 
@@ -371,22 +661,25 @@ unsafe impl<'a, T: 'static> SystemParam for Option<WriteNonSendGlobal<'a, T>> {
 mod test {
 
     use super::*;
-    use crate::prelude::*;
+    use crate::{
+        globals::{ReadGlobal, WriteGlobal},
+        prelude::*,
+    };
 
     #[derive(Default, Debug)]
-    struct GlobalA(u32);
+    struct UniqueA(u32);
 
     #[derive(Default, Debug)]
-    struct GlobalB(u32);
+    struct UniqueB(u32);
 
     #[test]
     fn global_basic() {
         let mut world = World::default();
 
-        world.init_global::<GlobalA>();
-        world.init_global::<GlobalB>();
+        world.init_unique::<UniqueA>();
+        world.init_unique::<UniqueB>();
 
-        fn my_system(a: ReadGlobal<GlobalA>, mut b: WriteGlobal<GlobalB>) {
+        fn my_system(a: ReadUnique<UniqueA>, mut b: WriteUnique<UniqueB>) {
             println!("a = {}", a.0);
             let was = b.0;
             b.0 += 1;
@@ -403,10 +696,10 @@ mod test {
     fn global_optional_basic() {
         let mut world = World::default();
 
-        world.init_global::<GlobalA>();
-        // world.ensure_global::<GlobalB>();
+        world.init_unique::<UniqueA>();
+        // world.ensure_unique::<UniqueB>();
 
-        fn my_system(a: Option<ReadGlobal<GlobalA>>, b: Option<WriteGlobal<GlobalB>>) {
+        fn my_system(a: Option<ReadUnique<UniqueA>>, b: Option<WriteUnique<UniqueB>>) {
             match a {
                 None => println!("No A"),
                 Some(a) => println!("a = {}", a.0),
@@ -433,10 +726,10 @@ mod test {
     fn global_not_present_read() {
         let mut world = World::default();
 
-        // world.ensure_global::<GlobalA>();
-        // world.ensure_global::<GlobalB>();
+        // world.ensure_unique::<UniqueA>();
+        // world.ensure_unique::<UniqueB>();
 
-        fn my_system(a: ReadGlobal<GlobalA>, b: Option<WriteGlobal<GlobalB>>) {
+        fn my_system(a: ReadUnique<UniqueA>, b: Option<WriteUnique<UniqueB>>) {
             println!("a = {}", a.0);
 
             match b {
@@ -460,10 +753,10 @@ mod test {
     fn global_not_present_write() {
         let mut world = World::default();
 
-        // world.ensure_global::<GlobalA>();
-        // world.ensure_global::<GlobalB>();
+        // world.ensure_unique::<UniqueA>();
+        // world.ensure_unique::<UniqueB>();
 
-        fn my_system(a: Option<ReadGlobal<GlobalA>>, mut b: WriteGlobal<GlobalB>) {
+        fn my_system(a: Option<ReadUnique<UniqueA>>, mut b: WriteUnique<UniqueB>) {
             match a {
                 None => println!("No A"),
                 Some(a) => println!("a = {}", a.0),
@@ -481,13 +774,13 @@ mod test {
     }
 
     #[test]
-    fn global_read_with_resource_read() {
+    fn global_read_with_global_read() {
         let mut world = World::default();
 
-        world.init_global::<GlobalA>();
-        world.init_resource::<GlobalA>();
+        world.init_unique::<UniqueA>();
+        world.init_global::<UniqueA>();
 
-        fn my_system(a: ReadGlobal<GlobalA>, b: Res<GlobalA>) {
+        fn my_system(a: ReadUnique<UniqueA>, b: ReadGlobal<UniqueA>) {
             println!("a = {}", a.0);
             println!("b = {}", b.0);
         }
@@ -499,13 +792,13 @@ mod test {
     }
 
     #[test]
-    fn global_write_with_resource_write() {
+    fn global_write_with_global_write() {
         let mut world = World::default();
 
-        world.init_global::<GlobalA>();
-        world.init_resource::<GlobalA>();
+        world.init_unique::<UniqueA>();
+        world.init_global::<UniqueA>();
 
-        fn my_system(a: WriteGlobal<GlobalA>, b: ResMut<GlobalA>) {
+        fn my_system(a: WriteUnique<UniqueA>, b: WriteGlobal<UniqueA>) {
             println!("a = {}", a.0);
             println!("b = {}", b.0);
         }
@@ -520,10 +813,10 @@ mod test {
     fn global_write_with_resource_read() {
         let mut world = World::default();
 
-        world.init_global::<GlobalA>();
-        world.init_resource::<GlobalA>();
+        world.init_unique::<UniqueA>();
+        world.init_global::<UniqueA>();
 
-        fn my_system(a: WriteGlobal<GlobalA>, b: Res<GlobalA>) {
+        fn my_system(a: WriteUnique<UniqueA>, b: ReadGlobal<UniqueA>) {
             println!("a = {}", a.0);
             println!("b = {}", b.0);
         }
@@ -538,10 +831,10 @@ mod test {
     fn global_read_with_resource_write() {
         let mut world = World::default();
 
-        world.init_global::<GlobalA>();
-        world.init_resource::<GlobalA>();
+        world.init_unique::<UniqueA>();
+        world.init_global::<UniqueA>();
 
-        fn my_system(a: ReadGlobal<GlobalA>, b: ResMut<GlobalA>) {
+        fn my_system(a: ReadUnique<UniqueA>, b: WriteGlobal<UniqueA>) {
             println!("a = {}", a.0);
             println!("b = {}", b.0);
         }
@@ -554,12 +847,12 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn global_double_write() {
+    fn unique_double_write() {
         let mut world = World::default();
 
-        world.init_global::<GlobalA>();
+        world.init_unique::<UniqueA>();
 
-        fn my_system(a: WriteGlobal<GlobalA>, mut b: WriteGlobal<GlobalB>) {
+        fn my_system(a: WriteUnique<UniqueA>, mut b: WriteUnique<UniqueB>) {
             println!("a = {}", a.0);
             let was = b.0;
             b.0 += 1;
@@ -581,16 +874,16 @@ mod test {
     }
 
     #[test]
-    fn global_non_send() {
+    fn unique_non_send() {
         let mut world = World::default();
 
-        world.init_global::<NonSendA>();
+        world.init_unique::<NonSendA>();
 
-        fn my_write_system(a: WriteNonSendGlobal<NonSendA>) {
+        fn my_write_system(a: WriteNonSendUnique<NonSendA>) {
             println!("in write system - {:?}", a.0);
         }
 
-        fn my_read_system(a: ReadNonSendGlobal<NonSendA>) {
+        fn my_read_system(a: ReadNonSendUnique<NonSendA>) {
             println!("in read system - {:?}", a.0);
         }
 
@@ -602,16 +895,16 @@ mod test {
     }
 
     // #[test]
-    // fn global_non_send_wrong_fails_compile() {
+    // fn unique_non_send_wrong_fails_compile() {
     //     let mut world = World::default();
 
-    //     world.init_global::<NonSendA>();
+    //     world.init_unique::<NonSendA>();
 
-    //     fn my_write_system(a: WriteGlobal<NonSendA>) {
+    //     fn my_write_system(a: WriteUnique<NonSendA>) {
     //         println!("in write system - {:?}", a.0);
     //     }
 
-    //     fn my_read_system(a: ReadGlobal<NonSendA>) {
+    //     fn my_read_system(a: ReadUnique<NonSendA>) {
     //         println!("in read system - {:?}", a.0);
     //     }
 

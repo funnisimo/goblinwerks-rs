@@ -15,10 +15,11 @@ use crate::{
     component::{Component, ComponentDescriptor, ComponentId, ComponentInfo, Components},
     entity::{AllocAtWithoutReplacement, Entities, Entity, EntityLocation},
     event::{Event, Events},
-    global::{GlobalMut, GlobalRef},
+    globals::{GlobalMut, GlobalRef},
     query::DebugCheckedUnwrap,
     // query::{ QueryState, ReadOnlyWorldQuery, WorldQuery},
     removal_detection::RemovedComponentEvents,
+    resources::{ResMut, ResRef},
     schedule::{Schedule, ScheduleLabel, Schedules},
     storage::{ResourceData, Storages},
     // storage::{ResourceData},
@@ -681,6 +682,7 @@ impl World {
 
         // TODO - Is this the right place?
         self.storages.globals.maintain(self.last_change_tick);
+        self.storages.uniques.maintain(self.last_change_tick);
     }
 
     // /// Returns [`QueryState`] for the given [`WorldQuery`], which is used to efficiently
@@ -1171,6 +1173,34 @@ impl World {
 
     // END GLOBALS
 
+    // UNIQUES
+
+    pub fn init_unique<G: Resource + Default>(&mut self) {
+        self.storages.uniques.ensure_with(|| G::default())
+    }
+
+    pub fn init_unique_with<F: FnOnce() -> G, G: Resource>(&mut self, func: F) {
+        self.storages.uniques.ensure_with(func);
+    }
+
+    pub fn insert_unique<G: Resource>(&mut self, unique: G) {
+        self.storages.uniques.insert(unique);
+    }
+
+    pub fn remove_unique<G: Resource>(&mut self) -> Option<G> {
+        self.storages.uniques.remove::<G>()
+    }
+
+    pub fn get_unique<G: Resource>(&self) -> Option<ResRef<G>> {
+        self.storages.uniques.get::<G>()
+    }
+
+    pub fn get_unique_mut<G: Resource>(&self) -> Option<ResMut<G>> {
+        self.storages.uniques.get_mut::<G>()
+    }
+
+    // END UNIQUES
+
     /// For a given batch of ([Entity], [Bundle]) pairs, either spawns each [Entity] with the given
     /// bundle (if the entity does not exist), or inserts the [Bundle] (if the entity already exists).
     /// This is faster than doing equivalent operations one-by-one.
@@ -1496,6 +1526,18 @@ impl World {
         component_id
     }
 
+    pub(crate) fn initialize_unique<R: Resource>(&mut self) -> ComponentId {
+        let component_id = self.components.init_resource::<R>();
+        // self.storages.uniques.ensure_with(|| R::from_world(self));
+        component_id
+    }
+
+    pub(crate) fn initialize_non_send_unique<R: 'static>(&mut self) -> ComponentId {
+        let component_id = self.components.init_non_send::<R>();
+        // self.storages.uniques.ensure_with(|| R::from_world(self));
+        component_id
+    }
+
     /// Empties queued entities and adds them to the empty [Archetype](crate::archetype::Archetype).
     /// This should be called before doing operations that might operate on queued entities,
     /// such as inserting a [Component].
@@ -1559,6 +1601,7 @@ impl World {
             ref mut resources,
             ref mut non_send_resources,
             ref mut globals,
+            ref mut uniques,
         } = self.storages;
 
         #[cfg(feature = "trace")]

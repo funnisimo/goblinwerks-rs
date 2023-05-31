@@ -32,7 +32,7 @@ impl Globals {
     /// Ensures that the resource is in the Globals or enters
     /// the value from the function.
     pub fn ensure_with<G: Resource, F: FnOnce() -> G>(&mut self, func: F) {
-        self.resources.borrow_mut().ensure(func);
+        self.resources.borrow_mut().ensure_with(func);
     }
 
     /// Inserts a global

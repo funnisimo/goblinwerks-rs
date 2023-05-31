@@ -13,7 +13,7 @@ pub mod component;
 pub mod ecs;
 pub mod entity;
 pub mod event;
-pub mod global;
+pub mod globals;
 pub mod query;
 #[cfg(feature = "bevy_reflect")]
 pub mod reflect;

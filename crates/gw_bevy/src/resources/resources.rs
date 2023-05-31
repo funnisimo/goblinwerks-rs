@@ -165,7 +165,13 @@ impl Resources {
 
     /// # Safety
     /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
-    pub fn ensure<T: Resource, F: FnOnce() -> T>(&mut self, f: F) {
+    pub fn ensure<T: Resource + Default>(&mut self) {
+        self.get_or_insert_with(T::default);
+    }
+
+    /// # Safety
+    /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
+    pub fn ensure_with<T: Resource, F: FnOnce() -> T>(&mut self, f: F) {
         self.get_or_insert_with(f);
     }
 
