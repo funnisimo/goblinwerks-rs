@@ -191,7 +191,7 @@ mod test {
 
     impl Command for SpawnCommand {
         fn write(self, world: &mut World) {
-            world.create_entity().build();
+            world.create_entity().id();
         }
     }
 

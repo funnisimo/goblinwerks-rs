@@ -9,7 +9,6 @@ pub mod archetype;
 pub mod atomic_refcell;
 pub mod bundle;
 pub mod change_detection;
-pub mod component;
 pub mod components;
 pub mod ecs;
 pub mod entity;
@@ -25,6 +24,7 @@ pub mod resources;
 pub mod schedule;
 pub mod storage;
 pub mod system;
+pub mod tick;
 pub mod world;
 
 use std::any::TypeId;
@@ -44,6 +44,7 @@ pub mod prelude {
         // bundle::Bundle,
         change_detection::{DetectChanges, DetectChangesMut},
         components::{Component, ReadComp, WriteComp},
+        ecs::Ecs,
         entity::{Builder, Entities, EntitiesMut, Entity},
         event::{Event, EventReader, EventWriter, Events},
         join::Join,
@@ -84,16 +85,7 @@ type TypeIdMap<V> = rustc_hash::FxHashMap<TypeId, V>;
 mod tests {
     use crate as gw_bevy;
     // use crate::prelude::Or;
-    use crate::change_detection::DetectChanges;
-    use crate::entity::Builder;
-    use crate::{
-        // bundle::Bundle,
-        component::Component,
-        entity::Entity,
-        // query::{Added, Changed, FilteredAccess, ReadOnlyWorldQuery, With, Without},
-        system::Resource,
-        world::World,
-    };
+    use crate::prelude::*;
     use bevy_tasks::{ComputeTaskPool, TaskPool};
     use std::{
         any::TypeId,
@@ -152,13 +144,13 @@ mod tests {
             .create_entity()
             .with(TableStored("abc"))
             .with(SparseStored(123))
-            .build();
+            .id();
         let f = world
             .create_entity()
             .with(TableStored("def"))
             .with(SparseStored(456))
             .with(A(1))
-            .build();
+            .id();
 
         assert_eq!(
             world.read_component::<TableStored>().get(e).unwrap().0,
@@ -352,12 +344,12 @@ mod tests {
             .create_entity()
             .with(TableStored("abc"))
             .with(A(123))
-            .build();
+            .id();
         let f = world
             .create_entity()
             .with(TableStored("def"))
             .with(A(456))
-            .build();
+            .id();
         // assert_eq!(world.entities.len(), 2);
         world.delete_entity(e);
         // assert_eq!(world.entities.len(), 1);
@@ -380,12 +372,12 @@ mod tests {
             .create_entity()
             .with(TableStored("abc"))
             .with(SparseStored(123))
-            .build();
+            .id();
         let f = world
             .create_entity()
             .with(TableStored("def"))
             .with(SparseStored(456))
-            .build();
+            .id();
         // assert_eq!(world.entities.len(), 2);
         world.delete_entity(e);
         // assert_eq!(world.entities.len(), 1);
@@ -732,7 +724,7 @@ mod tests {
         };
 
         for _ in 0..to {
-            entities.push(world.create_entity().with(B(0)).build());
+            entities.push(world.create_entity().with(B(0)).id());
         }
 
         for (i, entity) in entities.iter().cloned().enumerate() {
@@ -752,7 +744,7 @@ mod tests {
 
         let mut entities = Vec::with_capacity(1000);
         for _ in 0..4 {
-            entities.push(world.create_entity().with(A(2)).build());
+            entities.push(world.create_entity().with(A(2)).id());
         }
 
         for (i, entity) in entities.iter().cloned().enumerate() {
@@ -1151,7 +1143,7 @@ mod tests {
     fn empty_spawn() {
         let mut world = World::default();
         world.register::<A>();
-        let e = world.create_entity().build();
+        let e = world.create_entity().id();
         world.write_component::<A>().insert(e, A(0));
         assert_eq!(world.read_component::<A>().get(e).unwrap(), &A(0));
     }
@@ -1571,7 +1563,7 @@ mod tests {
         let mut world = World::default();
         world.register::<DropCk>();
 
-        let e = world.create_entity().with(dropck1).with(dropck2).build();
+        let e = world.create_entity().with(dropck1).with(dropck2).id();
 
         assert_eq!(dropped1.load(Ordering::Relaxed), 1);
         assert_eq!(dropped2.load(Ordering::Relaxed), 0);
@@ -1591,7 +1583,7 @@ mod tests {
             .create_entity()
             .with(DropCkSparse(dropck1))
             .with(DropCkSparse(dropck2))
-            .build();
+            .id();
         assert_eq!(dropped1.load(Ordering::Relaxed), 1);
         assert_eq!(dropped2.load(Ordering::Relaxed), 0);
         drop(world);

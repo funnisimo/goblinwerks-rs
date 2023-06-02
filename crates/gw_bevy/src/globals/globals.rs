@@ -1,10 +1,6 @@
-#![feature(negative_impls)]
-
 use crate::atomic_refcell::{AtomicBorrowRef, AtomicRefCell};
-use crate::component::Tick;
 use crate::prelude::DetectChanges;
 use crate::resources::{ResMut, ResRef, Resource, Resources};
-use std::collections::HashSet;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
@@ -35,12 +31,21 @@ impl Globals {
     pub fn ensure_with<G: Resource + Send + Sync, F: FnOnce() -> G>(
         &mut self,
         func: F,
-        last_system_tick: u32,
+        world_tick: u32,
+    ) {
+        self.resources.borrow_mut().ensure_with(func, world_tick);
+    }
+
+    /// Ensures that the resource is in the Globals or enters
+    /// the value from the function.
+    pub fn ensure_non_send_with<G: Resource, F: FnOnce() -> G>(
+        &mut self,
+        func: F,
         world_tick: u32,
     ) {
         self.resources
             .borrow_mut()
-            .ensure_with(func, last_system_tick, world_tick);
+            .ensure_non_send_with(func, world_tick);
     }
 
     /// Inserts a global

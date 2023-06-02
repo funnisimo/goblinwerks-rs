@@ -379,8 +379,7 @@ impl World {
     /// Makes sure there is a value for the given global.
     /// If not found, inserts a default value.
     pub fn ensure_global_with<G: Resource + Send + Sync, F: FnOnce() -> G>(&mut self, func: F) {
-        self.globals
-            .ensure_with(func, self.last_maintain_tick, self.change_tick());
+        self.globals.ensure_with(func, self.change_tick());
     }
 
     /// Inserts a global
@@ -590,8 +589,7 @@ impl World {
     /// Makes sure there is a value for the given resource.
     /// If not found, inserts a default value.
     pub fn ensure_resource_with<R: Resource + Send + Sync, F: FnOnce() -> R>(&mut self, func: F) {
-        self.resources
-            .ensure_with(func, self.last_maintain_tick, self.change_tick());
+        self.resources.ensure_with(func, self.change_tick());
     }
 
     pub fn with_resource<R: Resource, F: FnOnce(&R) -> T, T>(&self, f: F) -> T {
@@ -842,16 +840,11 @@ impl World {
 
     pub(crate) fn create_entity_unchecked(&self) -> EntityBuilder {
         let entity = self.entities_mut().create();
-
-        EntityBuilder {
-            entity,
-            world: self,
-            built: false,
-        }
+        EntityBuilder::new(self, entity)
     }
 
     pub fn spawn<C: ComponentSet>(&mut self, set: C) -> Entity {
-        self.create_entity().spawn(set).build()
+        self.create_entity().spawn(set).id()
     }
 
     // pub fn create_iter(&mut self) -> CreateIter {
@@ -893,7 +886,7 @@ impl World {
             for storage in storages.iter_mut(self) {
                 storage.try_move_component(entity, &mut builder);
             }
-            builder.build()
+            builder.id()
         };
         let _ = self.delete_entity(entity); // Ignore
         new_entity

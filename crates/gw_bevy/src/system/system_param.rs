@@ -10,10 +10,10 @@ use crate::{
     // archetype::{Archetype, Archetypes},
     // bundle::Bundles,
     change_detection::{Ticks, TicksMut},
-    component::ComponentTicks,
     // entity::Entities,
     resources::ResourceId,
     system::SystemMeta,
+    tick::ComponentTicks,
     world::{FromWorld, World},
 };
 use bevy_ecs_macros::impl_param_set;

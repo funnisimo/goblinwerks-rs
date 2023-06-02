@@ -1,11 +1,9 @@
 use super::{ResMut, ResRef};
 use super::{Resource, ResourceId};
 use crate::atomic_refcell::{AtomicRef, AtomicRefCell, AtomicRefMut};
-use crate::component::{ComponentTicks, Tick};
+use crate::tick::ComponentTicks;
 use std::any::Any;
-use std::collections::{hash_map::Entry, HashMap, VecDeque};
-use std::mem::ManuallyDrop;
-use std::ptr::drop_in_place;
+use std::collections::{hash_map::Entry, HashMap};
 use std::thread::ThreadId;
 
 pub const KEEP_DELETED_TIME: u32 = 10; // 10 calls to maintain??
@@ -240,12 +238,10 @@ impl Resources {
 
     /// # Safety
     /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
-    pub fn ensure<T: Resource + Send + Sync + Default>(
-        &mut self,
-        last_system_tick: u32,
-        world_tick: u32,
-    ) {
-        self.get_or_insert_with(T::default, last_system_tick, world_tick);
+    pub fn ensure<T: Resource + Send + Sync + Default>(&mut self, world_tick: u32) {
+        if !self.contains::<T>() {
+            self.insert(T::default(), world_tick);
+        }
     }
 
     /// # Safety
@@ -253,10 +249,11 @@ impl Resources {
     pub fn ensure_with<T: Resource + Send + Sync, F: FnOnce() -> T>(
         &mut self,
         f: F,
-        last_system_tick: u32,
         world_tick: u32,
     ) {
-        self.get_or_insert_with(f, last_system_tick, world_tick);
+        if !self.contains::<T>() {
+            self.insert(f(), world_tick);
+        }
     }
 
     /// Inserts the instance of `T` into the store. If the type already exists, it will be silently
@@ -268,6 +265,22 @@ impl Resources {
         // owns the resources collection
         unsafe {
             self.internal.insert(value, world_tick);
+        }
+    }
+
+    /// # Safety
+    /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
+    pub fn ensure_non_send<T: Resource + Default>(&mut self, world_tick: u32) {
+        if !self.contains::<T>() {
+            self.insert_non_send(T::default(), world_tick);
+        }
+    }
+
+    /// # Safety
+    /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
+    pub fn ensure_non_send_with<T: Resource, F: FnOnce() -> T>(&mut self, f: F, world_tick: u32) {
+        if !self.contains::<T>() {
+            self.insert_non_send(f(), world_tick);
         }
     }
 

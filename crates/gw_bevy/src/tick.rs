@@ -18,8 +18,6 @@ use std::{
     mem::needs_drop,
 };
 
-pub use crate::components::Component;
-
 // pub struct TableStorage;
 // pub struct SparseStorage;
 

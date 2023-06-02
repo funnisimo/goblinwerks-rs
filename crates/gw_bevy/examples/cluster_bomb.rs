@@ -103,7 +103,7 @@ fn main() {
         .create_entity()
         .with(Pos(0., 0.))
         .with(ClusterBomb { fuse: 3 })
-        .build();
+        .id();
 
     let mut step = 0;
     loop {

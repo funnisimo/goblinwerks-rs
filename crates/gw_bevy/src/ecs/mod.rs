@@ -1,1 +1,2 @@
-pub struct Ecs {}
+mod ecs;
+pub use ecs::*;

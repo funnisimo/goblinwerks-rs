@@ -50,11 +50,11 @@ mod tests {
         let mut world = World::default();
         world.register::<Comp>();
 
-        world.create_entity().build();
-        let b = world.create_entity().with(Comp).build();
-        let c = world.create_entity().with(Comp).build();
-        world.create_entity().build();
-        let e = world.create_entity().with(Comp).build();
+        world.create_entity().id();
+        let b = world.create_entity().with(Comp).id();
+        let c = world.create_entity().with(Comp).id();
+        world.create_entity().id();
+        let e = world.create_entity().with(Comp).id();
 
         let mut comps = world.write_component::<Comp>();
         let entities = world.entities();

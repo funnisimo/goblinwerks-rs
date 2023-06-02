@@ -1,11 +1,10 @@
 //! Types that detect when their internal data mutate.
 
 use crate::{
-    component::{Tick, TickCells},
-    ptr::PtrMut,
     system::Resource,
+    tick::{Tick, TickCells},
 };
-use bevy_ptr::{Ptr, UnsafeCellDeref};
+use bevy_ptr::UnsafeCellDeref;
 use std::ops::{Deref, DerefMut};
 
 /// The (arbitrarily chosen) minimum number of world tick increments between `check_tick` scans.
@@ -697,10 +696,12 @@ mod tests {
 
     use crate::{
         self as gw_bevy,
-        change_detection::{TicksMut, CHECK_TICK_THRESHOLD, MAX_CHANGE_AGE},
-        component::{Component, ComponentTicks, Tick},
-        system::{IntoSystem, System},
-        world::World,
+        prelude::*,
+        // change_detection::{TicksMut, CHECK_TICK_THRESHOLD, MAX_CHANGE_AGE},
+        // system::{IntoSystem, System},
+        // tick::{ ComponentTicks, Tick},
+
+        // world::World,
     };
 
     use super::DetectChanges;

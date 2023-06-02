@@ -1,12 +1,7 @@
 use super::Resource;
 use crate::atomic_refcell::{AtomicRef, AtomicRefMut};
-use crate::component::ComponentTicks;
-use crate::component::Tick;
 use crate::prelude::DetectChanges;
-use std::{
-    fmt::Debug,
-    ops::{Deref, DerefMut},
-};
+use crate::tick::ComponentTicks;
 
 /// Allows to fetch a resource in a system immutably.
 ///

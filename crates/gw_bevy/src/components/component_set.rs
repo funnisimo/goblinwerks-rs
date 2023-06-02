@@ -80,7 +80,7 @@ mod test {
         world.register::<CompB>();
         world.register::<CompC>();
 
-        let entity = world.create_entity().build();
+        let entity = world.create_entity().id();
 
         let set = (CompA(1), CompB(2), CompC(3));
 

@@ -1,6 +1,5 @@
 use super::Entity;
 use crate::components::{Component, ComponentSet};
-use crate::system::Commands;
 use crate::world::World;
 
 // /// An iterator for entity creation.
@@ -86,7 +85,7 @@ pub trait Builder {
     }
 
     /// Finishes the building and returns the entity.
-    fn build(self) -> Entity;
+    fn id(&self) -> Entity;
 }
 
 /// The entity builder, allowing to
@@ -164,17 +163,20 @@ pub struct EntityBuilder<'a> {
     pub entity: Entity,
     /// A reference to the `World` for component insertions.
     pub world: &'a World,
-    pub(crate) built: bool,
 }
 
 impl<'a> EntityBuilder<'a> {
+    pub fn new(world: &'a World, entity: Entity) -> Self {
+        EntityBuilder { entity, world }
+    }
+
     /// Inserts a component into the correct storage
     pub fn insert<T: Component>(&self, c: T) {
         // let mut storage: WriteComp<T> = SystemData::fetch(&self.world);
         // // This can't fail.  This is guaranteed by the lifetime 'a
         // // in the EntityBuilder.
         // storage.insert(self.entity, c).unwrap();
-        self.world.write_component::<T>().insert(self.entity, c);
+        let _ = self.world.write_component::<T>().insert(self.entity, c);
     }
 
     /// Inserts a component into the correct storage
@@ -184,7 +186,7 @@ impl<'a> EntityBuilder<'a> {
             // // This can't fail.  This is guaranteed by the lifetime 'a
             // // in the EntityBuilder.
             // storage.insert(self.entity, value).unwrap();
-            self.world.write_component::<T>().insert(self.entity, value);
+            let _ = self.world.write_component::<T>().insert(self.entity, value);
         }
     }
 }
@@ -208,17 +210,16 @@ impl<'a> Builder for EntityBuilder<'a> {
     /// Finishes the building and returns the entity. As opposed to
     /// `LazyBuilder`, the components are available immediately.
     #[inline]
-    fn build(mut self) -> Entity {
-        self.built = true;
+    fn id(&self) -> Entity {
         self.entity
     }
 }
 
-impl<'a> Drop for EntityBuilder<'a> {
-    fn drop(&mut self) {
-        if !self.built {
-            let entity = self.entity;
-            self.world.entities().delete(entity);
-        }
-    }
-}
+// impl<'a> Drop for EntityBuilder<'a> {
+//     fn drop(&mut self) {
+//         if !self.built {
+//             let entity = self.entity;
+//             self.world.entities().delete(entity);
+//         }
+//     }
+// }
