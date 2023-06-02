@@ -134,7 +134,7 @@ pub mod common_conditions {
     use super::Condition;
     use crate::{
         change_detection::DetectChanges,
-        components::Component,
+        // components::Component,
         event::{Event, EventReader},
         resources::{ResRef, Resource},
         // prelude::{With, Query}
@@ -976,7 +976,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::Condition;
-    use crate as bevy_ecs;
+    // use crate as bevy_ecs;
     use crate::resources::WriteUnique;
     use crate::schedule::common_conditions::not;
     use crate::schedule::IntoSystemConfig;

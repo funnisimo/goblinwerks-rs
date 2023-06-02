@@ -1,8 +1,6 @@
 //! Joining of components for iteration over entities with specific components.
-use crate::components::{Component, ReadComp, WriteComp};
 use crate::entity::{Entities, Entity, Index};
 use hibitset::{BitIter, BitSetAll, BitSetAnd, BitSetLike};
-use std::ops::{Deref, DerefMut};
 use tuple_utils::Split;
 
 #[cfg(feature = "parallel")]

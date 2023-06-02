@@ -137,6 +137,7 @@ impl UnsafeResources {
 
     /// # Safety
     /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
+    #[allow(dead_code)]
     unsafe fn insert_by_id<T: Resource>(&mut self, id: ResourceId, resource: T, tick: u32) {
         self.map.insert(
             id,
@@ -146,7 +147,7 @@ impl UnsafeResources {
 
     /// # Safety
     /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
-    unsafe fn remove(&mut self, type_id: &ResourceId, tick: u32) -> Option<Box<dyn Resource>> {
+    unsafe fn remove(&mut self, type_id: &ResourceId, _tick: u32) -> Option<Box<dyn Resource>> {
         // NOTE - Does not track deleted tick
         self.map.remove(type_id).map(|cell| {
             if let Some(insert_thread) = cell.thread {
@@ -299,6 +300,7 @@ impl Resources {
     /// Inserts the instance of `T` into the store. If the type already exists, it will be silently
     /// overwritten. If you would like to retain the instance of the resource that already exists,
     /// call `remove` first to retrieve it.
+    #[allow(dead_code)]
     pub(crate) fn insert_by_id<T: Resource>(&mut self, id: ResourceId, value: T, world_tick: u32) {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
@@ -385,12 +387,7 @@ impl Resources {
     ///
     /// # Panics
     /// Panics if the resource is already borrowed mutably.
-    pub(crate) fn get_internal(
-        &self,
-        id: ResourceId,
-        last_system_tick: u32,
-        world_tick: u32,
-    ) -> Option<&ResourceCell> {
+    pub(crate) fn get_internal(&self, id: ResourceId) -> Option<&ResourceCell> {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection

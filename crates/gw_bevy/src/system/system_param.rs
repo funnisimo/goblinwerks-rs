@@ -6,19 +6,15 @@ use crate::{
     //     FilteredAccessSet,
     //     //QueryState, ReadOnlyWorldQuery, WorldQuery, Query
     // },
-    access::{AccessItem, AccessTracker},
+    access::AccessTracker,
     // archetype::{Archetype, Archetypes},
     // bundle::Bundles,
-    change_detection::{Ticks, TicksMut},
     // entity::Entities,
-    resources::ResourceId,
     system::SystemMeta,
-    tick::ComponentTicks,
     world::{FromWorld, World},
 };
 use bevy_ecs_macros::impl_param_set;
 pub use bevy_ecs_macros::SystemParam;
-use bevy_ptr::UnsafeCellDeref;
 use bevy_utils::{all_tuples, synccell::SyncCell};
 use std::{
     borrow::Cow,
@@ -249,6 +245,7 @@ pub type SystemParamItem<'w, 's, P> = <P as SystemParam>::Item<'w, 's>;
 //     }
 // }
 
+#[allow(dead_code)]
 fn assert_component_access_compatibility(
     system_name: &str,
     query_type: &'static str,

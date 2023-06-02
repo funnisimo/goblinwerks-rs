@@ -78,23 +78,17 @@ where
         let index = self.index;
         self.index += 1;
 
-        let tick = self.world.change_tick();
-        println!("next - {}", index);
         // Ugly hack that works due to `UnsafeCell` and distinct resources.
         unsafe {
             self.world
                 .resources
-                .get_internal(
-                    match self.tys.get(index) {
-                        Some(&x) => ResourceId::from_type_id(x),
-                        None => {
-                            println!("BBBBB");
-                            return None;
-                        }
-                    },
-                    tick,
-                    tick,
-                )
+                .get_internal(match self.tys.get(index) {
+                    Some(&x) => ResourceId::from_type_id(x),
+                    None => {
+                        println!("BBBBB");
+                        return None;
+                    }
+                })
                 .map(|res| {
                     println!("AAAAA");
                     self.fat[index].create_ptr::<T>(Box::as_ref(&res.data.borrow())
@@ -155,19 +149,14 @@ where
         let index = self.index;
         self.index += 1;
 
-        let tick = self.world.change_tick();
         // Ugly hack that works due to `UnsafeCell` and distinct resources.
         unsafe {
             self.world
                 .resources
-                .get_internal(
-                    match self.tys.get(index) {
-                        Some(&x) => ResourceId::from_type_id(x),
-                        None => return None,
-                    },
-                    tick,
-                    tick,
-                )
+                .get_internal(match self.tys.get(index) {
+                    Some(&x) => ResourceId::from_type_id(x),
+                    None => return None,
+                })
                 .map(|res| {
                     self.fat[index].create_ptr::<T>(Box::as_mut(&mut res.data.borrow_mut())
                         as *mut dyn Resource

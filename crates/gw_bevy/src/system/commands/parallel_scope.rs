@@ -1,16 +1,13 @@
-use std::{cell::Cell, marker::PhantomData};
-
-use thread_local::ThreadLocal;
-
+use super::{CommandQueue, Commands};
 use crate::{
     self as bevy_ecs,
-    entity::{Entities, EntitiesRes},
+    entity::EntitiesRes,
     prelude::World,
-    resources::{ReadUnique, ResRef},
+    resources::ResRef,
     system::{Deferred, SystemBuffer, SystemMeta, SystemParam},
 };
-
-use super::{CommandQueue, Commands};
+use std::cell::Cell;
+use thread_local::ThreadLocal;
 
 #[derive(Default)]
 struct ParallelCommandQueue {

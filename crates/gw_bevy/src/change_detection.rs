@@ -1,10 +1,7 @@
 //! Types that detect when their internal data mutate.
 
-use crate::{
-    system::Resource,
-    tick::{Tick, TickCells},
-};
-use bevy_ptr::UnsafeCellDeref;
+use crate::system::Resource;
+// use bevy_ptr::UnsafeCellDeref;
 use std::ops::{Deref, DerefMut};
 
 /// The (arbitrarily chosen) minimum number of world tick increments between `check_tick` scans.
@@ -294,67 +291,68 @@ macro_rules! impl_debug {
     };
 }
 
-#[derive(Clone)]
-pub(crate) struct Ticks<'a> {
-    pub(crate) added: &'a Tick,
-    pub(crate) changed: &'a Tick,
-    pub(crate) last_change_tick: u32,
-    pub(crate) change_tick: u32,
-}
+// #[derive(Clone)]
+// pub(crate) struct Ticks<'a> {
+//     pub(crate) added: &'a Tick,
+//     pub(crate) changed: &'a Tick,
+//     pub(crate) last_change_tick: u32,
+//     pub(crate) change_tick: u32,
+// }
 
-impl<'a> Ticks<'a> {
-    /// # Safety
-    /// This should never alias the underlying ticks with a mutable one such as `TicksMut`.
-    #[inline]
-    pub(crate) unsafe fn from_tick_cells(
-        cells: TickCells<'a>,
-        last_change_tick: u32,
-        change_tick: u32,
-    ) -> Self {
-        Self {
-            added: cells.added.deref(),
-            changed: cells.changed.deref(),
-            last_change_tick,
-            change_tick,
-        }
-    }
-}
+// impl<'a> Ticks<'a> {
+//     /// # Safety
+//     /// This should never alias the underlying ticks with a mutable one such as `TicksMut`.
+//     #[inline]
+//     pub(crate) unsafe fn from_tick_cells(
+//         cells: TickCells<'a>,
+//         last_change_tick: u32,
+//         change_tick: u32,
+//     ) -> Self {
+//         Self {
+//             added: cells.added.deref(),
+//             changed: cells.changed.deref(),
+//             last_change_tick,
+//             change_tick,
+//         }
+//     }
+// }
 
-pub(crate) struct TicksMut<'a> {
-    pub(crate) added: &'a mut Tick,
-    pub(crate) changed: &'a mut Tick,
-    pub(crate) last_change_tick: u32,
-    pub(crate) change_tick: u32,
-}
+// pub(crate) struct TicksMut<'a> {
+//     pub(crate) added: &'a mut Tick,
+//     pub(crate) changed: &'a mut Tick,
+//     pub(crate) last_change_tick: u32,
+//     pub(crate) change_tick: u32,
+// }
 
-impl<'a> TicksMut<'a> {
-    /// # Safety
-    /// This should never alias the underlying ticks. All access must be unique.
-    #[inline]
-    pub(crate) unsafe fn from_tick_cells(
-        cells: TickCells<'a>,
-        last_change_tick: u32,
-        change_tick: u32,
-    ) -> Self {
-        Self {
-            added: cells.added.deref_mut(),
-            changed: cells.changed.deref_mut(),
-            last_change_tick,
-            change_tick,
-        }
-    }
-}
+// impl<'a> TicksMut<'a> {
+//     /// # Safety
+//     /// This should never alias the underlying ticks. All access must be unique.
+//     #[inline]
+//     #[allow(dead_code)]
+//     pub(crate) unsafe fn from_tick_cells(
+//         cells: TickCells<'a>,
+//         last_change_tick: u32,
+//         change_tick: u32,
+//     ) -> Self {
+//         Self {
+//             added: cells.added.deref_mut(),
+//             changed: cells.changed.deref_mut(),
+//             last_change_tick,
+//             change_tick,
+//         }
+//     }
+// }
 
-impl<'a> From<TicksMut<'a>> for Ticks<'a> {
-    fn from(ticks: TicksMut<'a>) -> Self {
-        Ticks {
-            added: ticks.added,
-            changed: ticks.changed,
-            last_change_tick: ticks.last_change_tick,
-            change_tick: ticks.change_tick,
-        }
-    }
-}
+// impl<'a> From<TicksMut<'a>> for Ticks<'a> {
+//     fn from(ticks: TicksMut<'a>) -> Self {
+//         Ticks {
+//             added: ticks.added,
+//             changed: ticks.changed,
+//             last_change_tick: ticks.last_change_tick,
+//             change_tick: ticks.change_tick,
+//         }
+//     }
+// }
 
 // /// Shared borrow of a [`Resource`].
 // ///
@@ -710,7 +708,7 @@ mod tests {
     #[derive(Component, PartialEq, Default)]
     struct C;
 
-    struct R;
+    // struct R;
 
     #[derive(PartialEq)]
     struct R2(u8);

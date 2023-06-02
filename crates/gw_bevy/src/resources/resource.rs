@@ -3,7 +3,7 @@ use std::{
     cmp::Ordering,
     fmt::Debug,
     hash::Hash,
-    marker::PhantomData,
+    // marker::PhantomData,
 };
 
 // SOURCE - SHRED + LEGION
@@ -123,22 +123,22 @@ impl Debug for ResourceId {
     }
 }
 
-pub struct ResourceIdOf<T> {
-    pub(crate) id: ResourceId,
-    phantom: PhantomData<T>,
-}
+// pub struct ResourceIdOf<T> {
+//     pub(crate) id: ResourceId,
+//     phantom: PhantomData<T>,
+// }
 
-impl<T> Default for ResourceIdOf<T>
-where
-    T: 'static,
-{
-    fn default() -> Self {
-        ResourceIdOf {
-            id: ResourceId::of::<T>(),
-            phantom: PhantomData,
-        }
-    }
-}
+// impl<T> Default for ResourceIdOf<T>
+// where
+//     T: 'static,
+// {
+//     fn default() -> Self {
+//         ResourceIdOf {
+//             id: ResourceId::of::<T>(),
+//             phantom: PhantomData,
+//         }
+//     }
+// }
 
 // /// A resource is a data slot which lives in the `World` can only be accessed
 // /// according to Rust's typical borrowing model (one writer xor multiple

@@ -1,22 +1,9 @@
 //! Types for declaring and storing [`Component`]s.
 
-use crate::{
-    change_detection::MAX_CHANGE_AGE,
-    // storage::{SparseSetIndex, Storages},
-    system::{Local, Resource},
-    world::{FromWorld, World},
-    TypeIdMap,
-};
+use crate::change_detection::MAX_CHANGE_AGE;
 pub use bevy_ecs_macros::Component;
-use bevy_ptr::{OwningPtr, UnsafeCellDeref};
+use bevy_ptr::UnsafeCellDeref;
 use std::cell::UnsafeCell;
-use std::{
-    alloc::Layout,
-    any::{Any, TypeId},
-    borrow::Cow,
-    marker::PhantomData,
-    mem::needs_drop,
-};
 
 // pub struct TableStorage;
 // pub struct SparseStorage;
@@ -587,6 +574,7 @@ impl Tick {
         ticks_since_system > ticks_since_insert
     }
 
+    #[allow(dead_code)]
     pub(crate) fn check_tick(&mut self, change_tick: u32) {
         let age = change_tick.wrapping_sub(self.tick);
         // This comparison assumes that `age` has not overflowed `u32::MAX` before, which will be true
@@ -634,6 +622,7 @@ impl<'a> TickCells<'a> {
     /// # Safety
     /// All cells contained within must uphold the safety invariants of [`UnsafeCellDeref::read`].
     #[inline]
+    #[allow(dead_code)]
     pub(crate) unsafe fn read(&self) -> ComponentTicks {
         ComponentTicks {
             added: self.added.read(),

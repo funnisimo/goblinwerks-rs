@@ -1,7 +1,7 @@
 //! Event handling types.
 
 use crate as bevy_ecs;
-use crate::resources::{ReadUnique, ResMut, ResRef, WriteUnique};
+use crate::resources::{ReadUnique, ResMut, WriteUnique};
 use crate::system::{Local, SystemParam};
 use bevy_utils::tracing::trace;
 use std::ops::{Deref, DerefMut};

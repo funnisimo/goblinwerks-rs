@@ -100,7 +100,7 @@ pub struct CombinatorSystem<Func, A, B> {
     b: B,
     name: Cow<'static, str>,
     component_access: AccessTracker,
-    archetype_component_access: AccessTracker,
+    // archetype_component_access: AccessTracker,
 }
 
 impl<Func, A, B> CombinatorSystem<Func, A, B> {
@@ -111,7 +111,7 @@ impl<Func, A, B> CombinatorSystem<Func, A, B> {
             b,
             name,
             component_access: AccessTracker::new(),
-            archetype_component_access: AccessTracker::new(),
+            // archetype_component_access: AccessTracker::new(),
         }
     }
 }

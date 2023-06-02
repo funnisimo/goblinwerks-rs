@@ -1,13 +1,10 @@
+use crate as bevy_ecs;
+use crate::change_detection::DetectChangesMut;
+use crate::schedule::{ScheduleLabel, SystemSet};
+use crate::world::World;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::mem;
-
-use crate as bevy_ecs;
-use crate::change_detection::DetectChangesMut;
-use crate::entity::Builder;
-use crate::schedule::{ScheduleLabel, SystemSet};
-use crate::system::Resource;
-use crate::world::World;
 
 pub use bevy_ecs_macros::States;
 

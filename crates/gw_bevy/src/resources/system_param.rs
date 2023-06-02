@@ -19,7 +19,7 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for ResRef<'a, T> {
     type State = ();
     type Item<'w, 's> = ResRef<'w, T>;
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+    fn init_state(_world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
         // world.ensure_resource::<T>();
 
         let combined_access = &system_meta.component_access_set;
@@ -79,7 +79,7 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for ResMut<'a, T> {
     type State = ();
     type Item<'w, 's> = ResMut<'w, T>;
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+    fn init_state(_world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
         // world.initialize_unique::<T>();
 
         // let component_id = world.initialize_resource::<T>();
@@ -169,6 +169,7 @@ where
     }
 
     #[inline]
+    #[allow(dead_code)]
     fn last_changed(&self) -> u32 {
         self.fetch.ticks.changed.tick
     }
@@ -213,7 +214,7 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for ReadUnique<'a, T> {
     type State = ();
     type Item<'w, 's> = ReadUnique<'w, T>;
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+    fn init_state(_world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
         // world.ensure_resource::<T>();
 
         let combined_access = &system_meta.component_access_set;
@@ -359,6 +360,7 @@ where
     }
 
     #[inline]
+    #[allow(dead_code)]
     fn last_changed(&self) -> u32 {
         self.fetch.ticks.changed.tick
     }
@@ -401,7 +403,7 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for WriteUnique<'a, T> {
     type State = ();
     type Item<'w, 's> = WriteUnique<'w, T>;
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+    fn init_state(_world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
         // world.initialize_unique::<T>();
 
         // let component_id = world.initialize_resource::<T>();
@@ -554,6 +556,7 @@ where
     }
 
     #[inline]
+    #[allow(dead_code)]
     fn last_changed(&self) -> u32 {
         self.fetch.ticks.changed.tick
     }
@@ -590,7 +593,7 @@ unsafe impl<'a, T: 'static> SystemParam for ReadNonSendUnique<'a, T> {
     type State = ();
     type Item<'w, 's> = ReadNonSendUnique<'w, T>;
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+    fn init_state(_world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
         system_meta.set_non_send();
 
         // world.initialize_non_send_unique::<T>();
@@ -616,7 +619,7 @@ unsafe impl<'a, T: 'static> SystemParam for ReadNonSendUnique<'a, T> {
 
     #[inline]
     unsafe fn get_param<'w, 's>(
-        &mut component_id: &'s mut Self::State,
+        &mut _component_id: &'s mut Self::State,
         system_meta: &SystemMeta,
         world: &'w World,
         change_tick: u32,
@@ -649,7 +652,7 @@ unsafe impl<T: 'static> SystemParam for Option<ReadNonSendUnique<'_, T>> {
 
     #[inline]
     unsafe fn get_param<'w, 's>(
-        &mut component_id: &'s mut Self::State,
+        &mut _component_id: &'s mut Self::State,
         system_meta: &SystemMeta,
         world: &'w World,
         change_tick: u32,
@@ -709,6 +712,7 @@ where
     }
 
     #[inline]
+    #[allow(dead_code)]
     fn last_changed(&self) -> u32 {
         self.fetch.ticks.changed.tick
     }
@@ -751,7 +755,7 @@ unsafe impl<'a, T: 'static> SystemParam for WriteNonSendUnique<'a, T> {
     type State = ();
     type Item<'w, 's> = WriteNonSendUnique<'w, T>;
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+    fn init_state(_world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
         system_meta.set_non_send();
 
         // world.initialize_non_send_resource::<T>();
@@ -781,7 +785,7 @@ unsafe impl<'a, T: 'static> SystemParam for WriteNonSendUnique<'a, T> {
 
     #[inline]
     unsafe fn get_param<'w, 's>(
-        &mut component_id: &'s mut Self::State,
+        &mut _component_id: &'s mut Self::State,
         system_meta: &SystemMeta,
         world: &'w World,
         change_tick: u32,

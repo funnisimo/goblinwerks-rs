@@ -13,7 +13,7 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for ReadGlobal<'a, T> {
     type State = ();
     type Item<'w, 's> = ReadGlobal<'w, T>;
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+    fn init_state(_world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
         // world.initialize_global::<T>();
 
         let combined_access = &system_meta.component_access_set;
@@ -111,7 +111,7 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for WriteGlobal<'a, T> {
     type State = ();
     type Item<'w, 's> = WriteGlobal<'w, T>;
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+    fn init_state(_world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
         // world.initialize_global::<T>();
 
         // let component_id = world.initialize_resource::<T>();
@@ -224,7 +224,7 @@ unsafe impl<'a, T: 'static> SystemParam for ReadNonSendGlobal<'a, T> {
     type State = ();
     type Item<'w, 's> = ReadNonSendGlobal<'w, T>;
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+    fn init_state(_world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
         system_meta.set_non_send();
 
         // world.initialize_non_send_global::<T>();
@@ -250,7 +250,7 @@ unsafe impl<'a, T: 'static> SystemParam for ReadNonSendGlobal<'a, T> {
 
     #[inline]
     unsafe fn get_param<'w, 's>(
-        &mut component_id: &'s mut Self::State,
+        &mut _component_id: &'s mut Self::State,
         system_meta: &SystemMeta,
         world: &'w World,
         change_tick: u32,
@@ -283,7 +283,7 @@ unsafe impl<T: 'static> SystemParam for Option<ReadNonSendGlobal<'_, T>> {
 
     #[inline]
     unsafe fn get_param<'w, 's>(
-        &mut component_id: &'s mut Self::State,
+        &mut _component_id: &'s mut Self::State,
         system_meta: &SystemMeta,
         world: &'w World,
         change_tick: u32,
@@ -301,7 +301,7 @@ unsafe impl<'a, T: 'static> SystemParam for WriteNonSendGlobal<'a, T> {
     type State = ();
     type Item<'w, 's> = WriteNonSendGlobal<'w, T>;
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+    fn init_state(_world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
         system_meta.set_non_send();
 
         // world.initialize_non_send_resource::<T>();
@@ -331,7 +331,7 @@ unsafe impl<'a, T: 'static> SystemParam for WriteNonSendGlobal<'a, T> {
 
     #[inline]
     unsafe fn get_param<'w, 's>(
-        &mut component_id: &'s mut Self::State,
+        &mut _component_id: &'s mut Self::State,
         system_meta: &SystemMeta,
         world: &'w World,
         change_tick: u32,

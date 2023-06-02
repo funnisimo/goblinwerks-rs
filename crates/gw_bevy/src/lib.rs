@@ -27,7 +27,7 @@ pub mod system;
 pub mod tick;
 pub mod world;
 
-use std::any::TypeId;
+// use std::any::TypeId;
 
 pub use bevy_ptr as ptr;
 
@@ -47,10 +47,11 @@ pub mod prelude {
         ecs::Ecs,
         entity::{Builder, Entities, EntitiesMut, Entity},
         event::{Event, EventReader, EventWriter, Events},
+        globals::{ReadGlobal, WriteGlobal},
         join::Join,
         // query::{Added, AnyOf, Changed, Or, QueryState, With, Without},
         // removal_detection::RemovedComponents,
-        resources::Resource,
+        resources::{ReadUnique, Resource, WriteUnique},
         schedule::{
             apply_state_transition, apply_system_buffers, common_conditions::*, Condition,
             IntoSystemConfig, IntoSystemConfigs, IntoSystemSet, IntoSystemSetConfig,
@@ -79,20 +80,18 @@ pub mod prelude {
 pub use bevy_utils::all_tuples;
 
 /// A specialized hashmap type with Key of `TypeId`
-type TypeIdMap<V> = rustc_hash::FxHashMap<TypeId, V>;
+// type TypeIdMap<V> = rustc_hash::FxHashMap<TypeId, V>;
 
 #[cfg(test)]
 mod tests {
     use crate as gw_bevy;
     // use crate::prelude::Or;
     use crate::prelude::*;
-    use bevy_tasks::{ComputeTaskPool, TaskPool};
     use std::{
-        any::TypeId,
         marker::PhantomData,
         sync::{
             atomic::{AtomicUsize, Ordering},
-            Arc, Mutex,
+            Arc,
         },
     };
 
@@ -728,7 +727,7 @@ mod tests {
         }
 
         for (i, entity) in entities.iter().cloned().enumerate() {
-            world.write_component::<A>().insert(entity, A(i));
+            let _ = world.write_component::<A>().insert(entity, A(i));
         }
 
         for (i, entity) in entities.iter().cloned().enumerate() {
@@ -748,7 +747,7 @@ mod tests {
         }
 
         for (i, entity) in entities.iter().cloned().enumerate() {
-            world
+            let _ = world
                 .write_component::<SparseStored>()
                 .insert(entity, SparseStored(i as u32));
         }
@@ -1144,7 +1143,7 @@ mod tests {
         let mut world = World::default();
         world.register::<A>();
         let e = world.create_entity().id();
-        world.write_component::<A>().insert(e, A(0));
+        let _ = world.write_component::<A>().insert(e, A(0));
         assert_eq!(world.read_component::<A>().get(e).unwrap(), &A(0));
     }
 
@@ -1563,7 +1562,7 @@ mod tests {
         let mut world = World::default();
         world.register::<DropCk>();
 
-        let e = world.create_entity().with(dropck1).with(dropck2).id();
+        let _e = world.create_entity().with(dropck1).with(dropck2).id();
 
         assert_eq!(dropped1.load(Ordering::Relaxed), 1);
         assert_eq!(dropped2.load(Ordering::Relaxed), 0);

@@ -5,12 +5,11 @@ use crate::{
     self as bevy_ecs,
     components::ComponentSet,
     // bundle::Bundle,
-    entity::{Entities, EntitiesRes, Entity},
+    entity::{EntitiesRes, Entity},
     resources::ResRef,
     world::{FromWorld, World},
 };
 use bevy_ecs_macros::SystemParam;
-use bevy_utils::tracing::{error, info};
 pub use command_queue::CommandQueue;
 pub use parallel_scope::*;
 use std::marker::PhantomData;
@@ -1010,7 +1009,7 @@ mod tests {
         self as gw_bevy,
         join::Join,
         prelude::Component,
-        system::{CommandQueue, Commands, Resource},
+        system::{CommandQueue, Commands},
         world::World,
     };
     use std::sync::{

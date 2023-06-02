@@ -20,7 +20,7 @@ use std::ops::Deref;
 use std::panic::AssertUnwindSafe;
 use std::sync::Arc;
 
-use crate as bevy_ecs;
+// use crate as bevy_ecs;
 
 /// A funky borrow split of [`SystemSchedule`] required by the [`MultiThreadedExecutor`].
 struct SyncUnsafeSchedule<'a> {
@@ -327,7 +327,7 @@ impl MultiThreadedExecutor {
         system_index: usize,
         system: &mut BoxedSystem,
         conditions: &mut Conditions,
-        world: &World,
+        _world: &World,
     ) -> bool {
         let system_meta = &self.system_task_metadata[system_index];
         if system_meta.is_exclusive && self.num_running_systems > 0 {

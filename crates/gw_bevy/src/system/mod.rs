@@ -150,31 +150,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::any::TypeId;
 
     use crate as gw_bevy;
-    use crate::resources::{ReadNonSendUnique, ReadUnique, WriteNonSendUnique, WriteUnique};
-    use crate::{
-        // archetype::{ArchetypeComponentId, Archetypes},
-        // bundle::Bundles,
-        change_detection::DetectChanges,
-        components::Component,
-        entity::{Builder, Entities, Entity},
-        // prelude::AnyOf,
-        // query::{Added, Changed, Or, With, Without},
-        schedule::{apply_system_buffers, IntoSystemConfig, Schedule},
-        system::{
-            Commands,
-            IntoSystem,
-            Local,
-            ParamSet,
-            // Query, QueryComponentError,
-            Resource,
-            System,
-            SystemState,
-        },
-        world::{FromWorld, World},
-    };
+    use crate::prelude::*;
+    use crate::resources::{ReadNonSendUnique, WriteNonSendUnique};
     use bevy_ecs_macros::Component;
 
     #[derive(PartialEq, Debug)]

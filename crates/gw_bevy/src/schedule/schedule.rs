@@ -1,30 +1,28 @@
-use std::{
-    fmt::{Debug, Write},
-    result::Result,
+use crate::{
+    // self as bevy_ecs,
+    access::AccessItem,
+    components::Components,
+    resources::ResRef,
+    // component::{ComponentId, Components},
+    schedule::*,
+    system::{BoxedSystem, System},
+    world::World,
 };
-
 use bevy_utils::default;
-#[cfg(feature = "trace")]
-use bevy_utils::tracing::info_span;
 use bevy_utils::{
     petgraph::{algo::TarjanScc, prelude::*},
     thiserror::Error,
     tracing::{error, warn},
     HashMap, HashSet,
 };
-
 use fixedbitset::FixedBitSet;
-
-use crate::{
-    self as bevy_ecs,
-    access::AccessItem,
-    components::Components,
-    resources::ResRef,
-    // component::{ComponentId, Components},
-    schedule::*,
-    system::{BoxedSystem, Resource, System},
-    world::World,
+use std::{
+    fmt::{Debug, Write},
+    result::Result,
 };
+
+#[cfg(feature = "trace")]
+use bevy_utils::tracing::info_span;
 
 /// Resource that stores [`Schedule`]s mapped to [`ScheduleLabel`]s.
 #[derive(Default)]
@@ -102,6 +100,7 @@ impl Schedules {
     /// Iterates the change ticks of all systems in all stored schedules and clamps any older than
     /// [`MAX_CHANGE_AGE`](crate::change_detection::MAX_CHANGE_AGE).
     /// This prevents overflow and thus prevents false positives.
+    #[allow(dead_code)]
     pub(crate) fn check_change_ticks(&mut self, change_tick: u32) {
         #[cfg(feature = "trace")]
         let _all_span = info_span!("check stored schedule ticks").entered();
@@ -1525,7 +1524,7 @@ impl ScheduleGraph {
     fn report_conflicts(
         &self,
         ambiguities: &[(NodeId, NodeId, Vec<AccessItem>)],
-        components: ResRef<Components>,
+        _components: ResRef<Components>,
     ) {
         let n_ambiguities = ambiguities.len();
 

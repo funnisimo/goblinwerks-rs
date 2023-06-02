@@ -3,10 +3,9 @@
 use super::Drain;
 use crate::components::Component;
 use crate::entity::EntitiesRes;
-use crate::resources::ReadUnique;
 use crate::{components::CastFrom, resources::ResRef, world::World};
 use crate::{
-    entity::{Entities, Entity, EntityBuilder, Index},
+    entity::{Entity, EntityBuilder, Index},
     error::{Error, WrongGeneration},
     join::Join,
 };

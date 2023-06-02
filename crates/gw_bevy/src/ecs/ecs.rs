@@ -1,8 +1,7 @@
 use crate::components::Component;
 use crate::entity::Entity;
 use crate::globals::{GlobalMut, GlobalRef, Globals};
-use crate::resources::{ResMut, ResRef, Resource};
-use crate::system::Commands;
+use crate::resources::Resource;
 use crate::world::World;
 use atomize::Atom;
 

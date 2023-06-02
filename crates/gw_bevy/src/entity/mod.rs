@@ -234,6 +234,7 @@ impl EntityAllocator {
     }
 
     /// Allocate a new entity
+    #[allow(dead_code)]
     pub fn allocate(&mut self) -> Entity {
         let id = self.cache.pop().unwrap_or_else(|| {
             let id = *self.max_id.get_mut();
