@@ -570,7 +570,7 @@ impl<'w> UnsafeEntityCell<'w> {
             get_component(
                 self.world,
                 component_id,
-                T::Storage::STORAGE_TYPE,
+                StorageType::Table, //T::Storage::STORAGE_TYPE,
                 self.entity,
                 self.location,
             )
@@ -597,7 +597,7 @@ impl<'w> UnsafeEntityCell<'w> {
             get_ticks(
                 self.world,
                 component_id,
-                T::Storage::STORAGE_TYPE,
+                StorageType::Table, //T::Storage::STORAGE_TYPE,
                 self.entity,
                 self.location,
             )
@@ -668,7 +668,7 @@ impl<'w> UnsafeEntityCell<'w> {
             get_component_and_ticks(
                 self.world,
                 component_id,
-                T::Storage::STORAGE_TYPE,
+                StorageType::Table, // T::Storage::STORAGE_TYPE,
                 self.entity,
                 self.location,
             )

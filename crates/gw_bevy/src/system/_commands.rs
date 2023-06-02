@@ -1,9 +1,13 @@
 use crate::{
-    specs::{prelude::*, world::EntitiesRes},
-    Ecs,
+    components::ComponentSet,
+    ecs::Ecs,
+    entity::Builder,
+    {entity::EntitiesRes, prelude::*},
 };
 use crossbeam_queue::SegQueue;
 use std::sync::Arc;
+
+use super::SystemParam;
 
 pub(crate) struct Queue<T>(SegQueue<T>);
 
@@ -13,27 +17,25 @@ impl<T> Default for Queue<T> {
     }
 }
 
-#[cfg(feature = "parallel")]
 pub trait CommandsInternal: Send + Sync {
     fn update(self: Box<Self>, world: &mut World);
 }
 
-#[cfg(not(feature = "parallel"))]
-pub trait CommandsInternal {
-    fn update(self: Box<Self>, world: &mut World);
-}
+// #[cfg(not(feature = "parallel"))]
+// pub trait CommandsInternal {
+//     fn update(self: Box<Self>, world: &mut World);
+// }
 
 /// An updte that works on the whole Ecs
-#[cfg(feature = "parallel")]
-pub trait CommandsEcsInternal: Send + Sync {
+pub trait CommandsEcsInternal: Send {
     /// Do the update
     fn update(self: Box<Self>, ecs: &mut Ecs);
 }
 
-#[cfg(not(feature = "parallel"))]
-pub trait CommandsEcsInternal {
-    fn update(self: Box<Self>, ecs: &mut Ecs);
-}
+// #[cfg(not(feature = "parallel"))]
+// pub trait CommandsEcsInternal {
+//     fn update(self: Box<Self>, ecs: &mut Ecs);
+// }
 
 /// Generates two versions of functions within the macro call:
 ///
@@ -112,13 +114,26 @@ impl<'a> Builder for LazyBuilder<'a> {
         {
             let entity = self.entity;
             self.lazy.exec(move |world| {
-                let mut storage: WriteComp<C> = SystemData::fetch(world);
+                let mut storage = world.write_component::<C>();
                 if storage.insert(entity, component).is_err() {
                     log::warn!(
                         "Lazy insert of component failed because {:?} was dead.",
                         entity
                     );
                 }
+            });
+
+            self
+        }
+    }
+
+    parallel_feature! {
+        fn spawn<C>(self, c: C) -> Self where C: ComponentSet, {
+
+            let entity = self.entity;
+
+            self.lazy.exec(move |world| {
+                c.insert(world, entity);
             });
 
             self
@@ -133,7 +148,7 @@ impl<'a> Builder for LazyBuilder<'a> {
     }
 }
 
-#[cfg(feature = "parallel")]
+// #[cfg(feature = "parallel")]
 impl<F> CommandsInternal for F
 where
     F: FnOnce(&mut World) + Send + Sync + 'static,
@@ -143,35 +158,36 @@ where
     }
 }
 
-#[cfg(not(feature = "parallel"))]
-impl<F> CommandsInternal for F
-where
-    F: FnOnce(&mut World) + 'static,
-{
-    fn update(self: Box<Self>, world: &mut World) {
-        self(world);
-    }
-}
+// #[cfg(not(feature = "parallel"))]
+// impl<F> CommandsInternal for F
+// where
+//     F: FnOnce(&mut World) + 'static,
+// {
+//     fn update(self: Box<Self>, world: &mut World) {
+//         self(world);
+//     }
+// }
 
-#[cfg(feature = "parallel")]
+// These have to run on main thread - the send is so that child threads can send the data to the main thread
+// #[cfg(feature = "parallel")]
 impl<F> CommandsEcsInternal for F
 where
-    F: FnOnce(&mut Ecs) + Send + Sync + 'static,
+    F: FnOnce(&mut Ecs) + Send + 'static,
 {
     fn update(self: Box<Self>, ecs: &mut Ecs) {
         self(ecs);
     }
 }
 
-#[cfg(not(feature = "parallel"))]
-impl<F> CommandsEcsInternal for F
-where
-    F: FnOnce(&mut Ecs) + 'static,
-{
-    fn update(self: Box<Self>, ecs: &mut Ecs) {
-        self(ecs);
-    }
-}
+// #[cfg(not(feature = "parallel"))]
+// impl<F> CommandsEcsInternal for F
+// where
+//     F: FnOnce(&mut Ecs) + 'static,
+// {
+//     fn update(self: Box<Self>, ecs: &mut Ecs) {
+//         self(ecs);
+//     }
+// }
 
 /// Lazy updates can be used for world updates
 /// that need to borrow a lot of resources
@@ -216,7 +232,7 @@ impl Commands {
         /// ```
         pub fn insert_global<G>(&self, global: G)
         where
-            G: Resource,
+            G: Resource + Send + Sync,
         {
             self.exec(move |world| {
                 world.insert_global(global);
@@ -273,7 +289,7 @@ impl Commands {
         /// ```
         pub fn insert_resource<G>(&self, global: G)
         where
-            G: Resource,
+            G: Resource + Send + Sync,
         {
             self.exec(move |world| {
                 world.insert_resource(global);
@@ -337,7 +353,7 @@ impl Commands {
             C: Component,
         {
             self.exec(move |world| {
-                let mut storage: WriteComp<C> = SystemData::fetch(world);
+                let mut storage = world.write_component::<C>();
                 if storage.insert(e, c).is_err() {
                     log::warn!("Lazy insert of component failed because {:?} was dead.", e);
                 }
@@ -373,10 +389,10 @@ impl Commands {
         pub fn insert_all_components<C, I>(&self, iter: I)
         where
             C: Component,
-            I: IntoIterator<Item = (Entity, C)> + 'static,
+            I: IntoIterator<Item = (Entity, C)> + Send + Sync + 'static,
         {
             self.exec(move |world| {
-                let mut storage: WriteComp<C> = SystemData::fetch(world);
+                let mut storage = world.write_component::<C>();
                 for (e, c) in iter {
                     if storage.insert(e, c).is_err() {
                         log::warn!("Lazy insert of component failed because {:?} was dead.", e);
@@ -415,7 +431,7 @@ impl Commands {
             C: Component,
         {
             self.exec(move |world| {
-                let mut storage: WriteComp<C> = SystemData::fetch(world);
+                let mut storage = world.write_component::<C>();
                 storage.remove(e);
             });
         }
@@ -451,7 +467,7 @@ impl Commands {
         /// ```
         pub fn exec<F>(&self, f: F)
         where
-            F: FnOnce(&mut World) + 'static,
+            F: FnOnce(&mut World) + Send + Sync + 'static,
         {
             self.queue
                 .0
@@ -485,7 +501,7 @@ impl Commands {
         /// ```
         pub fn exec_ecs<F>(&self, f: F)
         where
-            F: FnOnce(&mut Ecs) + 'static,
+            F: FnOnce(&mut Ecs) + Send + 'static,
         {
             self.queue_ecs.0.push(Box::new(f));
         }

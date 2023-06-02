@@ -1,7 +1,7 @@
 use bevy_utils::tracing::error;
 
 use crate::{
-    archetype::ArchetypeComponentId,
+    // archetype::ArchetypeComponentId,
     event::{Event, Events},
     storage::SparseSet,
     system::Resource,

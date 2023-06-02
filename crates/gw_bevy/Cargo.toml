@@ -18,3 +18,10 @@ fixedbitset     = "0.4.2"
 rustc-hash      = "1.1"
 downcast-rs     = "1.2"
 serde           = { version = "1", features = ["derive"] }
+hibitset        = { version = "0.6.3", default-features = false }
+tuple_utils     = "0.4.0"
+log             = "0.4.17"
+crossbeam-queue = "0.3.8"
+
+[dev-dependencies]
+rand = "0.8"

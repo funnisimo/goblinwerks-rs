@@ -1,11 +1,12 @@
-use std::cell::Cell;
+use std::{cell::Cell, marker::PhantomData};
 
 use thread_local::ThreadLocal;
 
 use crate::{
     self as bevy_ecs,
-    entity::Entities,
+    entity::{Entities, EntitiesRes},
     prelude::World,
+    resources::{ReadUnique, ResRef},
     system::{Deferred, SystemBuffer, SystemMeta, SystemParam},
 };
 
@@ -45,7 +46,7 @@ struct ParallelCommandQueue {
 #[derive(SystemParam)]
 pub struct ParallelCommands<'w, 's> {
     state: Deferred<'s, ParallelCommandQueue>,
-    entities: &'w Entities,
+    entities: ResRef<'w, EntitiesRes>,
 }
 
 impl SystemBuffer for ParallelCommandQueue {
@@ -69,7 +70,7 @@ impl<'w, 's> ParallelCommands<'w, 's> {
 
         let r = f(Commands::new_from_entities(
             &mut command_queue,
-            self.entities,
+            ResRef::clone(&self.entities),
         ));
 
         command_queue_cell.set(command_queue);

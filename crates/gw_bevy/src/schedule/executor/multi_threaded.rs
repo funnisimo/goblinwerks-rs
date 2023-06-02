@@ -1,8 +1,8 @@
 use crate::{
     // query::Access,
     access::AccessTracker,
-    archetype::ArchetypeComponentId,
-    prelude::Resource,
+    // archetype::ArchetypeComponentId,
+    // prelude::Resource,
     schedule::{
         is_apply_system_buffers, BoxedCondition, ExecutorKind, SystemExecutor, SystemSchedule,
     },
@@ -16,6 +16,7 @@ use bevy_utils::syncunsafecell::SyncUnsafeCell;
 #[cfg(feature = "trace")]
 use bevy_utils::tracing::{info_span, Instrument};
 use fixedbitset::FixedBitSet;
+use std::ops::Deref;
 use std::panic::AssertUnwindSafe;
 use std::sync::Arc;
 
@@ -163,8 +164,8 @@ impl SystemExecutor for MultiThreadedExecutor {
         }
 
         let thread_executor = world
-            .get_resource::<MainThreadExecutor>()
-            .map(|e| e.0.clone());
+            .try_read_global::<MainThreadExecutor>()
+            .map(|e| e.deref().0.clone());
         let thread_executor = thread_executor.as_deref();
 
         let world = SyncUnsafeCell::from_mut(world);
@@ -342,9 +343,9 @@ impl MultiThreadedExecutor {
             .difference(&self.evaluated_sets)
         {
             for condition in &mut conditions.set_conditions[set_idx] {
-                condition.update_archetype_component_access(world);
+                // condition.update_archetype_component_access(world);
                 if !condition
-                    .archetype_component_access()
+                    .component_access()
                     .is_compatible(&self.active_access)
                 {
                     return false;
@@ -353,9 +354,9 @@ impl MultiThreadedExecutor {
         }
 
         for condition in &mut conditions.system_conditions[system_index] {
-            condition.update_archetype_component_access(world);
+            // condition.update_archetype_component_access(world);
             if !condition
-                .archetype_component_access()
+                .component_access()
                 .is_compatible(&self.active_access)
             {
                 return false;
@@ -363,11 +364,8 @@ impl MultiThreadedExecutor {
         }
 
         if !self.skipped_systems.contains(system_index) {
-            system.update_archetype_component_access(world);
-            if !system
-                .archetype_component_access()
-                .is_compatible(&self.active_access)
-            {
+            // system.update_archetype_component_access(world);
+            if !system.component_access().is_compatible(&self.active_access) {
                 return false;
             }
 
@@ -375,7 +373,7 @@ impl MultiThreadedExecutor {
             let meta_access =
                 &mut self.system_task_metadata[system_index].archetype_component_access;
             meta_access.clear();
-            meta_access.extend(system.archetype_component_access());
+            meta_access.extend(system.component_access());
         }
 
         true

@@ -1,6 +1,9 @@
 use std::{
     any::{Any, TypeId},
+    cmp::Ordering,
     fmt::Debug,
+    hash::Hash,
+    marker::PhantomData,
 };
 
 // SOURCE - SHRED + LEGION
@@ -13,7 +16,7 @@ use std::{
 /// at run time, without having different static types.
 ///
 /// [`Resource`]: trait.Resource.html
-#[derive(Clone, Eq, Ord, Hash, PartialEq, PartialOrd)]
+#[derive(Clone, Eq, Ord)]
 pub struct ResourceId {
     type_id: TypeId,
     dynamic_id: u64,
@@ -23,20 +26,20 @@ pub struct ResourceId {
 impl ResourceId {
     /// Creates a new resource id from a given type.
     #[inline]
-    pub fn new<T: Resource>() -> Self {
+    pub fn new<T: 'static>() -> Self {
         ResourceId::new_with_dynamic_id::<T>(0)
     }
 
     #[inline]
-    pub fn of<T: Resource>() -> Self {
+    pub fn of<T: 'static>() -> Self {
         ResourceId::new_with_dynamic_id::<T>(0)
     }
 
-    // /// Create a new resource id from a raw type ID.
-    // #[inline]
-    // pub fn from_type_id(type_id: TypeId) -> Self {
-    //     ResourceId::from_type_id_and_dynamic_id(type_id, 0)
-    // }
+    /// Create a new resource id from a raw type ID.
+    #[inline]
+    pub fn from_type_id(type_id: TypeId) -> Self {
+        ResourceId::from_type_id_and_dynamic_id(type_id, 0, "Unknown")
+    }
 
     /// Creates a new resource id from a given type and a `dynamic_id`.
     ///
@@ -48,7 +51,7 @@ impl ResourceId {
     /// scripting; most libraries will just assume that resources are
     /// identified only by their type.
     #[inline]
-    pub fn new_with_dynamic_id<T: Resource>(dynamic_id: u64) -> Self {
+    pub fn new_with_dynamic_id<T: 'static>(dynamic_id: u64) -> Self {
         ResourceId::from_type_id_and_dynamic_id(
             TypeId::of::<T>(),
             dynamic_id,
@@ -85,12 +88,54 @@ impl ResourceId {
     }
 }
 
+// #[derive(Clone, Eq, Ord, Hash, PartialEq, PartialOrd)]
+
+impl Hash for ResourceId {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.type_id.hash(state);
+        state.write_u64(self.dynamic_id);
+    }
+}
+
+impl PartialEq for ResourceId {
+    fn eq(&self, other: &Self) -> bool {
+        self.type_id == other.type_id && self.dynamic_id == other.dynamic_id
+    }
+}
+
+impl PartialOrd for ResourceId {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match self.type_id.partial_cmp(&other.type_id) {
+            None => None,
+            Some(Ordering::Equal) => self.dynamic_id.partial_cmp(&other.dynamic_id),
+            x => x,
+        }
+    }
+}
+
 impl Debug for ResourceId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.dynamic_id != 0 {
             write!(f, "<{}[{}]>", self.name, self.dynamic_id)
         } else {
             write!(f, "<{}>", self.name)
+        }
+    }
+}
+
+pub struct ResourceIdOf<T> {
+    pub(crate) id: ResourceId,
+    phantom: PhantomData<T>,
+}
+
+impl<T> Default for ResourceIdOf<T>
+where
+    T: 'static,
+{
+    fn default() -> Self {
+        ResourceIdOf {
+            id: ResourceId::of::<T>(),
+            phantom: PhantomData,
         }
     }
 }
@@ -108,9 +153,20 @@ impl Debug for ResourceId {
 pub trait Resource: Any + 'static {}
 
 // #[cfg(feature = "parallel")]
-// impl<T> Resource for T where T: Any + Send + Sync {}
+// impl<T> Resource for T where T: Any  {}
 // #[cfg(not(feature = "parallel"))]
 impl<T> Resource for T where T: Any + 'static {}
+
+// /// A resource is a data slot which lives in the `World` can only be accessed
+// /// according to Rust's typical borrowing model (one writer xor multiple
+// /// readers).
+// // #[cfg(not(feature = "parallel"))]
+// pub trait NonSend: Any + 'static {}
+
+// // #[cfg(feature = "parallel")]
+// // impl<T> NonSend for T where T: Any + Send + Sync {}
+// // #[cfg(not(feature = "parallel"))]
+// impl<T> NonSend for T where T: Any + 'static {}
 
 // Code is based on https://github.com/chris-morgan/mopa
 // with the macro inlined for `Resource`. License files can be found in the

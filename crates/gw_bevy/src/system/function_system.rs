@@ -1,7 +1,7 @@
 use crate::{
     // query::{Access, FilteredAccessSet},
     access::AccessTracker,
-    archetype::{ArchetypeGeneration, ArchetypeId},
+    // archetype::{ArchetypeGeneration, ArchetypeId},
     change_detection::MAX_CHANGE_AGE,
     prelude::FromWorld,
     system::{check_system_change_tick, ReadOnlySystemParam, System, SystemParam, SystemParamItem},
@@ -145,7 +145,7 @@ pub struct SystemState<Param: SystemParam + 'static> {
     meta: SystemMeta,
     param_state: Param::State,
     world_id: WorldId,
-    archetype_generation: ArchetypeGeneration,
+    // archetype_generation: ArchetypeGeneration,
 }
 
 impl<Param: SystemParam> SystemState<Param> {
@@ -157,7 +157,7 @@ impl<Param: SystemParam> SystemState<Param> {
             meta,
             param_state,
             world_id: world.id(),
-            archetype_generation: ArchetypeGeneration::initial(),
+            // archetype_generation: ArchetypeGeneration::initial(),
         }
     }
 
@@ -173,7 +173,7 @@ impl<Param: SystemParam> SystemState<Param> {
         Param: ReadOnlySystemParam,
     {
         self.validate_world(world);
-        self.update_archetypes(world);
+        // self.update_archetypes(world);
         // SAFETY: Param is read-only and doesn't allow mutable access to World. It also matches the World this SystemState was created with.
         unsafe { self.get_unchecked_manual(world) }
     }
@@ -182,7 +182,7 @@ impl<Param: SystemParam> SystemState<Param> {
     #[inline]
     pub fn get_mut<'w, 's>(&'s mut self, world: &'w mut World) -> SystemParamItem<'w, 's, Param> {
         self.validate_world(world);
-        self.update_archetypes(world);
+        // self.update_archetypes(world);
         // SAFETY: World is uniquely borrowed and matches the World this SystemState was created with.
         unsafe { self.get_unchecked_manual(world) }
     }
@@ -206,27 +206,27 @@ impl<Param: SystemParam> SystemState<Param> {
         assert!(self.matches_world(world), "Encountered a mismatched World. A SystemState cannot be used with Worlds other than the one it was created with.");
     }
 
-    /// Updates the state's internal view of the `world`'s archetypes. If this is not called before fetching the parameters,
-    /// the results may not accurately reflect what is in the `world`.
-    ///
-    /// This is only required if [`SystemState::get_manual`] or [`SystemState::get_manual_mut`] is being called, and it only needs to
-    /// be called if the `world` has been structurally mutated (i.e. added/removed a component or resource). Users using
-    /// [`SystemState::get`] or [`SystemState::get_mut`] do not need to call this as it will be automatically called for them.
-    #[inline]
-    pub fn update_archetypes(&mut self, world: &World) {
-        let archetypes = world.archetypes();
-        let new_generation = archetypes.generation();
-        let old_generation = std::mem::replace(&mut self.archetype_generation, new_generation);
-        let archetype_index_range = old_generation.value()..new_generation.value();
+    // /// Updates the state's internal view of the `world`'s archetypes. If this is not called before fetching the parameters,
+    // /// the results may not accurately reflect what is in the `world`.
+    // ///
+    // /// This is only required if [`SystemState::get_manual`] or [`SystemState::get_manual_mut`] is being called, and it only needs to
+    // /// be called if the `world` has been structurally mutated (i.e. added/removed a component or resource). Users using
+    // /// [`SystemState::get`] or [`SystemState::get_mut`] do not need to call this as it will be automatically called for them.
+    // #[inline]
+    // pub fn update_archetypes(&mut self, world: &World) {
+    //     let archetypes = world.archetypes();
+    //     let new_generation = archetypes.generation();
+    //     let old_generation = std::mem::replace(&mut self.archetype_generation, new_generation);
+    //     let archetype_index_range = old_generation.value()..new_generation.value();
 
-        for archetype_index in archetype_index_range {
-            Param::new_archetype(
-                &mut self.param_state,
-                &archetypes[ArchetypeId::new(archetype_index)],
-                &mut self.meta,
-            );
-        }
-    }
+    //     for archetype_index in archetype_index_range {
+    //         Param::new_archetype(
+    //             &mut self.param_state,
+    //             &archetypes[ArchetypeId::new(archetype_index)],
+    //             &mut self.meta,
+    //         );
+    //     }
+    // }
 
     /// Retrieve the [`SystemParam`] values. This can only be called when all parameters are read-only.
     /// This will not update the state's view of the world's archetypes automatically nor increment the
@@ -242,7 +242,7 @@ impl<Param: SystemParam> SystemState<Param> {
         Param: ReadOnlySystemParam,
     {
         self.validate_world(world);
-        let change_tick = world.read_change_tick();
+        let change_tick = world.change_tick();
         // SAFETY: Param is read-only and doesn't allow mutable access to World. It also matches the World this SystemState was created with.
         unsafe { self.fetch(world, change_tick) }
     }
@@ -376,7 +376,7 @@ where
     param_state: Option<<F::Param as SystemParam>::State>,
     system_meta: SystemMeta,
     world_id: Option<WorldId>,
-    archetype_generation: ArchetypeGeneration,
+    // archetype_generation: ArchetypeGeneration,
     // NOTE: PhantomData<fn()-> T> gives this safe Send/Sync impls
     marker: PhantomData<fn() -> Marker>,
 }
@@ -395,7 +395,7 @@ where
             param_state: None,
             system_meta: SystemMeta::new::<F>(),
             world_id: None,
-            archetype_generation: ArchetypeGeneration::initial(),
+            // archetype_generation: ArchetypeGeneration::initial(),
             marker: PhantomData,
         }
     }
@@ -434,10 +434,10 @@ where
         &self.system_meta.component_access_set
     }
 
-    #[inline]
-    fn archetype_component_access(&self) -> &AccessTracker {
-        &self.system_meta.archetype_component_access
-    }
+    // #[inline]
+    // fn archetype_component_access(&self) -> &AccessTracker {
+    //     &self.system_meta.archetype_component_access
+    // }
 
     #[inline]
     fn is_send(&self) -> bool {
@@ -489,22 +489,22 @@ where
         self.param_state = Some(F::Param::init_state(world, &mut self.system_meta));
     }
 
-    fn update_archetype_component_access(&mut self, world: &World) {
-        assert!(self.world_id == Some(world.id()), "Encountered a mismatched World. A System cannot be used with Worlds other than the one it was initialized with.");
-        let archetypes = world.archetypes();
-        let new_generation = archetypes.generation();
-        let old_generation = std::mem::replace(&mut self.archetype_generation, new_generation);
-        let archetype_index_range = old_generation.value()..new_generation.value();
+    // fn update_archetype_component_access(&mut self, world: &World) {
+    //     assert!(self.world_id == Some(world.id()), "Encountered a mismatched World. A System cannot be used with Worlds other than the one it was initialized with.");
+    //     let archetypes = world.archetypes();
+    //     let new_generation = archetypes.generation();
+    //     let old_generation = std::mem::replace(&mut self.archetype_generation, new_generation);
+    //     let archetype_index_range = old_generation.value()..new_generation.value();
 
-        for archetype_index in archetype_index_range {
-            let param_state = self.param_state.as_mut().unwrap();
-            F::Param::new_archetype(
-                param_state,
-                &archetypes[ArchetypeId::new(archetype_index)],
-                &mut self.system_meta,
-            );
-        }
-    }
+    //     for archetype_index in archetype_index_range {
+    //         let param_state = self.param_state.as_mut().unwrap();
+    //         F::Param::new_archetype(
+    //             param_state,
+    //             &archetypes[ArchetypeId::new(archetype_index)],
+    //             &mut self.system_meta,
+    //         );
+    //     }
+    // }
 
     #[inline]
     fn check_change_tick(&mut self, change_tick: u32) {

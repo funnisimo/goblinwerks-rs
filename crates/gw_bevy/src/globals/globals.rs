@@ -2,6 +2,7 @@
 
 use crate::atomic_refcell::{AtomicBorrowRef, AtomicRefCell};
 use crate::component::Tick;
+use crate::prelude::DetectChanges;
 use crate::resources::{ResMut, ResRef, Resource, Resources};
 use std::collections::HashSet;
 use std::fmt::Debug;
@@ -31,50 +32,75 @@ impl Globals {
 
     /// Ensures that the resource is in the Globals or enters
     /// the value from the function.
-    pub fn ensure_with<G: Resource, F: FnOnce() -> G>(&mut self, func: F) {
-        self.resources.borrow_mut().ensure_with(func);
+    pub fn ensure_with<G: Resource + Send + Sync, F: FnOnce() -> G>(
+        &mut self,
+        func: F,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) {
+        self.resources
+            .borrow_mut()
+            .ensure_with(func, last_system_tick, world_tick);
     }
 
     /// Inserts a global
-    pub fn insert<G: Resource>(&mut self, global: G) {
-        self.resources.borrow_mut().insert(global);
+    pub fn insert<G: Resource + Send + Sync>(&mut self, global: G, world_tick: u32) {
+        self.resources.borrow_mut().insert(global, world_tick);
+    }
+
+    pub fn insert_non_send<G: Resource>(&mut self, global: G, world_tick: u32) {
+        self.resources
+            .borrow_mut()
+            .insert_non_send(global, world_tick);
     }
 
     /// Removes a global
-    pub fn remove<G: Resource>(&mut self) -> Option<G> {
-        self.resources.borrow_mut().remove::<G>()
+    pub fn remove<G: Resource>(&mut self, world_tick: u32) -> Option<G> {
+        self.resources.borrow_mut().remove::<G>(world_tick)
     }
 
-    pub fn fetch<'b, G: Resource>(&'b self) -> GlobalRef<'b, G> {
+    pub fn fetch<'b, G: Resource>(
+        &'b self,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) -> GlobalRef<'b, G> {
         let (globals, borrow) = self.resources.borrow().destructure();
-        let fetch = globals.get::<G>().unwrap();
+        let fetch = globals.get::<G>(last_system_tick, world_tick).unwrap();
         GlobalRef::new(borrow, fetch)
     }
 
-    pub(crate) fn try_fetch<G: Resource>(&self) -> Option<GlobalRef<G>> {
+    pub(crate) fn try_fetch<G: Resource>(
+        &self,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) -> Option<GlobalRef<G>> {
         let (globals, borrow) = self.resources.borrow().destructure();
-        match globals.get::<G>() {
+        match globals.get::<G>(last_system_tick, world_tick) {
             None => None,
             Some(fetch) => Some(GlobalRef::new(borrow, fetch)),
         }
     }
 
-    pub fn fetch_mut<G: Resource>(&self) -> GlobalMut<G> {
+    pub fn fetch_mut<G: Resource>(&self, last_system_tick: u32, world_tick: u32) -> GlobalMut<G> {
         let (globals, borrow) = self.resources.borrow().destructure();
-        let fetch = globals.get_mut::<G>().unwrap();
+        let fetch = globals.get_mut::<G>(last_system_tick, world_tick).unwrap();
         GlobalMut::new(borrow, fetch)
     }
 
-    pub fn try_fetch_mut<G: Resource>(&self) -> Option<GlobalMut<G>> {
+    pub fn try_fetch_mut<G: Resource>(
+        &self,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) -> Option<GlobalMut<G>> {
         let (globals, borrow) = self.resources.borrow().destructure();
-        match globals.get_mut::<G>() {
+        match globals.get_mut::<G>(last_system_tick, world_tick) {
             None => None,
             Some(fetch) => Some(GlobalMut::new(borrow, fetch)),
         }
     }
 
-    pub fn maintain(&mut self, ticks: u32) {
-        self.resources.borrow_mut().maintain(ticks);
+    pub fn maintain(&mut self) {
+        self.resources.borrow_mut().maintain();
     }
 
     // pub fn deleted<G: Resource>(&self) -> Option<Tick> {
@@ -120,12 +146,36 @@ where
         GlobalRef { borrow, fetch }
     }
 
-    pub fn inserted_tick(&self) -> Tick {
-        self.fetch.inserted_tick()
+    pub fn last_system_tick(&self) -> u32 {
+        self.fetch.last_system_tick
     }
 
-    pub fn updated_tick(&self) -> Tick {
-        self.fetch.updated_tick()
+    pub fn world_tick(&self) -> u32 {
+        self.fetch.world_tick
+    }
+}
+
+impl<'w, T> DetectChanges for GlobalRef<'w, T>
+where
+    T: Resource + Send + Sync,
+{
+    /// Returns `true` if the resource was added after the system last ran.
+    fn is_added(&self) -> bool {
+        self.fetch
+            .ticks
+            .is_added(self.last_system_tick(), self.world_tick())
+    }
+
+    /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
+    fn is_changed(&self) -> bool {
+        self.fetch
+            .ticks
+            .is_changed(self.last_system_tick(), self.world_tick())
+    }
+
+    #[inline]
+    fn last_changed(&self) -> u32 {
+        self.fetch.ticks.changed.tick
     }
 }
 
@@ -171,12 +221,36 @@ where
         GlobalMut { borrow, fetch }
     }
 
-    pub fn inserted_tick(&self) -> Tick {
-        self.fetch.inserted_tick()
+    pub fn last_system_tick(&self) -> u32 {
+        self.fetch.last_system_tick
     }
 
-    pub fn updated_tick(&self) -> Tick {
-        self.fetch.updated_tick()
+    pub fn world_tick(&self) -> u32 {
+        self.fetch.world_tick
+    }
+}
+
+impl<'w, T> DetectChanges for GlobalMut<'w, T>
+where
+    T: Resource + Send + Sync,
+{
+    /// Returns `true` if the resource was added after the system last ran.
+    fn is_added(&self) -> bool {
+        self.fetch
+            .ticks
+            .is_added(self.last_system_tick(), self.world_tick())
+    }
+
+    /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
+    fn is_changed(&self) -> bool {
+        self.fetch
+            .ticks
+            .is_changed(self.last_system_tick(), self.world_tick())
+    }
+
+    #[inline]
+    fn last_changed(&self) -> u32 {
+        self.fetch.ticks.changed.tick
     }
 }
 
@@ -213,36 +287,35 @@ where
 /// * `F`: The setup handler (default: `DefaultProvider`)
 pub struct ReadGlobal<'a, T: Resource + Send + Sync> {
     fetch: GlobalRef<'a, T>,
-    last_change_tick: u32,
-    change_tick: u32,
 }
 
 impl<'a, T> ReadGlobal<'a, T>
 where
     T: Resource + Send + Sync,
 {
-    pub(crate) fn new(fetch: GlobalRef<'a, T>, last_change_tick: u32, change_tick: u32) -> Self {
-        ReadGlobal {
-            fetch,
-            last_change_tick,
-            change_tick,
-        }
+    pub(crate) fn new(fetch: GlobalRef<'a, T>) -> Self {
+        ReadGlobal { fetch }
     }
+}
 
+impl<'w, T> DetectChanges for ReadGlobal<'w, T>
+where
+    T: Resource + Send + Sync,
+{
     /// Returns `true` if the resource was added after the system last ran.
-    pub fn is_added(&self) -> bool {
+    fn is_added(&self) -> bool {
         self.fetch
             .fetch
             .ticks
-            .is_added(self.last_change_tick, self.change_tick)
+            .is_added(self.last_system_tick(), self.world_tick())
     }
 
     /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
-    pub fn is_changed(&self) -> bool {
+    fn is_changed(&self) -> bool {
         self.fetch
             .fetch
             .ticks
-            .is_changed(self.last_change_tick, self.change_tick)
+            .is_changed(self.last_system_tick(), self.world_tick())
     }
 
     #[inline]
@@ -320,36 +393,45 @@ where
 /// * `F`: The setup handler (default: `DefaultProvider`)
 pub struct WriteGlobal<'a, T: Resource + Send + Sync> {
     fetch: GlobalMut<'a, T>,
-    last_change_tick: u32,
-    change_tick: u32,
 }
 
 impl<'a, T> WriteGlobal<'a, T>
 where
     T: Resource + Send + Sync,
 {
-    pub(crate) fn new(fetch: GlobalMut<'a, T>, last_change_tick: u32, change_tick: u32) -> Self {
-        WriteGlobal {
-            fetch,
-            last_change_tick,
-            change_tick,
-        }
+    pub(crate) fn new(fetch: GlobalMut<'a, T>) -> Self {
+        WriteGlobal { fetch }
     }
 
+    #[inline]
+    pub fn last_system_tick(&self) -> u32 {
+        self.fetch.last_system_tick()
+    }
+
+    #[inline]
+    pub fn world_tick(&self) -> u32 {
+        self.fetch.world_tick()
+    }
+}
+
+impl<'w, T> DetectChanges for WriteGlobal<'w, T>
+where
+    T: Resource + Send + Sync,
+{
     /// Returns `true` if the resource was added after the system last ran.
-    pub fn is_added(&self) -> bool {
+    fn is_added(&self) -> bool {
         self.fetch
             .fetch
             .ticks
-            .is_added(self.last_change_tick, self.change_tick)
+            .is_added(self.last_system_tick(), self.world_tick())
     }
 
     /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
-    pub fn is_changed(&self) -> bool {
+    fn is_changed(&self) -> bool {
         self.fetch
             .fetch
             .ticks
-            .is_changed(self.last_change_tick, self.change_tick)
+            .is_changed(self.last_system_tick(), self.world_tick())
     }
 
     #[inline]
@@ -496,8 +578,6 @@ where
 /// * `F`: The setup handler (default: `DefaultProvider`)
 pub struct ReadNonSendGlobal<'a, T: 'a> {
     fetch: GlobalRef<'a, T>,
-    last_change_tick: u32,
-    change_tick: u32,
     phantom: PhantomData<*mut ()>,
 }
 
@@ -505,29 +585,40 @@ impl<'a, T> ReadNonSendGlobal<'a, T>
 where
     T: Resource,
 {
-    pub(crate) fn new(fetch: GlobalRef<'a, T>, last_change_tick: u32, change_tick: u32) -> Self {
+    pub(crate) fn new(fetch: GlobalRef<'a, T>) -> Self {
         ReadNonSendGlobal {
             fetch,
-            last_change_tick,
-            change_tick,
             phantom: PhantomData,
         }
     }
 
+    pub fn last_system_tick(&self) -> u32 {
+        self.fetch.last_system_tick()
+    }
+
+    pub fn world_tick(&self) -> u32 {
+        self.fetch.world_tick()
+    }
+}
+
+impl<'w, T> DetectChanges for ReadNonSendGlobal<'w, T>
+where
+    T: Resource,
+{
     /// Returns `true` if the resource was added after the system last ran.
-    pub fn is_added(&self) -> bool {
+    fn is_added(&self) -> bool {
         self.fetch
             .fetch
             .ticks
-            .is_added(self.last_change_tick, self.change_tick)
+            .is_added(self.last_system_tick(), self.world_tick())
     }
 
     /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
-    pub fn is_changed(&self) -> bool {
+    fn is_changed(&self) -> bool {
         self.fetch
             .fetch
             .ticks
-            .is_changed(self.last_change_tick, self.change_tick)
+            .is_changed(self.last_system_tick(), self.world_tick())
     }
 
     #[inline]
@@ -567,8 +658,6 @@ where
 /// * `T`: The type of the resource
 pub struct WriteNonSendGlobal<'a, T: 'a> {
     fetch: GlobalMut<'a, T>,
-    last_change_tick: u32,
-    change_tick: u32,
     phantom: PhantomData<*mut ()>,
 }
 
@@ -576,29 +665,42 @@ impl<'a, T> WriteNonSendGlobal<'a, T>
 where
     T: Resource,
 {
-    pub(crate) fn new(fetch: GlobalMut<'a, T>, last_change_tick: u32, change_tick: u32) -> Self {
+    pub(crate) fn new(fetch: GlobalMut<'a, T>) -> Self {
         WriteNonSendGlobal {
             fetch,
-            last_change_tick,
-            change_tick,
             phantom: PhantomData,
         }
     }
 
+    #[inline]
+    pub fn last_system_tick(&self) -> u32 {
+        self.fetch.last_system_tick()
+    }
+
+    #[inline]
+    pub fn world_tick(&self) -> u32 {
+        self.fetch.world_tick()
+    }
+}
+
+impl<'w, T> DetectChanges for WriteNonSendGlobal<'w, T>
+where
+    T: Resource,
+{
     /// Returns `true` if the resource was added after the system last ran.
-    pub fn is_added(&self) -> bool {
+    fn is_added(&self) -> bool {
         self.fetch
             .fetch
             .ticks
-            .is_added(self.last_change_tick, self.change_tick)
+            .is_added(self.last_system_tick(), self.world_tick())
     }
 
     /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
-    pub fn is_changed(&self) -> bool {
+    fn is_changed(&self) -> bool {
         self.fetch
             .fetch
             .ticks
-            .is_changed(self.last_change_tick, self.change_tick)
+            .is_changed(self.last_system_tick(), self.world_tick())
     }
 
     #[inline]
@@ -640,6 +742,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::change_detection::DetectChanges;
     // use crate::shred::{RunNow, System};
 
     #[derive(Default)]
@@ -778,7 +881,7 @@ mod tests {
         struct Foo;
 
         let mut globals = Globals::empty();
-        globals.insert(Res);
+        globals.insert(Res, 99);
 
         assert!(globals.contains::<Res>());
         assert!(!globals.contains::<Foo>());
@@ -789,10 +892,10 @@ mod tests {
     #[should_panic(expected = "already immutably borrowed")]
     fn read_write_fails() {
         let mut globals = Globals::empty();
-        globals.insert(Res);
+        globals.insert(Res, 99);
 
-        let read: GlobalRef<Res> = globals.fetch::<Res>();
-        let write: GlobalMut<Res> = globals.fetch_mut::<Res>();
+        let read: GlobalRef<Res> = globals.fetch::<Res>(99, 99);
+        let write: GlobalMut<Res> = globals.fetch_mut::<Res>(99, 99);
     }
 
     #[allow(unused)]
@@ -800,27 +903,27 @@ mod tests {
     #[should_panic(expected = "already mutably borrowed")]
     fn write_read_fails() {
         let mut globals = Globals::empty();
-        globals.insert(Res);
+        globals.insert(Res, 99);
 
-        let write: GlobalMut<Res> = globals.fetch_mut::<Res>();
-        let read: GlobalRef<Res> = globals.fetch::<Res>();
+        let write: GlobalMut<Res> = globals.fetch_mut::<Res>(99, 99);
+        let read: GlobalRef<Res> = globals.fetch::<Res>(99, 99);
     }
 
     #[test]
     fn remove_insert() {
         let mut globals = Globals::empty();
 
-        globals.insert(Res);
+        globals.insert(Res, 99);
 
         assert!(globals.contains::<Res>());
 
         // println!("{:#?}", resources.hashmap.keys().collect::<Vec<_>>());
 
-        globals.remove::<Res>().unwrap();
+        globals.remove::<Res>(100).unwrap();
 
         assert!(!globals.contains::<Res>());
 
-        globals.insert(Res);
+        globals.insert(Res, 102);
 
         assert!(globals.contains::<Res>());
     }
@@ -866,70 +969,79 @@ mod tests {
         }
 
         let mut globals = Globals::default();
-        globals.insert(TestOne {
-            value: "one".to_string(),
-        });
+        globals.insert(
+            TestOne {
+                value: "one".to_string(),
+            },
+            99,
+        );
 
-        globals.insert(TestTwo {
-            value: "two".to_string(),
-        });
+        globals.insert(
+            TestTwo {
+                value: "two".to_string(),
+            },
+            99,
+        );
 
-        globals.insert(NotSync {
-            ptr: std::ptr::null(),
-        });
+        globals.insert_non_send(
+            NotSync {
+                ptr: std::ptr::null(),
+            },
+            99,
+        );
 
-        assert_eq!(globals.fetch::<TestOne>().value, "one");
-        assert_eq!(globals.fetch::<TestTwo>().value, "two");
-        assert_eq!(globals.fetch::<NotSync>().ptr, std::ptr::null());
+        assert_eq!(globals.fetch::<TestOne>(100, 102).value, "one");
+        assert_eq!(globals.fetch::<TestTwo>(100, 102).value, "two");
+        assert_eq!(globals.fetch::<NotSync>(100, 102).ptr, std::ptr::null());
 
         // test re-ownership
-        let owned = globals.remove::<TestTwo>();
+        let owned = globals.remove::<TestTwo>(104);
         assert_eq!(owned.unwrap().value, "two");
     }
 
     #[test]
-    fn change_ticks() {
+    fn last_changed() {
         struct Data(u32);
 
         let mut globals = Globals::default();
 
-        globals.maintain(123);
+        globals.maintain();
 
-        globals.insert(Data(5));
+        globals.insert(Data(5), 99);
 
-        globals.maintain(124);
+        globals.maintain();
 
         {
-            let borrow = globals.fetch::<Data>();
+            let borrow = globals.fetch::<Data>(100, 102);
             assert_eq!(borrow.0, 5);
-            assert_eq!(borrow.inserted_tick().tick, 123);
-            assert_eq!(borrow.updated_tick().tick, 123);
+            assert_eq!(borrow.last_changed(), 99);
+            // assert_eq!(borrow.inserted_tick().tick, 99);
         }
 
-        globals.maintain(125);
+        globals.maintain();
 
         {
-            let mut borrow = globals.fetch_mut::<Data>();
+            let mut borrow = globals.fetch_mut::<Data>(102, 106);
             assert_eq!(borrow.0, 5);
-            assert_eq!(borrow.inserted_tick().tick, 123);
-            assert_eq!(borrow.updated_tick().tick, 123);
+            // assert_eq!(borrow.inserted_tick().tick, 99);
+            assert_eq!(borrow.last_changed(), 99);
             borrow.0 = 8;
-            assert_eq!(borrow.inserted_tick().tick, 123);
-            assert_eq!(borrow.updated_tick().tick, 125);
+            // assert_eq!(borrow.inserted_tick().tick, 99);
+            assert_eq!(borrow.last_changed(), 106);
             assert_eq!(borrow.0, 8);
         }
 
-        globals.maintain(126);
+        globals.maintain();
 
         {
-            let borrow = globals.fetch::<Data>();
+            let borrow = globals.fetch::<Data>(106, 110);
             assert_eq!(borrow.0, 8);
-            assert_eq!(borrow.inserted_tick().tick, 123);
-            assert_eq!(borrow.updated_tick().tick, 125);
+            // assert_eq!(borrow.inserted_tick().tick, 99);
+            assert_eq!(borrow.last_changed(), 106);
         }
 
         {
-            globals.remove::<Data>();
+            globals.remove::<Data>(114);
             // assert_eq!(globals.deleted::<Data>().unwrap(), 126);
         }
     }

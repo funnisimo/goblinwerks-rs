@@ -1028,12 +1028,17 @@ dependencies = [
  "bevy_ptr",
  "bevy_tasks",
  "bevy_utils",
+ "crossbeam-queue",
  "downcast-rs",
  "event-listener",
  "fixedbitset",
+ "hibitset",
+ "log",
+ "rand",
  "rustc-hash",
  "serde",
  "thread_local",
+ "tuple_utils",
 ]
 
 [[package]]

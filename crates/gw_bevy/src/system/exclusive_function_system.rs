@@ -73,10 +73,10 @@ where
         &self.system_meta.component_access_set
     }
 
-    #[inline]
-    fn archetype_component_access(&self) -> &AccessTracker {
-        &self.system_meta.archetype_component_access
-    }
+    // #[inline]
+    // fn archetype_component_access(&self) -> &AccessTracker {
+    //     &self.system_meta.archetype_component_access
+    // }
 
     #[inline]
     fn is_send(&self) -> bool {
@@ -92,8 +92,8 @@ where
     }
 
     fn run(&mut self, input: Self::In, world: &mut World) -> Self::Out {
-        let saved_last_tick = world.last_change_tick;
-        world.last_change_tick = self.system_meta.last_change_tick;
+        let saved_last_tick = world.last_maintain_tick;
+        world.last_maintain_tick = self.system_meta.last_change_tick;
 
         let params = F::Param::get_param(
             self.param_state.as_mut().expect(PARAM_MESSAGE),
@@ -101,10 +101,10 @@ where
         );
         let out = self.func.run(world, input, params);
 
-        let change_tick = world.change_tick.get_mut();
+        let change_tick = world.current_tick.get_mut();
         self.system_meta.last_change_tick = *change_tick;
         *change_tick = change_tick.wrapping_add(1);
-        world.last_change_tick = saved_last_tick;
+        world.last_maintain_tick = saved_last_tick;
 
         out
     }
@@ -136,7 +136,7 @@ where
         self.param_state = Some(F::Param::init(world, &mut self.system_meta));
     }
 
-    fn update_archetype_component_access(&mut self, _world: &World) {}
+    // fn update_archetype_component_access(&mut self, _world: &World) {}
 
     #[inline]
     fn check_change_tick(&mut self, change_tick: u32) {

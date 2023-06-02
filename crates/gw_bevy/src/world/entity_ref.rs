@@ -835,8 +835,8 @@ pub(crate) unsafe fn take_component<'a>(
 mod tests {
     use std::panic::AssertUnwindSafe;
 
-    use crate as bevy_ecs;
-    use crate::component::ComponentId;
+    use crate as gw_bevy;
+    use crate::component::{Component, ComponentId};
     use crate::prelude::*; // for the `#[derive(Component)]`
 
     #[test]
@@ -958,7 +958,7 @@ mod tests {
         struct Dense(u8);
 
         #[derive(Component)]
-        #[component(storage = "SparseSet")]
+        // #[component(storage = "SparseSet")]
         struct Sparse;
 
         let mut world = World::new();
@@ -976,7 +976,7 @@ mod tests {
         struct Dense(u8);
 
         #[derive(Component)]
-        #[component(storage = "SparseSet")]
+        // #[component(storage = "SparseSet")]
         struct Sparse;
 
         let mut world = World::new();
@@ -994,7 +994,7 @@ mod tests {
         struct Dense(u8);
 
         #[derive(Component)]
-        #[component(storage = "SparseSet")]
+        // #[component(storage = "SparseSet")]
         struct Sparse;
 
         let mut world = World::new();
@@ -1015,7 +1015,7 @@ mod tests {
         struct Dense2;
 
         #[derive(Component)]
-        #[component(storage = "SparseSet")]
+        // #[component(storage = "SparseSet")]
         struct Sparse;
 
         let mut world = World::new();
@@ -1041,7 +1041,7 @@ mod tests {
         struct Dense2;
 
         #[derive(Component)]
-        #[component(storage = "SparseSet")]
+        // #[component(storage = "SparseSet")]
         struct Sparse;
 
         let mut world = World::new();
@@ -1065,7 +1065,7 @@ mod tests {
         struct Dense(u8);
 
         #[derive(Component)]
-        #[component(storage = "SparseSet")]
+        // #[component(storage = "SparseSet")]
         struct Sparse;
 
         let mut world = World::new();
@@ -1089,7 +1089,7 @@ mod tests {
         struct Dense(u8);
 
         #[derive(Component)]
-        #[component(storage = "SparseSet")]
+        // #[component(storage = "SparseSet")]
         struct Sparse;
 
         let mut world = World::new();

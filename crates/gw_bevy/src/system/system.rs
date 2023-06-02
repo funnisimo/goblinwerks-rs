@@ -27,8 +27,10 @@ pub trait System: Send + Sync + 'static {
     fn type_id(&self) -> TypeId;
     /// Returns the system's component [`Access`].
     fn component_access(&self) -> &AccessTracker;
-    /// Returns the system's archetype component [`Access`].
-    fn archetype_component_access(&self) -> &AccessTracker;
+
+    // /// Returns the system's archetype component [`Access`].
+    // fn archetype_component_access(&self) -> &AccessTracker;
+
     /// Returns true if the system is [`Send`].
     fn is_send(&self) -> bool;
 
@@ -49,15 +51,18 @@ pub trait System: Send + Sync + 'static {
     unsafe fn run_unsafe(&mut self, input: Self::In, world: &World) -> Self::Out;
     /// Runs the system with the given input in the world.
     fn run(&mut self, input: Self::In, world: &mut World) -> Self::Out {
-        self.update_archetype_component_access(world);
+        // self.update_archetype_component_access(world);
+
         // SAFETY: world and resources are exclusively borrowed
         unsafe { self.run_unsafe(input, world) }
     }
     fn apply_buffers(&mut self, world: &mut World);
     /// Initialize the system.
     fn initialize(&mut self, _world: &mut World);
-    /// Update the system's archetype component [`Access`].
-    fn update_archetype_component_access(&mut self, world: &World);
+
+    // /// Update the system's archetype component [`Access`].
+    // fn update_archetype_component_access(&mut self, world: &World);
+
     fn check_change_tick(&mut self, change_tick: u32);
     /// Returns the system's default [system sets](crate::schedule::SystemSet).
     fn default_system_sets(&self) -> Vec<Box<dyn crate::schedule::SystemSet>> {

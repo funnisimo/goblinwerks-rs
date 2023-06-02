@@ -1,123 +1,48 @@
-use bevy_macro_utils::{get_lit_str, Symbol};
-use proc_macro::TokenStream;
-use proc_macro2::{Span, TokenStream as TokenStream2};
-use quote::{quote, ToTokens};
-use syn::{parse_macro_input, parse_quote, DeriveInput, Error, Ident, Path, Result};
+use quote::quote;
+use syn::{
+    parenthesized,
+    parse::{Parse, ParseStream},
+    parse_quote,
+    // parenthesized,
+    // parse::{Parse, ParseStream, Result},
+    DeriveInput,
+    Path,
+    Result,
+};
 
-pub fn derive_resource(input: TokenStream) -> TokenStream {
-    let mut ast = parse_macro_input!(input as DeriveInput);
-    let bevy_ecs_path: Path = crate::bevy_ecs_path();
-
-    ast.generics
-        .make_where_clause()
-        .predicates
-        .push(parse_quote! { Self: Send + Sync + 'static });
-
-    let struct_name = &ast.ident;
-    let (impl_generics, type_generics, where_clause) = &ast.generics.split_for_impl();
-
-    TokenStream::from(quote! {
-        impl #impl_generics #bevy_ecs_path::resources::Resource for #struct_name #type_generics #where_clause {
-        }
-    })
+struct StorageAttribute {
+    storage: Path,
 }
 
-pub fn derive_component(input: TokenStream) -> TokenStream {
-    let mut ast = parse_macro_input!(input as DeriveInput);
-    let bevy_ecs_path: Path = crate::bevy_ecs_path();
+impl Parse for StorageAttribute {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let content;
+        let _parenthesized_token = parenthesized!(content in input);
 
-    let attrs = match parse_component_attr(&ast) {
-        Ok(attrs) => attrs,
-        Err(e) => return e.into_compile_error().into(),
-    };
-
-    let storage = storage_path(&bevy_ecs_path, attrs.storage);
-
-    ast.generics
-        .make_where_clause()
-        .predicates
-        .push(parse_quote! { Self: Send + Sync + 'static });
-
-    let struct_name = &ast.ident;
-    let (impl_generics, type_generics, where_clause) = &ast.generics.split_for_impl();
-
-    TokenStream::from(quote! {
-        impl #impl_generics #bevy_ecs_path::component::Component for #struct_name #type_generics #where_clause {
-            type Storage = #storage;
-        }
-    })
+        Ok(StorageAttribute {
+            storage: content.parse()?,
+        })
+    }
 }
 
-pub const COMPONENT: Symbol = Symbol("component");
-pub const STORAGE: Symbol = Symbol("storage");
+pub fn impl_component(ast: &DeriveInput) -> proc_macro2::TokenStream {
+    let name = &ast.ident;
+    let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
-struct Attrs {
-    storage: StorageTy,
-}
+    let storage = ast
+        .attrs
+        .iter()
+        .find(|attr| attr.path.segments[0].ident == "storage")
+        .map(|attr| {
+            syn::parse2::<StorageAttribute>(attr.tokens.clone())
+                .unwrap()
+                .storage
+        })
+        .unwrap_or_else(|| parse_quote!(gw_bevy::storage::DenseVecStorage));
 
-#[derive(Clone, Copy)]
-enum StorageTy {
-    Table,
-    SparseSet,
-}
-
-// values for `storage` attribute
-const TABLE: &str = "Table";
-const SPARSE_SET: &str = "SparseSet";
-
-fn parse_component_attr(ast: &DeriveInput) -> Result<Attrs> {
-    let meta_items = bevy_macro_utils::parse_attrs(ast, COMPONENT)?;
-
-    let mut attrs = Attrs {
-        storage: StorageTy::Table,
-    };
-
-    for meta in meta_items {
-        use syn::{
-            Meta::NameValue,
-            NestedMeta::{Lit, Meta},
-        };
-        match meta {
-            Meta(NameValue(m)) if m.path == STORAGE => {
-                attrs.storage = match get_lit_str(STORAGE, &m.lit)?.value().as_str() {
-                    TABLE => StorageTy::Table,
-                    SPARSE_SET => StorageTy::SparseSet,
-                    s => {
-                        return Err(Error::new_spanned(
-                            m.lit,
-                            format!(
-                                "Invalid storage type `{s}`, expected '{TABLE}' or '{SPARSE_SET}'.",
-                            ),
-                        ))
-                    }
-                };
-            }
-            Meta(meta_item) => {
-                return Err(Error::new_spanned(
-                    meta_item.path(),
-                    format!(
-                        "unknown component attribute `{}`",
-                        meta_item.path().into_token_stream()
-                    ),
-                ));
-            }
-            Lit(lit) => {
-                return Err(Error::new_spanned(
-                    lit,
-                    "unexpected literal in component attribute",
-                ))
-            }
+    quote! {
+        impl #impl_generics Component for #name #ty_generics #where_clause {
+            type Storage = #storage<Self>;
         }
     }
-
-    Ok(attrs)
-}
-
-fn storage_path(bevy_ecs_path: &Path, ty: StorageTy) -> TokenStream2 {
-    let typename = match ty {
-        StorageTy::Table => Ident::new("TableStorage", Span::call_site()),
-        StorageTy::SparseSet => Ident::new("SparseStorage", Span::call_site()),
-    };
-
-    quote! { #bevy_ecs_path::component::#typename }
 }

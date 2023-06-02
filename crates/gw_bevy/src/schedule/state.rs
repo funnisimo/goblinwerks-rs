@@ -4,6 +4,7 @@ use std::mem;
 
 use crate as bevy_ecs;
 use crate::change_detection::DetectChangesMut;
+use crate::entity::Builder;
 use crate::schedule::{ScheduleLabel, SystemSet};
 use crate::system::Resource;
 use crate::world::World;
@@ -90,7 +91,8 @@ impl<S: States> NextState<S> {
 
 /// Run the enter schedule for the current state
 pub fn run_enter_schedule<S: States>(world: &mut World) {
-    world.run_schedule(OnEnter(world.resource::<State<S>>().0.clone()));
+    let state = world.read_resource::<State<S>>().0.clone();
+    world.run_schedule(OnEnter(state));
 }
 
 /// If a new state is queued in [`NextState<S>`], this system:
@@ -100,11 +102,12 @@ pub fn run_enter_schedule<S: States>(world: &mut World) {
 pub fn apply_state_transition<S: States>(world: &mut World) {
     // We want to take the `NextState` resource,
     // but only mark it as changed if it wasn't empty.
-    let mut next_state_resource = world.resource_mut::<NextState<S>>();
+    let mut next_state_resource = world.write_resource::<NextState<S>>();
     if let Some(entered) = next_state_resource.bypass_change_detection().0.take() {
         next_state_resource.set_changed();
+        drop(next_state_resource);
 
-        let exited = mem::replace(&mut world.resource_mut::<State<S>>().0, entered.clone());
+        let exited = mem::replace(&mut world.write_resource::<State<S>>().0, entered.clone());
         world.run_schedule(OnExit(exited));
         world.run_schedule(OnEnter(entered));
     }

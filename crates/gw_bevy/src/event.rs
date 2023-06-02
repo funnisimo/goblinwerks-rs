@@ -1,7 +1,8 @@
 //! Event handling types.
 
 use crate as bevy_ecs;
-use crate::system::{Local, Res, ResMut, Resource, SystemParam};
+use crate::resources::{ReadUnique, ResMut, ResRef, WriteUnique};
+use crate::system::{Local, SystemParam};
 use bevy_utils::tracing::trace;
 use std::ops::{Deref, DerefMut};
 use std::{fmt, hash::Hash, iter::Chain, marker::PhantomData, slice::Iter};
@@ -186,7 +187,7 @@ impl<E: Event> DerefMut for EventSequence<E> {
 #[derive(SystemParam, Debug)]
 pub struct EventReader<'w, 's, E: Event> {
     reader: Local<'s, ManualEventReader<E>>,
-    events: Res<'w, Events<E>>,
+    events: ReadUnique<'w, Events<E>>,
 }
 
 impl<'w, 's, E: Event> EventReader<'w, 's, E> {
@@ -293,7 +294,7 @@ impl<'a, 'w, 's, E: Event> IntoIterator for &'a mut EventReader<'w, 's, E> {
 /// Note that this is considered *non-idiomatic*, and should only be used when `EventWriter` will not work.
 #[derive(SystemParam)]
 pub struct EventWriter<'w, E: Event> {
-    events: ResMut<'w, Events<E>>,
+    events: WriteUnique<'w, Events<E>>,
 }
 
 impl<'w, E: Event> EventWriter<'w, E> {
@@ -903,7 +904,7 @@ mod tests {
     fn test_event_reader_clear() {
         use bevy_ecs::prelude::*;
 
-        let mut world = World::new();
+        let mut world = World::default();
         let mut events = Events::<TestEvent>::default();
         events.send(TestEvent { i: 0 });
         world.insert_resource(events);
@@ -929,8 +930,8 @@ mod tests {
     fn test_event_iter_nth() {
         use bevy_ecs::prelude::*;
 
-        let mut world = World::new();
-        world.init_resource::<Events<TestEvent>>();
+        let mut world = World::default();
+        world.ensure_resource::<Events<TestEvent>>();
 
         world.send_event(TestEvent { i: 0 });
         world.send_event(TestEvent { i: 1 });
@@ -955,8 +956,8 @@ mod tests {
     fn test_event_iter_last() {
         use bevy_ecs::prelude::*;
 
-        let mut world = World::new();
-        world.init_resource::<Events<TestEvent>>();
+        let mut world = World::default();
+        world.ensure_resource::<Events<TestEvent>>();
 
         let mut reader =
             IntoSystem::into_system(|mut events: EventReader<TestEvent>| -> Option<TestEvent> {
@@ -999,8 +1000,8 @@ mod tests {
     #[test]
     fn ensure_reader_readonly() {
         fn read_for<E: Event>() {
-            let mut world = World::new();
-            world.init_resource::<Events<E>>();
+            let mut world = World::default();
+            world.ensure_resource::<Events<E>>();
             let mut state = SystemState::<EventReader<E>>::new(&mut world);
             // This can only work if EventReader only reads the world
             let _reader = state.get(&world);

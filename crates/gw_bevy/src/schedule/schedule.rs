@@ -18,7 +18,9 @@ use fixedbitset::FixedBitSet;
 use crate::{
     self as bevy_ecs,
     access::AccessItem,
-    component::{ComponentId, Components},
+    components::Components,
+    resources::ResRef,
+    // component::{ComponentId, Components},
     schedule::*,
     system::{BoxedSystem, Resource, System},
     world::World,
@@ -953,7 +955,7 @@ impl ScheduleGraph {
     /// - checks for system access conflicts and reports ambiguities
     pub fn build_schedule(
         &mut self,
-        components: &Components,
+        components: ResRef<Components>,
     ) -> Result<SystemSchedule, ScheduleBuildError> {
         self.calculate_base_sets_and_detect_cycles()?;
 
@@ -1299,7 +1301,7 @@ impl ScheduleGraph {
     fn update_schedule(
         &mut self,
         schedule: &mut SystemSchedule,
-        components: &Components,
+        components: ResRef<Components>,
     ) -> Result<(), ScheduleBuildError> {
         if !self.uninit.is_empty() {
             return Err(ScheduleBuildError::Uninitialized);
@@ -1523,7 +1525,7 @@ impl ScheduleGraph {
     fn report_conflicts(
         &self,
         ambiguities: &[(NodeId, NodeId, Vec<AccessItem>)],
-        components: &Components,
+        components: ResRef<Components>,
     ) {
         let n_ambiguities = ambiguities.len();
 

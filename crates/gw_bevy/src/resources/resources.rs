@@ -2,7 +2,11 @@ use super::{ResMut, ResRef};
 use super::{Resource, ResourceId};
 use crate::atomic_refcell::{AtomicRef, AtomicRefCell, AtomicRefMut};
 use crate::component::{ComponentTicks, Tick};
+use std::any::Any;
 use std::collections::{hash_map::Entry, HashMap, VecDeque};
+use std::mem::ManuallyDrop;
+use std::ptr::drop_in_place;
+use std::thread::ThreadId;
 
 pub const KEEP_DELETED_TIME: u32 = 10; // 10 calls to maintain??
 
@@ -23,6 +27,7 @@ pub const KEEP_DELETED_TIME: u32 = 10; // 10 calls to maintain??
 pub struct ResourceCell {
     pub(crate) data: AtomicRefCell<Box<dyn Resource>>,
     pub(crate) ticks: AtomicRefCell<ComponentTicks>,
+    thread: Option<ThreadId>,
 }
 
 impl ResourceCell {
@@ -30,9 +35,19 @@ impl ResourceCell {
         Self {
             data: AtomicRefCell::new(resource),
             ticks: AtomicRefCell::new(ticks),
+            thread: None,
         }
     }
 
+    fn new_non_send(resource: Box<dyn Resource>, ticks: ComponentTicks) -> Self {
+        Self {
+            data: AtomicRefCell::new(resource),
+            ticks: AtomicRefCell::new(ticks),
+            thread: Some(std::thread::current().id()),
+        }
+    }
+
+    // SAFETY - Only called from remove which does the thread check
     fn into_inner(self) -> Box<dyn Resource> {
         self.data.into_inner()
     }
@@ -40,21 +55,37 @@ impl ResourceCell {
     /// # Safety
     /// Types which are !Sync should only be retrieved on the thread which owns the resource
     /// collection.
-    pub fn get<T: Resource>(&self) -> ResRef<T> {
+    pub fn get<T: Any + 'static>(&self, last_system_tick: u32, world_tick: u32) -> ResRef<T> {
+        self.validate_access::<T>();
         let data = self.data.borrow();
         let data_ref = AtomicRef::map(data, |inner| inner.downcast_ref::<T>().unwrap());
         let ticks = self.ticks.borrow();
-        ResRef::new(data_ref, ticks)
+        ResRef::new(data_ref, ticks, world_tick, last_system_tick)
     }
 
     /// # Safety
     /// Types which are !Send should only be retrieved on the thread which owns the resource
     /// collection.
-    pub fn get_mut<T: Resource>(&self, current_tick: u32) -> ResMut<T> {
+    pub fn get_mut<T: Resource>(&self, last_system_tick: u32, world_tick: u32) -> ResMut<T> {
+        self.validate_access::<T>();
         let data = self.data.borrow_mut(); // panics if this is borrowed already
         let data_ref = AtomicRefMut::map(data, |inner| inner.downcast_mut::<T>().unwrap());
         let ticks = self.ticks.borrow_mut();
-        ResMut::new(data_ref, ticks, current_tick)
+        ResMut::new(data_ref, ticks, world_tick, last_system_tick)
+    }
+
+    fn validate_access<T: 'static>(&self) {
+        if let Some(insert_thread) = self.thread {
+            if insert_thread != std::thread::current().id() {
+                // Panic in tests, as testing for aborting is nearly impossible
+                panic!(
+                "Attempted to access or drop non-send resource {} from thread {:?} on a thread {:?}. This is not allowed. Aborting.",
+                std::any::type_name::<T>(),
+                insert_thread,
+                std::thread::current().id()
+            );
+            }
+        }
     }
 }
 
@@ -90,10 +121,19 @@ impl UnsafeResources {
 
     /// # Safety
     /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
-    unsafe fn insert<T: Resource>(&mut self, resource: T, tick: u32) {
+    unsafe fn insert<T: Resource + Send + Sync>(&mut self, resource: T, tick: u32) {
         self.map.insert(
             ResourceId::of::<T>(),
             ResourceCell::new(Box::new(resource), ComponentTicks::new(tick)),
+        );
+    }
+
+    /// # Safety
+    /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
+    unsafe fn insert_non_send<T: Resource>(&mut self, resource: T, tick: u32) {
+        self.map.insert(
+            ResourceId::of::<T>(),
+            ResourceCell::new_non_send(Box::new(resource), ComponentTicks::new(tick)),
         );
     }
 
@@ -110,7 +150,20 @@ impl UnsafeResources {
     /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
     unsafe fn remove(&mut self, type_id: &ResourceId, tick: u32) -> Option<Box<dyn Resource>> {
         // NOTE - Does not track deleted tick
-        self.map.remove(type_id).map(|cell| cell.into_inner())
+        self.map.remove(type_id).map(|cell| {
+            if let Some(insert_thread) = cell.thread {
+                if insert_thread != std::thread::current().id() {
+                    // Panic in tests, as testing for aborting is nearly impossible
+                    panic!(
+                        "Attempted to remove a non-send resource {} from thread {:?} on a different thread: {:?}. This is not allowed. Aborting.",
+                        type_id.name(),
+                        insert_thread,
+                        std::thread::current().id()
+                    );
+                }
+            }
+            cell.into_inner()
+        })
     }
 
     fn get(&self, type_id: &ResourceId) -> Option<&ResourceCell> {
@@ -132,13 +185,35 @@ impl UnsafeResources {
     }
 }
 
+impl Drop for UnsafeResources {
+    fn drop(&mut self) {
+        if std::thread::panicking() {
+            return;
+        }
+
+        for (_, cell) in self.map.iter() {
+            if let Some(insert_thread) = cell.thread {
+                if insert_thread != std::thread::current().id() {
+                    // Panic in tests, as testing for aborting is nearly impossible
+                    panic!(
+                        "Attempted to drop a non-send resource [Unknown] from thread {:?} on a different thread: {:?}. This is not allowed. Aborting.",
+                        insert_thread,
+                        std::thread::current().id()
+                    );
+                }
+            }
+        }
+
+        std::mem::drop(&mut self.map);
+    }
+}
+
 /// Resources container. Shared resources stored here can be retrieved in systems.
 #[derive(Default)]
 pub struct Resources {
     internal: UnsafeResources,
     // marker to make `Resources` !Send and !Sync
     // _not_send_sync: PhantomData<*const u8>,
-    current_tick: u32,
 }
 
 impl Resources {
@@ -165,37 +240,58 @@ impl Resources {
 
     /// # Safety
     /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
-    pub fn ensure<T: Resource + Default>(&mut self) {
-        self.get_or_insert_with(T::default);
+    pub fn ensure<T: Resource + Send + Sync + Default>(
+        &mut self,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) {
+        self.get_or_insert_with(T::default, last_system_tick, world_tick);
     }
 
     /// # Safety
     /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
-    pub fn ensure_with<T: Resource, F: FnOnce() -> T>(&mut self, f: F) {
-        self.get_or_insert_with(f);
+    pub fn ensure_with<T: Resource + Send + Sync, F: FnOnce() -> T>(
+        &mut self,
+        f: F,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) {
+        self.get_or_insert_with(f, last_system_tick, world_tick);
     }
 
     /// Inserts the instance of `T` into the store. If the type already exists, it will be silently
     /// overwritten. If you would like to retain the instance of the resource that already exists,
     /// call `remove` first to retrieve it.
-    pub fn insert<T: Resource>(&mut self, value: T) {
+    pub fn insert<T: Resource + Send + Sync>(&mut self, value: T, world_tick: u32) {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
         unsafe {
-            self.internal.insert(value, self.current_tick);
+            self.internal.insert(value, world_tick);
         }
     }
 
     /// Inserts the instance of `T` into the store. If the type already exists, it will be silently
     /// overwritten. If you would like to retain the instance of the resource that already exists,
     /// call `remove` first to retrieve it.
-    pub(crate) fn insert_by_id<T: Resource>(&mut self, id: ResourceId, value: T) {
+    pub fn insert_non_send<T: Resource>(&mut self, value: T, world_tick: u32) {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
         unsafe {
-            self.internal.insert_by_id(id, value, self.current_tick);
+            self.internal.insert_non_send(value, world_tick);
+        }
+    }
+
+    /// Inserts the instance of `T` into the store. If the type already exists, it will be silently
+    /// overwritten. If you would like to retain the instance of the resource that already exists,
+    /// call `remove` first to retrieve it.
+    pub(crate) fn insert_by_id<T: Resource>(&mut self, id: ResourceId, value: T, world_tick: u32) {
+        // safety:
+        // this type is !Send and !Sync, and so can only be accessed from the thread which
+        // owns the resources collection
+        unsafe {
+            self.internal.insert_by_id(id, value, world_tick);
         }
     }
 
@@ -203,14 +299,14 @@ impl Resources {
     ///
     /// # Returns
     /// If the type `T` was stored, the inner instance of `T is returned. Otherwise, `None`.
-    pub fn remove<T: Resource>(&mut self) -> Option<T> {
+    pub fn remove<T: Resource>(&mut self, world_tick: u32) -> Option<T> {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
         unsafe {
             let resource = self
                 .internal
-                .remove(&ResourceId::of::<T>(), self.current_tick)?
+                .remove(&ResourceId::of::<T>(), world_tick)?
                 .downcast::<T>()
                 .ok()?;
             Some(*resource)
@@ -221,14 +317,18 @@ impl Resources {
     ///
     /// # Returns
     /// If the type `T` was stored, the inner instance of `T is returned. Otherwise, `None`.
-    pub(crate) fn remove_by_id<T: Resource>(&mut self, id: ResourceId) -> Option<T> {
+    pub(crate) fn remove_by_id<T: Resource>(
+        &mut self,
+        id: ResourceId,
+        world_tick: u32,
+    ) -> Option<T> {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
         unsafe {
             let resource = self
                 .internal
-                .remove(&id, self.current_tick)?
+                .remove(&id, world_tick)?
                 .downcast::<T>()
                 .ok()?;
             Some(*resource)
@@ -239,12 +339,14 @@ impl Resources {
     ///
     /// # Panics
     /// Panics if the resource is already borrowed mutably.
-    pub fn get<T: Resource>(&self) -> Option<ResRef<T>> {
+    pub fn get<T: Resource>(&self, last_system_tick: u32, world_tick: u32) -> Option<ResRef<T>> {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
         let type_id = &ResourceId::of::<T>();
-        self.internal.get(&type_id).map(|x| x.get::<T>())
+        self.internal
+            .get(&type_id)
+            .map(|x| x.get::<T>(last_system_tick, world_tick))
     }
 
     /// Retrieve an immutable reference to  `T` from the store if it exists. Otherwise, return `None`.
@@ -252,18 +354,30 @@ impl Resources {
     /// # Panics
     /// Panics if the resource is already borrowed mutably.
     #[allow(dead_code)] // for tests
-    pub(crate) fn get_by_id<T: Resource>(&self, id: ResourceId) -> Option<ResRef<T>> {
+    pub(crate) fn get_by_id<T: Resource>(
+        &self,
+        id: ResourceId,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) -> Option<ResRef<T>> {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
-        self.internal.get(&id).map(|x| x.get::<T>())
+        self.internal
+            .get(&id)
+            .map(|x| x.get::<T>(last_system_tick, world_tick))
     }
 
     /// Retrieve an immutable reference to  `T` from the store if it exists. Otherwise, return `None`.
     ///
     /// # Panics
     /// Panics if the resource is already borrowed mutably.
-    pub(crate) fn get_internal(&self, id: ResourceId) -> Option<&ResourceCell> {
+    pub(crate) fn get_internal(
+        &self,
+        id: ResourceId,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) -> Option<&ResourceCell> {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
@@ -271,29 +385,43 @@ impl Resources {
     }
 
     /// Retrieve a mutable reference to  `T` from the store if it exists. Otherwise, return `None`.
-    pub fn get_mut<T: Resource>(&self) -> Option<ResMut<T>> {
+    pub fn get_mut<T: Resource>(
+        &self,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) -> Option<ResMut<T>> {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
         let type_id = &ResourceId::of::<T>();
         self.internal
             .get(&type_id)
-            .map(|x| x.get_mut::<T>(self.current_tick))
+            .map(|x| x.get_mut::<T>(last_system_tick, world_tick))
     }
 
     /// Retrieve a mutable reference to  `T` from the store if it exists. Otherwise, return `None`.
-    pub fn get_mut_by_id<T: Resource>(&self, id: ResourceId) -> Option<ResMut<T>> {
+    pub fn get_mut_by_id<T: Resource>(
+        &self,
+        id: ResourceId,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) -> Option<ResMut<T>> {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
         self.internal
             .get(&id)
-            .map(|x| x.get_mut::<T>(self.current_tick))
+            .map(|x| x.get_mut::<T>(last_system_tick, world_tick))
     }
 
     /// Attempts to retrieve an immutable reference to `T` from the store. If it does not exist,
     /// the closure `f` is called to construct the object and it is then inserted into the store.
-    pub fn get_or_insert_with<T: Resource, F: FnOnce() -> T>(&mut self, f: F) -> ResRef<T> {
+    pub fn get_or_insert_with<T: Resource, F: FnOnce() -> T>(
+        &mut self,
+        f: F,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) -> ResRef<T> {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
@@ -302,15 +430,20 @@ impl Resources {
             self.internal
                 .entry(type_id)
                 .or_insert_with(|| {
-                    ResourceCell::new(Box::new((f)()), ComponentTicks::new(self.current_tick))
+                    ResourceCell::new(Box::new((f)()), ComponentTicks::new(world_tick))
                 })
-                .get()
+                .get(last_system_tick, world_tick)
         }
     }
 
     /// Attempts to retrieve a mutable reference to `T` from the store. If it does not exist,
     /// the closure `f` is called to construct the object and it is then inserted into the store.
-    pub fn get_mut_or_insert_with<T: Resource, F: FnOnce() -> T>(&mut self, f: F) -> ResMut<T> {
+    pub fn get_mut_or_insert_with<T: Resource, F: FnOnce() -> T>(
+        &mut self,
+        f: F,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) -> ResMut<T> {
         // safety:
         // this type is !Send and !Sync, and so can only be accessed from the thread which
         // owns the resources collection
@@ -319,38 +452,56 @@ impl Resources {
             self.internal
                 .entry(type_id)
                 .or_insert_with(|| {
-                    ResourceCell::new(Box::new((f)()), ComponentTicks::new(self.current_tick))
+                    ResourceCell::new(Box::new((f)()), ComponentTicks::new(world_tick))
                 })
-                .get_mut(self.current_tick)
+                .get_mut(last_system_tick, world_tick)
         }
     }
 
     /// Attempts to retrieve an immutable reference to `T` from the store. If it does not exist,
     /// the provided value is inserted and then a reference to it is returned.
-    pub fn get_or_insert<T: Resource>(&mut self, value: T) -> ResRef<T> {
-        self.get_or_insert_with(|| value)
+    pub fn get_or_insert<T: Resource>(
+        &mut self,
+        value: T,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) -> ResRef<T> {
+        self.get_or_insert_with(|| value, last_system_tick, world_tick)
     }
 
     /// Attempts to retrieve a mutable reference to `T` from the store. If it does not exist,
     /// the provided value is inserted and then a reference to it is returned.
-    pub fn get_mut_or_insert<T: Resource>(&mut self, value: T) -> ResMut<T> {
-        self.get_mut_or_insert_with(|| value)
+    pub fn get_mut_or_insert<T: Resource>(
+        &mut self,
+        value: T,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) -> ResMut<T> {
+        self.get_mut_or_insert_with(|| value, last_system_tick, world_tick)
     }
 
     /// Attempts to retrieve an immutable reference to `T` from the store. If it does not exist,
     /// the default constructor for `T` is called.
     ///
     /// `T` must implement `Default` for this method.
-    pub fn get_or_default<T: Resource + Default>(&mut self) -> ResRef<T> {
-        self.get_or_insert_with(T::default)
+    pub fn get_or_default<T: Resource + Default>(
+        &mut self,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) -> ResRef<T> {
+        self.get_or_insert_with(T::default, last_system_tick, world_tick)
     }
 
     /// Attempts to retrieve a mutable reference to `T` from the store. If it does not exist,
     /// the default constructor for `T` is called.
     ///
     /// `T` must implement `Default` for this method.
-    pub fn get_mut_or_default<T: Resource + Default>(&mut self) -> ResMut<T> {
-        self.get_mut_or_insert_with(T::default)
+    pub fn get_mut_or_default<T: Resource + Default>(
+        &mut self,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) -> ResMut<T> {
+        self.get_mut_or_insert_with(T::default, last_system_tick, world_tick)
     }
 
     /// Performs merging of two resource storages, which occurs during a world merge.
@@ -365,8 +516,7 @@ impl Resources {
         }
     }
 
-    pub fn maintain(&mut self, tick: u32) {
-        self.current_tick = tick;
+    pub fn maintain(&mut self) {
         // loop {
         //     match self.internal.deleted.front() {
         //         None => return,
@@ -454,25 +604,25 @@ mod tests {
 
         let mut resources = Resources::empty();
 
-        resources.insert_by_id(ResourceId::new_with_dynamic_id::<i32>(1), 5);
-        resources.insert_by_id(ResourceId::new_with_dynamic_id::<i32>(2), 15);
-        resources.insert_by_id(ResourceId::new_with_dynamic_id::<i32>(3), 45);
+        resources.insert_by_id(ResourceId::new_with_dynamic_id::<i32>(1), 5, 99);
+        resources.insert_by_id(ResourceId::new_with_dynamic_id::<i32>(2), 15, 99);
+        resources.insert_by_id(ResourceId::new_with_dynamic_id::<i32>(3), 45, 99);
 
         assert_eq!(
             resources
-                .get_by_id::<i32>(ResourceId::new_with_dynamic_id::<i32>(2))
+                .get_by_id::<i32>(ResourceId::new_with_dynamic_id::<i32>(2), 99, 99)
                 .map(|x| *x),
             Some(15)
         );
         assert_eq!(
             resources
-                .get_by_id::<i32>(ResourceId::new_with_dynamic_id::<i32>(1))
+                .get_by_id::<i32>(ResourceId::new_with_dynamic_id::<i32>(1), 99, 99)
                 .map(|x| *x),
             Some(5)
         );
         assert_eq!(
             resources
-                .get_by_id::<i32>(ResourceId::new_with_dynamic_id::<i32>(3))
+                .get_by_id::<i32>(ResourceId::new_with_dynamic_id::<i32>(3), 99, 99)
                 .map(|x| *x),
             Some(45)
         );
@@ -538,10 +688,10 @@ mod tests {
     fn invalid_fetch_by_id0() {
         let mut resources = Resources::empty();
 
-        resources.insert(5i32);
+        resources.insert(5i32, 99);
 
         assert!(resources
-            .get_by_id::<u32>(ResourceId::new_with_dynamic_id::<i32>(111))
+            .get_by_id::<u32>(ResourceId::new_with_dynamic_id::<i32>(111), 99, 99)
             .is_none());
     }
 
@@ -549,10 +699,10 @@ mod tests {
     fn invalid_fetch_by_id1() {
         let mut resources = Resources::empty();
 
-        resources.insert(5i32);
+        resources.insert(5i32, 99);
 
         assert!(resources
-            .get_by_id::<i32>(ResourceId::new_with_dynamic_id::<u32>(111))
+            .get_by_id::<i32>(ResourceId::new_with_dynamic_id::<u32>(111), 99, 99)
             .is_none());
     }
 
@@ -561,7 +711,7 @@ mod tests {
         struct Foo;
 
         let mut resources = Resources::empty();
-        resources.insert(Res);
+        resources.insert(Res, 99);
 
         assert!(resources.contains::<Res>());
         assert!(!resources.contains::<Foo>());
@@ -572,10 +722,10 @@ mod tests {
     #[should_panic(expected = "already immutably borrowed")]
     fn read_write_fails() {
         let mut resources = Resources::empty();
-        resources.insert(Res);
+        resources.insert(Res, 99);
 
-        let read: ResRef<Res> = resources.get::<Res>().unwrap();
-        let write: ResMut<Res> = resources.get_mut::<Res>().unwrap();
+        let read: ResRef<Res> = resources.get::<Res>(99, 99).unwrap();
+        let write: ResMut<Res> = resources.get_mut::<Res>(99, 99).unwrap();
     }
 
     #[allow(unused)]
@@ -583,27 +733,27 @@ mod tests {
     #[should_panic(expected = "already mutably borrowed")]
     fn write_read_fails() {
         let mut resources = Resources::empty();
-        resources.insert(Res);
+        resources.insert(Res, 99);
 
-        let write: ResMut<Res> = resources.get_mut::<Res>().unwrap();
-        let read: ResRef<Res> = resources.get::<Res>().unwrap();
+        let write: ResMut<Res> = resources.get_mut::<Res>(99, 99).unwrap();
+        let read: ResRef<Res> = resources.get::<Res>(99, 99).unwrap();
     }
 
     #[test]
     fn remove_insert() {
         let mut resources = Resources::empty();
 
-        resources.insert(Res);
+        resources.insert(Res, 99);
 
         assert!(resources.contains::<Res>());
 
         // println!("{:#?}", resources.hashmap.keys().collect::<Vec<_>>());
 
-        resources.remove::<Res>().unwrap();
+        resources.remove::<Res>(99).unwrap();
 
         assert!(!resources.contains::<Res>());
 
-        resources.insert(Res);
+        resources.insert(Res, 99);
 
         assert!(resources.contains::<Res>());
     }
@@ -649,24 +799,36 @@ mod tests {
         }
 
         let mut resources = Resources::default();
-        resources.insert(TestOne {
-            value: "one".to_string(),
-        });
+        resources.insert(
+            TestOne {
+                value: "one".to_string(),
+            },
+            99,
+        );
 
-        resources.insert(TestTwo {
-            value: "two".to_string(),
-        });
+        resources.insert(
+            TestTwo {
+                value: "two".to_string(),
+            },
+            99,
+        );
 
-        resources.insert(NotSync {
-            ptr: std::ptr::null(),
-        });
+        resources.insert_non_send(
+            NotSync {
+                ptr: std::ptr::null(),
+            },
+            99,
+        );
 
-        assert_eq!(resources.get::<TestOne>().unwrap().value, "one");
-        assert_eq!(resources.get::<TestTwo>().unwrap().value, "two");
-        assert_eq!(resources.get::<NotSync>().unwrap().ptr, std::ptr::null());
+        assert_eq!(resources.get::<TestOne>(99, 99).unwrap().value, "one");
+        assert_eq!(resources.get::<TestTwo>(99, 99).unwrap().value, "two");
+        assert_eq!(
+            resources.get::<NotSync>(99, 99).unwrap().ptr,
+            std::ptr::null()
+        );
 
         // test re-ownership
-        let owned = resources.remove::<TestTwo>();
+        let owned = resources.remove::<TestTwo>(99);
         assert_eq!(owned.unwrap().value, "two");
     }
 

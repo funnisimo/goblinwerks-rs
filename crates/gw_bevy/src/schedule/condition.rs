@@ -28,7 +28,7 @@ pub trait Condition<Marker>: sealed::Condition<Marker> {
     /// # fn my_system() {}
     /// app.add_system(
     ///     // The `resource_equals` run condition will panic since we don't initialize `R`,
-    ///     // just like if we used `Res<R>` in a system.
+    ///     // just like if we used `ResRef<R>` in a system.
     ///     my_system.run_if(resource_equals(R(0))),
     /// );
     /// # app.run(&mut world);
@@ -88,17 +88,17 @@ pub trait Condition<Marker>: sealed::Condition<Marker> {
     /// #
     /// # world.insert_resource(C(false));
     /// # app.run(&mut world);
-    /// # assert!(!world.resource::<C>().0);
+    /// # assert!(!world.read_resource::<C>().0);
     /// #
     /// # world.insert_resource(A(0));
     /// # app.run(&mut world);
-    /// # assert!(world.resource::<C>().0);
+    /// # assert!(world.read_resource::<C>().0);
     /// #
     /// # world.remove_resource::<A>();
     /// # world.insert_resource(B(0));
     /// # world.insert_resource(C(false));
     /// # app.run(&mut world);
-    /// # assert!(world.resource::<C>().0);
+    /// # assert!(world.read_resource::<C>().0);
     /// ```
     fn or_else<M, C: Condition<M>>(self, or_else: C) -> OrElse<Self::System, C::System> {
         let a = IntoSystem::into_system(self);
@@ -134,11 +134,12 @@ pub mod common_conditions {
     use super::Condition;
     use crate::{
         change_detection::DetectChanges,
+        components::Component,
         event::{Event, EventReader},
-        prelude::Component,
+        resources::{ResRef, Resource},
         // prelude::{With, Query}
         schedule::{State, States},
-        system::{In, IntoPipeSystem, Res, Resource},
+        system::{In, IntoPipeSystem},
     };
 
     /// Generates a [`Condition`](super::Condition)-satisfying closure that returns `true`
@@ -152,7 +153,7 @@ pub mod common_conditions {
     /// # struct Counter(u8);
     /// # let mut app = Schedule::new();
     /// # let mut world = World::new();
-    /// # world.init_resource::<Counter>();
+    /// # world.ensure_resource::<Counter>();
     /// app.add_system(
     ///     // `run_once` will only return true the first time it's evaluated
     ///     my_system.run_if(run_once()),
@@ -164,11 +165,11 @@ pub mod common_conditions {
     ///
     /// // This is the first time the condition will be evaluated so `my_system` will run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 1);
+    /// assert_eq!(world.read_resource::<Counter>().0, 1);
     ///
     /// // This is the seconds time the condition will be evaluated so `my_system` won't run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 1);
+    /// assert_eq!(world.read_resource::<Counter>().0, 1);
     /// ```
     pub fn run_once() -> impl FnMut() -> bool + Clone {
         let mut has_run = false;
@@ -204,17 +205,17 @@ pub mod common_conditions {
     ///
     /// // `Counter` hasn't been added so `my_system` won't run
     /// app.run(&mut world);
-    /// world.init_resource::<Counter>();
+    /// world.ensure_resource::<Counter>();
     ///
     /// // `Counter` has now been added so `my_system` can run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 1);
+    /// assert_eq!(world.read_resource::<Counter>().0, 1);
     /// ```
-    pub fn resource_exists<T>() -> impl FnMut(Option<Res<T>>) -> bool + Clone
+    pub fn resource_exists<T>() -> impl FnMut(Option<ResRef<T>>) -> bool + Clone
     where
         T: Resource,
     {
-        move |res: Option<Res<T>>| res.is_some()
+        move |res: Option<ResRef<T>>| res.is_some()
     }
 
     /// Generates a [`Condition`](super::Condition)-satisfying closure that returns `true`
@@ -232,7 +233,7 @@ pub mod common_conditions {
     /// # struct Counter(u8);
     /// # let mut app = Schedule::new();
     /// # let mut world = World::new();
-    /// # world.init_resource::<Counter>();
+    /// # world.ensure_resource::<Counter>();
     /// app.add_system(
     ///     // `resource_equals` will only return true if the given resource equals the given value
     ///     my_system.run_if(resource_equals(Counter(0))),
@@ -244,17 +245,17 @@ pub mod common_conditions {
     ///
     /// // `Counter` is `0` so `my_system` can run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 1);
+    /// assert_eq!(world.read_resource::<Counter>().0, 1);
     ///
     /// // `Counter` is no longer `0` so `my_system` won't run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 1);
+    /// assert_eq!(world.read_resource::<Counter>().0, 1);
     /// ```
-    pub fn resource_equals<T>(value: T) -> impl FnMut(Res<T>) -> bool
+    pub fn resource_equals<T>(value: T) -> impl FnMut(ResRef<T>) -> bool
     where
         T: Resource + PartialEq,
     {
-        move |res: Res<T>| *res == value
+        move |res: ResRef<T>| *res == value
     }
 
     /// Generates a [`Condition`](super::Condition)-satisfying closure that returns `true`
@@ -282,21 +283,21 @@ pub mod common_conditions {
     ///
     /// // `Counter` hasn't been added so `my_system` can't run
     /// app.run(&mut world);
-    /// world.init_resource::<Counter>();
+    /// world.ensure_resource::<Counter>();
     ///
     /// // `Counter` is `0` so `my_system` can run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 1);
+    /// assert_eq!(world.read_resource::<Counter>().0, 1);
     ///
     /// // `Counter` is no longer `0` so `my_system` won't run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 1);
+    /// assert_eq!(world.read_resource::<Counter>().0, 1);
     /// ```
-    pub fn resource_exists_and_equals<T>(value: T) -> impl FnMut(Option<Res<T>>) -> bool
+    pub fn resource_exists_and_equals<T>(value: T) -> impl FnMut(Option<ResRef<T>>) -> bool
     where
         T: Resource + PartialEq,
     {
-        move |res: Option<Res<T>>| match res {
+        move |res: Option<ResRef<T>>| match res {
             Some(res) => *res == value,
             None => false,
         }
@@ -323,21 +324,21 @@ pub mod common_conditions {
     ///     counter.0 += 1;
     /// }
     ///
-    /// world.init_resource::<Counter>();
+    /// world.ensure_resource::<Counter>();
     ///
     /// // `Counter` was just added so `my_system` will run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 1);
+    /// assert_eq!(world.read_resource::<Counter>().0, 1);
     ///
     /// // `Counter` was not just added so `my_system` will not run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 1);
+    /// assert_eq!(world.read_resource::<Counter>().0, 1);
     /// ```
-    pub fn resource_added<T>() -> impl FnMut(Option<Res<T>>) -> bool + Clone
+    pub fn resource_added<T>() -> impl FnMut(Option<ResRef<T>>) -> bool + Clone
     where
         T: Resource,
     {
-        move |res: Option<Res<T>>| match res {
+        move |res: Option<ResRef<T>>| match res {
             Some(res) => res.is_added(),
             None => false,
         }
@@ -363,7 +364,7 @@ pub mod common_conditions {
     /// # struct Counter(u8);
     /// # let mut app = Schedule::new();
     /// # let mut world = World::new();
-    /// # world.init_resource::<Counter>();
+    /// # world.ensure_resource::<Counter>();
     /// app.add_system(
     ///     // `resource_changed` will only return true if the
     ///     // given resource was just changed (or added)
@@ -382,19 +383,19 @@ pub mod common_conditions {
     ///
     /// // `Counter` hasn't been changed so `my_system` won't run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 0);
+    /// assert_eq!(world.read_resource::<Counter>().0, 0);
     ///
     /// world.resource_mut::<Counter>().0 = 50;
     ///
     /// // `Counter` was just changed so `my_system` will run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 51);
+    /// assert_eq!(world.read_resource::<Counter>().0, 51);
     /// ```
-    pub fn resource_changed<T>() -> impl FnMut(Res<T>) -> bool + Clone
+    pub fn resource_changed<T>() -> impl FnMut(ResRef<T>) -> bool + Clone
     where
         T: Resource,
     {
-        move |res: Res<T>| res.is_changed()
+        move |res: ResRef<T>| res.is_changed()
     }
 
     /// Generates a [`Condition`](super::Condition)-satisfying closure that returns `true`
@@ -435,23 +436,23 @@ pub mod common_conditions {
     ///
     /// // `Counter` doesn't exist so `my_system` won't run
     /// app.run(&mut world);
-    /// world.init_resource::<Counter>();
+    /// world.ensure_resource::<Counter>();
     ///
     /// // `Counter` hasn't been changed so `my_system` won't run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 0);
+    /// assert_eq!(world.read_resource::<Counter>().0, 0);
     ///
     /// world.resource_mut::<Counter>().0 = 50;
     ///
     /// // `Counter` was just changed so `my_system` will run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 51);
+    /// assert_eq!(world.read_resource::<Counter>().0, 51);
     /// ```
-    pub fn resource_exists_and_changed<T>() -> impl FnMut(Option<Res<T>>) -> bool + Clone
+    pub fn resource_exists_and_changed<T>() -> impl FnMut(Option<ResRef<T>>) -> bool + Clone
     where
         T: Resource,
     {
-        move |res: Option<Res<T>>| match res {
+        move |res: Option<ResRef<T>>| match res {
             Some(res) => res.is_changed(),
             None => false,
         }
@@ -478,7 +479,7 @@ pub mod common_conditions {
     /// # struct Counter(u8);
     /// # let mut app = Schedule::new();
     /// # let mut world = World::new();
-    /// # world.init_resource::<Counter>();
+    /// # world.ensure_resource::<Counter>();
     /// app.add_system(
     ///     // `resource_changed_or_removed` will only return true if the
     ///     // given resource was just changed or removed (or added)
@@ -499,19 +500,19 @@ pub mod common_conditions {
     ///     if let Some(mut counter) = counter {
     ///         counter.0 += 1;
     ///     } else {
-    ///         commands.init_resource::<MyResource>();
+    ///         commands.ensure_resource::<MyResource>();
     ///     }
     /// }
     ///
     /// // `Counter` hasn't been changed so `my_system` won't run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 0);
+    /// assert_eq!(world.read_resource::<Counter>().0, 0);
     ///
     /// world.resource_mut::<Counter>().0 = 50;
     ///
     /// // `Counter` was just changed so `my_system` will run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 51);
+    /// assert_eq!(world.read_resource::<Counter>().0, 51);
     ///
     /// world.remove_resource::<Counter>();
     ///
@@ -519,12 +520,12 @@ pub mod common_conditions {
     /// app.run(&mut world);
     /// assert_eq!(world.contains_resource::<MyResource>(), true);
     /// ```
-    pub fn resource_changed_or_removed<T>() -> impl FnMut(Option<Res<T>>) -> bool + Clone
+    pub fn resource_changed_or_removed<T>() -> impl FnMut(Option<ResRef<T>>) -> bool + Clone
     where
         T: Resource,
     {
         let mut existed = false;
-        move |res: Option<Res<T>>| {
+        move |res: Option<ResRef<T>>| {
             if let Some(value) = res {
                 existed = true;
                 value.is_changed()
@@ -548,7 +549,7 @@ pub mod common_conditions {
     /// # struct Counter(u8);
     /// # let mut app = Schedule::new();
     /// # let mut world = World::new();
-    /// # world.init_resource::<Counter>();
+    /// # world.ensure_resource::<Counter>();
     /// app.add_system(
     ///     // `resource_removed` will only return true if the
     ///     // given resource was just removed
@@ -562,24 +563,24 @@ pub mod common_conditions {
     ///     counter.0 += 1;
     /// }
     ///
-    /// world.init_resource::<MyResource>();
+    /// world.ensure_resource::<MyResource>();
     ///
     /// // `MyResource` hasn't just been removed so `my_system` won't run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 0);
+    /// assert_eq!(world.read_resource::<Counter>().0, 0);
     ///
     /// world.remove_resource::<MyResource>();
     ///
     /// // `MyResource` was just removed so `my_system` will run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 1);
+    /// assert_eq!(world.read_resource::<Counter>().0, 1);
     /// ```
-    pub fn resource_removed<T>() -> impl FnMut(Option<Res<T>>) -> bool + Clone
+    pub fn resource_removed<T>() -> impl FnMut(Option<ResRef<T>>) -> bool + Clone
     where
         T: Resource,
     {
         let mut existed = false;
-        move |res: Option<Res<T>>| {
+        move |res: Option<ResRef<T>>| {
             if res.is_some() {
                 existed = true;
                 false
@@ -603,7 +604,7 @@ pub mod common_conditions {
     /// # struct Counter(u8);
     /// # let mut app = Schedule::new();
     /// # let mut world = World::new();
-    /// # world.init_resource::<Counter>();
+    /// # world.ensure_resource::<Counter>();
     /// #[derive(States, Clone, Copy, Default, Eq, PartialEq, Hash, Debug)]
     /// enum GameState {
     ///     #[default]
@@ -623,16 +624,16 @@ pub mod common_conditions {
     ///
     /// // `GameState` does not yet exist `my_system` won't run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 0);
+    /// assert_eq!(world.read_resource::<Counter>().0, 0);
     ///
-    /// world.init_resource::<State<GameState>>();
+    /// world.ensure_resource::<State<GameState>>();
     ///
     /// // `GameState` now exists so `my_system` will run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 1);
+    /// assert_eq!(world.read_resource::<Counter>().0, 1);
     /// ```
-    pub fn state_exists<S: States>() -> impl FnMut(Option<Res<State<S>>>) -> bool + Clone {
-        move |current_state: Option<Res<State<S>>>| current_state.is_some()
+    pub fn state_exists<S: States>() -> impl FnMut(Option<ResRef<State<S>>>) -> bool + Clone {
+        move |current_state: Option<ResRef<State<S>>>| current_state.is_some()
     }
 
     /// Generates a [`Condition`](super::Condition)-satisfying closure that returns `true`
@@ -650,7 +651,7 @@ pub mod common_conditions {
     /// # struct Counter(u8);
     /// # let mut app = Schedule::new();
     /// # let mut world = World::new();
-    /// # world.init_resource::<Counter>();
+    /// # world.ensure_resource::<Counter>();
     /// #[derive(States, Clone, Copy, Default, Eq, PartialEq, Hash, Debug)]
     /// enum GameState {
     ///     #[default]
@@ -658,7 +659,7 @@ pub mod common_conditions {
     ///     Paused,
     /// }
     ///
-    /// world.init_resource::<State<GameState>>();
+    /// world.ensure_resource::<State<GameState>>();
     ///
     /// app.add_systems((
     ///     // `in_state` will only return true if the
@@ -677,16 +678,16 @@ pub mod common_conditions {
     ///
     /// // We default to `GameState::Playing` so `play_system` runs
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 1);
+    /// assert_eq!(world.read_resource::<Counter>().0, 1);
     ///
     /// *world.resource_mut::<State<GameState>>() = State(GameState::Paused);
     ///
     /// // Now that we are in `GameState::Pause`, `pause_system` will run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 0);
+    /// assert_eq!(world.read_resource::<Counter>().0, 0);
     /// ```
-    pub fn in_state<S: States>(state: S) -> impl FnMut(Res<State<S>>) -> bool + Clone {
-        move |current_state: Res<State<S>>| current_state.0 == state
+    pub fn in_state<S: States>(state: S) -> impl FnMut(ResRef<State<S>>) -> bool + Clone {
+        move |current_state: ResRef<State<S>>| current_state.0 == state
     }
 
     /// Generates a [`Condition`](super::Condition)-satisfying closure that returns `true`
@@ -702,7 +703,7 @@ pub mod common_conditions {
     /// # struct Counter(u8);
     /// # let mut app = Schedule::new();
     /// # let mut world = World::new();
-    /// # world.init_resource::<Counter>();
+    /// # world.ensure_resource::<Counter>();
     /// #[derive(States, Clone, Copy, Default, Eq, PartialEq, Hash, Debug)]
     /// enum GameState {
     ///     #[default]
@@ -727,24 +728,24 @@ pub mod common_conditions {
     ///
     /// // `GameState` does not yet exists so neither system will run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 0);
+    /// assert_eq!(world.read_resource::<Counter>().0, 0);
     ///
-    /// world.init_resource::<State<GameState>>();
+    /// world.ensure_resource::<State<GameState>>();
     ///
     /// // We default to `GameState::Playing` so `play_system` runs
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 1);
+    /// assert_eq!(world.read_resource::<Counter>().0, 1);
     ///
     /// *world.resource_mut::<State<GameState>>() = State(GameState::Paused);
     ///
     /// // Now that we are in `GameState::Pause`, `pause_system` will run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 0);
+    /// assert_eq!(world.read_resource::<Counter>().0, 0);
     /// ```
     pub fn state_exists_and_equals<S: States>(
         state: S,
-    ) -> impl FnMut(Option<Res<State<S>>>) -> bool + Clone {
-        move |current_state: Option<Res<State<S>>>| match current_state {
+    ) -> impl FnMut(Option<ResRef<State<S>>>) -> bool + Clone {
+        move |current_state: Option<ResRef<State<S>>>| match current_state {
             Some(current_state) => current_state.0 == state,
             None => false,
         }
@@ -768,7 +769,7 @@ pub mod common_conditions {
     /// # struct Counter(u8);
     /// # let mut app = Schedule::new();
     /// # let mut world = World::new();
-    /// # world.init_resource::<Counter>();
+    /// # world.ensure_resource::<Counter>();
     /// #[derive(States, Clone, Copy, Default, Eq, PartialEq, Hash, Debug)]
     /// enum GameState {
     ///     #[default]
@@ -776,7 +777,7 @@ pub mod common_conditions {
     ///     Paused,
     /// }
     ///
-    /// world.init_resource::<State<GameState>>();
+    /// world.ensure_resource::<State<GameState>>();
     ///
     /// app.add_system(
     ///     // `state_changed` will only return true if the
@@ -791,20 +792,20 @@ pub mod common_conditions {
     ///
     /// // `GameState` has just been added so `my_system` will run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 1);
+    /// assert_eq!(world.read_resource::<Counter>().0, 1);
     ///
     /// // `GameState` has not been updated so `my_system` will not run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 1);
+    /// assert_eq!(world.read_resource::<Counter>().0, 1);
     ///
     /// *world.resource_mut::<State<GameState>>() = State(GameState::Paused);
     ///
     /// // Now that `GameState` has been updated `my_system` will run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 2);
+    /// assert_eq!(world.read_resource::<Counter>().0, 2);
     /// ```
-    pub fn state_changed<S: States>() -> impl FnMut(Res<State<S>>) -> bool + Clone {
-        move |current_state: Res<State<S>>| current_state.is_changed()
+    pub fn state_changed<S: States>() -> impl FnMut(ResRef<State<S>>) -> bool + Clone {
+        move |current_state: ResRef<State<S>>| current_state.is_changed()
     }
 
     /// Generates a [`Condition`](super::Condition)-satisfying closure that returns `true`
@@ -818,8 +819,8 @@ pub mod common_conditions {
     /// # struct Counter(u8);
     /// # let mut app = Schedule::new();
     /// # let mut world = World::new();
-    /// # world.init_resource::<Counter>();
-    /// # world.init_resource::<Events<MyEvent>>();
+    /// # world.ensure_resource::<Counter>();
+    /// # world.ensure_resource::<Events<MyEvent>>();
     /// # app.add_system(Events::<MyEvent>::update_system.before(my_system));
     ///
     /// app.add_system(
@@ -834,13 +835,13 @@ pub mod common_conditions {
     ///
     /// // No new `MyEvent` events have been push so `my_system` won't run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 0);
+    /// assert_eq!(world.read_resource::<Counter>().0, 0);
     ///
     /// world.resource_mut::<Events<MyEvent>>().send(MyEvent);
     ///
     /// // A `MyEvent` event has been push so `my_system` will run
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 1);
+    /// assert_eq!(world.read_resource::<Counter>().0, 1);
     /// ```
     pub fn on_event<T: Event>() -> impl FnMut(EventReader<T>) -> bool + Clone {
         // The events need to be consumed, so that there are no false positives on subsequent
@@ -861,7 +862,7 @@ pub mod common_conditions {
     // /// # struct Counter(u8);
     // /// # let mut app = Schedule::new();
     // /// # let mut world = World::new();
-    // /// # world.init_resource::<Counter>();
+    // /// # world.ensure_resource::<Counter>();
     // /// app.add_system(
     // ///     my_system.run_if(any_with_component::<MyComponent>()),
     // /// );
@@ -875,13 +876,13 @@ pub mod common_conditions {
     // ///
     // /// // No entities exist yet with a `MyComponent` component so `my_system` won't run
     // /// app.run(&mut world);
-    // /// assert_eq!(world.resource::<Counter>().0, 0);
+    // /// assert_eq!(world.read_resource::<Counter>().0, 0);
     // ///
     // /// world.spawn(MyComponent);
     // ///
     // /// // An entities with `MyComponent` now exists so `my_system` will run
     // /// app.run(&mut world);
-    // /// assert_eq!(world.resource::<Counter>().0, 1);
+    // /// assert_eq!(world.read_resource::<Counter>().0, 1);
     // /// ```
     // pub fn any_with_component<T: Component>() -> impl FnMut(Query<(), With<T>>) -> bool + Clone {
     //     move |query: Query<(), With<T>>| !query.is_empty()
@@ -897,7 +898,7 @@ pub mod common_conditions {
     /// # struct Counter(u8);
     /// # let mut app = Schedule::new();
     /// # let mut world = World::new();
-    /// # world.init_resource::<Counter>();
+    /// # world.ensure_resource::<Counter>();
     /// app.add_system(
     ///     // `not` will inverse any condition you pass in.
     ///     // Since the condition we choose always returns true
@@ -914,7 +915,7 @@ pub mod common_conditions {
     /// }
     ///
     /// app.run(&mut world);
-    /// assert_eq!(world.resource::<Counter>().0, 0);
+    /// assert_eq!(world.read_resource::<Counter>().0, 0);
     /// ```
     pub fn not<Marker, T>(condition: T) -> impl Condition<()>
     where
@@ -976,15 +977,16 @@ where
 mod tests {
     use super::Condition;
     use crate as bevy_ecs;
+    use crate::resources::WriteUnique;
     use crate::schedule::common_conditions::not;
     use crate::schedule::IntoSystemConfig;
     use crate::system::Local;
-    use crate::{change_detection::ResMut, schedule::Schedule, world::World};
+    use crate::{schedule::Schedule, world::World};
 
     #[derive(Default)]
     struct Counter(usize);
 
-    fn increment_counter(mut counter: ResMut<Counter>) {
+    fn increment_counter(mut counter: WriteUnique<Counter>) {
         counter.0 += 1;
     }
 
@@ -995,8 +997,8 @@ mod tests {
 
     #[test]
     fn run_condition() {
-        let mut world = World::new();
-        world.init_resource::<Counter>();
+        let mut world = World::default();
+        world.ensure_resource::<Counter>();
         let mut schedule = Schedule::new();
 
         // Run every other cycle
@@ -1004,26 +1006,26 @@ mod tests {
 
         schedule.run(&mut world);
         schedule.run(&mut world);
-        assert_eq!(world.resource::<Counter>().0, 1);
+        assert_eq!(world.read_resource::<Counter>().0, 1);
         schedule.run(&mut world);
         schedule.run(&mut world);
-        assert_eq!(world.resource::<Counter>().0, 2);
+        assert_eq!(world.read_resource::<Counter>().0, 2);
 
         // Run every other cycle oppsite to the last one
         schedule.add_system(increment_counter.run_if(not(every_other_time)));
 
         schedule.run(&mut world);
         schedule.run(&mut world);
-        assert_eq!(world.resource::<Counter>().0, 4);
+        assert_eq!(world.read_resource::<Counter>().0, 4);
         schedule.run(&mut world);
         schedule.run(&mut world);
-        assert_eq!(world.resource::<Counter>().0, 6);
+        assert_eq!(world.read_resource::<Counter>().0, 6);
     }
 
     #[test]
     fn run_condition_combinators() {
-        let mut world = World::new();
-        world.init_resource::<Counter>();
+        let mut world = World::default();
+        world.ensure_resource::<Counter>();
         let mut schedule = Schedule::new();
 
         // Always run
@@ -1032,15 +1034,15 @@ mod tests {
         schedule.add_system(increment_counter.run_if(every_other_time.and_then(|| true)));
 
         schedule.run(&mut world);
-        assert_eq!(world.resource::<Counter>().0, 2);
+        assert_eq!(world.read_resource::<Counter>().0, 2);
         schedule.run(&mut world);
-        assert_eq!(world.resource::<Counter>().0, 3);
+        assert_eq!(world.read_resource::<Counter>().0, 3);
     }
 
     #[test]
     fn multiple_run_conditions() {
-        let mut world = World::new();
-        world.init_resource::<Counter>();
+        let mut world = World::default();
+        world.ensure_resource::<Counter>();
         let mut schedule = Schedule::new();
 
         // Run every other cycle
@@ -1049,15 +1051,15 @@ mod tests {
         schedule.add_system(increment_counter.run_if(every_other_time).run_if(|| false));
 
         schedule.run(&mut world);
-        assert_eq!(world.resource::<Counter>().0, 1);
+        assert_eq!(world.read_resource::<Counter>().0, 1);
         schedule.run(&mut world);
-        assert_eq!(world.resource::<Counter>().0, 1);
+        assert_eq!(world.read_resource::<Counter>().0, 1);
     }
 
     #[test]
     fn multiple_run_conditions_is_and_operation() {
-        let mut world = World::new();
-        world.init_resource::<Counter>();
+        let mut world = World::default();
+        world.ensure_resource::<Counter>();
 
         let mut schedule = Schedule::new();
 
@@ -1070,8 +1072,8 @@ mod tests {
         );
 
         schedule.run(&mut world);
-        assert_eq!(world.resource::<Counter>().0, 0);
+        assert_eq!(world.read_resource::<Counter>().0, 0);
         schedule.run(&mut world);
-        assert_eq!(world.resource::<Counter>().0, 0);
+        assert_eq!(world.read_resource::<Counter>().0, 0);
     }
 }

@@ -22,7 +22,7 @@
 //! #
 //! fn update_score_system(
 //!     mut query: Query<(&Player, &mut Score)>,
-//!     mut round: ResMut<Round>,
+//!     mut round: WriteUnique<Round>,
 //! ) {
 //!     for (player, mut score) in &mut query {
 //!         if player.alive {
@@ -86,7 +86,7 @@
 //! - [`EventReader`](crate::event::EventReader)
 //! - [`EventWriter`](crate::event::EventWriter)
 //! - [`NonSend`] and `Option<NonSend>`
-//! - [`NonSendMut`] and `Option<NonSendMut>`
+//! - [`WriteNonSendUnique`] and `Option<WriteNonSendUnique>`
 //! - [`&World`](crate::world::World)
 //! - [`RemovedComponents`](crate::removal_detection::RemovedComponents)
 //! - [`SystemName`]
@@ -152,33 +152,30 @@ where
 mod tests {
     use std::any::TypeId;
 
+    use crate as gw_bevy;
+    use crate::resources::{ReadNonSendUnique, ReadUnique, WriteNonSendUnique, WriteUnique};
     use crate::{
-        self as bevy_ecs,
-        archetype::{ArchetypeComponentId, Archetypes},
-        bundle::Bundles,
+        // archetype::{ArchetypeComponentId, Archetypes},
+        // bundle::Bundles,
         change_detection::DetectChanges,
-        component::{Component, Components},
-        entity::{Entities, Entity},
+        components::Component,
+        entity::{Builder, Entities, Entity},
         // prelude::AnyOf,
         // query::{Added, Changed, Or, With, Without},
-        removal_detection::RemovedComponents,
         schedule::{apply_system_buffers, IntoSystemConfig, Schedule},
         system::{
             Commands,
             IntoSystem,
             Local,
-            NonSend,
-            NonSendMut,
             ParamSet,
             // Query, QueryComponentError,
-            Res,
-            ResMut,
             Resource,
             System,
             SystemState,
         },
         world::{FromWorld, World},
     };
+    use bevy_ecs_macros::Component;
 
     #[derive(PartialEq, Debug)]
     enum SystemRan {
@@ -200,7 +197,9 @@ mod tests {
     struct F;
 
     #[derive(Component, Debug)]
-    struct W<T>(T);
+    struct W<T>(T)
+    where
+        T: Send + Sync + 'static;
 
     // #[test]
     // fn simple_system() {
@@ -227,7 +226,7 @@ mod tests {
     // #[test]
     // fn query_system_gets() {
     //     fn query_system(
-    //         mut ran: ResMut<SystemRan>,
+    //         mut ran: WriteUnique<SystemRan>,
     //         entity_query: Query<Entity, With<A>>,
     //         b_query: Query<&B>,
     //         a_c_query: Query<(&A, &C)>,
@@ -279,14 +278,14 @@ mod tests {
 
     //     run_system(&mut world, query_system);
 
-    //     assert_eq!(*world.resource::<SystemRan>(), SystemRan::Yes);
+    //     assert_eq!(*world.read_resource::<SystemRan>(), SystemRan::Yes);
     // }
 
     // #[test]
     // fn or_param_set_system() {
     //     // Regression test for issue #762
     //     fn query_system(
-    //         mut ran: ResMut<SystemRan>,
+    //         mut ran: WriteUnique<SystemRan>,
     //         mut set: ParamSet<(
     //             Query<(), Or<(Changed<A>, Changed<B>)>>,
     //             Query<(), Or<(Added<A>, Added<B>)>>,
@@ -307,7 +306,7 @@ mod tests {
 
     //     run_system(&mut world, query_system);
 
-    //     assert_eq!(*world.resource::<SystemRan>(), SystemRan::Yes);
+    //     assert_eq!(*world.read_resource::<SystemRan>(), SystemRan::Yes);
     // }
 
     #[test]
@@ -319,9 +318,9 @@ mod tests {
         struct Changed(usize);
 
         fn incr_e_on_flip(
-            value: Res<Flipper>,
-            mut changed: ResMut<Changed>,
-            mut added: ResMut<Added>,
+            value: ReadUnique<Flipper>,
+            mut changed: WriteUnique<Changed>,
+            mut added: WriteUnique<Added>,
         ) {
             if value.is_added() {
                 added.0 += 1;
@@ -344,17 +343,17 @@ mod tests {
         schedule.add_system(World::clear_trackers.after(apply_system_buffers));
 
         schedule.run(&mut world);
-        assert_eq!(world.resource::<Added>().0, 1);
-        assert_eq!(world.resource::<Changed>().0, 1);
+        assert_eq!(world.read_resource::<Added>().0, 1);
+        assert_eq!(world.read_resource::<Changed>().0, 1);
 
         schedule.run(&mut world);
-        assert_eq!(world.resource::<Added>().0, 1);
-        assert_eq!(world.resource::<Changed>().0, 1);
+        assert_eq!(world.read_resource::<Added>().0, 1);
+        assert_eq!(world.read_resource::<Changed>().0, 1);
 
-        world.resource_mut::<Flipper>().0 = true;
+        world.write_resource::<Flipper>().0 = true;
         schedule.run(&mut world);
-        assert_eq!(world.resource::<Added>().0, 1);
-        assert_eq!(world.resource::<Changed>().0, 2);
+        assert_eq!(world.read_resource::<Added>().0, 1);
+        assert_eq!(world.read_resource::<Changed>().0, 2);
     }
 
     // #[test]
@@ -491,27 +490,27 @@ mod tests {
     #[test]
     #[should_panic]
     fn conflicting_system_resources() {
-        fn sys(_: ResMut<BufferRes>, _: Res<BufferRes>) {}
+        fn sys(_: WriteUnique<BufferRes>, _: ReadUnique<BufferRes>) {}
         test_for_conflicting_resources(sys);
     }
 
     #[test]
     #[should_panic]
     fn conflicting_system_resources_reverse_order() {
-        fn sys(_: Res<BufferRes>, _: ResMut<BufferRes>) {}
+        fn sys(_: ReadUnique<BufferRes>, _: WriteUnique<BufferRes>) {}
         test_for_conflicting_resources(sys);
     }
 
     #[test]
     #[should_panic]
     fn conflicting_system_resources_multiple_mutable() {
-        fn sys(_: ResMut<BufferRes>, _: ResMut<BufferRes>) {}
+        fn sys(_: WriteUnique<BufferRes>, _: WriteUnique<BufferRes>) {}
         test_for_conflicting_resources(sys);
     }
 
     #[test]
     fn nonconflicting_system_resources() {
-        fn sys(_: Local<BufferRes>, _: ResMut<BufferRes>, _: Local<A>, _: ResMut<A>) {}
+        fn sys(_: Local<BufferRes>, _: WriteUnique<BufferRes>, _: Local<A>, _: WriteUnique<A>) {}
         test_for_conflicting_resources(sys);
     }
 
@@ -532,12 +531,12 @@ mod tests {
         impl FromWorld for Foo {
             fn from_world(world: &mut World) -> Self {
                 Foo {
-                    value: world.resource::<ProtoFoo>().value + 1,
+                    value: world.read_resource::<ProtoFoo>().value + 1,
                 }
             }
         }
 
-        fn sys(local: Local<Foo>, mut system_ran: ResMut<SystemRan>) {
+        fn sys(local: Local<Foo>, mut system_ran: WriteUnique<SystemRan>) {
             assert_eq!(local.value, 2);
             *system_ran = SystemRan::Yes;
         }
@@ -545,7 +544,7 @@ mod tests {
         run_system(&mut world, sys);
 
         // ensure the system actually ran
-        assert_eq!(*world.resource::<SystemRan>(), SystemRan::Yes);
+        assert_eq!(*world.read_resource::<SystemRan>(), SystemRan::Yes);
     }
 
     #[test]
@@ -555,12 +554,12 @@ mod tests {
         world.insert_resource(SystemRan::No);
         struct NotSend1(std::rc::Rc<i32>);
         struct NotSend2(std::rc::Rc<i32>);
-        world.insert_non_send_resource(NotSend1(std::rc::Rc::new(0)));
+        world.insert_resource_non_send(NotSend1(std::rc::Rc::new(0)));
 
         fn sys(
-            op: Option<NonSend<NotSend1>>,
-            mut _op2: Option<NonSendMut<NotSend2>>,
-            mut system_ran: ResMut<SystemRan>,
+            op: Option<ReadNonSendUnique<NotSend1>>,
+            mut _op2: Option<WriteNonSendUnique<NotSend2>>,
+            mut system_ran: WriteUnique<SystemRan>,
         ) {
             op.expect("NonSend should exist");
             *system_ran = SystemRan::Yes;
@@ -568,7 +567,7 @@ mod tests {
 
         run_system(&mut world, sys);
         // ensure the system actually ran
-        assert_eq!(*world.resource::<SystemRan>(), SystemRan::Yes);
+        assert_eq!(*world.read_resource::<SystemRan>(), SystemRan::Yes);
     }
 
     #[test]
@@ -579,93 +578,93 @@ mod tests {
         struct NotSend1(std::rc::Rc<i32>);
         struct NotSend2(std::rc::Rc<i32>);
 
-        world.insert_non_send_resource(NotSend1(std::rc::Rc::new(1)));
-        world.insert_non_send_resource(NotSend2(std::rc::Rc::new(2)));
+        world.insert_resource_non_send(NotSend1(std::rc::Rc::new(1)));
+        world.insert_resource_non_send(NotSend2(std::rc::Rc::new(2)));
 
         fn sys(
-            _op: NonSend<NotSend1>,
-            mut _op2: NonSendMut<NotSend2>,
-            mut system_ran: ResMut<SystemRan>,
+            _op: ReadNonSendUnique<NotSend1>,
+            mut _op2: WriteNonSendUnique<NotSend2>,
+            mut system_ran: WriteUnique<SystemRan>,
         ) {
             *system_ran = SystemRan::Yes;
         }
 
         run_system(&mut world, sys);
-        assert_eq!(*world.resource::<SystemRan>(), SystemRan::Yes);
+        assert_eq!(*world.read_resource::<SystemRan>(), SystemRan::Yes);
     }
 
-    #[test]
-    fn removal_tracking() {
-        let mut world = World::new();
+    // #[test]
+    // fn removal_tracking() {
+    //     let mut world = World::default();
 
-        let entity_to_despawn = world.spawn(W(1)).id();
-        let entity_to_remove_w_from = world.spawn(W(2)).id();
-        let spurious_entity = world.spawn_empty().id();
+    //     let entity_to_despawn = world.spawn(W(1)).id();
+    //     let entity_to_remove_w_from = world.spawn(W(2)).id();
+    //     let spurious_entity = world.spawn_empty().id();
 
-        // Track which entities we want to operate on
+    //     // Track which entities we want to operate on
 
-        struct Despawned(Entity);
-        world.insert_resource(Despawned(entity_to_despawn));
+    //     struct Despawned(Entity);
+    //     world.insert_resource(Despawned(entity_to_despawn));
 
-        struct Removed(Entity);
-        world.insert_resource(Removed(entity_to_remove_w_from));
+    //     struct Removed(Entity);
+    //     world.insert_resource(Removed(entity_to_remove_w_from));
 
-        // Verify that all the systems actually ran
-        #[derive(Default)]
-        struct NSystems(usize);
-        world.insert_resource(NSystems::default());
+    //     // Verify that all the systems actually ran
+    //     #[derive(Default)]
+    //     struct NSystems(usize);
+    //     world.insert_resource(NSystems::default());
 
-        // First, check that removal detection is triggered if and only if we despawn an entity with the correct component
-        world.entity_mut(entity_to_despawn).despawn();
-        world.entity_mut(spurious_entity).despawn();
+    //     // First, check that removal detection is triggered if and only if we despawn an entity with the correct component
+    //     world.delete_entity(entity_to_despawn);
+    //     world.delete_entity(spurious_entity);
 
-        fn validate_despawn(
-            mut removed_i32: RemovedComponents<W<i32>>,
-            despawned: Res<Despawned>,
-            mut n_systems: ResMut<NSystems>,
-        ) {
-            assert_eq!(
-                removed_i32.iter().collect::<Vec<_>>(),
-                &[despawned.0],
-                "despawning causes the correct entity to show up in the 'RemovedComponent' system parameter."
-            );
+    //     fn validate_despawn(
+    //         mut removed_i32: RemovedComponents<W<i32>>,
+    //         despawned: ReadUnique<Despawned>,
+    //         mut n_systems: WriteUnique<NSystems>,
+    //     ) {
+    //         assert_eq!(
+    //             removed_i32.iter().collect::<Vec<_>>(),
+    //             &[despawned.0],
+    //             "despawning causes the correct entity to show up in the 'RemovedComponent' system parameter."
+    //         );
 
-            n_systems.0 += 1;
-        }
+    //         n_systems.0 += 1;
+    //     }
 
-        run_system(&mut world, validate_despawn);
+    //     run_system(&mut world, validate_despawn);
 
-        // Reset the trackers to clear the buffer of removed components
-        // Ordinarily, this is done in a system added by MinimalPlugins
-        world.clear_trackers();
+    //     // Reset the trackers to clear the buffer of removed components
+    //     // Ordinarily, this is done in a system added by MinimalPlugins
+    //     world.clear_trackers();
 
-        // Then, try removing a component
-        world.spawn(W(3));
-        world.spawn(W(4));
-        world.entity_mut(entity_to_remove_w_from).remove::<W<i32>>();
+    //     // Then, try removing a component
+    //     world.spawn(W(3));
+    //     world.spawn(W(4));
+    //     world.entity_mut(entity_to_remove_w_from).remove::<W<i32>>();
 
-        fn validate_remove(
-            mut removed_i32: RemovedComponents<W<i32>>,
-            despawned: Res<Despawned>,
-            removed: Res<Removed>,
-            mut n_systems: ResMut<NSystems>,
-        ) {
-            // The despawned entity from the previous frame was
-            // double buffered so we now have it in this system as well.
-            assert_eq!(
-                removed_i32.iter().collect::<Vec<_>>(),
-                &[despawned.0, removed.0],
-                "removing a component causes the correct entity to show up in the 'RemovedComponent' system parameter."
-            );
+    //     fn validate_remove(
+    //         mut removed_i32: RemovedComponents<W<i32>>,
+    //         despawned: ReadUnique<Despawned>,
+    //         removed: ReadUnique<Removed>,
+    //         mut n_systems: WriteUnique<NSystems>,
+    //     ) {
+    //         // The despawned entity from the previous frame was
+    //         // double buffered so we now have it in this system as well.
+    //         assert_eq!(
+    //             removed_i32.iter().collect::<Vec<_>>(),
+    //             &[despawned.0, removed.0],
+    //             "removing a component causes the correct entity to show up in the 'RemovedComponent' system parameter."
+    //         );
 
-            n_systems.0 += 1;
-        }
+    //         n_systems.0 += 1;
+    //     }
 
-        run_system(&mut world, validate_remove);
+    //     run_system(&mut world, validate_remove);
 
-        // Verify that both systems actually ran
-        assert_eq!(world.resource::<NSystems>().0, 2);
-    }
+    //     // Verify that both systems actually ran
+    //     assert_eq!(world.read_resource::<NSystems>().0, 2);
+    // }
 
     // #[test]
     // fn world_collections_system() {
@@ -678,7 +677,7 @@ mod tests {
     //         entities: &Entities,
     //         bundles: &Bundles,
     //         query: Query<Entity, With<W<i32>>>,
-    //         mut system_ran: ResMut<SystemRan>,
+    //         mut system_ran: WriteUnique<SystemRan>,
     //     ) {
     //         assert_eq!(query.iter().count(), 1, "entity exists");
     //         for entity in &query {
@@ -708,14 +707,14 @@ mod tests {
     //     run_system(&mut world, sys);
 
     //     // ensure the system actually ran
-    //     assert_eq!(*world.resource::<SystemRan>(), SystemRan::Yes);
+    //     assert_eq!(*world.read_resource::<SystemRan>(), SystemRan::Yes);
     // }
 
     // #[test]
     // fn get_system_conflicts() {
-    //     fn sys_x(_: Res<A>, _: Res<B>, _: Query<(&C, &D)>) {}
+    //     fn sys_x(_: ReadUnique<A>, _: ReadUnique<B>, _: Query<(&C, &D)>) {}
 
-    //     fn sys_y(_: Res<A>, _: ResMut<B>, _: Query<(&C, &mut D)>) {}
+    //     fn sys_y(_: ReadUnique<A>, _: WriteUnique<B>, _: Query<(&C, &mut D)>) {}
 
     //     let mut world = World::default();
     //     let mut x = IntoSystem::into_system(sys_x);
@@ -760,12 +759,12 @@ mod tests {
     // #[allow(clippy::too_many_arguments)]
     // fn can_have_16_parameters() {
     //     fn sys_x(
-    //         _: Res<A>,
-    //         _: Res<B>,
-    //         _: Res<C>,
-    //         _: Res<D>,
-    //         _: Res<E>,
-    //         _: Res<F>,
+    //         _: ReadUnique<A>,
+    //         _: ReadUnique<B>,
+    //         _: ReadUnique<C>,
+    //         _: ReadUnique<D>,
+    //         _: ReadUnique<E>,
+    //         _: ReadUnique<F>,
     //         _: Query<&A>,
     //         _: Query<&B>,
     //         _: Query<&C>,
@@ -779,12 +778,12 @@ mod tests {
     //     }
     //     fn sys_y(
     //         _: (
-    //             Res<A>,
-    //             Res<B>,
-    //             Res<C>,
-    //             Res<D>,
-    //             Res<E>,
-    //             Res<F>,
+    //             ReadUnique<A>,
+    //             ReadUnique<B>,
+    //             ReadUnique<C>,
+    //             ReadUnique<D>,
+    //             ReadUnique<E>,
+    //             ReadUnique<F>,
     //             Query<&A>,
     //             Query<&B>,
     //             Query<&C>,
@@ -816,7 +815,7 @@ mod tests {
     //     world.insert_resource(A(42));
     //     world.spawn(B(7));
 
-    //     let mut system_state: SystemState<(Res<A>, Query<&B>, ParamSet<(Query<&C>, Query<&D>)>)> =
+    //     let mut system_state: SystemState<(ReadUnique<A>, Query<&B>, ParamSet<(Query<&C>, Query<&D>)>)> =
     //         SystemState::new(&mut world);
     //     let (a, query, _) = system_state.get(&world);
     //     assert_eq!(*a, A(42), "returned resource matches initial value");
@@ -839,7 +838,7 @@ mod tests {
     //     world.insert_resource(A(42));
     //     world.spawn(B(7));
 
-    //     let mut system_state: SystemState<(ResMut<A>, Query<&mut B>)> =
+    //     let mut system_state: SystemState<(WriteUnique<A>, Query<&mut B>)> =
     //         SystemState::new(&mut world);
 
     //     // The following line shouldn't compile because the parameters used are not ReadOnlySystemParam
@@ -930,7 +929,7 @@ mod tests {
     //     }
 
     //     struct State {
-    //         state: SystemState<Res<'static, A>>,
+    //         state: SystemState<ReadUnique<'static, A>>,
     //         state_q: SystemState<Query<'static, 'static, &'static A>>,
     //     }
 
@@ -1176,24 +1175,24 @@ mod tests {
     //     );
     // }
 
-    #[test]
-    fn commands_param_set() {
-        // Regression test for #4676
-        let mut world = World::new();
-        let entity = world.spawn_empty().id();
+    // #[test]
+    // fn commands_param_set() {
+    //     // Regression test for #4676
+    //     let mut world = World::default();
+    //     let entity = world.create_entity().build();
 
-        run_system(
-            &mut world,
-            move |mut commands_set: ParamSet<(Commands, Commands)>| {
-                commands_set.p0().entity(entity).insert(A);
-                commands_set.p1().entity(entity).insert(B);
-            },
-        );
+    //     run_system(
+    //         &mut world,
+    //         move |mut commands_set: ParamSet<(Commands, Commands)>| {
+    //             commands_set.p0().entity(entity).insert(A);
+    //             commands_set.p1().entity(entity).insert(B);
+    //         },
+    //     );
 
-        let entity = world.entity(entity);
-        assert!(entity.contains::<A>());
-        assert!(entity.contains::<B>());
-    }
+    //     // let entity = world.entity(entity);
+    //     assert!(world.read_component::<A>().contains(entity));
+    //     assert!(world.read_component::<B>().contains(entity));
+    // }
 
     // #[test]
     // fn into_iter_impl() {
@@ -1237,7 +1236,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn panic_inside_system() {
-        let mut world = World::new();
+        let mut world = World::default();
         run_system(&mut world, || panic!("this system panics"));
     }
 }

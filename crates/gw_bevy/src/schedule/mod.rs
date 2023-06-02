@@ -23,8 +23,9 @@ mod tests {
     use std::sync::atomic::{AtomicU32, Ordering};
 
     pub use crate as bevy_ecs;
+    use crate::resources::{ReadUnique, WriteUnique};
+    pub use crate::resources::{ResMut, ResRef};
     pub use crate::schedule::{IntoSystemConfig, IntoSystemSetConfig, Schedule, SystemSet};
-    pub use crate::system::{Res, ResMut};
     pub use crate::{prelude::World, system::Resource};
 
     #[derive(SystemSet, Clone, Debug, PartialEq, Eq, Hash)]
@@ -46,22 +47,22 @@ mod tests {
     struct Counter(pub AtomicU32);
 
     fn make_exclusive_system(tag: u32) -> impl FnMut(&mut World) {
-        move |world| world.resource_mut::<SystemOrder>().0.push(tag)
+        move |world| world.write_resource::<SystemOrder>().0.push(tag)
     }
 
-    fn make_function_system(tag: u32) -> impl FnMut(ResMut<SystemOrder>) {
-        move |mut resource: ResMut<SystemOrder>| resource.0.push(tag)
+    fn make_function_system(tag: u32) -> impl FnMut(WriteUnique<SystemOrder>) {
+        move |mut resource: WriteUnique<SystemOrder>| resource.0.push(tag)
     }
 
-    fn named_system(mut resource: ResMut<SystemOrder>) {
+    fn named_system(mut resource: WriteUnique<SystemOrder>) {
         resource.0.push(u32::MAX);
     }
 
     fn named_exclusive_system(world: &mut World) {
-        world.resource_mut::<SystemOrder>().0.push(u32::MAX);
+        world.write_resource::<SystemOrder>().0.push(u32::MAX);
     }
 
-    fn counting_system(counter: Res<Counter>) {
+    fn counting_system(counter: ReadUnique<Counter>) {
         counter.0.fetch_add(1, Ordering::Relaxed);
     }
 
@@ -73,12 +74,12 @@ mod tests {
             let mut world = World::default();
             let mut schedule = Schedule::default();
 
-            world.init_resource::<SystemOrder>();
+            world.ensure_resource::<SystemOrder>();
 
             schedule.add_system(make_function_system(0));
             schedule.run(&mut world);
 
-            assert_eq!(world.resource::<SystemOrder>().0, vec![0]);
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![0]);
         }
 
         #[test]
@@ -86,12 +87,12 @@ mod tests {
             let mut world = World::default();
             let mut schedule = Schedule::default();
 
-            world.init_resource::<SystemOrder>();
+            world.ensure_resource::<SystemOrder>();
 
             schedule.add_system(make_exclusive_system(0));
             schedule.run(&mut world);
 
-            assert_eq!(world.resource::<SystemOrder>().0, vec![0]);
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![0]);
         }
 
         #[test]
@@ -125,7 +126,7 @@ mod tests {
             let mut world = World::default();
             let mut schedule = Schedule::default();
 
-            world.init_resource::<SystemOrder>();
+            world.ensure_resource::<SystemOrder>();
 
             schedule.add_system(named_system);
             schedule.add_system(make_function_system(1).before(named_system));
@@ -136,11 +137,11 @@ mod tests {
             );
             schedule.run(&mut world);
 
-            assert_eq!(world.resource::<SystemOrder>().0, vec![1, u32::MAX, 0]);
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![1, u32::MAX, 0]);
 
             world.insert_resource(SystemOrder::default());
 
-            assert_eq!(world.resource::<SystemOrder>().0, vec![]);
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![]);
 
             // modify the schedule after it's been initialized and test ordering with sets
             schedule.configure_set(TestSet::A.after(named_system));
@@ -153,7 +154,7 @@ mod tests {
             schedule.run(&mut world);
 
             assert_eq!(
-                world.resource::<SystemOrder>().0,
+                world.read_resource::<SystemOrder>().0,
                 vec![1, u32::MAX, 3, 0, 4]
             );
         }
@@ -163,7 +164,7 @@ mod tests {
             let mut world = World::default();
             let mut schedule = Schedule::default();
 
-            world.init_resource::<SystemOrder>();
+            world.ensure_resource::<SystemOrder>();
 
             schedule.add_systems((
                 named_exclusive_system,
@@ -172,15 +173,15 @@ mod tests {
             ));
             schedule.run(&mut world);
 
-            assert_eq!(world.resource::<SystemOrder>().0, vec![1, u32::MAX, 0]);
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![1, u32::MAX, 0]);
         }
 
         #[test]
         fn add_systems_correct_order() {
-            let mut world = World::new();
+            let mut world = World::default();
             let mut schedule = Schedule::new();
 
-            world.init_resource::<SystemOrder>();
+            world.ensure_resource::<SystemOrder>();
 
             schedule.add_systems(
                 (
@@ -193,7 +194,7 @@ mod tests {
             );
 
             schedule.run(&mut world);
-            assert_eq!(world.resource::<SystemOrder>().0, vec![0, 1, 2, 3]);
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![0, 1, 2, 3]);
         }
     }
 
@@ -207,19 +208,20 @@ mod tests {
             let mut world = World::default();
             let mut schedule = Schedule::default();
 
-            world.init_resource::<RunConditionBool>();
-            world.init_resource::<SystemOrder>();
+            world.ensure_resource::<RunConditionBool>();
+            world.ensure_resource::<SystemOrder>();
 
             schedule.add_system(
-                make_function_system(0).run_if(|condition: Res<RunConditionBool>| condition.0),
+                make_function_system(0)
+                    .run_if(|condition: ReadUnique<RunConditionBool>| condition.0),
             );
 
             schedule.run(&mut world);
-            assert_eq!(world.resource::<SystemOrder>().0, vec![]);
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![]);
 
-            world.resource_mut::<RunConditionBool>().0 = true;
+            world.write_resource::<RunConditionBool>().0 = true;
             schedule.run(&mut world);
-            assert_eq!(world.resource::<SystemOrder>().0, vec![0]);
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![0]);
         }
 
         #[test]
@@ -228,9 +230,9 @@ mod tests {
             let mut schedule = Schedule::default();
 
             world.insert_resource(RunConditionBool(true));
-            world.init_resource::<SystemOrder>();
+            world.ensure_resource::<SystemOrder>();
 
-            fn change_condition(mut condition: ResMut<RunConditionBool>) {
+            fn change_condition(mut condition: WriteUnique<RunConditionBool>) {
                 condition.0 = false;
             }
 
@@ -241,11 +243,11 @@ mod tests {
                     make_function_system(1),
                 )
                     .chain()
-                    .distributive_run_if(|condition: Res<RunConditionBool>| condition.0),
+                    .distributive_run_if(|condition: ReadUnique<RunConditionBool>| condition.0),
             );
 
             schedule.run(&mut world);
-            assert_eq!(world.resource::<SystemOrder>().0, vec![0]);
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![0]);
         }
 
         #[test]
@@ -253,19 +255,20 @@ mod tests {
             let mut world = World::default();
             let mut schedule = Schedule::default();
 
-            world.init_resource::<RunConditionBool>();
-            world.init_resource::<SystemOrder>();
+            world.ensure_resource::<RunConditionBool>();
+            world.ensure_resource::<SystemOrder>();
 
             schedule.add_system(
-                make_exclusive_system(0).run_if(|condition: Res<RunConditionBool>| condition.0),
+                make_exclusive_system(0)
+                    .run_if(|condition: ReadUnique<RunConditionBool>| condition.0),
             );
 
             schedule.run(&mut world);
-            assert_eq!(world.resource::<SystemOrder>().0, vec![]);
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![]);
 
-            world.resource_mut::<RunConditionBool>().0 = true;
+            world.write_resource::<RunConditionBool>().0 = true;
             schedule.run(&mut world);
-            assert_eq!(world.resource::<SystemOrder>().0, vec![0]);
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![0]);
         }
 
         #[test]
@@ -273,7 +276,7 @@ mod tests {
             let mut world = World::default();
             let mut schedule = Schedule::default();
 
-            world.init_resource::<Counter>();
+            world.ensure_resource::<Counter>();
 
             schedule.add_system(counting_system.run_if(|| false).run_if(|| false));
             schedule.add_system(counting_system.run_if(|| true).run_if(|| false));
@@ -281,7 +284,10 @@ mod tests {
             schedule.add_system(counting_system.run_if(|| true).run_if(|| true));
 
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 1);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
         }
 
         #[test]
@@ -289,7 +295,7 @@ mod tests {
             let mut world = World::default();
             let mut schedule = Schedule::default();
 
-            world.init_resource::<Counter>();
+            world.ensure_resource::<Counter>();
 
             schedule.configure_set(TestSet::A.run_if(|| false).run_if(|| false));
             schedule.add_system(counting_system.in_set(TestSet::A));
@@ -301,7 +307,10 @@ mod tests {
             schedule.add_system(counting_system.in_set(TestSet::D));
 
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 1);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
         }
 
         #[test]
@@ -309,7 +318,7 @@ mod tests {
             let mut world = World::default();
             let mut schedule = Schedule::default();
 
-            world.init_resource::<Counter>();
+            world.ensure_resource::<Counter>();
 
             schedule.configure_set(TestSet::A.run_if(|| false));
             schedule.add_system(counting_system.in_set(TestSet::A).run_if(|| false));
@@ -321,7 +330,10 @@ mod tests {
             schedule.add_system(counting_system.in_set(TestSet::D).run_if(|| true));
 
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 1);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
         }
 
         #[test]
@@ -330,46 +342,64 @@ mod tests {
             struct Bool2(pub bool);
 
             let mut world = World::default();
-            world.init_resource::<Counter>();
-            world.init_resource::<RunConditionBool>();
-            world.init_resource::<Bool2>();
+            world.ensure_resource::<Counter>();
+            world.ensure_resource::<RunConditionBool>();
+            world.ensure_resource::<Bool2>();
             let mut schedule = Schedule::default();
 
             schedule.add_system(
                 counting_system
-                    .run_if(|res1: Res<RunConditionBool>| res1.is_changed())
-                    .run_if(|res2: Res<Bool2>| res2.is_changed()),
+                    .run_if(|res1: ReadUnique<RunConditionBool>| res1.is_changed())
+                    .run_if(|res2: ReadUnique<Bool2>| res2.is_changed()),
             );
 
             // both resource were just added.
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 1);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
 
             // nothing has changed
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 1);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
 
             // RunConditionBool has changed, but counting_system did not run
-            world.get_resource_mut::<RunConditionBool>().unwrap().0 = false;
+            world.try_write_resource::<RunConditionBool>().unwrap().0 = false;
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 1);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
 
             // internal state for the bool2 run criteria was updated in the
             // previous run, so system still does not run
-            world.get_resource_mut::<Bool2>().unwrap().0 = false;
+            world.try_write_resource::<Bool2>().unwrap().0 = false;
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 1);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
 
             // internal state for bool2 was updated, so system still does not run
-            world.get_resource_mut::<RunConditionBool>().unwrap().0 = false;
+            world.try_write_resource::<RunConditionBool>().unwrap().0 = false;
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 1);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
 
             // now check that it works correctly changing Bool2 first and then RunConditionBool
-            world.get_resource_mut::<Bool2>().unwrap().0 = false;
-            world.get_resource_mut::<RunConditionBool>().unwrap().0 = false;
+            world.try_write_resource::<Bool2>().unwrap().0 = false;
+            world.try_write_resource::<RunConditionBool>().unwrap().0 = false;
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 2);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                2
+            );
         }
 
         #[test]
@@ -378,48 +408,66 @@ mod tests {
             struct Bool2(pub bool);
 
             let mut world = World::default();
-            world.init_resource::<Counter>();
-            world.init_resource::<RunConditionBool>();
-            world.init_resource::<Bool2>();
+            world.ensure_resource::<Counter>();
+            world.ensure_resource::<RunConditionBool>();
+            world.ensure_resource::<Bool2>();
             let mut schedule = Schedule::default();
 
             schedule.configure_set(
                 TestSet::A
-                    .run_if(|res1: Res<RunConditionBool>| res1.is_changed())
-                    .run_if(|res2: Res<Bool2>| res2.is_changed()),
+                    .run_if(|res1: ReadUnique<RunConditionBool>| res1.is_changed())
+                    .run_if(|res2: ReadUnique<Bool2>| res2.is_changed()),
             );
 
             schedule.add_system(counting_system.in_set(TestSet::A));
 
             // both resource were just added.
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 1);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
 
             // nothing has changed
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 1);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
 
             // RunConditionBool has changed, but counting_system did not run
-            world.get_resource_mut::<RunConditionBool>().unwrap().0 = false;
+            world.try_write_resource::<RunConditionBool>().unwrap().0 = false;
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 1);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
 
             // internal state for the bool2 run criteria was updated in the
             // previous run, so system still does not run
-            world.get_resource_mut::<Bool2>().unwrap().0 = false;
+            world.try_write_resource::<Bool2>().unwrap().0 = false;
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 1);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
 
             // internal state for bool2 was updated, so system still does not run
-            world.get_resource_mut::<RunConditionBool>().unwrap().0 = false;
+            world.try_write_resource::<RunConditionBool>().unwrap().0 = false;
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 1);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
 
             // the system only runs when both are changed on the same run
-            world.get_resource_mut::<Bool2>().unwrap().0 = false;
-            world.get_resource_mut::<RunConditionBool>().unwrap().0 = false;
+            world.try_write_resource::<Bool2>().unwrap().0 = false;
+            world.try_write_resource::<RunConditionBool>().unwrap().0 = false;
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 2);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                2
+            );
         }
 
         #[test]
@@ -428,49 +476,68 @@ mod tests {
             struct Bool2(pub bool);
 
             let mut world = World::default();
-            world.init_resource::<Counter>();
-            world.init_resource::<RunConditionBool>();
-            world.init_resource::<Bool2>();
+            world.ensure_resource::<Counter>();
+            world.ensure_resource::<RunConditionBool>();
+            world.ensure_resource::<Bool2>();
             let mut schedule = Schedule::default();
 
-            schedule
-                .configure_set(TestSet::A.run_if(|res1: Res<RunConditionBool>| res1.is_changed()));
+            schedule.configure_set(
+                TestSet::A.run_if(|res1: ReadUnique<RunConditionBool>| res1.is_changed()),
+            );
 
             schedule.add_system(
                 counting_system
-                    .run_if(|res2: Res<Bool2>| res2.is_changed())
+                    .run_if(|res2: ReadUnique<Bool2>| res2.is_changed())
                     .in_set(TestSet::A),
             );
 
             // both resource were just added.
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 1);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
 
             // nothing has changed
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 1);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
 
             // RunConditionBool has changed, but counting_system did not run
-            world.get_resource_mut::<RunConditionBool>().unwrap().0 = false;
+            world.try_write_resource::<RunConditionBool>().unwrap().0 = false;
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 1);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
 
             // we now only change bool2 and the system also should not run
-            world.get_resource_mut::<Bool2>().unwrap().0 = false;
+            world.try_write_resource::<Bool2>().unwrap().0 = false;
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 1);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
 
             // internal state for the bool2 run criteria was updated in the
             // previous run, so system still does not run
-            world.get_resource_mut::<RunConditionBool>().unwrap().0 = false;
+            world.try_write_resource::<RunConditionBool>().unwrap().0 = false;
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 1);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
 
             // the system only runs when both are changed on the same run
-            world.get_resource_mut::<Bool2>().unwrap().0 = false;
-            world.get_resource_mut::<RunConditionBool>().unwrap().0 = false;
+            world.try_write_resource::<Bool2>().unwrap().0 = false;
+            world.try_write_resource::<RunConditionBool>().unwrap().0 = false;
             schedule.run(&mut world);
-            assert_eq!(world.resource::<Counter>().0.load(Ordering::Relaxed), 2);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                2
+            );
         }
     }
 
@@ -486,7 +553,7 @@ mod tests {
 
         #[test]
         fn dependency_cycle() {
-            let mut world = World::new();
+            let mut world = World::default();
             let mut schedule = Schedule::new();
 
             schedule.configure_set(TestSet::A.after(TestSet::B));
@@ -498,7 +565,7 @@ mod tests {
             fn foo() {}
             fn bar() {}
 
-            let mut world = World::new();
+            let mut world = World::default();
             let mut schedule = Schedule::new();
 
             schedule.add_systems((foo.after(bar), bar.after(foo)));
@@ -515,7 +582,7 @@ mod tests {
 
         #[test]
         fn hierarchy_cycle() {
-            let mut world = World::new();
+            let mut world = World::default();
             let mut schedule = Schedule::new();
 
             schedule.configure_set(TestSet::A.in_set(TestSet::B));
@@ -531,7 +598,7 @@ mod tests {
             fn foo() {}
             fn bar() {}
 
-            let mut world = World::new();
+            let mut world = World::default();
             let mut schedule = Schedule::new();
 
             // Schedule `bar` to run after `foo`.
@@ -577,7 +644,7 @@ mod tests {
 
         #[test]
         fn hierarchy_redundancy() {
-            let mut world = World::new();
+            let mut world = World::default();
             let mut schedule = Schedule::new();
 
             schedule.set_build_settings(ScheduleBuildSettings {
@@ -604,7 +671,7 @@ mod tests {
 
         #[test]
         fn cross_dependency() {
-            let mut world = World::new();
+            let mut world = World::default();
             let mut schedule = Schedule::new();
 
             // Add `B` and give it both kinds of relationships with `A`.
@@ -619,7 +686,7 @@ mod tests {
 
         #[test]
         fn sets_have_order_but_intersect() {
-            let mut world = World::new();
+            let mut world = World::default();
             let mut schedule = Schedule::new();
 
             fn foo() {}
@@ -646,10 +713,10 @@ mod tests {
         fn ambiguity() {
             struct X;
 
-            fn res_ref(_x: Res<X>) {}
-            fn res_mut(_x: ResMut<X>) {}
+            fn res_ref(_x: ReadUnique<X>) {}
+            fn res_mut(_x: WriteUnique<X>) {}
 
-            let mut world = World::new();
+            let mut world = World::default();
             let mut schedule = Schedule::new();
 
             schedule.set_build_settings(ScheduleBuildSettings {
@@ -731,7 +798,7 @@ mod tests {
 
         #[test]
         fn disallow_multiple_base_sets() {
-            let mut world = World::new();
+            let mut world = World::default();
 
             let mut schedule = Schedule::new();
             schedule
@@ -759,7 +826,7 @@ mod tests {
 
         #[test]
         fn allow_same_base_sets() {
-            let mut world = World::new();
+            let mut world = World::default();
 
             let mut schedule = Schedule::new();
             schedule
@@ -784,7 +851,7 @@ mod tests {
             let mut world = World::default();
             let mut schedule = Schedule::default();
 
-            world.init_resource::<SystemOrder>();
+            world.ensure_resource::<SystemOrder>();
 
             schedule
                 .set_default_base_set(Base::A)
@@ -793,7 +860,7 @@ mod tests {
                 .add_system(make_function_system(1));
             schedule.run(&mut world);
 
-            assert_eq!(world.resource::<SystemOrder>().0, vec![1, 0]);
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![1, 0]);
         }
     }
 }

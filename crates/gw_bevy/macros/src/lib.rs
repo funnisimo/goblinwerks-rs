@@ -214,9 +214,9 @@ pub fn impl_param_set(_input: TokenStream) -> TokenStream {
                     (#(#param,)*)
                 }
 
-                fn new_archetype(state: &mut Self::State, archetype: &Archetype, system_meta: &mut SystemMeta) {
-                    <(#(#param,)*) as SystemParam>::new_archetype(state, archetype, system_meta);
-                }
+                // fn new_archetype(state: &mut Self::State, archetype: &Archetype, system_meta: &mut SystemMeta) {
+                //     <(#(#param,)*) as SystemParam>::new_archetype(state, archetype, system_meta);
+                // }
 
                 fn apply(state: &mut Self::State, system_meta: &SystemMeta, world: &mut World) {
                     <(#(#param,)*) as SystemParam>::apply(state, system_meta, world);
@@ -437,9 +437,9 @@ pub fn derive_system_param(input: TokenStream) -> TokenStream {
                     }
                 }
 
-                fn new_archetype(state: &mut Self::State, archetype: &#path::archetype::Archetype, system_meta: &mut #path::system::SystemMeta) {
-                    <#fields_alias::<'_, '_, #punctuated_generic_idents> as #path::system::SystemParam>::new_archetype(&mut state.state, archetype, system_meta)
-                }
+                // fn new_archetype(state: &mut Self::State, archetype: &#path::archetype::Archetype, system_meta: &mut #path::system::SystemMeta) {
+                //     <#fields_alias::<'_, '_, #punctuated_generic_idents> as #path::system::SystemParam>::new_archetype(&mut state.state, archetype, system_meta)
+                // }
 
                 fn apply(state: &mut Self::State, system_meta: &#path::system::SystemMeta, world: &mut #path::world::World) {
                     <#fields_alias::<'_, '_, #punctuated_generic_idents> as #path::system::SystemParam>::apply(&mut state.state, system_meta, world);
@@ -505,9 +505,22 @@ pub(crate) fn bevy_ecs_path() -> syn::Path {
 //     component::derive_resource(input)
 // }
 
-#[proc_macro_derive(Component, attributes(component))]
-pub fn derive_component(input: TokenStream) -> TokenStream {
-    component::derive_component(input)
+/// Custom derive macro for the `Component` trait.
+///
+/// ## Example
+///
+/// ```rust,ignore
+/// use specs::storage::VecStorage;
+///
+/// #[derive(Component, Debug)]
+/// #[storage(VecStorage)] // This line is optional, defaults to `DenseVecStorage`
+/// struct Pos(f32, f32, f32);
+/// ```
+#[proc_macro_derive(Component, attributes(storage))]
+pub fn component(input: TokenStream) -> TokenStream {
+    let ast = syn::parse(input).unwrap();
+    let gen = component::impl_component(&ast);
+    gen.into()
 }
 
 #[proc_macro_derive(States)]

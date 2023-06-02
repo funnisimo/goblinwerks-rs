@@ -137,9 +137,9 @@ where
         &self.component_access
     }
 
-    fn archetype_component_access(&self) -> &AccessTracker {
-        &self.archetype_component_access
-    }
+    // fn archetype_component_access(&self) -> &AccessTracker {
+    //     &self.archetype_component_access
+    // }
 
     fn is_send(&self) -> bool {
         self.a.is_send() && self.b.is_send()
@@ -188,15 +188,15 @@ where
         self.component_access.extend(self.b.component_access());
     }
 
-    fn update_archetype_component_access(&mut self, world: &World) {
-        self.a.update_archetype_component_access(world);
-        self.b.update_archetype_component_access(world);
+    // fn update_archetype_component_access(&mut self, world: &World) {
+    //     self.a.update_archetype_component_access(world);
+    //     self.b.update_archetype_component_access(world);
 
-        self.archetype_component_access
-            .extend(self.a.archetype_component_access());
-        self.archetype_component_access
-            .extend(self.b.archetype_component_access());
-    }
+    //     self.archetype_component_access
+    //         .extend(self.a.archetype_component_access());
+    //     self.archetype_component_access
+    //         .extend(self.b.archetype_component_access());
+    // }
 
     fn check_change_tick(&mut self, change_tick: u32) {
         self.a.check_change_tick(change_tick);
