@@ -74,7 +74,7 @@ pub mod prelude {
         },
         world::{FromWorld, World},
     };
-    pub use bevy_ecs_macros::Component;
+    pub use bevy_ecs_macros::{Component, ScheduleLabel};
 }
 
 pub use bevy_utils::all_tuples;

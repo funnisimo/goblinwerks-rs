@@ -135,7 +135,7 @@ unsafe impl<'a, T: Component> SystemParam for ReadComp<'a, T> {
             system_meta.name,
         );
 
-        let entities = AccessItem::Unique(ResourceId::of::<Entities>());
+        let entities = AccessItem::Unique(ResourceId::of::<EntitiesRes>());
         assert!(
             !combined_access.has_write(&entities),
             "error[B0002]: Res<{}> in system {} conflicts with a previous ResMut<{0}> access. Consider removing the duplicate access.",
@@ -271,7 +271,7 @@ unsafe impl<'a, T: Component> SystemParam for WriteComp<'a, T> {
             system_meta.name,
         );
 
-        let entities = AccessItem::Unique(ResourceId::of::<Entities>());
+        let entities = AccessItem::Unique(ResourceId::of::<EntitiesRes>());
         assert!(
             !combined_access.has_write(&entities),
             "error[B0002]: Res<{}> in system {} conflicts with a previous ResMut<{0}> access. Consider removing the duplicate access.",

@@ -1,3 +1,4 @@
+use super::ReadOnlySystem;
 use crate::{
     // query::{Access, FilteredAccessSet},
     access::AccessTracker,
@@ -7,11 +8,11 @@ use crate::{
     system::{check_system_change_tick, ReadOnlySystemParam, System, SystemParam, SystemParamItem},
     world::{World, WorldId},
 };
-
 use bevy_utils::all_tuples;
 use std::{any::TypeId, borrow::Cow, marker::PhantomData};
 
-use super::ReadOnlySystem;
+#[cfg(feature = "trace")]
+use tracing::Level;
 
 /// The metadata of a [`System`].
 #[derive(Clone)]
@@ -451,6 +452,9 @@ where
 
     #[inline]
     unsafe fn run_unsafe(&mut self, input: Self::In, world: &World) -> Self::Out {
+        // #[cfg(feature = "trace")]
+        // tracing::event!(Level::TRACE, "run_unsafe");
+
         let change_tick = world.increment_change_tick();
 
         // Safety:

@@ -1,6 +1,6 @@
 //! Event handling types.
 
-use crate as bevy_ecs;
+use crate as gw_bevy;
 use crate::resources::{ReadUnique, ResMut, WriteUnique};
 use crate::system::{Local, SystemParam};
 use bevy_utils::tracing::trace;
@@ -78,7 +78,7 @@ struct EventInstance<E: Event> {
 ///
 /// # Example
 /// ```
-/// use bevy_ecs::event::Events;
+/// use gw_bevy::event::Events;
 ///
 /// struct MyEvent {
 ///     value: usize
@@ -122,7 +122,7 @@ struct EventInstance<E: Event> {
 /// [`add_event`](https://docs.rs/bevy/*/bevy/app/struct.App.html#method.add_event).
 ///
 /// [Example usage.](https://github.com/bevyengine/bevy/blob/latest/examples/ecs/event.rs)
-/// [Example usage standalone.](https://github.com/bevyengine/bevy/blob/latest/crates/bevy_ecs/examples/events.rs)
+/// [Example usage standalone.](https://github.com/bevyengine/bevy/blob/latest/crates/gw_bevy/examples/events.rs)
 ///
 #[derive(Debug)]
 pub struct Events<E: Event> {
@@ -216,7 +216,7 @@ impl<'w, 's, E: Event> EventReader<'w, 's, E> {
     /// [`EventReader::clear()`] is used so the same events don't re-trigger the behaviour the next time the system runs.
     ///
     /// ```
-    /// # use bevy_ecs::prelude::*;
+    /// # use gw_bevy::prelude::*;
     /// struct CollisionEvent;
     ///
     /// fn play_collision_sound(mut events: EventReader<CollisionEvent>) {
@@ -225,7 +225,7 @@ impl<'w, 's, E: Event> EventReader<'w, 's, E> {
     ///         // Play a sound
     ///     }
     /// }
-    /// # bevy_ecs::system::assert_is_system(play_collision_sound);
+    /// # gw_bevy::system::assert_is_system(play_collision_sound);
     /// ```
     pub fn is_empty(&self) -> bool {
         self.reader.is_empty(&self.events)
@@ -256,14 +256,14 @@ impl<'a, 'w, 's, E: Event> IntoIterator for &'a mut EventReader<'w, 's, E> {
 ///
 /// `EventWriter`s are usually declared as a [`SystemParam`].
 /// ```
-/// # use bevy_ecs::prelude::*;
+/// # use gw_bevy::prelude::*;
 ///
 /// pub struct MyEvent; // Custom event type.
 /// fn my_system(mut writer: EventWriter<MyEvent>) {
 ///     writer.send(MyEvent);
 /// }
 ///
-/// # bevy_ecs::system::assert_is_system(my_system);
+/// # gw_bevy::system::assert_is_system(my_system);
 /// ```
 ///
 /// # Limitations
@@ -273,7 +273,7 @@ impl<'a, 'w, 's, E: Event> IntoIterator for &'a mut EventReader<'w, 's, E> {
 /// ahead of time every kind of event you'll need to send. In this case, you can use the "type-erased event" pattern.
 ///
 /// ```
-/// # use bevy_ecs::{prelude::*, event::Events};
+/// # use gw_bevy::{prelude::*, event::Events};
 ///
 /// # pub struct MyEvent;
 /// fn send_untyped(mut commands: Commands) {
@@ -902,7 +902,7 @@ mod tests {
 
     #[test]
     fn test_event_reader_clear() {
-        use bevy_ecs::prelude::*;
+        use gw_bevy::prelude::*;
 
         let mut world = World::default();
         let mut events = Events::<TestEvent>::default();
@@ -928,7 +928,7 @@ mod tests {
     #[allow(clippy::iter_nth_zero)]
     #[test]
     fn test_event_iter_nth() {
-        use bevy_ecs::prelude::*;
+        use gw_bevy::prelude::*;
 
         let mut world = World::default();
         world.ensure_resource::<Events<TestEvent>>();
@@ -954,7 +954,7 @@ mod tests {
 
     #[test]
     fn test_event_iter_last() {
-        use bevy_ecs::prelude::*;
+        use gw_bevy::prelude::*;
 
         let mut world = World::default();
         world.ensure_resource::<Events<TestEvent>>();

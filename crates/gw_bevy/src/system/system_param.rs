@@ -1568,7 +1568,7 @@ unsafe impl<T: ?Sized> ReadOnlySystemParam for PhantomData<T> {}
 mod tests {
     use super::*;
     use crate::{
-        self as bevy_ecs,
+        self as gw_bevy,
         resources::ReadUnique, // Necessary for the `SystemParam` Derive when used inside `bevy_ecs`.
                                // query::{ReadOnlyWorldQuery, WorldQuery},
                                // system::Query,

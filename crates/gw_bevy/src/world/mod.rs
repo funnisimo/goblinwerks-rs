@@ -15,6 +15,10 @@ use crate::storage::{MaskedStorage, Storage};
 use crate::system::Commands;
 use atomize::Atom;
 
+#[cfg(feature = "trace")]
+use tracing;
+use tracing::Level;
+
 // pub use crate::shred::Entry;
 
 pub type WorldId = Atom;
@@ -740,6 +744,13 @@ impl World {
     where
         T::Storage: Default,
     {
+        #[cfg(feature = "trace")]
+        tracing::event!(
+            Level::TRACE,
+            "register : {component}",
+            component = ResourceId::of::<T>().name()
+        );
+
         self.register_with_storage::<T>(Default::default());
     }
 
@@ -784,6 +795,13 @@ impl World {
     // Events
 
     pub fn register_event<T: Event>(&mut self) {
+        #[cfg(feature = "trace")]
+        tracing::event!(
+            Level::TRACE,
+            "register event : {component}",
+            component = ResourceId::of::<T>().name()
+        );
+
         self.ensure_resource::<Events<T>>();
     }
 

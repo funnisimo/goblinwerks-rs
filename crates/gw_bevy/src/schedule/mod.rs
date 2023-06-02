@@ -20,6 +20,7 @@ pub use self::graph_utils::NodeId;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate as gw_bevy;
     use std::sync::atomic::{AtomicU32, Ordering};
 
     pub use crate as bevy_ecs;

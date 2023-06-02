@@ -163,7 +163,7 @@ fn make_executor(kind: ExecutorKind) -> Box<dyn SystemExecutor> {
 /// ```
 pub struct Schedule {
     graph: ScheduleGraph,
-    executable: SystemSchedule,
+    pub executable: SystemSchedule,
     executor: Box<dyn SystemExecutor>,
     executor_initialized: bool,
 }
@@ -1673,7 +1673,7 @@ impl Default for ScheduleBuildSettings {
 impl ScheduleBuildSettings {
     pub const fn new() -> Self {
         Self {
-            ambiguity_detection: LogLevel::Ignore,
+            ambiguity_detection: LogLevel::Warn,
             hierarchy_detection: LogLevel::Warn,
             use_shortnames: true,
             report_sets: true,

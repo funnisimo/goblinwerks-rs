@@ -1,4 +1,4 @@
-use crate as bevy_ecs;
+use crate as gw_bevy;
 use crate::change_detection::DetectChangesMut;
 use crate::schedule::{ScheduleLabel, SystemSet};
 use crate::world::World;

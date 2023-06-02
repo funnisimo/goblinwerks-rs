@@ -2,7 +2,7 @@ mod command_queue;
 mod parallel_scope;
 
 use crate::{
-    self as bevy_ecs,
+    self as gw_bevy,
     components::ComponentSet,
     // bundle::Bundle,
     entity::{EntitiesRes, Entity},

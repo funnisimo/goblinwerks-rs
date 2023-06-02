@@ -1,6 +1,6 @@
 use super::{CommandQueue, Commands};
 use crate::{
-    self as bevy_ecs,
+    self as gw_bevy,
     entity::EntitiesRes,
     prelude::World,
     resources::ResRef,
