@@ -1,6 +1,6 @@
 use super::Component;
 use crate::access::AccessItem;
-use crate::entity::{Entities, EntitiesRes};
+use crate::entity::EntitiesRes;
 use crate::resources::{ResMut, ResRef, ResourceId};
 use crate::storage::{MaskedStorage, Storage};
 use crate::system::{SystemMeta, SystemParam};

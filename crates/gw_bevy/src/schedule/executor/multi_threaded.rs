@@ -19,6 +19,7 @@ use fixedbitset::FixedBitSet;
 use std::ops::Deref;
 use std::panic::AssertUnwindSafe;
 use std::sync::Arc;
+use tracing::{event, Level};
 
 // use crate as bevy_ecs;
 
@@ -53,7 +54,7 @@ impl SyncUnsafeSchedule<'_> {
 // Copied here because it can't be read from the system when it's running.
 struct SystemTaskMetadata {
     /// The `ArchetypeComponentId` access of the system.
-    archetype_component_access: AccessTracker,
+    component_access: AccessTracker,
     /// Indices of the systems that directly depend on the system.
     dependents: Vec<usize>,
     /// Is `true` if the system does not access `!Send` data.
@@ -135,7 +136,7 @@ impl SystemExecutor for MultiThreadedExecutor {
         self.system_task_metadata = Vec::with_capacity(sys_count);
         for index in 0..sys_count {
             self.system_task_metadata.push(SystemTaskMetadata {
-                archetype_component_access: default(),
+                component_access: default(),
                 dependents: schedule.system_dependents[index].clone(),
                 is_send: schedule.systems[index].is_send(),
                 is_exclusive: schedule.systems[index].is_exclusive(),
@@ -214,6 +215,9 @@ impl SystemExecutor for MultiThreadedExecutor {
         );
 
         if self.apply_final_buffers {
+            #[cfg(feature = "trace")]
+            let _executor_span = info_span!("apply final buffers");
+
             // Do one final apply buffers after all systems have completed
             // SAFETY: all systems have completed, and so no outstanding accesses remain
             let world = unsafe { &mut *world.get() };
@@ -285,6 +289,12 @@ impl MultiThreadedExecutor {
             // Therefore, there is no existing mutable reference to the world.
             let world = unsafe { &*cell.get() };
             if !self.can_run(system_index, system, conditions, world) {
+                event!(
+                    Level::TRACE,
+                    "system CANNOT run - {name}",
+                    name = system.name()
+                );
+
                 // NOTE: exclusive systems with ambiguities are susceptible to
                 // being significantly displaced here (compared to single-threaded order)
                 // if systems after them in topological order can run
@@ -331,10 +341,18 @@ impl MultiThreadedExecutor {
     ) -> bool {
         let system_meta = &self.system_task_metadata[system_index];
         if system_meta.is_exclusive && self.num_running_systems > 0 {
+            #[cfg(feature = "trace")]
+            event!(
+                Level::TRACE,
+                "exclusive && num_running_systems = {}",
+                self.num_running_systems
+            );
             return false;
         }
 
         if !system_meta.is_send && self.local_thread_running {
+            #[cfg(feature = "trace")]
+            event!(Level::TRACE, "!SEND && local_thread_running");
             return false;
         }
 
@@ -343,11 +361,13 @@ impl MultiThreadedExecutor {
             .difference(&self.evaluated_sets)
         {
             for condition in &mut conditions.set_conditions[set_idx] {
-                // condition.update_archetype_component_access(world);
+                // condition.update_component_access(world);
                 if !condition
                     .component_access()
                     .is_compatible(&self.active_access)
                 {
+                    #[cfg(feature = "trace")]
+                    event!(Level::TRACE, "set conditions conflict",);
                     return false;
                 }
             }
@@ -359,6 +379,14 @@ impl MultiThreadedExecutor {
                 .component_access()
                 .is_compatible(&self.active_access)
             {
+                #[cfg(feature = "trace")]
+                event!(
+                    Level::TRACE,
+                    "system_conditions conflict = {:?} vs {:?}",
+                    condition.component_access(),
+                    self.active_access
+                );
+
                 return false;
             }
         }
@@ -366,14 +394,24 @@ impl MultiThreadedExecutor {
         if !self.skipped_systems.contains(system_index) {
             // system.update_archetype_component_access(world);
             if !system.component_access().is_compatible(&self.active_access) {
+                #[cfg(feature = "trace")]
+                event!(
+                    Level::TRACE,
+                    "system.conditions conflict = {:?} vs {:?}",
+                    system.component_access(),
+                    self.active_access
+                );
+
                 return false;
             }
 
             // PERF: use an optimized clear() + extend() operation
-            let meta_access =
-                &mut self.system_task_metadata[system_index].archetype_component_access;
+            let meta_access = &mut self.system_task_metadata[system_index].component_access;
             meta_access.clear();
             meta_access.extend(system.component_access());
+
+            #[cfg(feature = "trace")]
+            event!(Level::TRACE, "extend meta access - {:?}", meta_access);
         }
 
         true
@@ -433,7 +471,7 @@ impl MultiThreadedExecutor {
         #[cfg(feature = "trace")]
         let task_span = info_span!("system_task", name = &*system.name());
         #[cfg(feature = "trace")]
-        let system_span = info_span!("system", name = &*system.name());
+        let system_span = info_span!("run system", name = &*system.name());
 
         let sender = self.sender.clone();
         let task = async move {
@@ -460,8 +498,7 @@ impl MultiThreadedExecutor {
         let task = task.instrument(task_span);
 
         let system_meta = &self.system_task_metadata[system_index];
-        self.active_access
-            .extend(&system_meta.archetype_component_access);
+        self.active_access.extend(&system_meta.component_access);
 
         if system_meta.is_send {
             scope.spawn(task);
@@ -486,7 +523,7 @@ impl MultiThreadedExecutor {
         #[cfg(feature = "trace")]
         let task_span = info_span!("system_task", name = &*system.name());
         #[cfg(feature = "trace")]
-        let system_span = info_span!("system", name = &*system.name());
+        let system_span = info_span!("run system", name = &*system.name());
 
         let sender = self.sender.clone();
         if is_apply_system_buffers(system) {
@@ -583,8 +620,7 @@ impl MultiThreadedExecutor {
         self.active_access.clear();
         for index in self.running_systems.ones() {
             let system_meta = &self.system_task_metadata[index];
-            self.active_access
-                .extend(&system_meta.archetype_component_access);
+            self.active_access.extend(&system_meta.component_access);
         }
     }
 }

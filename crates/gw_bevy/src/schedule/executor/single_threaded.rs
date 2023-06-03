@@ -88,13 +88,13 @@ impl SystemExecutor for SingleThreadedExecutor {
             let system = &mut schedule.systems[system_index];
             if is_apply_system_buffers(system) {
                 #[cfg(feature = "trace")]
-                let system_span = info_span!("system", name = &*name).entered();
+                let system_span = info_span!("system - apply buffers", name = &*name).entered();
                 self.apply_system_buffers(schedule, world);
                 #[cfg(feature = "trace")]
                 system_span.exit();
             } else {
                 #[cfg(feature = "trace")]
-                let system_span = info_span!("system", name = &*name).entered();
+                let system_span = info_span!("run system", name = &*name).entered();
                 system.run((), world);
                 #[cfg(feature = "trace")]
                 system_span.exit();

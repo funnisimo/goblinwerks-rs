@@ -60,8 +60,8 @@ pub trait System: Send + Sync + 'static {
     /// Initialize the system.
     fn initialize(&mut self, _world: &mut World);
 
-    // /// Update the system's archetype component [`Access`].
-    // fn update_archetype_component_access(&mut self, world: &World);
+    // /// Update the system's component [`Access`].
+    // fn update_component_access(&mut self, world: &World);
 
     fn check_change_tick(&mut self, change_tick: u32);
     /// Returns the system's default [system sets](crate::schedule::SystemSet).

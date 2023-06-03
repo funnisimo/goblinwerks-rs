@@ -11,9 +11,6 @@ use crate::{
 use bevy_utils::all_tuples;
 use std::{any::TypeId, borrow::Cow, marker::PhantomData};
 
-#[cfg(feature = "trace")]
-use tracing::Level;
-
 /// The metadata of a [`System`].
 #[derive(Clone)]
 pub struct SystemMeta {

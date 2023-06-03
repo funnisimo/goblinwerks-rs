@@ -163,7 +163,7 @@ fn make_executor(kind: ExecutorKind) -> Box<dyn SystemExecutor> {
 /// ```
 pub struct Schedule {
     graph: ScheduleGraph,
-    pub executable: SystemSchedule,
+    executable: SystemSchedule,
     executor: Box<dyn SystemExecutor>,
     executor_initialized: bool,
 }
@@ -281,6 +281,22 @@ impl Schedule {
     pub fn graph_mut(&mut self) -> &mut ScheduleGraph {
         &mut self.graph
     }
+
+    // pub fn system_schedule(&self) -> &SystemSchedule {
+    //     &self.executable
+    // }
+
+    // pub fn system_schedule_mut(&mut self) -> &mut SystemSchedule {
+    //     &mut self.executable
+    // }
+
+    // pub fn executor(&self) -> &dyn SystemExecutor {
+    //     self.executor.as_ref()
+    // }
+
+    // pub fn executor_mut(&mut self) -> &mut dyn SystemExecutor {
+    //     self.executor.as_mut()
+    // }
 
     /// Iterates the change ticks of all systems in the schedule and clamps any older than
     /// [`MAX_CHANGE_AGE`](crate::change_detection::MAX_CHANGE_AGE).

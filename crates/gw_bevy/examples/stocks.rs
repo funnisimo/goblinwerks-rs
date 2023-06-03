@@ -1,10 +1,5 @@
-use gw_bevy::{
-    prelude::*,
-    schedule::{ExecutorKind, ScheduleBuildSettings},
-};
+use gw_bevy::prelude::*;
 use rand::*;
-use tracing::{info, trace, Level};
-use tracing_subscriber::FmtSubscriber;
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -227,7 +222,7 @@ fn price_change_system(
     let mut rng = thread_rng();
 
     for (entity, stock) in (&entities, &mut stocks).join() {
-        let delta = 1.0 - ((rng.next_u32() as f32 / u32::MAX as f32) * 2.0); // -1.0 -> 1.0
+        let delta = 1.00 - ((rng.next_u32() as f32 / u32::MAX as f32) * 2.0); // -1.0 -> 1.0
         stock.price += delta;
 
         if stock.price <= 5.0 {
@@ -246,21 +241,18 @@ fn print_system(stocks: ReadComp<Stock>) {
 }
 
 fn main() {
-    // a builder for `FmtSubscriber`.
-    let subscriber = FmtSubscriber::builder()
-        // all spans/events with a level higher than TRACE (e.g, debug, info, warn, etc.)
-        // will be written to stdout.
-        .with_max_level(Level::TRACE)
-        // completes the builder.
-        .finish();
+    // let collector = tracing_subscriber::fmt()
+    //     // filter spans/events with level TRACE or higher.
+    //     .with_max_level(Level::TRACE)
+    //     .with_span_events(FmtSpan::ACTIVE)
+    //     // build but do not install the subscriber.
+    //     .finish();
 
-    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
-
-    trace!("Hello");
+    // tracing::subscriber::set_global_default(collector).unwrap();
 
     let mut world = World::default();
 
-    // world.register::<Stock>();
+    world.register::<Stock>();
     world.register_event::<BuyBack>();
     world.register_event::<Split>();
 
@@ -275,10 +267,16 @@ fn main() {
     );
     schedule.add_system(
         split_system
-            .after(buy_back_system)
+            .after(price_change_system)
             .in_base_set(CoreSet::PostUpdate),
     );
     schedule.add_system(print_system.in_base_set(CoreSet::Last));
+
+    world.spawn(Stock::new("IBM"));
+    world.spawn(Stock::new("APPLE"));
+    world.spawn(Stock::new("AMZN"));
+    world.spawn(Stock::new("HP"));
+    world.spawn(Stock::new("F"));
 
     for _ in 0..100 {
         schedule.run(&mut world);

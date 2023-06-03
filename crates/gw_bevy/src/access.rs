@@ -69,7 +69,9 @@ impl AccessTracker {
             return self.writes.len() == 0;
         }
 
-        self.writes.is_disjoint(&other.reads) && self.reads.is_disjoint(&other.writes)
+        self.writes.is_disjoint(&other.reads)         // my writes do not intersect your reads
+            && self.reads.is_disjoint(&other.writes)  // my reads do not intersect your writes
+            && self.writes.is_disjoint(&other.writes) // we do not have any writes in common
     }
 
     pub fn get_conflicts(&self, other: &AccessTracker) -> Vec<AccessItem> {
