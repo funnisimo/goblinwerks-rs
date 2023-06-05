@@ -428,13 +428,13 @@ impl<'a> Join for &'a Entities<'a> {
         idx: Index,
         _last_system_tick: u32,
         _world_tick: u32,
-    ) -> Entity {
+    ) -> Option<Entity> {
         let gen = v
             .alloc
             .generation(idx)
             .map(|gen| if gen.is_alive() { gen } else { gen.raised() })
             .unwrap_or_else(Generation::one);
-        Entity(idx, gen)
+        Some(Entity(idx, gen))
     }
 }
 
@@ -460,13 +460,13 @@ impl<'a> Join for &'a ResRef<'a, EntitiesRes> {
         idx: Index,
         _last_system_tick: u32,
         _world_tick: u32,
-    ) -> Entity {
+    ) -> Option<Entity> {
         let gen = v
             .alloc
             .generation(idx)
             .map(|gen| if gen.is_alive() { gen } else { gen.raised() })
             .unwrap_or_else(Generation::one);
-        Entity(idx, gen)
+        Some(Entity(idx, gen))
     }
 }
 

@@ -33,10 +33,12 @@ where
         id: Index,
         _last_system_tick: u32,
         world_tick: u32,
-    ) -> T {
-        value
-            .remove(id, world_tick)
-            .expect("Tried to access same index twice")
+    ) -> Option<T> {
+        Some(
+            value
+                .remove(id, world_tick)
+                .expect("Tried to access same index twice"),
+        )
     }
 }
 

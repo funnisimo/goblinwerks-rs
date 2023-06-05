@@ -56,7 +56,9 @@ impl<'a> Join for AntiStorage<'a> {
     }
 
     // SAFETY: No invariants to meet and no unsafe code.
-    unsafe fn get(_: &mut (), _: Index, _: u32, _: u32) {}
+    unsafe fn get(_: &mut (), _: Index, _: u32, _: u32) -> Option<()> {
+        Some(())
+    }
 }
 
 // SAFETY: Since `get` does not do any memory access, this is safe to implement.
@@ -180,7 +182,7 @@ impl<T: Component> MaskedStorage<T> {
     }
 
     /// Remove an element by a given index.
-    pub fn remove(&mut self, id: Index, world_tick: u32) -> Option<T> {
+    pub fn remove(&mut self, id: Index, _world_tick: u32) -> Option<T> {
         if self.mask.remove(id) {
             // SAFETY: We checked the mask (`remove` returned `true`)
             Some(unsafe { self.inner.remove(id).data })
@@ -190,7 +192,7 @@ impl<T: Component> MaskedStorage<T> {
     }
 
     /// Drop an element by a given index.
-    pub fn drop(&mut self, id: Index, world_tick: u32) {
+    pub fn drop(&mut self, id: Index, _world_tick: u32) {
         if self.mask.remove(id) {
             // SAFETY: We checked the mask (`remove` returned `true`)
             unsafe {
@@ -451,10 +453,10 @@ where
         i: Index,
         last_system_tick: u32,
         world_tick: u32,
-    ) -> CompRef<'a, T> {
+    ) -> Option<CompRef<'a, T>> {
         let value: *const Self::Storage = v as *const Self::Storage;
         let (d, t) = (*value).get(i).destructure();
-        CompRef::new(d, t, last_system_tick, world_tick)
+        Some(CompRef::new(d, t, last_system_tick, world_tick))
     }
 }
 
@@ -502,13 +504,13 @@ where
         i: Index,
         last_system_tick: u32,
         world_tick: u32,
-    ) -> CompMut<'a, T> {
+    ) -> Option<CompMut<'a, T>> {
         // This is horribly unsafe. Unfortunately, Rust doesn't provide a way
         // to abstract mutable/immutable state at the moment, so we have to hack
         // our way through it.
         let value: *mut Self::Storage = v as *mut Self::Storage;
         let (d, t) = (*value).get_mut(i).destructure_mut();
-        CompMut::new(d, t, last_system_tick, world_tick)
+        Some(CompMut::new(d, t, last_system_tick, world_tick))
     }
 }
 

@@ -233,7 +233,7 @@ pub trait Join {
         id: Index,
         last_system_tick: u32,
         world_tick: u32,
-    ) -> Self::Item;
+    ) -> Option<Self::Item>;
 
     /// If this `Join` typically returns all indices in the mask, then iterating
     /// over only it or combined with other joins that are also dangerous
@@ -276,11 +276,16 @@ where
 
     // SAFETY: No invariants to meet and the unsafe code checks the mask, thus
     // fulfills the requirements for calling `get`
-    unsafe fn get((mask, value): &mut Self::Storage, id: Index, lst: u32, wt: u32) -> Self::Item {
+    unsafe fn get(
+        (mask, value): &mut Self::Storage,
+        id: Index,
+        lst: u32,
+        wt: u32,
+    ) -> Option<Self::Item> {
         if mask.contains(id) {
             Some(<T as Join>::get(value, id, lst, wt))
         } else {
-            None
+            Some(None)
         }
     }
 
@@ -380,14 +385,14 @@ impl<J: Join> JoinIter<J> {
     pub fn get(&mut self, entity: Entity, entities: &Entities) -> Option<J::Item> {
         if self.keys.contains(entity.id()) && entities.is_alive(entity) {
             // SAFETY: the mask (`keys`) is checked as specified in the docs of `get`.
-            Some(unsafe {
+            unsafe {
                 J::get(
                     &mut self.values,
                     entity.id(),
                     self.last_system_tick,
                     self.world_tick,
                 )
-            })
+            }
         } else {
             None
         }
@@ -403,14 +408,14 @@ impl<J: Join> JoinIter<J> {
     pub fn get_unchecked(&mut self, index: Index) -> Option<J::Item> {
         if self.keys.contains(index) {
             // SAFETY: the mask (`keys`) is checked as specified in the docs of `get`.
-            Some(unsafe {
+            unsafe {
                 J::get(
                     &mut self.values,
                     index,
                     self.last_system_tick,
                     self.world_tick,
                 )
-            })
+            }
         } else {
             None
         }
@@ -423,15 +428,24 @@ impl<J: Join> std::iter::Iterator for JoinIter<J> {
     fn next(&mut self) -> Option<J::Item> {
         // SAFETY: since `idx` is yielded from `keys` (the mask), it is necessarily a
         // part of it. Thus, requirements are fulfilled for calling `get`.
-        self.keys.next().map(|idx| unsafe {
-            // println!("next - {}, {}", self.last_system_tick, self.world_tick);
-            J::get(
-                &mut self.values,
-                idx,
-                self.last_system_tick,
-                self.world_tick,
-            )
-        })
+        loop {
+            match self.keys.next() {
+                None => return None,
+                Some(idx) => {
+                    match unsafe {
+                        J::get(
+                            &mut self.values,
+                            idx,
+                            self.last_system_tick,
+                            self.world_tick,
+                        )
+                    } {
+                        None => {}
+                        Some(val) => return Some(val),
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -532,9 +546,9 @@ macro_rules! define_open {
             // SAFETY: No invariants to meet and `get` is safe to call as the caller must have checked the mask,
             // which only has a key that exists in all of the storages.
             #[allow(non_snake_case)]
-            unsafe fn get(v: &mut Self::Storage, i: Index, last_system_tick: u32, world_tick: u32) -> Self::Item {
+            unsafe fn get(v: &mut Self::Storage, i: Index, last_system_tick: u32, world_tick: u32) -> Option<Self::Item> {
                 let &mut (ref mut $from,) = v;
-                ($from::get($from, i, last_system_tick, world_tick),)
+                Some((match $from::get($from, i, last_system_tick, world_tick) { None => return None, Some(x) => x },))
             }
 
             #[inline]
@@ -580,9 +594,10 @@ macro_rules! define_open {
             // SAFETY: No invariants to meet and `get` is safe to call as the caller must have checked the mask,
             // which only has a key that exists in all of the storages.
             #[allow(non_snake_case)]
-            unsafe fn get(v: &mut Self::Storage, i: Index, last_system_tick: u32, world_tick: u32) -> Self::Item {
+            unsafe fn get(v: &mut Self::Storage, i: Index, last_system_tick: u32, world_tick: u32) -> Option<Self::Item> {
                 let &mut (ref mut $head, $(ref mut $from,)*) = v;
-                ($head::get($head, i, last_system_tick, world_tick), $($from::get($from, i, last_system_tick, world_tick),)*)
+                Some((match $head::get($head, i, last_system_tick, world_tick) { None => return None, Some(x) => x },
+                    $(match $from::get($from, i, last_system_tick, world_tick) { None => return None, Some(x) => x },)*))
             }
 
             #[inline]
