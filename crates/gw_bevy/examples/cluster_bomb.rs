@@ -41,25 +41,26 @@ fn cluster_bomb_system(
     use rand::distributions::Uniform;
 
     let durability_range = Uniform::new(10, 20);
-    let update_position = |(entity, bomb, position): (Entity, &mut ClusterBomb, &Pos)| {
-        let mut rng = rand::thread_rng();
+    let update_position =
+        |(entity, mut bomb, position): (Entity, CompMut<ClusterBomb>, CompRef<Pos>)| {
+            let mut rng = rand::thread_rng();
 
-        if bomb.fuse == 0 {
-            let _ = entities.delete(entity);
-            for _ in 0..9 {
-                let shrapnel = entities.create();
-                let mut update = updater.entity(shrapnel);
-                update.insert(Shrapnel {
-                    durability: durability_range.sample(&mut rng),
-                });
-                update.insert(position.clone());
-                let angle: f32 = rng.gen::<f32>() * TAU;
-                update.insert(Vel(angle.sin(), angle.cos()));
+            if bomb.fuse == 0 {
+                let _ = entities.delete(entity);
+                for _ in 0..9 {
+                    let shrapnel = entities.create();
+                    let mut update = updater.entity(shrapnel);
+                    update.insert(Shrapnel {
+                        durability: durability_range.sample(&mut rng),
+                    });
+                    update.insert(position.clone());
+                    let angle: f32 = rng.gen::<f32>() * TAU;
+                    update.insert(Vel(angle.sin(), angle.cos()));
+                }
+            } else {
+                bomb.fuse -= 1;
             }
-        } else {
-            bomb.fuse -= 1;
-        }
-    };
+        };
 
     // Join components in potentially parallel way using rayon.
     {
@@ -70,7 +71,7 @@ fn cluster_bomb_system(
 }
 
 fn physics_system(mut pos: WriteComp<Pos>, vel: ReadComp<Vel>) {
-    (&mut pos, &vel).join().for_each(|(pos, vel)| {
+    (&mut pos, &vel).join().for_each(|(mut pos, vel)| {
         pos.0 += vel.0;
         pos.1 += vel.1;
     });
@@ -79,7 +80,7 @@ fn physics_system(mut pos: WriteComp<Pos>, vel: ReadComp<Vel>) {
 fn shrapnel_system(entities: Entities, mut shrapnels: WriteComp<Shrapnel>) {
     (&entities, &mut shrapnels)
         .join()
-        .for_each(|(entity, shrapnel)| {
+        .for_each(|(entity, mut shrapnel)| {
             if shrapnel.durability == 0 {
                 let _ = entities.delete(entity);
             } else {

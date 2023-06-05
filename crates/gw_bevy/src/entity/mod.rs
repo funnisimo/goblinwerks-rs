@@ -411,14 +411,24 @@ impl EntitiesRes {
 // Join for ResRef<EntitiesRes>
 impl<'a> Join for &'a Entities<'a> {
     type Mask = BitSetOr<&'a BitSet, &'a AtomicBitSet>;
-    type Type = Entity;
-    type Value = Self;
+    type Item = Entity;
+    type Storage = Self;
 
-    unsafe fn open(self) -> (Self::Mask, Self) {
-        (BitSetOr(&self.alloc.alive, &self.alloc.raised), self)
+    unsafe fn open(self) -> (Self::Mask, Self, u32, u32) {
+        (
+            BitSetOr(&self.alloc.alive, &self.alloc.raised),
+            self,
+            self.last_system_tick,
+            self.world_tick,
+        )
     }
 
-    unsafe fn get(v: &mut &'a Entities<'a>, idx: Index) -> Entity {
+    unsafe fn get(
+        v: &mut &'a Entities<'a>,
+        idx: Index,
+        _last_system_tick: u32,
+        _world_tick: u32,
+    ) -> Entity {
         let gen = v
             .alloc
             .generation(idx)
@@ -433,14 +443,24 @@ unsafe impl<'a> ParJoin for &'a EntitiesRes {}
 
 impl<'a> Join for &'a ResRef<'a, EntitiesRes> {
     type Mask = BitSetOr<&'a BitSet, &'a AtomicBitSet>;
-    type Type = Entity;
-    type Value = Self;
+    type Item = Entity;
+    type Storage = Self;
 
-    unsafe fn open(self) -> (Self::Mask, Self) {
-        (BitSetOr(&self.alloc.alive, &self.alloc.raised), self)
+    unsafe fn open(self) -> (Self::Mask, Self, u32, u32) {
+        (
+            BitSetOr(&self.alloc.alive, &self.alloc.raised),
+            self,
+            self.last_system_tick,
+            self.world_tick,
+        )
     }
 
-    unsafe fn get(v: &mut &'a ResRef<EntitiesRes>, idx: Index) -> Entity {
+    unsafe fn get(
+        v: &mut &'a ResRef<EntitiesRes>,
+        idx: Index,
+        _last_system_tick: u32,
+        _world_tick: u32,
+    ) -> Entity {
         let gen = v
             .alloc
             .generation(idx)

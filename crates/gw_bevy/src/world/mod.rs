@@ -705,7 +705,7 @@ impl World {
             }
             Some(data) => data,
         };
-        Storage::new(entities, data, self.change_tick(), self.change_tick())
+        Storage::new(entities, data, self.last_maintain_tick, self.change_tick())
     }
 
     pub fn with_component<R, C: Component, F: FnOnce(ReadComp<C>) -> R>(&self, f: F) -> R {
@@ -901,7 +901,7 @@ impl World {
             let mut builder = dest.create_entity();
             let storages = self.read_resource::<Components>();
             for storage in storages.iter_mut(self) {
-                storage.try_move_component(entity, &mut builder);
+                storage.try_move_component(entity, self.change_tick(), &mut builder);
             }
             builder.id()
         };
@@ -947,7 +947,7 @@ impl World {
             .unwrap()
             .iter_mut(self)
         {
-            storage.drop(delete);
+            storage.drop(delete, self.change_tick());
         }
     }
 }

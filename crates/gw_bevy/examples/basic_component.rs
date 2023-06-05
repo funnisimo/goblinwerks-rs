@@ -13,10 +13,20 @@ fn system_a(mut pos: WriteComp<Pos>, vel: ReadComp<Vel>) {
     // so we only access those entities which have
     // both of them.
     // You could also use `par_join()` to get a rayon `ParallelIterator`.
-    for (pos, vel) in (&mut pos, &vel).join() {
-        pos.0 += vel.0;
-    }
+
     println!("System - Updating positions");
+    for (mut pos, vel) in (&mut pos, &vel).join() {
+        pos.0 += vel.0;
+        println!(
+            "vel: {:?} = {} - {}, pos: {:?} = {} - {}",
+            vel,
+            vel.is_added(),
+            vel.is_changed(),
+            pos,
+            pos.is_added(),
+            pos.is_changed()
+        );
+    }
 }
 
 fn main() {
@@ -46,5 +56,9 @@ fn main() {
     world.create_entity().with(Pos(2.0)).id();
 
     // This dispatches all the systems in parallel (but blocking).
+    dispatcher.run(&mut world);
+    world.maintain();
+    dispatcher.run(&mut world);
+    world.maintain();
     dispatcher.run(&mut world);
 }

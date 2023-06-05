@@ -173,6 +173,11 @@ unsafe impl<'a, T: Component> SystemParam for ReadComp<'a, T> {
                 )
             });
 
+        // println!(
+        //     "ReadComp - get_param - {}, {}",
+        //     system_meta.last_change_tick, change_tick
+        // );
+
         ReadComp::new(entities, data, system_meta.last_change_tick, change_tick)
 
         // Res {
@@ -310,6 +315,11 @@ unsafe impl<'a, T: Component> SystemParam for WriteComp<'a, T> {
                     std::any::type_name::<T>()
                 )
             });
+
+        // println!(
+        //     "WriteComp - get_param - {}, {}",
+        //     system_meta.last_change_tick, change_tick
+        // );
 
         WriteComp::new(entities, data, system_meta.last_change_tick, change_tick)
 

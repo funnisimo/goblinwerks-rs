@@ -25,6 +25,8 @@ pub struct SystemMeta {
 
 impl SystemMeta {
     pub(crate) fn new<T>() -> Self {
+        // println!("SystemMeta - last_change_tick=0");
+
         Self {
             name: std::any::type_name::<T>().into(),
             archetype_component_access: AccessTracker::default(),
@@ -454,6 +456,13 @@ where
 
         let change_tick = world.increment_change_tick();
 
+        // println!(
+        //     "system {} - run_unsafe = {}, {}",
+        //     self.system_meta.name(),
+        //     self.system_meta.last_change_tick,
+        //     change_tick
+        // );
+
         // Safety:
         // We update the archetype component access correctly based on `Param`'s requirements
         // in `update_archetype_component_access`.
@@ -466,6 +475,14 @@ where
         );
         let out = self.func.run(input, params);
         self.system_meta.last_change_tick = change_tick;
+
+        // println!(
+        //     "system {} - run_unsafe END = {}, {}",
+        //     self.system_meta.name(),
+        //     self.system_meta.last_change_tick,
+        //     change_tick
+        // );
+
         out
     }
 

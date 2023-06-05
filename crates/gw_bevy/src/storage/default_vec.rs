@@ -1,5 +1,6 @@
 //! Different types of storages you can use for your components.
 
+use super::StorageCell;
 use super::{DistinctStorage, SliceAccess, UnprotectedStorage};
 use crate::entity::Index;
 use hibitset::BitSetLike;
@@ -12,9 +13,12 @@ use hibitset::BitSetLike;
 /// `as_slice()` and `as_mut_slice()` indices correspond to entity IDs.
 /// These can be compared to other `DefaultVecStorage`s, to other
 /// `VecStorage`s, and to `Entity::id()`s for live entities.
-pub struct DefaultVecStorage<T>(Vec<T>);
+pub struct DefaultVecStorage<T: Default>(Vec<StorageCell<T>>);
 
-impl<T> Default for DefaultVecStorage<T> {
+impl<T> Default for DefaultVecStorage<T>
+where
+    T: Default,
+{
     fn default() -> Self {
         Self(Default::default())
     }
@@ -37,20 +41,20 @@ where
         self.0.clear();
     }
 
-    unsafe fn get(&self, id: Index) -> &T {
+    unsafe fn get(&self, id: Index) -> &StorageCell<T> {
         self.0.get_unchecked(id as usize)
     }
 
-    unsafe fn get_mut(&mut self, id: Index) -> &mut T {
+    unsafe fn get_mut(&mut self, id: Index) -> &mut StorageCell<T> {
         self.0.get_unchecked_mut(id as usize)
     }
 
-    unsafe fn insert(&mut self, id: Index, v: T) {
+    unsafe fn insert(&mut self, id: Index, v: StorageCell<T>) {
         let id = id as usize;
 
         if self.0.len() <= id {
             // fill all the empty slots with default values
-            self.0.resize_with(id, Default::default);
+            self.0.resize_with(id, || StorageCell::new(T::default(), 0));
             // store the desired value
             self.0.push(v)
         } else {
@@ -59,9 +63,9 @@ where
         }
     }
 
-    unsafe fn remove(&mut self, id: Index) -> T {
+    unsafe fn remove(&mut self, id: Index) -> StorageCell<T> {
         // make a new default value
-        let mut v = T::default();
+        let mut v = StorageCell::new(T::default(), 0);
         // swap it into the vec
         std::ptr::swap(self.0.get_unchecked_mut(id as usize), &mut v);
         // return the old value
@@ -69,10 +73,13 @@ where
     }
 }
 
-unsafe impl<T> DistinctStorage for DefaultVecStorage<T> {}
+unsafe impl<T> DistinctStorage for DefaultVecStorage<T> where T: Default {}
 
-impl<T> SliceAccess<T> for DefaultVecStorage<T> {
-    type Element = T;
+impl<T> SliceAccess<T> for DefaultVecStorage<T>
+where
+    T: Default,
+{
+    type Element = StorageCell<T>;
 
     /// Returns a slice of all the components in this storage.
     #[inline]

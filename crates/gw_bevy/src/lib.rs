@@ -43,7 +43,7 @@ pub mod prelude {
     pub use crate::{
         // bundle::Bundle,
         change_detection::{DetectChanges, DetectChangesMut},
-        components::{Component, ReadComp, WriteComp},
+        components::{CompMut, CompRef, Component, ReadComp, WriteComp},
         ecs::Ecs,
         entity::{Builder, Entities, EntitiesMut, Entity},
         event::{Event, EventReader, EventWriter, Events},
@@ -89,6 +89,7 @@ mod tests {
     use crate::prelude::*;
     use std::{
         marker::PhantomData,
+        ops::Deref,
         sync::{
             atomic::{AtomicUsize, Ordering},
             Arc,
@@ -1144,7 +1145,7 @@ mod tests {
         world.register::<A>();
         let e = world.create_entity().id();
         let _ = world.write_component::<A>().insert(e, A(0));
-        assert_eq!(world.read_component::<A>().get(e).unwrap(), &A(0));
+        assert_eq!(world.read_component::<A>().get(e).unwrap().deref(), &A(0));
     }
 
     // #[test]

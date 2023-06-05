@@ -58,7 +58,7 @@ impl ResourceCell {
         let data = self.data.borrow();
         let data_ref = AtomicRef::map(data, |inner| inner.downcast_ref::<T>().unwrap());
         let ticks = self.ticks.borrow();
-        ResRef::new(data_ref, ticks, world_tick, last_system_tick)
+        ResRef::new(data_ref, ticks, last_system_tick, world_tick)
     }
 
     /// # Safety
@@ -69,7 +69,7 @@ impl ResourceCell {
         let data = self.data.borrow_mut(); // panics if this is borrowed already
         let data_ref = AtomicRefMut::map(data, |inner| inner.downcast_mut::<T>().unwrap());
         let ticks = self.ticks.borrow_mut();
-        ResMut::new(data_ref, ticks, world_tick, last_system_tick)
+        ResMut::new(data_ref, ticks, last_system_tick, world_tick)
     }
 
     fn validate_access<T: 'static>(&self) {

@@ -208,6 +208,7 @@ where
     }
 
     fn set_last_change_tick(&mut self, last_change_tick: u32) {
+        // println!("set_last_change_tick - {}", last_change_tick);
         self.a.set_last_change_tick(last_change_tick);
         self.b.set_last_change_tick(last_change_tick);
     }

@@ -8,6 +8,8 @@ use hibitset::BitSet;
 pub struct Drain<'a, T: Component> {
     /// The masked storage
     pub data: &'a mut MaskedStorage<T>,
+    pub last_system_tick: u32,
+    pub world_tick: u32,
 }
 
 impl<'a, T> Join for Drain<'a, T>
@@ -15,19 +17,26 @@ where
     T: Component,
 {
     type Mask = BitSet;
-    type Type = T;
-    type Value = &'a mut MaskedStorage<T>;
+    type Item = T; // TODO - CompRef<'i, T> << So that you can get the is_updated, is_inserted info
+    type Storage = &'a mut MaskedStorage<T>;
 
     // SAFETY: No invariants to meet and no unsafe code.
-    unsafe fn open(self) -> (Self::Mask, Self::Value) {
+    unsafe fn open(self) -> (Self::Mask, Self::Storage, u32, u32) {
         let mask = self.data.mask.clone();
 
-        (mask, self.data)
+        (mask, self.data, self.last_system_tick, self.world_tick)
     }
 
     // SAFETY: No invariants to meet and no unsafe code.
-    unsafe fn get(value: &mut Self::Value, id: Index) -> T {
-        value.remove(id).expect("Tried to access same index twice")
+    unsafe fn get(
+        value: &mut Self::Storage,
+        id: Index,
+        _last_system_tick: u32,
+        world_tick: u32,
+    ) -> T {
+        value
+            .remove(id, world_tick)
+            .expect("Tried to access same index twice")
     }
 }
 

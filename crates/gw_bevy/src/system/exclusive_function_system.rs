@@ -92,6 +92,7 @@ where
     }
 
     fn run(&mut self, input: Self::In, world: &mut World) -> Self::Out {
+        println!("Running exclusive system");
         let saved_last_tick = world.last_maintain_tick;
         world.last_maintain_tick = self.system_meta.last_change_tick;
 
@@ -119,6 +120,7 @@ where
     }
 
     fn set_last_change_tick(&mut self, last_change_tick: u32) {
+        // println!("exclusive set_last_change_tick - {}", last_change_tick);
         self.system_meta.last_change_tick = last_change_tick;
     }
 

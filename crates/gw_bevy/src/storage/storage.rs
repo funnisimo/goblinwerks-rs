@@ -1,8 +1,9 @@
 //! Component storage types, implementations for component joins, etc.
 
 use super::Drain;
-use crate::components::Component;
+use crate::components::{CompMut, CompRef, Component};
 use crate::entity::EntitiesRes;
+use crate::tick::ComponentTicks;
 use crate::{components::CastFrom, resources::ResRef, world::World};
 use crate::{
     entity::{Entity, EntityBuilder, Index},
@@ -26,7 +27,7 @@ use crate::specs::join::ParJoin;
 // pub type AccessMutReturn<'a, T> =
 //     <<T as Component>::Storage as UnprotectedStorage<T>>::AccessMut<'a>;
 // #[cfg(not(feature = "nightly"))]
-pub type AccessMutReturn<'a, T> = &'a mut T;
+// pub type AccessMutReturn<'a, T> = &'a mut T;
 
 /// Some storages can provide slices to access the underlying data.
 ///
@@ -42,20 +43,20 @@ pub trait SliceAccess<T> {
 
 /// An inverted storage type, only useful to iterate entities
 /// that do not have a particular component type.
-pub struct AntiStorage<'a>(pub &'a BitSet);
+pub struct AntiStorage<'a>(pub &'a BitSet, u32, u32);
 
 impl<'a> Join for AntiStorage<'a> {
     type Mask = BitSetNot<&'a BitSet>;
-    type Type = ();
-    type Value = ();
+    type Item = ();
+    type Storage = ();
 
     // SAFETY: No invariants to meet and no unsafe code.
-    unsafe fn open(self) -> (Self::Mask, ()) {
-        (BitSetNot(self.0), ())
+    unsafe fn open(self) -> (Self::Mask, (), u32, u32) {
+        (BitSetNot(self.0), (), self.1, self.2)
     }
 
     // SAFETY: No invariants to meet and no unsafe code.
-    unsafe fn get(_: &mut (), _: Index) {}
+    unsafe fn get(_: &mut (), _: Index, _: u32, _: u32) {}
 }
 
 // SAFETY: Since `get` does not do any memory access, this is safe to implement.
@@ -68,13 +69,13 @@ unsafe impl<'a> ParJoin for AntiStorage<'a> {}
 /// A dynamic storage.
 pub trait AnyStorage {
     /// Drop components of given entities.
-    fn drop(&mut self, entities: &[Entity]);
+    fn drop(&mut self, entities: &[Entity], world_tick: u32);
 
     /// Registers the component in the world - for registry copy
     fn register(&self, world: &mut World);
 
     /// Moves the component of the given entity to the other world
-    fn try_move_component(&mut self, entity: Entity, dest: &mut EntityBuilder);
+    fn try_move_component(&mut self, entity: Entity, source_tick: u32, dest: &mut EntityBuilder);
 }
 
 unsafe impl<T> CastFrom<T> for dyn AnyStorage
@@ -94,9 +95,9 @@ impl<T> AnyStorage for MaskedStorage<T>
 where
     T: Component,
 {
-    fn drop(&mut self, entities: &[Entity]) {
+    fn drop(&mut self, entities: &[Entity], world_tick: u32) {
         for entity in entities {
-            MaskedStorage::drop(self, entity.id());
+            MaskedStorage::drop(self, entity.id(), world_tick);
         }
     }
 
@@ -104,8 +105,8 @@ where
         world.register::<T>();
     }
 
-    fn try_move_component(&mut self, entity: Entity, dest: &mut EntityBuilder) {
-        dest.maybe_insert::<T>(self.remove(entity.id()));
+    fn try_move_component(&mut self, entity: Entity, source_tick: u32, dest: &mut EntityBuilder) {
+        dest.maybe_insert::<T>(self.remove(entity.id(), source_tick));
     }
 }
 
@@ -179,17 +180,17 @@ impl<T: Component> MaskedStorage<T> {
     }
 
     /// Remove an element by a given index.
-    pub fn remove(&mut self, id: Index) -> Option<T> {
+    pub fn remove(&mut self, id: Index, world_tick: u32) -> Option<T> {
         if self.mask.remove(id) {
             // SAFETY: We checked the mask (`remove` returned `true`)
-            Some(unsafe { self.inner.remove(id) })
+            Some(unsafe { self.inner.remove(id).data })
         } else {
             None
         }
     }
 
     /// Drop an element by a given index.
-    pub fn drop(&mut self, id: Index) {
+    pub fn drop(&mut self, id: Index, world_tick: u32) {
         if self.mask.remove(id) {
             // SAFETY: We checked the mask (`remove` returned `true`)
             unsafe {
@@ -212,8 +213,8 @@ pub struct Storage<'e, T, D> {
     pub(super) data: D,
     pub(crate) entities: ResRef<'e, EntitiesRes>,
     phantom: PhantomData<T>,
-    last_system_tick: u32,
-    current_world_tick: u32,
+    pub(crate) last_system_tick: u32,
+    pub(crate) world_tick: u32,
 }
 
 impl<'e, T, D> Storage<'e, T, D> {
@@ -230,7 +231,7 @@ impl<'e, T, D> Storage<'e, T, D> {
             entities,
             phantom: PhantomData,
             last_system_tick,
-            current_world_tick,
+            world_tick: current_world_tick,
         }
     }
 }
@@ -254,10 +255,12 @@ where
     }
 
     /// Tries to read the data associated with an `Entity`.
-    pub fn get(&self, e: Entity) -> Option<&T> {
+    pub fn get(&self, e: Entity) -> Option<CompRef<'_, T>> {
         if self.data.mask.contains(e.id()) && self.entities.is_alive(e) {
             // SAFETY: We checked the mask, so all invariants are met.
-            Some(unsafe { self.data.inner.get(e.id()) })
+            let cell = unsafe { self.data.inner.get(e.id()) };
+            let (d, t) = cell.destructure();
+            Some(CompRef::new(d, t, self.last_system_tick, self.world_tick))
         } else {
             None
         }
@@ -335,10 +338,12 @@ where
     }
 
     /// Tries to mutate the data associated with an `Entity`.
-    pub fn get_mut(&mut self, e: Entity) -> Option<AccessMutReturn<'_, T>> {
+    pub fn get_mut(&mut self, e: Entity) -> Option<CompMut<'_, T>> {
         if self.data.mask.contains(e.id()) && self.entities.is_alive(e) {
             // SAFETY: We checked the mask, so all invariants are met.
-            Some(unsafe { self.data.inner.get_mut(e.id()) })
+            let cell = unsafe { self.data.inner.get_mut(e.id()) };
+            let (d, t) = cell.destructure_mut();
+            Some(CompMut::new(d, t, self.last_system_tick, self.world_tick))
         } else {
             None
         }
@@ -350,17 +355,22 @@ where
     /// If a component already existed for the given `Entity`, then it will
     /// be overwritten with the new component. If it did overwrite, then the
     /// result will contain `Some(T)` where `T` is the previous component.
-    pub fn insert(&mut self, e: Entity, mut v: T) -> InsertResult<T> {
+    pub fn insert(&mut self, e: Entity, v: T) -> InsertResult<T> {
         if self.entities.is_alive(e) {
             let id = e.id();
             if self.data.mask.contains(id) {
+                // TODO - set_changed needs to be done!!!
                 // SAFETY: We checked the mask, so all invariants are met.
-                std::mem::swap(&mut v, unsafe { self.data.inner.get_mut(id).deref_mut() });
-                Ok(Some(v))
+                let mut cell = StorageCell::new(v, self.world_tick);
+                std::mem::swap(&mut cell, unsafe {
+                    self.data.inner.get_mut(id).deref_mut()
+                });
+                Ok(Some(cell.data))
             } else {
                 self.data.mask.add(id);
                 // SAFETY: The mask was previously empty, so it is safe to insert.
-                unsafe { self.data.inner.insert(id, v) };
+                let cell = StorageCell::new(v, self.world_tick);
+                unsafe { self.data.inner.insert(id, cell) };
                 Ok(None)
             }
         } else {
@@ -375,7 +385,7 @@ where
     /// Removes the data associated with an `Entity`.
     pub fn remove(&mut self, e: Entity) -> Option<T> {
         if self.entities.is_alive(e) {
-            self.data.remove(e.id())
+            self.data.remove(e.id(), self.world_tick)
         } else {
             None
         }
@@ -391,6 +401,8 @@ where
     pub fn drain(&mut self) -> Drain<T> {
         Drain {
             data: &mut self.data,
+            last_system_tick: self.last_system_tick,
+            world_tick: self.world_tick,
         }
     }
 }
@@ -401,7 +413,7 @@ impl<'a, T, D: Clone> Clone for Storage<'a, T, D> {
             ResRef::clone(&self.entities),
             self.data.clone(),
             self.last_system_tick,
-            self.current_world_tick,
+            self.world_tick,
         )
     }
 }
@@ -419,18 +431,30 @@ where
     D: Deref<Target = MaskedStorage<T>>,
 {
     type Mask = &'a BitSet;
-    type Type = &'a T;
-    type Value = &'a T::Storage;
+    type Item = CompRef<'a, T>;
+    type Storage = &'a T::Storage;
 
     // SAFETY: No unsafe code and no invariants.
-    unsafe fn open(self) -> (Self::Mask, Self::Value) {
-        (&self.data.mask, &self.data.inner)
+    unsafe fn open(self) -> (Self::Mask, Self::Storage, u32, u32) {
+        (
+            &self.data.mask,
+            &self.data.inner,
+            self.last_system_tick,
+            self.world_tick,
+        )
     }
 
     // SAFETY: Since we require that the mask was checked, an element for `i` must
     // have been inserted without being removed.
-    unsafe fn get(v: &mut Self::Value, i: Index) -> &'a T {
-        v.get(i)
+    unsafe fn get(
+        v: &mut Self::Storage,
+        i: Index,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) -> CompRef<'a, T> {
+        let value: *const Self::Storage = v as *const Self::Storage;
+        let (d, t) = (*value).get(i).destructure();
+        CompRef::new(d, t, last_system_tick, world_tick)
     }
 }
 
@@ -442,7 +466,7 @@ where
     type Output = AntiStorage<'a>;
 
     fn not(self) -> Self::Output {
-        AntiStorage(&self.data.mask)
+        AntiStorage(&self.data.mask, self.last_system_tick, self.world_tick)
     }
 }
 
@@ -463,21 +487,28 @@ where
     D: DerefMut<Target = MaskedStorage<T>>,
 {
     type Mask = &'a BitSet;
-    type Type = AccessMutReturn<'a, T>;
-    type Value = &'a mut T::Storage;
+    type Item = CompMut<'a, T>;
+    type Storage = &'a mut T::Storage;
 
     // SAFETY: No unsafe code and no invariants to fulfill.
-    unsafe fn open(self) -> (Self::Mask, Self::Value) {
-        self.data.open_mut()
+    unsafe fn open(self) -> (Self::Mask, Self::Storage, u32, u32) {
+        let (a, b) = self.data.open_mut();
+        (a, b, self.last_system_tick, self.world_tick)
     }
 
     // TODO: audit unsafe
-    unsafe fn get(v: &mut Self::Value, i: Index) -> Self::Type {
+    unsafe fn get(
+        v: &mut Self::Storage,
+        i: Index,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) -> CompMut<'a, T> {
         // This is horribly unsafe. Unfortunately, Rust doesn't provide a way
         // to abstract mutable/immutable state at the moment, so we have to hack
         // our way through it.
-        let value: *mut Self::Value = v as *mut Self::Value;
-        (*value).get_mut(i)
+        let value: *mut Self::Storage = v as *mut Self::Storage;
+        let (d, t) = (*value).get_mut(i).destructure_mut();
+        CompMut::new(d, t, last_system_tick, world_tick)
     }
 }
 
@@ -545,7 +576,11 @@ pub trait UnprotectedStorage<T>: Default {
     ///
     /// A mask should keep track of those states, and an `id` being contained
     /// in the tracking mask is sufficient to call this method.
-    unsafe fn get(&self, id: Index) -> &T;
+    unsafe fn get(&self, id: Index) -> &StorageCell<T>;
+
+    unsafe fn raw(&self, id: Index) -> &T {
+        &self.get(id).data
+    }
 
     // / Tries mutating the data associated with an `Index`.
     // / This is unsafe because the external set used
@@ -572,7 +607,11 @@ pub trait UnprotectedStorage<T>: Default {
     ///
     /// A mask should keep track of those states, and an `id` being contained
     /// in the tracking mask is sufficient to call this method.
-    unsafe fn get_mut(&mut self, id: Index) -> AccessMutReturn<'_, T>;
+    unsafe fn get_mut(&mut self, id: Index) -> &mut StorageCell<T>;
+
+    unsafe fn raw_mut(&mut self, id: Index) -> &mut T {
+        &mut self.get_mut(id).data
+    }
 
     /// Inserts new data for a given `Index`.
     ///
@@ -583,7 +622,7 @@ pub trait UnprotectedStorage<T>: Default {
     ///
     /// A mask should keep track of those states, and an `id` missing from the
     /// mask is sufficient to call `insert`.
-    unsafe fn insert(&mut self, id: Index, value: T);
+    unsafe fn insert(&mut self, id: Index, value: StorageCell<T>);
 
     /// Removes the data associated with an `Index`.
     ///
@@ -591,7 +630,7 @@ pub trait UnprotectedStorage<T>: Default {
     ///
     /// May only be called if an element with `id` was `insert`ed and not yet
     /// removed / dropped.
-    unsafe fn remove(&mut self, id: Index) -> T;
+    unsafe fn remove(&mut self, id: Index) -> StorageCell<T>;
 
     /// Drops the data associated with an `Index`.
     /// This could be used when a more efficient implementation for it exists
@@ -604,6 +643,28 @@ pub trait UnprotectedStorage<T>: Default {
     /// removed / dropped.
     unsafe fn drop(&mut self, id: Index) {
         self.remove(id);
+    }
+}
+
+pub struct StorageCell<T> {
+    data: T,
+    ticks: ComponentTicks,
+}
+
+impl<T> StorageCell<T> {
+    pub fn new(data: T, world_tick: u32) -> Self {
+        StorageCell {
+            data,
+            ticks: ComponentTicks::new(world_tick),
+        }
+    }
+
+    pub fn destructure(&self) -> (&T, &ComponentTicks) {
+        (&self.data, &self.ticks)
+    }
+
+    pub fn destructure_mut(&mut self) -> (&mut T, &mut ComponentTicks) {
+        (&mut self.data, &mut self.ticks)
     }
 }
 

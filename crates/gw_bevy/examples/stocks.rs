@@ -190,7 +190,7 @@ struct Split(Entity);
 
 fn split_system(mut splits: EventReader<Split>, mut stocks: WriteComp<Stock>) {
     for ev in splits.iter() {
-        if let Some(stock) = stocks.get_mut(ev.0) {
+        if let Some(mut stock) = stocks.get_mut(ev.0) {
             let was = stock.price;
             stock.price = stock.price / 2.0;
             println!("Split - {} : {:.2} -> {:.2}", stock.name, was, stock.price);
@@ -202,7 +202,7 @@ struct BuyBack(Entity);
 
 fn buy_back_system(mut buy_backs: EventReader<BuyBack>, mut stocks: WriteComp<Stock>) {
     for ev in buy_backs.iter() {
-        if let Some(stock) = stocks.get_mut(ev.0) {
+        if let Some(mut stock) = stocks.get_mut(ev.0) {
             let was = stock.price;
             stock.price = stock.price * 2.0;
             println!(
@@ -221,7 +221,7 @@ fn price_change_system(
 ) {
     let mut rng = thread_rng();
 
-    for (entity, stock) in (&entities, &mut stocks).join() {
+    for (entity, mut stock) in (&entities, &mut stocks).join() {
         let delta = 1.00 - ((rng.next_u32() as f32 / u32::MAX as f32) * 2.0); // -1.0 -> 1.0
         stock.price += delta;
 

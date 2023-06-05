@@ -135,9 +135,9 @@ bitset_and! {A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P}
 /// storage, just by writing `(&storage).join()`.
 pub trait Join {
     /// Type of joined components.
-    type Type;
+    type Item;
     /// Type of joined storages.
-    type Value;
+    type Storage;
     /// Type of joined bit mask.
     type Mask: BitSetLike;
 
@@ -218,7 +218,7 @@ pub trait Join {
     /// the `Value` to be mutated independently of the `Mask`.
     /// If the `Mask` does not correctly report the status of the `Value`
     /// then illegal memory access can occur.
-    unsafe fn open(self) -> (Self::Mask, Self::Value);
+    unsafe fn open(self) -> (Self::Mask, Self::Storage, u32, u32);
 
     /// Get a joined component value by a given index.
     ///
@@ -228,7 +228,12 @@ pub trait Join {
     ///   `Self::Mask`
     /// * The implementation of this method may use unsafe code, but has no
     ///   invariants to meet
-    unsafe fn get(value: &mut Self::Value, id: Index) -> Self::Type;
+    unsafe fn get(
+        value: &mut Self::Storage,
+        id: Index,
+        last_system_tick: u32,
+        world_tick: u32,
+    ) -> Self::Item;
 
     /// If this `Join` typically returns all indices in the mask, then iterating
     /// over only it or combined with other joins that are also dangerous
@@ -258,22 +263,22 @@ where
     T: Join,
 {
     type Mask = BitSetAll;
-    type Type = Option<<T as Join>::Type>;
-    type Value = (<T as Join>::Mask, <T as Join>::Value);
+    type Item = Option<<T as Join>::Item>;
+    type Storage = (<T as Join>::Mask, <T as Join>::Storage);
 
     // SAFETY: This wraps another implementation of `open`, making it dependent on
     // `J`'s correctness. We can safely assume `J` is valid, thus this must be
     // valid, too. No invariants to meet.
-    unsafe fn open(self) -> (Self::Mask, Self::Value) {
-        let (mask, value) = self.0.open();
-        (BitSetAll, (mask, value))
+    unsafe fn open(self) -> (Self::Mask, Self::Storage, u32, u32) {
+        let (mask, value, lst, wt) = self.0.open();
+        (BitSetAll, (mask, value), lst, wt)
     }
 
     // SAFETY: No invariants to meet and the unsafe code checks the mask, thus
     // fulfills the requirements for calling `get`
-    unsafe fn get((mask, value): &mut Self::Value, id: Index) -> Self::Type {
+    unsafe fn get((mask, value): &mut Self::Storage, id: Index, lst: u32, wt: u32) -> Self::Item {
         if mask.contains(id) {
-            Some(<T as Join>::get(value, id))
+            Some(<T as Join>::get(value, id, lst, wt))
         } else {
             None
         }
@@ -295,7 +300,9 @@ unsafe impl<T> ParJoin for MaybeJoin<T> where T: ParJoin {}
 #[must_use]
 pub struct JoinIter<J: Join> {
     keys: BitIter<J::Mask>,
-    values: J::Value,
+    values: J::Storage,
+    last_system_tick: u32,
+    world_tick: u32,
 }
 
 impl<J: Join> JoinIter<J> {
@@ -309,10 +316,13 @@ impl<J: Join> JoinIter<J> {
 
         // SAFETY: We do not swap out the mask or the values, nor do we allow it by
         // exposing them.
-        let (keys, values) = unsafe { j.open() };
+        let (keys, values, last_system_tick, world_tick) = unsafe { j.open() };
+        // println!("Create JoinIter - {} {}", last_system_tick, world_tick);
         JoinIter {
             keys: keys.iter(),
             values,
+            last_system_tick,
+            world_tick,
         }
     }
 }
@@ -367,10 +377,17 @@ impl<J: Join> JoinIter<J> {
     ///     );
     /// }
     /// ```
-    pub fn get(&mut self, entity: Entity, entities: &Entities) -> Option<J::Type> {
+    pub fn get(&mut self, entity: Entity, entities: &Entities) -> Option<J::Item> {
         if self.keys.contains(entity.id()) && entities.is_alive(entity) {
             // SAFETY: the mask (`keys`) is checked as specified in the docs of `get`.
-            Some(unsafe { J::get(&mut self.values, entity.id()) })
+            Some(unsafe {
+                J::get(
+                    &mut self.values,
+                    entity.id(),
+                    self.last_system_tick,
+                    self.world_tick,
+                )
+            })
         } else {
             None
         }
@@ -383,10 +400,17 @@ impl<J: Join> JoinIter<J> {
     ///
     /// As this method operates on raw indices, there is no check to see if the
     /// entity is still alive, so the caller should ensure it instead.
-    pub fn get_unchecked(&mut self, index: Index) -> Option<J::Type> {
+    pub fn get_unchecked(&mut self, index: Index) -> Option<J::Item> {
         if self.keys.contains(index) {
             // SAFETY: the mask (`keys`) is checked as specified in the docs of `get`.
-            Some(unsafe { J::get(&mut self.values, index) })
+            Some(unsafe {
+                J::get(
+                    &mut self.values,
+                    index,
+                    self.last_system_tick,
+                    self.world_tick,
+                )
+            })
         } else {
             None
         }
@@ -394,14 +418,20 @@ impl<J: Join> JoinIter<J> {
 }
 
 impl<J: Join> std::iter::Iterator for JoinIter<J> {
-    type Item = J::Type;
+    type Item = J::Item;
 
-    fn next(&mut self) -> Option<J::Type> {
+    fn next(&mut self) -> Option<J::Item> {
         // SAFETY: since `idx` is yielded from `keys` (the mask), it is necessarily a
         // part of it. Thus, requirements are fulfilled for calling `get`.
-        self.keys
-            .next()
-            .map(|idx| unsafe { J::get(&mut self.values, idx) })
+        self.keys.next().map(|idx| unsafe {
+            // println!("next - {}, {}", self.last_system_tick, self.world_tick);
+            J::get(
+                &mut self.values,
+                idx,
+                self.last_system_tick,
+                self.world_tick,
+            )
+        })
     }
 }
 
@@ -464,50 +494,100 @@ impl<J: Join> std::iter::Iterator for JoinIter<J> {
 impl<J: Join> Clone for JoinIter<J>
 where
     J::Mask: Clone,
-    J::Value: Clone,
+    J::Storage: Clone,
 {
     fn clone(&self) -> Self {
         Self {
             keys: self.keys.clone(),
             values: self.values.clone(),
+            last_system_tick: self.last_system_tick,
+            world_tick: self.world_tick,
         }
     }
 }
 
 macro_rules! define_open {
     // use variables to indicate the arity of the tuple
-    ($($from:ident),*) => {
-        impl<$($from,)*> Join for ($($from),*,)
-            where $($from: Join),*,
-                  ($(<$from as Join>::Mask,)*): BitAnd,
+    ($from:ident) => {
+        impl<$from> Join for ($from,)
+            where $from: Join,
+                  (<$from as Join>::Mask,): BitAnd,
         {
-            type Type = ($($from::Type),*,);
-            type Value = ($($from::Value),*,);
-            type Mask = <($($from::Mask,)*) as BitAnd>::Value;
+            type Item = ($from::Item,);
+            type Storage = ($from::Storage,);
+            type Mask = <($from::Mask,) as BitAnd>::Value;
             #[allow(non_snake_case)]
 
             // SAFETY: While we do expose the mask and the values and therefore would allow swapping them,
             // this method is `unsafe` and relies on the same invariants.
-            unsafe fn open(self) -> (Self::Mask, Self::Value) {
-                let ($($from,)*) = self;
-                let ($($from,)*) = ($($from.open(),)*);
+            unsafe fn open(self) -> (Self::Mask, Self::Storage, u32, u32) {
+                let ($from,) = self;
+                let $from = $from.open();
                 (
-                    ($($from.0),*,).and(),
-                    ($($from.1),*,)
+                    ($from.0,).and(),
+                    ($from.1,), $from.2, $from.3
                 )
             }
 
             // SAFETY: No invariants to meet and `get` is safe to call as the caller must have checked the mask,
             // which only has a key that exists in all of the storages.
             #[allow(non_snake_case)]
-            unsafe fn get(v: &mut Self::Value, i: Index) -> Self::Type {
-                let &mut ($(ref mut $from,)*) = v;
-                ($($from::get($from, i),)*)
+            unsafe fn get(v: &mut Self::Storage, i: Index, last_system_tick: u32, world_tick: u32) -> Self::Item {
+                let &mut (ref mut $from,) = v;
+                ($from::get($from, i, last_system_tick, world_tick),)
             }
 
             #[inline]
             fn is_unconstrained() -> bool {
                 let mut unconstrained = true;
+                unconstrained = unconstrained && $from::is_unconstrained();
+                unconstrained
+            }
+        }
+
+        // SAFETY: This is safe to implement since all components implement `ParJoin`.
+        // If the access of every individual `get` leads to disjoint memory access, calling
+        // all of them after another does in no case lead to access of common memory.
+        #[cfg(feature = "parallel")]
+        unsafe impl<$from> ParJoin for ($from,)
+            where $from: ParJoin,
+                  (<$from as Join>::Mask,): BitAnd,
+        {}
+
+    };
+    // use variables to indicate the arity of the tuple
+    ($head:ident, $($from:ident),*) => {
+        impl<$head,$($from,)*> Join for ($head,$($from),*,)
+            where $head: Join, $($from: Join),*,
+                  (<$head as Join>::Mask, $(<$from as Join>::Mask,)*): BitAnd,
+        {
+            type Item = ($head::Item, $($from::Item),*,);
+            type Storage = ($head::Storage, $($from::Storage),*,);
+            type Mask = <($head::Mask, $($from::Mask,)*) as BitAnd>::Value;
+            #[allow(non_snake_case)]
+
+            // SAFETY: While we do expose the mask and the values and therefore would allow swapping them,
+            // this method is `unsafe` and relies on the same invariants.
+            unsafe fn open(self) -> (Self::Mask, Self::Storage, u32, u32) {
+                let ($head, $($from,)*) = self;
+                let ($head, $($from,)*) = ($head.open(), $($from.open(),)*);
+                (
+                    ($head.0, $($from.0),*,).and(),
+                    ($head.1, $($from.1),*,), $head.2, $head.3
+                )
+            }
+
+            // SAFETY: No invariants to meet and `get` is safe to call as the caller must have checked the mask,
+            // which only has a key that exists in all of the storages.
+            #[allow(non_snake_case)]
+            unsafe fn get(v: &mut Self::Storage, i: Index, last_system_tick: u32, world_tick: u32) -> Self::Item {
+                let &mut (ref mut $head, $(ref mut $from,)*) = v;
+                ($head::get($head, i, last_system_tick, world_tick), $($from::get($from, i, last_system_tick, world_tick),)*)
+            }
+
+            #[inline]
+            fn is_unconstrained() -> bool {
+                let mut unconstrained = $head::is_unconstrained();
                 $( unconstrained = unconstrained && $from::is_unconstrained(); )*
                 unconstrained
             }

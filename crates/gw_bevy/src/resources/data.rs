@@ -14,8 +14,8 @@ use crate::tick::ComponentTicks;
 pub struct ResRef<'a, T: 'a> {
     pub(crate) data: AtomicRef<'a, T>,
     pub(crate) ticks: AtomicRef<'a, ComponentTicks>,
-    pub(crate) world_tick: u32,
     pub(crate) last_system_tick: u32,
+    pub(crate) world_tick: u32,
 }
 
 impl<'a, T> ResRef<'a, T>
@@ -25,14 +25,14 @@ where
     pub fn new(
         data: AtomicRef<'a, T>,
         ticks: AtomicRef<'a, ComponentTicks>,
-        world_tick: u32,
         last_system_tick: u32,
+        world_tick: u32,
     ) -> Self {
         ResRef {
             data,
             ticks,
-            world_tick,
             last_system_tick,
+            world_tick,
         }
     }
 }
@@ -77,8 +77,8 @@ impl<'a, T> Clone for ResRef<'a, T> {
         ResRef {
             data: AtomicRef::clone(&self.data),
             ticks: AtomicRef::clone(&self.ticks),
-            world_tick: self.world_tick,
             last_system_tick: self.last_system_tick,
+            world_tick: self.world_tick,
         }
     }
 }
@@ -103,8 +103,8 @@ impl<'a, T> Clone for ResRef<'a, T> {
 pub struct ResMut<'a, T: 'a> {
     pub(crate) data: AtomicRefMut<'a, T>,
     pub(crate) ticks: AtomicRefMut<'a, ComponentTicks>,
-    pub(crate) world_tick: u32,
     pub(crate) last_system_tick: u32,
+    pub(crate) world_tick: u32,
 }
 
 impl<'a, T> ResMut<'a, T>
@@ -114,14 +114,14 @@ where
     pub fn new(
         data: AtomicRefMut<'a, T>,
         ticks: AtomicRefMut<'a, ComponentTicks>,
-        world_tick: u32,
         last_system_tick: u32,
+        world_tick: u32,
     ) -> Self {
         ResMut {
             data,
             ticks,
-            world_tick,
             last_system_tick,
+            world_tick,
         }
     }
 }
