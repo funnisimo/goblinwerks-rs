@@ -1,7 +1,10 @@
+use std::ops::Deref;
 use super::{EntitiesRes, Entity, Generation, Index};
 use crate::{
-    prelude::Join,
-    resources::{ReadUnique, ResRef},
+    access::AccessItem,
+    prelude::{Join, World},
+    resources::{ ResRef, ResourceId},
+    system::{ReadOnlySystemParam, SystemMeta, SystemParam},
 };
 use hibitset::{AtomicBitSet, BitSet, BitSetOr};
 
@@ -35,7 +38,29 @@ use hibitset::{AtomicBitSet, BitSet, BitSetOr};
 /// #   let _ = pos;
 /// }
 /// ```
-pub type Entities<'a> = ReadUnique<'a, EntitiesRes>;
+pub struct Entities<'a> {
+    data: ResRef<'a, EntitiesRes>,
+}
+
+impl<'a> Entities<'a> {
+    pub(crate) fn new(data: ResRef<'a, EntitiesRes>) -> Self {
+        Entities { data }
+    }
+}
+
+impl<'a> Clone for Entities<'a> {
+    fn clone(&self) -> Self {
+        Entities { data: ResRef::clone(&self.data) }
+    }
+}
+
+impl<'a> Deref for Entities<'a> {
+    type Target = EntitiesRes;
+
+    fn deref(&self) -> &Self::Target {
+        self.data.deref()
+    }
+}
 
 // Join for ResRef<EntitiesRes>
 impl<'a> Join for &'a Entities<'a> {
@@ -43,22 +68,23 @@ impl<'a> Join for &'a Entities<'a> {
     type Item = Entity;
     type Storage = Self;
 
-    unsafe fn open(self) -> (Self::Mask, Self, u32, u32) {
+    unsafe fn open(self) -> (Self::Mask, Self::Storage, u32, u32) {
         (
-            BitSetOr(&self.alloc.alive, &self.alloc.raised),
+            BitSetOr(&self.data.alloc.alive, &self.data.alloc.raised),
             self,
-            self.last_system_tick,
-            self.world_tick,
+            self.data.last_system_tick,
+            self.data.world_tick,
         )
     }
 
     unsafe fn get(
-        v: &mut &'a Entities<'a>,
+        v: &mut Self::Storage,
         idx: Index,
         _last_system_tick: u32,
         _world_tick: u32,
     ) -> Option<Entity> {
         let gen = v
+            .data
             .alloc
             .generation(idx)
             .map(|gen| if gen.is_alive() { gen } else { gen.raised() })
@@ -70,95 +96,55 @@ impl<'a> Join for &'a Entities<'a> {
 #[cfg(feature = "parallel")]
 unsafe impl<'a> ParJoin for &'a Entities<'a> {}
 
-impl<'a> Join for &'a ResRef<'a, EntitiesRes> {
-    type Mask = BitSetOr<&'a BitSet, &'a AtomicBitSet>;
-    type Item = Entity;
-    type Storage = Self;
 
-    unsafe fn open(self) -> (Self::Mask, Self, u32, u32) {
-        (
-            BitSetOr(&self.alloc.alive, &self.alloc.raised),
-            self,
-            self.last_system_tick,
-            self.world_tick,
-        )
+unsafe impl<'a> ReadOnlySystemParam for Entities<'a> {}
+
+// SAFETY: Res ComponentId and ArchetypeComponentId access is applied to SystemMeta. If this Res
+// conflicts with any prior access, a panic will occur.
+unsafe impl<'a> SystemParam for Entities<'a> {
+    type State = ();
+    type Item<'w, 's> = Entities<'w>;
+
+    fn init_state(_world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+        let combined_access = &system_meta.component_access_set;
+        let item = AccessItem::Unique(ResourceId::of::<EntitiesRes>());
+        assert!(
+            !combined_access.has_write(&item),
+            "error[B0002]: Entities in system {} conflicts with a previous mutable Entities access. Consider removing the duplicate access.",
+            system_meta.name(),
+            
+        );
+        system_meta.component_access_set.add_read(item);
+
     }
 
-    unsafe fn get(
-        v: &mut &'a ResRef<EntitiesRes>,
-        idx: Index,
-        _last_system_tick: u32,
-        _world_tick: u32,
-    ) -> Option<Entity> {
-        let gen = v
-            .alloc
-            .generation(idx)
-            .map(|gen| if gen.is_alive() { gen } else { gen.raised() })
-            .unwrap_or_else(Generation::one);
-        Some(Entity(idx, gen))
+    fn apply(_state: &mut Self::State, _system_meta: &SystemMeta, world: &mut World) {
+        // println!("apply Entities changes");
+        let tick = world.current_tick();
+        let deleted = world.resources.get_mut::<EntitiesRes>(tick, tick).unwrap().merge();
+
+        if !deleted.is_empty() {
+            world.delete_components(&deleted);
+        }
+    }
+
+    #[inline]
+    unsafe fn get_param<'w, 's>(
+        &mut _state: &'s mut Self::State,
+        system_meta: &SystemMeta,
+        world: &'w World,
+        change_tick: u32,
+    ) -> Self::Item<'w, 's> {
+        let data = world
+            .resources
+            .get::<EntitiesRes>(system_meta.last_run_tick, change_tick)
+            .unwrap_or_else(|| {
+                panic!(
+                    "Resource requested by {} does not exist: Entities",
+                    system_meta.name,
+                )
+            });
+
+            Entities { data }
     }
 }
-
-#[cfg(feature = "parallel")]
-unsafe impl<'a> ParJoin for &'a ResRef<'a, EntitiesRes> {}
-
-// unsafe impl<'a, T: Resource + Send + Sync> ReadOnlySystemParam for ReadUnique<'a, T> {}
-
-// // SAFETY: Res ComponentId and ArchetypeComponentId access is applied to SystemMeta. If this Res
-// // conflicts with any prior access, a panic will occur.
-// unsafe impl<'a, T: Resource + Send + Sync> SystemParam for ReadUnique<'a, T> {
-//     type State = ();
-//     type Item<'w, 's> = ReadUnique<'w, T>;
-
-//     fn init_state(_world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-//         // world.ensure_resource::<T>();
-
-//         let combined_access = &system_meta.component_access_set;
-//         let item = AccessItem::Unique(ResourceId::of::<T>());
-//         assert!(
-//             !combined_access.has_write(&item),
-//             "error[B0002]: Res<{}> in system {} conflicts with a previous ResMut<{0}> access. Consider removing the duplicate access.",
-//             std::any::type_name::<T>(),
-//             system_meta.name,
-//         );
-//         system_meta.component_access_set.add_read(item);
-
-//         // let archetype_component_id = world
-//         //     .get_resource_archetype_component_id(component_id)
-//         //     .unwrap();
-//         // system_meta
-//         //     .archetype_component_access
-//         //     .add_read(archetype_component_id);
-
-//         // component_id
-//     }
-
-//     #[inline]
-//     unsafe fn get_param<'w, 's>(
-//         &mut _component_id: &'s mut Self::State,
-//         system_meta: &SystemMeta,
-//         world: &'w World,
-//         change_tick: u32,
-//     ) -> Self::Item<'w, 's> {
-//         world
-//             .resources
-//             .get::<T>(system_meta.last_run_tick, change_tick)
-//             .map(|read| ReadUnique::new(read))
-//             .unwrap_or_else(|| {
-//                 panic!(
-//                     "Resource requested by {} does not exist: {}",
-//                     system_meta.name,
-//                     std::any::type_name::<T>()
-//                 )
-//             })
-//         // Res {
-//         //     value: ptr.deref(),
-//         //     ticks: Ticks {
-//         //         added: ticks.added.deref(),
-//         //         changed: ticks.changed.deref(),
-//         //         last_change_tick: system_meta.last_change_tick,
-//         //         change_tick,
-//         //     },
-//         // }
-//     }
-// }

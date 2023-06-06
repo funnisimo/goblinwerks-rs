@@ -337,7 +337,7 @@ impl EntitiesRes {
     }
 
     /// Merges in the deleted entities and returns them
-    pub fn maintain(&mut self) -> Vec<Entity> {
+    pub fn merge(&mut self) -> Vec<Entity> {
         self.alloc.merge()
     }
 }
@@ -509,7 +509,7 @@ mod tests {
 
         assert!(!entities.is_alive(dead));
 
-        entities.maintain();
+        entities.merge();
 
         assert!(!entities.is_alive(dead));
     }
@@ -529,7 +529,7 @@ mod tests {
         // Remains alive until maintain
         assert!(entities.is_alive(a));
 
-        entities.maintain();
+        entities.merge();
 
         assert!(!entities.is_alive(a));
 

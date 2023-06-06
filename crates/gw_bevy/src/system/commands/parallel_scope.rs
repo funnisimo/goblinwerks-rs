@@ -1,9 +1,8 @@
 use super::{CommandQueue, Commands};
 use crate::{
     self as gw_bevy,
-    entity::EntitiesRes,
+    entity::Entities,
     prelude::World,
-    resources::ResRef,
     system::{Deferred, SystemBuffer, SystemMeta, SystemParam},
 };
 use std::cell::Cell;
@@ -43,7 +42,7 @@ struct ParallelCommandQueue {
 #[derive(SystemParam)]
 pub struct ParallelCommands<'w, 's> {
     state: Deferred<'s, ParallelCommandQueue>,
-    entities: ResRef<'w, EntitiesRes>,
+    entities: Entities<'w>,
 }
 
 impl SystemBuffer for ParallelCommandQueue {
@@ -67,7 +66,7 @@ impl<'w, 's> ParallelCommands<'w, 's> {
 
         let r = f(Commands::new_from_entities(
             &mut command_queue,
-            ResRef::clone(&self.entities),
+            self.entities.clone(),
         ));
 
         command_queue_cell.set(command_queue);

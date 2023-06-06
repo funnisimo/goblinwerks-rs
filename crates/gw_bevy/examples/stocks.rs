@@ -219,6 +219,7 @@ fn price_change_system(
     mut buy_backs: EventWriter<BuyBack>,
     mut splits: EventWriter<Split>,
 ) {
+    println!("- price change system");
     let mut rng = thread_rng();
 
     for (entity, mut stock) in (&entities, &mut stocks).join() {

@@ -2,8 +2,8 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use crate::components::{Component, ReadComp, WriteComp};
 use crate::components::{ComponentSet, Components};
-use crate::entity::Builder;
 use crate::entity::EntityAllocator;
+use crate::entity::{Builder, Entities};
 use crate::entity::{EntitiesRes, Entity, EntityBuilder};
 use crate::event::{AllEvents, Event, Events, ManualEventReader};
 use crate::globals::{GlobalMut, GlobalRef, Globals};
@@ -856,13 +856,16 @@ impl World {
 
     // ENTITIES
 
-    pub fn entities(&self) -> ResRef<EntitiesRes> {
-        self.resources
+    pub fn entities(&self) -> Entities {
+        let entities = self
+            .resources
             .get::<EntitiesRes>(self.last_maintain_tick, self.current_tick())
-            .unwrap()
+            .unwrap();
+
+        Entities::new(entities)
     }
 
-    pub(crate) fn entities_mut(&self) -> ResMut<EntitiesRes> {
+    fn entities_mut(&self) -> ResMut<EntitiesRes> {
         self.resources
             .get_mut::<EntitiesRes>(self.last_maintain_tick, self.current_tick())
             .unwrap()
@@ -940,13 +943,9 @@ impl World {
     // }
 
     pub fn maintain(&mut self) {
+        // println!("WORLD MAINTAIN");
         // All maintain changes are in new tick so that they can be detected by change trackers
         self.last_maintain_tick = self.increment_current_tick();
-
-        let deleted = self.entities_mut().maintain();
-        if !deleted.is_empty() {
-            self.delete_components(&deleted);
-        }
 
         {
             let meta = self.components_mut();

@@ -5,8 +5,7 @@ use crate::{
     self as gw_bevy,
     components::ComponentSet,
     // bundle::Bundle,
-    entity::{EntitiesRes, Entity},
-    resources::ResRef,
+    entity::{Entities, Entity},
     world::{FromWorld, World},
 };
 use bevy_ecs_macros::SystemParam;
@@ -103,7 +102,7 @@ pub trait Command: Send + 'static {
 #[derive(SystemParam)]
 pub struct Commands<'w, 's> {
     queue: Deferred<'s, CommandQueue>,
-    entities: ResRef<'w, EntitiesRes>,
+    entities: Entities<'w>,
 }
 
 impl SystemBuffer for CommandQueue {
@@ -132,10 +131,7 @@ impl<'w, 's> Commands<'w, 's> {
     /// It is not required to call this constructor when using `Commands` as a [system parameter].
     ///
     /// [system parameter]: crate::system::SystemParam
-    pub fn new_from_entities(
-        queue: &'s mut CommandQueue,
-        entities: ResRef<'w, EntitiesRes>,
-    ) -> Self {
+    pub fn new_from_entities(queue: &'s mut CommandQueue, entities: Entities<'w>) -> Self {
         Self {
             queue: Deferred(queue),
             entities,
