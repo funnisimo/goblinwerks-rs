@@ -748,7 +748,11 @@ impl World {
         f(comp)
     }
 
-    pub fn add_component<C: Component>(&mut self, entity: Entity, component: C) -> InsertResult<C> {
+    pub fn insert_component<C: Component>(
+        &mut self,
+        entity: Entity,
+        component: C,
+    ) -> InsertResult<C> {
         self.write_component::<C>().insert(entity, component)
     }
 

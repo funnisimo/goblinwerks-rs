@@ -8,7 +8,7 @@ pub trait ComponentSet: Send + Sync + 'static {
 
 impl<C: Component> ComponentSet for C {
     fn insert(self, world: &mut World, entity: Entity) {
-        let _ = world.add_component(entity, self);
+        let _ = world.insert_component(entity, self);
     }
 
     fn remove(world: &mut World, entity: Entity) {

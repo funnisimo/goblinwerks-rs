@@ -176,7 +176,7 @@ impl<'a> EntityBuilder<'a> {
         // // This can't fail.  This is guaranteed by the lifetime 'a
         // // in the EntityBuilder.
         // storage.insert(self.entity, c).unwrap();
-        let _ = self.world.add_component(self.entity, c);
+        let _ = self.world.insert_component(self.entity, c);
     }
 
     /// Inserts a component into the correct storage
@@ -186,7 +186,7 @@ impl<'a> EntityBuilder<'a> {
             // // This can't fail.  This is guaranteed by the lifetime 'a
             // // in the EntityBuilder.
             // storage.insert(self.entity, value).unwrap();
-            let _ = self.world.add_component(self.entity, value);
+            let _ = self.world.insert_component(self.entity, value);
         }
     }
 }
