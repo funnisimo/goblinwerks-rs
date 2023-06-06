@@ -5,9 +5,7 @@
 compile_error!("bevy_ecs cannot safely compile for a 16-bit platform.");
 
 pub mod access;
-pub mod archetype;
 pub mod atomic_refcell;
-pub mod bundle;
 pub mod change_detection;
 pub mod components;
 pub mod ecs;
@@ -16,7 +14,6 @@ pub mod error;
 pub mod event;
 pub mod globals;
 pub mod join;
-pub mod query;
 #[cfg(feature = "bevy_reflect")]
 pub mod reflect;
 pub mod removal_detection;
