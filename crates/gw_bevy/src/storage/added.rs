@@ -66,61 +66,61 @@ unsafe impl<T> ParJoin for Added<T> where T: ParJoin {}
 
 ///////////////////////////////////////
 
-/// A `Join`-able structure that yields all indices, returning `None` for all
-/// missing elements and `Some(T)` for found elements.
-///
-/// For usage see [`Join::maybe()`].
-///
-/// WARNING: Do not have a join of only `AddedMut`s. Otherwise the join will
-/// iterate over every single index of the bitset. If you want a join with
-/// all `AddedMut`s, add an `EntitiesRes` to the join as well to bound the
-/// join to all entities that are alive.
-///
-/// [`Join::maybe()`]: ../join/trait.Join.html#method.maybe
-pub struct AddedMut<J: Join>(pub J);
+// /// A `Join`-able structure that yields all indices, returning `None` for all
+// /// missing elements and `Some(T)` for found elements.
+// ///
+// /// For usage see [`Join::maybe()`].
+// ///
+// /// WARNING: Do not have a join of only `AddedMut`s. Otherwise the join will
+// /// iterate over every single index of the bitset. If you want a join with
+// /// all `AddedMut`s, add an `EntitiesRes` to the join as well to bound the
+// /// join to all entities that are alive.
+// ///
+// /// [`Join::maybe()`]: ../join/trait.Join.html#method.maybe
+// pub struct AddedMut<J: Join>(pub J);
 
-impl<J> AddedMut<J>
-where
-    J: Join,
-{
-    pub fn new(source: J) -> Self {
-        AddedMut(source)
-    }
-}
+// impl<J> AddedMut<J>
+// where
+//     J: Join,
+// {
+//     pub fn new(source: J) -> Self {
+//         AddedMut(source)
+//     }
+// }
 
-impl<T> Join for AddedMut<T>
-where
-    T: Join,
-    <T as Join>::Item: DetectChanges,
-{
-    type Mask = <T as Join>::Mask;
-    type Item = <T as Join>::Item;
-    type Storage = <T as Join>::Storage;
+// impl<T> Join for AddedMut<T>
+// where
+//     T: Join,
+//     <T as Join>::Item: DetectChanges,
+// {
+//     type Mask = <T as Join>::Mask;
+//     type Item = <T as Join>::Item;
+//     type Storage = <T as Join>::Storage;
 
-    // SAFETY: This wraps another implementation of `open`, making it dependent on
-    // `J`'s correctness. We can safely assume `J` is valid, thus this must be
-    // valid, too. No invariants to meet.
-    unsafe fn open(self) -> (Self::Mask, Self::Storage, u32, u32) {
-        self.0.open()
-    }
+//     // SAFETY: This wraps another implementation of `open`, making it dependent on
+//     // `J`'s correctness. We can safely assume `J` is valid, thus this must be
+//     // valid, too. No invariants to meet.
+//     unsafe fn open(self) -> (Self::Mask, Self::Storage, u32, u32) {
+//         self.0.open()
+//     }
 
-    // SAFETY: No invariants to meet and the unsafe code checks the mask, thus
-    // fulfills the requirements for calling `get`
-    unsafe fn get(
-        storage: &mut Self::Storage,
-        id: Index,
-        last_system_tick: u32,
-        world_tick: u32,
-    ) -> Option<Self::Item> {
-        match <T as Join>::get(storage, id, last_system_tick, world_tick) {
-            None => None,
-            Some(comp) => match comp.is_added() {
-                true => Some(comp),
-                false => None,
-            },
-        }
-    }
-}
+//     // SAFETY: No invariants to meet and the unsafe code checks the mask, thus
+//     // fulfills the requirements for calling `get`
+//     unsafe fn get(
+//         storage: &mut Self::Storage,
+//         id: Index,
+//         last_system_tick: u32,
+//         world_tick: u32,
+//     ) -> Option<Self::Item> {
+//         match <T as Join>::get(storage, id, last_system_tick, world_tick) {
+//             None => None,
+//             Some(comp) => match comp.is_added() {
+//                 true => Some(comp),
+//                 false => None,
+//             },
+//         }
+//     }
+// }
 
 // SAFETY: This is safe as long as `T` implements `ParJoin` safely.  `AddedMut`
 // relies on `T as Join` for all storage access and safely wraps the inner

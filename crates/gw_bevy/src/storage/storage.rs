@@ -1,6 +1,6 @@
 //! Component storage types, implementations for component joins, etc.
 
-use super::{Added, AddedMut, Changed, ChangedMut, Drain};
+use super::{Added, Changed, Drain};
 use crate::components::{CompMut, CompRef, Component};
 use crate::entity::EntitiesRes;
 use crate::join::JoinExt;
@@ -312,12 +312,12 @@ impl<'e, T> Storage<'e, T, ResMut<'e, MaskedStorage<T>>>
 where
     T: Component,
 {
-    pub fn added(&mut self) -> AddedMut<&Self> {
-        AddedMut::new(self)
+    pub fn added(&mut self) -> Added<&mut Self> {
+        Added::new(self)
     }
 
-    pub fn changed(&mut self) -> ChangedMut<&Self> {
-        ChangedMut::new(self)
+    pub fn changed(&mut self) -> Changed<&mut Self> {
+        Changed::new(self)
     }
 }
 
