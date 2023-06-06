@@ -12,7 +12,7 @@ use crate::{
     error::{Error, WrongGeneration},
     join::Join,
 };
-use hibitset::{BitIter, BitSet, BitSetLike, BitSetNot};
+use hibitset::{BitSet, BitSetLike, BitSetNot};
 use std::{
     self,
     marker::PhantomData,
