@@ -259,18 +259,18 @@ where
     T: Component,
     D: Deref<Target = MaskedStorage<T>>,
 {
-    /// Gets the wrapped storage.
-    pub fn unprotected_storage(&self) -> &T::Storage {
-        &self.data.inner
-    }
+    // /// Gets the wrapped storage.
+    // pub(crate) fn unprotected_storage(&self) -> &T::Storage {
+    //     &self.data.inner
+    // }
 
-    /// Returns the `EntitiesRes` resource fetched by this storage.
-    /// **This does not have anything to do with the components inside.**
-    /// You only want to use this when implementing additional methods
-    /// for `Storage` via an extension trait.
-    pub fn fetched_entities(&self) -> &EntitiesRes {
-        &self.entities
-    }
+    // /// Returns the `EntitiesRes` resource fetched by this storage.
+    // /// **This does not have anything to do with the components inside.**
+    // /// You only want to use this when implementing additional methods
+    // /// for `Storage` via an extension trait.
+    // pub(crate) fn entities(&self) -> &EntitiesRes {
+    //     &self.entities
+    // }
 
     /// Tries to read the data associated with an `Entity`.
     pub fn get(&self, e: Entity) -> Option<CompRef<'_, T>> {
@@ -370,16 +370,16 @@ where
     T: Component,
     D: DerefMut<Target = MaskedStorage<T>>,
 {
-    /// Gets mutable access to the wrapped storage.
-    ///
-    /// # Safety
-    ///
-    /// This is unsafe because modifying the wrapped storage without also
-    /// updating the mask bitset accordingly can result in illegal memory
-    /// access.
-    pub unsafe fn unprotected_storage_mut(&mut self) -> &mut T::Storage {
-        &mut self.data.inner
-    }
+    // /// Gets mutable access to the wrapped storage.
+    // ///
+    // /// # Safety
+    // ///
+    // /// This is unsafe because modifying the wrapped storage without also
+    // /// updating the mask bitset accordingly can result in illegal memory
+    // /// access.
+    // pub(crate) unsafe fn unprotected_storage_mut(&mut self) -> &mut T::Storage {
+    //     &mut self.data.inner
+    // }
 
     /// Tries to mutate the data associated with an `Entity`.
     pub fn get_mut(&mut self, e: Entity) -> Option<CompMut<'_, T>> {
@@ -399,7 +399,7 @@ where
     /// If a component already existed for the given `Entity`, then it will
     /// be overwritten with the new component. If it did overwrite, then the
     /// result will contain `Some(T)` where `T` is the previous component.
-    pub fn insert(&mut self, e: Entity, v: T) -> InsertResult<T> {
+    pub(crate) fn insert(&mut self, e: Entity, v: T) -> InsertResult<T> {
         if self.entities.is_alive(e) {
             let id = e.id();
             if self.data.mask.contains(id) {
@@ -427,7 +427,7 @@ where
     }
 
     /// Removes the data associated with an `Entity`.
-    pub fn remove(&mut self, e: Entity) -> Option<T> {
+    pub(crate) fn remove(&mut self, e: Entity) -> Option<T> {
         if self.entities.is_alive(e) {
             self.data.remove(e.id(), self.world_tick)
         } else {
@@ -435,10 +435,10 @@ where
         }
     }
 
-    /// Clears the contents of the storage.
-    pub fn clear(&mut self) {
-        self.data.clear();
-    }
+    // /// Clears the contents of the storage.
+    // pub(crate) fn clear(&mut self) {
+    //     self.data.clear();
+    // }
 
     /// Creates a draining storage wrapper which can be `.join`ed
     /// to get a draining iterator.

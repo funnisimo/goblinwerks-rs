@@ -162,31 +162,31 @@ pub struct EntityBuilder<'a> {
     /// The (already created) entity for which components will be inserted.
     pub entity: Entity,
     /// A reference to the `World` for component insertions.
-    pub world: &'a World,
+    pub world: &'a mut World,
 }
 
 impl<'a> EntityBuilder<'a> {
-    pub fn new(world: &'a World, entity: Entity) -> Self {
+    pub fn new(world: &'a mut World, entity: Entity) -> Self {
         EntityBuilder { entity, world }
     }
 
     /// Inserts a component into the correct storage
-    pub fn insert<T: Component>(&self, c: T) {
+    pub fn insert<T: Component>(&mut self, c: T) {
         // let mut storage: WriteComp<T> = SystemData::fetch(&self.world);
         // // This can't fail.  This is guaranteed by the lifetime 'a
         // // in the EntityBuilder.
         // storage.insert(self.entity, c).unwrap();
-        let _ = self.world.write_component::<T>().insert(self.entity, c);
+        let _ = self.world.add_component(self.entity, c);
     }
 
     /// Inserts a component into the correct storage
-    pub fn maybe_insert<T: Component>(&self, c: Option<T>) {
+    pub fn maybe_insert<T: Component>(&mut self, c: Option<T>) {
         if let Some(value) = c {
             // let mut storage: WriteComp<T> = SystemData::fetch(&self.world);
             // // This can't fail.  This is guaranteed by the lifetime 'a
             // // in the EntityBuilder.
             // storage.insert(self.entity, value).unwrap();
-            let _ = self.world.write_component::<T>().insert(self.entity, value);
+            let _ = self.world.add_component(self.entity, value);
         }
     }
 }
@@ -197,7 +197,7 @@ impl<'a> Builder for EntityBuilder<'a> {
     /// If a component was already associated with the entity, it will
     /// overwrite the previous component.
     #[inline]
-    fn with<T: Component>(self, c: T) -> Self {
+    fn with<T: Component>(mut self, c: T) -> Self {
         self.insert(c);
         self
     }

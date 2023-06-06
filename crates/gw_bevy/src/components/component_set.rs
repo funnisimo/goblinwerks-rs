@@ -2,17 +2,17 @@ use super::Component;
 use crate::{entity::Entity, world::World};
 
 pub trait ComponentSet: Send + Sync + 'static {
-    fn insert(self, world: &World, entity: Entity);
-    fn remove(world: &World, entity: Entity);
+    fn insert(self, world: &mut World, entity: Entity);
+    fn remove(world: &mut World, entity: Entity);
 }
 
 impl<C: Component> ComponentSet for C {
-    fn insert(self, world: &World, entity: Entity) {
-        let _ = world.write_component::<C>().insert(entity, self);
+    fn insert(self, world: &mut World, entity: Entity) {
+        let _ = world.add_component(entity, self);
     }
 
-    fn remove(world: &World, entity: Entity) {
-        world.write_component::<C>().remove(entity);
+    fn remove(world: &mut World, entity: Entity) {
+        world.remove_component::<C>(entity);
     }
 }
 
@@ -22,13 +22,13 @@ macro_rules! impl_component_set {
         #[allow(non_snake_case)]
         impl<$($from: Component,)*> ComponentSet for ($($from),*,)
         {
-            fn insert(self, world: &World, entity: Entity) {
+            fn insert(self, world: &mut World, entity: Entity) {
                 let ($($from,)*) = self;
                 $(
                     $from.insert(world, entity);
                 )*
             }
-            fn remove(world: &World, entity: Entity) {
+            fn remove(world: &mut World, entity: Entity) {
                 $(
                     world.write_component::<$from>().remove(entity);
                 )*

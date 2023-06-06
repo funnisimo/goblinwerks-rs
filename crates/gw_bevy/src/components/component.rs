@@ -1,5 +1,9 @@
+use crate as gw_bevy;
+use crate::entity::Entity;
 use crate::storage::UnprotectedStorage;
+use bevy_ecs_macros::Component;
 use std::any::Any;
+use std::marker::PhantomData;
 
 /// Abstract component type.
 /// Doesn't have to be Copy or even Clone.
@@ -67,4 +71,22 @@ pub trait Component: Any + Sized + Send + Sync {
     // /// Associated storage type for this component.
     // #[cfg(not(feature = "parallel"))]
     // type Storage: UnprotectedStorage<Self> + Any;
+}
+
+#[derive(Debug, Component)]
+pub struct DeleteComp<T: Component> {
+    pub entity: Entity,
+    phantom: PhantomData<T>,
+}
+
+impl<T> DeleteComp<T>
+where
+    T: Component,
+{
+    pub fn new(entity: Entity) -> Self {
+        DeleteComp {
+            entity,
+            phantom: PhantomData,
+        }
+    }
 }

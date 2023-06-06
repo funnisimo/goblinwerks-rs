@@ -419,6 +419,8 @@ impl<'w, 's> Commands<'w, 's> {
     //     self.queue.push(InsertOrSpawnBatch { bundles_iter });
     // }
 
+    // GLOBALS
+
     /// Pushes a [`Command`] to the queue for inserting a [`Resource`] in the [`World`] with an inferred value.
     ///
     /// The inferred value is determined by the [`FromWorld`] trait of the resource.
@@ -443,7 +445,94 @@ impl<'w, 's> Commands<'w, 's> {
     /// # }
     /// # bevy_ecs::system::assert_is_system(initialise_scoreboard);
     /// ```
-    pub fn init_resource<R: Resource + Send + Sync + FromWorld>(&mut self) {
+    pub fn ensure_global<R: Resource + Send + Sync + FromWorld>(&mut self) {
+        self.queue.push(InitGlobal::<R> {
+            _phantom: PhantomData::<R>::default(),
+        });
+    }
+
+    /// Pushes a [`Command`] to the queue for inserting a [`Resource`] in the [`World`] with a specific value.
+    ///
+    /// This will overwrite any previous value of the same resource type.
+    ///
+    /// See [`World::insert_resource`] for more details.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use bevy_ecs::prelude::*;
+    /// #
+    /// # #[derive(Resource)]
+    /// # struct Scoreboard {
+    /// #     current_score: u32,
+    /// #     high_score: u32,
+    /// # }
+    /// #
+    /// # fn system(mut commands: Commands) {
+    /// commands.insert_resource(Scoreboard {
+    ///     current_score: 0,
+    ///     high_score: 0,
+    /// });
+    /// # }
+    /// # bevy_ecs::system::assert_is_system(system);
+    /// ```
+    pub fn insert_global<R: Resource + Send + Sync>(&mut self, global: R) {
+        self.queue.push(InsertGlobal { global });
+    }
+
+    /// Pushes a [`Command`] to the queue for removing a [`Resource`] from the [`World`].
+    ///
+    /// See [`World::remove_resource`] for more details.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use bevy_ecs::prelude::*;
+    /// #
+    /// # #[derive(Resource)]
+    /// # struct Scoreboard {
+    /// #     current_score: u32,
+    /// #     high_score: u32,
+    /// # }
+    /// #
+    /// # fn system(mut commands: Commands) {
+    /// commands.remove_resource::<Scoreboard>();
+    /// # }
+    /// # bevy_ecs::system::assert_is_system(system);
+    /// ```
+    pub fn remove_global<R: Resource>(&mut self) {
+        self.queue.push(RemoveGlobal::<R> {
+            phantom: PhantomData,
+        });
+    }
+
+    // RESOURCES
+
+    /// Pushes a [`Command`] to the queue for inserting a [`Resource`] in the [`World`] with an inferred value.
+    ///
+    /// The inferred value is determined by the [`FromWorld`] trait of the resource.
+    /// When the command is applied,
+    /// if the resource already exists, nothing happens.
+    ///
+    /// See [`World::init_resource`] for more details.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use bevy_ecs::prelude::*;
+    /// #
+    /// # #[derive(Resource, Default)]
+    /// # struct Scoreboard {
+    /// #     current_score: u32,
+    /// #     high_score: u32,
+    /// # }
+    /// #
+    /// # fn initialise_scoreboard(mut commands: Commands) {
+    /// commands.init_resource::<Scoreboard>();
+    /// # }
+    /// # bevy_ecs::system::assert_is_system(initialise_scoreboard);
+    /// ```
+    pub fn ensure_resource<R: Resource + Send + Sync + FromWorld>(&mut self) {
         self.queue.push(InitResource::<R> {
             _phantom: PhantomData::<R>::default(),
         });
@@ -540,6 +629,20 @@ impl<'w, 's> Commands<'w, 's> {
     /// ```
     pub fn add<C: Command>(&mut self, command: C) {
         self.queue.push(command);
+    }
+
+    pub fn insert_component<C: ComponentSet>(&mut self, entity: Entity, comps: C) {
+        self.queue.push(Insert {
+            entity,
+            bundle: comps,
+        })
+    }
+
+    pub fn remove_component<C: ComponentSet>(&mut self, entity: Entity) {
+        self.queue.push(Remove::<C> {
+            entity,
+            phantom: PhantomData,
+        })
     }
 }
 
@@ -946,6 +1049,39 @@ where
     fn write(self, world: &mut World) {
         let entity = self.entity;
         T::remove(world, entity);
+    }
+}
+
+pub struct InitGlobal<R: Resource + Send + Sync + FromWorld> {
+    _phantom: PhantomData<R>,
+}
+
+impl<R: Resource + Send + Sync + FromWorld> Command for InitGlobal<R> {
+    fn write(self, world: &mut World) {
+        world.ensure_global::<R>();
+    }
+}
+
+pub struct InsertGlobal<R: Resource + Send + Sync> {
+    pub global: R,
+}
+
+impl<R: Resource + Send + Sync> Command for InsertGlobal<R> {
+    fn write(self, world: &mut World) {
+        world.insert_global(self.global);
+    }
+}
+
+pub struct RemoveGlobal<R: Resource> {
+    pub phantom: PhantomData<R>,
+}
+
+unsafe impl<R: Resource> Send for RemoveGlobal<R> {}
+unsafe impl<R: Resource> Sync for RemoveGlobal<R> {}
+
+impl<R: Resource> Command for RemoveGlobal<R> {
+    fn write(self, world: &mut World) {
+        world.remove_global::<R>();
     }
 }
 

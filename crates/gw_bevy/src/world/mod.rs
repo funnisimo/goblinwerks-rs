@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use crate::components::{Component, ReadComp, WriteComp};
+use crate::components::{Component, DeleteComp, ReadComp, WriteComp};
 use crate::components::{ComponentSet, Components};
 use crate::entity::EntityAllocator;
 use crate::entity::{Builder, Entities};
@@ -11,7 +11,7 @@ use crate::resources::Resources;
 use crate::resources::{ResMut, ResRef};
 use crate::resources::{Resource, ResourceId};
 use crate::schedule::{Schedule, ScheduleLabel, Schedules};
-use crate::storage::{MaskedStorage, Storage};
+use crate::storage::{InsertResult, MaskedStorage, Storage};
 use atomize::Atom;
 
 #[cfg(feature = "trace")]
@@ -748,6 +748,14 @@ impl World {
         f(comp)
     }
 
+    pub fn add_component<C: Component>(&mut self, entity: Entity, component: C) -> InsertResult<C> {
+        self.write_component::<C>().insert(entity, component)
+    }
+
+    pub fn remove_component<C: Component>(&mut self, entity: Entity) -> Option<C> {
+        self.write_component::<C>().remove(entity)
+    }
+
     // REGISTRY
 
     pub fn register<T: Component>(&mut self)
@@ -768,25 +776,27 @@ impl World {
     where
         T: Component,
     {
-        self.resources.get_or_insert_with(
+        if self.resources.ensure_with(
             move || MaskedStorage::<T>::new(storage),
             self.current_tick(),
-            self.current_tick(),
-        );
-        // self.resources
-        //     .get_or_insert_with(MetaTable::<dyn AnyStorage>::default);
-        self.resources
-            .get_mut::<Components>(self.last_maintain_tick, self.current_tick())
-            .unwrap()
-            .register(
-                &*self
-                    .resources
-                    .get::<MaskedStorage<T>>(self.last_maintain_tick, self.current_tick())
-                    .unwrap(),
-            );
+        ) {
+            // self.resources
+            //     .get_or_insert_with(MetaTable::<dyn AnyStorage>::default);
+            self.resources
+                .get_mut::<Components>(self.last_maintain_tick, self.current_tick())
+                .unwrap()
+                .register(
+                    &*self
+                        .resources
+                        .get::<MaskedStorage<T>>(self.last_maintain_tick, self.current_tick())
+                        .unwrap(),
+                );
+
+            self.register_event::<DeleteComp<T>>();
+        }
     }
 
-    pub fn register_components(&mut self, source: &World) {
+    pub fn register_components_from(&mut self, source: &World) {
         let registry = source.read_resource::<Components>();
 
         for item in registry.iter(source) {
@@ -794,7 +804,7 @@ impl World {
         }
     }
 
-    pub(crate) fn components(&self) -> ResRef<Components> {
+    pub fn components(&self) -> ResRef<Components> {
         self.read_resource::<Components>()
     }
 
@@ -872,10 +882,6 @@ impl World {
     }
 
     pub fn create_entity(&mut self) -> EntityBuilder {
-        self.create_entity_unchecked()
-    }
-
-    pub(crate) fn create_entity_unchecked(&self) -> EntityBuilder {
         let entity = self.entities_mut().create();
         EntityBuilder::new(self, entity)
     }
