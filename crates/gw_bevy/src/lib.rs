@@ -48,7 +48,7 @@ pub mod prelude {
         entity::{Builder, Entities, EntitiesMut, Entity},
         event::{Event, EventReader, EventWriter, Events},
         globals::{ReadGlobal, WriteGlobal},
-        join::Join,
+        join::{Join, JoinExt},
         // query::{Added, AnyOf, Changed, Or, QueryState, With, Without},
         // removal_detection::RemovedComponents,
         resources::{ReadUnique, Resource, WriteUnique},

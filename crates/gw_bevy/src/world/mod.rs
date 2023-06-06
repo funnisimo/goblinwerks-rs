@@ -730,7 +730,7 @@ impl World {
             }
             Some(data) => data,
         };
-        Storage::new(entities, data, self.change_tick(), self.change_tick())
+        Storage::new(entities, data, self.last_maintain_tick, self.change_tick())
     }
 
     pub fn with_component_mut<R, C: Component, F: FnOnce(WriteComp<C>) -> R>(&self, f: F) -> R {

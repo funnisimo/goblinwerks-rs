@@ -11,6 +11,8 @@ mod default_vec;
 // #[cfg(test)]
 // mod tests;
 // mod track;
+mod added;
+mod changed;
 
 mod btree;
 mod dense_vec;
@@ -18,7 +20,9 @@ mod hash_map;
 mod null;
 mod vec;
 
+pub use added::*;
 pub use btree::*;
+pub use changed::*;
 pub use default_vec::*;
 pub use dense_vec::*;
 pub use drain::Drain;

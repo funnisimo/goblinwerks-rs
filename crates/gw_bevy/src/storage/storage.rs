@@ -1,8 +1,10 @@
 //! Component storage types, implementations for component joins, etc.
 
-use super::Drain;
+use super::{Added, AddedMut, Changed, ChangedMut, Drain};
 use crate::components::{CompMut, CompRef, Component};
 use crate::entity::EntitiesRes;
+use crate::join::JoinExt;
+use crate::resources::ResMut;
 use crate::tick::ComponentTicks;
 use crate::{components::CastFrom, resources::ResRef, world::World};
 use crate::{
@@ -168,7 +170,7 @@ impl<T: Component> MaskedStorage<T> {
         }
     }
 
-    fn open_mut(&mut self) -> (&BitSet, &mut T::Storage) {
+    pub(crate) fn open_mut(&mut self) -> (&BitSet, &mut T::Storage) {
         (&self.mask, &mut self.inner)
     }
 
@@ -290,6 +292,32 @@ where
     /// by the component type without actually getting the component.
     pub fn mask(&self) -> &BitSet {
         &self.data.mask
+    }
+}
+
+impl<'e, T> Storage<'e, T, ResRef<'e, MaskedStorage<T>>>
+where
+    T: Component,
+{
+    pub fn added(&self) -> Added<&Self> {
+        Added::new(self)
+    }
+
+    pub fn changed(&self) -> Changed<&Self> {
+        Changed::new(self)
+    }
+}
+
+impl<'e, T> Storage<'e, T, ResMut<'e, MaskedStorage<T>>>
+where
+    T: Component,
+{
+    pub fn added(&mut self) -> AddedMut<&Self> {
+        AddedMut::new(self)
+    }
+
+    pub fn changed(&mut self) -> ChangedMut<&Self> {
+        ChangedMut::new(self)
     }
 }
 
@@ -460,6 +488,13 @@ where
     }
 }
 
+impl<'a, 'e, T, D> JoinExt for &'a Storage<'e, T, D>
+where
+    T: Component,
+    D: Deref<Target = MaskedStorage<T>>,
+{
+}
+
 impl<'a, 'e, T, D> Not for &'a Storage<'e, T, D>
 where
     T: Component,
@@ -512,6 +547,13 @@ where
         let (d, t) = (*value).get_mut(i).destructure_mut();
         Some(CompMut::new(d, t, last_system_tick, world_tick))
     }
+}
+
+impl<'a, 'e, T, D> JoinExt for &'a mut Storage<'e, T, D>
+where
+    T: Component,
+    D: DerefMut<Target = MaskedStorage<T>>,
+{
 }
 
 // SAFETY: This is safe because of the `DistinctStorage` guarantees.
