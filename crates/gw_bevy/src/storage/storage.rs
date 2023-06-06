@@ -12,7 +12,7 @@ use crate::{
     error::{Error, WrongGeneration},
     join::Join,
 };
-use hibitset::{BitSet, BitSetLike, BitSetNot};
+use hibitset::{BitIter, BitSet, BitSetLike, BitSetNot};
 use std::{
     self,
     marker::PhantomData,
@@ -78,6 +78,8 @@ pub trait AnyStorage {
     /// Registers the component in the world - for registry copy
     fn register(&self, world: &mut World);
 
+    fn maintain(&mut self, world_ticks: u32);
+
     /// Moves the component of the given entity to the other world
     fn try_move_component(&mut self, entity: Entity, source_tick: u32, dest: &mut EntityBuilder);
 }
@@ -107,6 +109,10 @@ where
 
     fn register(&self, world: &mut World) {
         world.register::<T>();
+    }
+
+    fn maintain(&mut self, world_ticks: u32) {
+        self.check_change_ticks(world_ticks);
     }
 
     fn try_move_component(&mut self, entity: Entity, source_tick: u32, dest: &mut EntityBuilder) {
@@ -200,6 +206,14 @@ impl<T: Component> MaskedStorage<T> {
             unsafe {
                 self.inner.drop(id);
             }
+        }
+    }
+
+    fn check_change_ticks(&mut self, world_tick: u32) {
+        let MaskedStorage { mask, inner } = self;
+        for id in mask.iter() {
+            let comp = unsafe { inner.get_mut(id) };
+            comp.ticks.check_ticks(world_tick);
         }
     }
 }

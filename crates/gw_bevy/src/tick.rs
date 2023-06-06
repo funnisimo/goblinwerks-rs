@@ -676,6 +676,11 @@ impl ComponentTicks {
     pub fn set_changed(&mut self, change_tick: u32) {
         self.changed.set_changed(change_tick);
     }
+
+    pub(crate) fn check_ticks(&mut self, world_tick: u32) {
+        self.added.check_tick(world_tick);
+        self.changed.check_tick(world_tick);
+    }
 }
 
 // /// Initialize and fetch a [`ComponentId`] for a specific type.

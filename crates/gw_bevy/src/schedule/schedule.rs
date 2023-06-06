@@ -246,7 +246,7 @@ impl Schedule {
 
     /// Runs all systems in this schedule on the `world`, using its current execution strategy.
     pub fn run(&mut self, world: &mut World) {
-        world.check_change_ticks();
+        world.maintain();
         self.initialize(world).unwrap_or_else(|e| panic!("{e}"));
         self.executor.run(&mut self.executable, world);
     }

@@ -104,8 +104,8 @@ impl Globals {
         }
     }
 
-    pub fn maintain(&mut self) {
-        self.resources.borrow_mut().maintain();
+    pub fn maintain(&mut self, world_tick: u32) {
+        self.resources.borrow_mut().maintain(world_tick);
     }
 
     // pub fn deleted<G: Resource>(&self) -> Option<Tick> {
@@ -1010,11 +1010,11 @@ mod tests {
 
         let mut globals = Globals::default();
 
-        globals.maintain();
+        globals.maintain(99);
 
         globals.insert(Data(5), 99);
 
-        globals.maintain();
+        globals.maintain(102);
 
         {
             let borrow = globals.fetch::<Data>(100, 102);
@@ -1023,7 +1023,7 @@ mod tests {
             // assert_eq!(borrow.inserted_tick().tick, 99);
         }
 
-        globals.maintain();
+        globals.maintain(103);
 
         {
             let mut borrow = globals.fetch_mut::<Data>(102, 106);
@@ -1036,7 +1036,7 @@ mod tests {
             assert_eq!(borrow.0, 8);
         }
 
-        globals.maintain();
+        globals.maintain(107);
 
         {
             let borrow = globals.fetch::<Data>(106, 110);

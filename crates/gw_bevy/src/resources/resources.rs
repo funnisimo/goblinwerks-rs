@@ -182,6 +182,12 @@ impl UnsafeResources {
         self.map.clear();
         // self.deleted.clear();
     }
+
+    fn maintain(&mut self, world_tick: u32) {
+        for (_id, cell) in self.map.iter() {
+            cell.ticks.borrow_mut().check_ticks(world_tick);
+        }
+    }
 }
 
 impl Drop for UnsafeResources {
@@ -526,7 +532,9 @@ impl Resources {
         }
     }
 
-    pub fn maintain(&mut self) {
+    pub fn maintain(&mut self, world_tick: u32) {
+        self.internal.maintain(world_tick);
+
         // loop {
         //     match self.internal.deleted.front() {
         //         None => return,

@@ -913,10 +913,6 @@ impl World {
         self.current_tick.load(Ordering::Relaxed)
     }
 
-    pub fn check_change_ticks(&mut self) {
-        // TODO!
-    }
-
     // TODO - Remove This
     pub fn increment_change_tick(&self) -> u32 {
         self.current_tick.fetch_add(1, Ordering::Relaxed)
@@ -927,6 +923,7 @@ impl World {
     }
 
     pub fn maintain(&mut self) {
+        // All maintain changes are in new tick so that they can be detected by change trackers
         self.last_maintain_tick = self.increment_change_tick();
 
         let deleted = self.entities_mut().maintain();
@@ -934,8 +931,15 @@ impl World {
             self.delete_components(&deleted);
         }
 
-        self.globals.maintain();
-        self.resources.maintain();
+        {
+            let meta = self.components_mut();
+            for comp in meta.iter_mut(self) {
+                comp.maintain(self.change_tick());
+            }
+        }
+
+        self.globals.maintain(self.change_tick());
+        self.resources.maintain(self.change_tick());
     }
 
     pub fn delete_components(&mut self, delete: &[Entity]) {
