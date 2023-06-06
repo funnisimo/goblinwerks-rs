@@ -895,13 +895,13 @@ mod tests {
         // // This is required to update world::last_change_tick
         // world.clear_trackers();
 
-        let current_tick = world.change_tick();
+        let current_tick = world.current_tick();
 
         {
             let r = world.write_resource::<R2>();
             assert_eq!(
                 r.last_changed(),
-                world.change_tick(),
+                world.current_tick(),
                 "Resource must begin unchanged."
             );
         }
@@ -909,27 +909,27 @@ mod tests {
         // increments change tick
         world.maintain();
 
-        assert_ne!(current_tick, world.change_tick());
+        assert_ne!(current_tick, world.current_tick());
 
         {
             let mut r = world.write_resource::<R2>();
             assert_ne!(
                 r.last_changed(),
-                world.change_tick(),
+                world.current_tick(),
                 "Resource must begin unchanged."
             );
 
             r.set_if_neq(R2(0));
             assert_ne!(
                 r.last_changed(),
-                world.change_tick(),
+                world.current_tick(),
                 "Resource must not be changed after setting to the same value."
             );
 
             r.set_if_neq(R2(3));
             assert_eq!(
                 r.last_changed(),
-                world.change_tick(),
+                world.current_tick(),
                 "Resource must be changed after setting to a different value."
             );
         }

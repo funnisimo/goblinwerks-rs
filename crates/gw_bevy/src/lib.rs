@@ -42,7 +42,7 @@ pub mod prelude {
         change_detection::{DetectChanges, DetectChangesMut},
         components::{CompMut, CompRef, Component, ReadComp, WriteComp},
         ecs::Ecs,
-        entity::{Builder, Entities, EntitiesMut, Entity},
+        entity::{Builder, Entities, Entity},
         event::{Event, EventReader, EventWriter, Events},
         globals::{ReadGlobal, WriteGlobal},
         join::{Join, JoinExt},

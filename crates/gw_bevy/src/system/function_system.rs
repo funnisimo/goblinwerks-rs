@@ -20,7 +20,7 @@ pub struct SystemMeta {
     // NOTE: this must be kept private. making a SystemMeta non-send is irreversible to prevent
     // SystemParams from overriding each other
     is_send: bool,
-    pub(crate) last_change_tick: u32,
+    pub(crate) last_run_tick: u32,
 }
 
 impl SystemMeta {
@@ -32,7 +32,7 @@ impl SystemMeta {
             archetype_component_access: AccessTracker::default(),
             component_access_set: AccessTracker::default(),
             is_send: true,
-            last_change_tick: 0,
+            last_run_tick: 0,
         }
     }
 
@@ -151,7 +151,7 @@ pub struct SystemState<Param: SystemParam + 'static> {
 impl<Param: SystemParam> SystemState<Param> {
     pub fn new(world: &mut World) -> Self {
         let mut meta = SystemMeta::new::<Param>();
-        meta.last_change_tick = world.change_tick().wrapping_sub(MAX_CHANGE_AGE);
+        meta.last_run_tick = world.current_tick().wrapping_sub(MAX_CHANGE_AGE);
         let param_state = Param::init_state(world, &mut meta);
         Self {
             meta,
@@ -242,7 +242,7 @@ impl<Param: SystemParam> SystemState<Param> {
         Param: ReadOnlySystemParam,
     {
         self.validate_world(world);
-        let change_tick = world.change_tick();
+        let change_tick = world.current_tick();
         // SAFETY: Param is read-only and doesn't allow mutable access to World. It also matches the World this SystemState was created with.
         unsafe { self.fetch(world, change_tick) }
     }
@@ -260,7 +260,7 @@ impl<Param: SystemParam> SystemState<Param> {
         world: &'w mut World,
     ) -> SystemParamItem<'w, 's, Param> {
         self.validate_world(world);
-        let change_tick = world.change_tick();
+        let change_tick = world.current_tick();
         // SAFETY: World is uniquely borrowed and matches the World this SystemState was created with.
         unsafe { self.fetch(world, change_tick) }
     }
@@ -276,7 +276,7 @@ impl<Param: SystemParam> SystemState<Param> {
         &'s mut self,
         world: &'w World,
     ) -> SystemParamItem<'w, 's, Param> {
-        let change_tick = world.increment_change_tick();
+        let change_tick = world.increment_current_tick();
         self.fetch(world, change_tick)
     }
 
@@ -291,7 +291,7 @@ impl<Param: SystemParam> SystemState<Param> {
         change_tick: u32,
     ) -> SystemParamItem<'w, 's, Param> {
         let param = Param::get_param(&mut self.param_state, &self.meta, world, change_tick);
-        self.meta.last_change_tick = change_tick;
+        self.meta.last_run_tick = change_tick;
         param
     }
 }
@@ -454,7 +454,7 @@ where
         // #[cfg(feature = "trace")]
         // tracing::event!(Level::TRACE, "run_unsafe");
 
-        let change_tick = world.increment_change_tick();
+        let change_tick = world.increment_current_tick();
 
         // println!(
         //     "system {} - run_unsafe = {}, {}",
@@ -474,7 +474,7 @@ where
             change_tick,
         );
         let out = self.func.run(input, params);
-        self.system_meta.last_change_tick = change_tick;
+        self.system_meta.last_run_tick = change_tick;
 
         // println!(
         //     "system {} - run_unsafe END = {}, {}",
@@ -487,11 +487,11 @@ where
     }
 
     fn get_last_change_tick(&self) -> u32 {
-        self.system_meta.last_change_tick
+        self.system_meta.last_run_tick
     }
 
     fn set_last_change_tick(&mut self, last_change_tick: u32) {
-        self.system_meta.last_change_tick = last_change_tick;
+        self.system_meta.last_run_tick = last_change_tick;
     }
 
     #[inline]
@@ -503,7 +503,7 @@ where
     #[inline]
     fn initialize(&mut self, world: &mut World) {
         self.world_id = Some(world.id());
-        self.system_meta.last_change_tick = world.change_tick().wrapping_sub(MAX_CHANGE_AGE);
+        self.system_meta.last_run_tick = world.current_tick().wrapping_sub(MAX_CHANGE_AGE);
         self.param_state = Some(F::Param::init_state(world, &mut self.system_meta));
     }
 
@@ -527,7 +527,7 @@ where
     #[inline]
     fn check_change_tick(&mut self, change_tick: u32) {
         check_system_change_tick(
-            &mut self.system_meta.last_change_tick,
+            &mut self.system_meta.last_run_tick,
             change_tick,
             self.system_meta.name.as_ref(),
         );

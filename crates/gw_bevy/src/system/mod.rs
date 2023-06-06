@@ -319,7 +319,7 @@ mod tests {
 
         schedule.add_system(incr_e_on_flip);
         schedule.add_system(apply_system_buffers.after(incr_e_on_flip));
-        schedule.add_system(World::clear_trackers.after(apply_system_buffers));
+        schedule.add_system(World::maintain.after(apply_system_buffers));
 
         schedule.run(&mut world);
         assert_eq!(world.read_resource::<Added>().0, 1);

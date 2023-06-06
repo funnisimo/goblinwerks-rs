@@ -51,7 +51,7 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for ResRef<'a, T> {
     ) -> Self::Item<'w, 's> {
         world
             .resources
-            .get::<T>(system_meta.last_change_tick, change_tick)
+            .get::<T>(system_meta.last_run_tick, change_tick)
             .unwrap_or_else(|| {
                 panic!(
                     "Resource requested by {} does not exist: {}",
@@ -115,7 +115,7 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for ResMut<'a, T> {
     ) -> Self::Item<'w, 's> {
         world
             .resources
-            .get_mut::<T>(system_meta.last_change_tick, change_tick)
+            .get_mut::<T>(system_meta.last_run_tick, change_tick)
             .unwrap_or_else(|| {
                 panic!(
                     "Resource requested by {} does not exist: {}",
@@ -246,7 +246,7 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for ReadUnique<'a, T> {
     ) -> Self::Item<'w, 's> {
         world
             .resources
-            .get::<T>(system_meta.last_change_tick, change_tick)
+            .get::<T>(system_meta.last_run_tick, change_tick)
             .map(|read| ReadUnique::new(read))
             .unwrap_or_else(|| {
                 panic!(
@@ -301,7 +301,7 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for Option<ReadUnique<'a,
 
         world
             .resources
-            .get::<T>(system_meta.last_change_tick, change_tick)
+            .get::<T>(system_meta.last_run_tick, change_tick)
             .map(|read| ReadUnique::new(read))
     }
 }
@@ -459,7 +459,7 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for WriteUnique<'a, T> {
 
         world
             .resources
-            .get_mut::<T>(system_meta.last_change_tick, change_tick)
+            .get_mut::<T>(system_meta.last_run_tick, change_tick)
             .map(|read| WriteUnique::new(read))
             .unwrap_or_else(|| {
                 panic!(
@@ -502,7 +502,7 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for Option<WriteUnique<'a
 
         world
             .resources
-            .get_mut::<T>(system_meta.last_change_tick, change_tick)
+            .get_mut::<T>(system_meta.last_run_tick, change_tick)
             .map(|read| WriteUnique::new(read))
     }
 }
@@ -626,7 +626,7 @@ unsafe impl<'a, T: 'static> SystemParam for ReadNonSendUnique<'a, T> {
     ) -> Self::Item<'w, 's> {
         world
             .resources
-            .get::<T>(system_meta.last_change_tick, change_tick)
+            .get::<T>(system_meta.last_run_tick, change_tick)
             .map(|read| ReadNonSendUnique::new(read))
             .unwrap_or_else(|| {
                 panic!(
@@ -659,7 +659,7 @@ unsafe impl<T: 'static> SystemParam for Option<ReadNonSendUnique<'_, T>> {
     ) -> Self::Item<'w, 's> {
         world
             .resources
-            .get::<T>(system_meta.last_change_tick, change_tick)
+            .get::<T>(system_meta.last_run_tick, change_tick)
             .map(|read| ReadNonSendUnique::new(read))
     }
 }
@@ -792,7 +792,7 @@ unsafe impl<'a, T: 'static> SystemParam for WriteNonSendUnique<'a, T> {
     ) -> Self::Item<'w, 's> {
         world
             .resources
-            .get_mut::<T>(system_meta.last_change_tick, change_tick)
+            .get_mut::<T>(system_meta.last_run_tick, change_tick)
             .map(|read| WriteNonSendUnique::new(read))
             .unwrap_or_else(|| {
                 panic!(
@@ -822,7 +822,7 @@ unsafe impl<'a, T: 'static> SystemParam for Option<WriteNonSendUnique<'a, T>> {
     ) -> Self::Item<'w, 's> {
         world
             .resources
-            .get_mut::<T>(system_meta.last_change_tick, change_tick)
+            .get_mut::<T>(system_meta.last_run_tick, change_tick)
             .map(|read| WriteNonSendUnique::new(read))
     }
 }

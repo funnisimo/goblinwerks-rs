@@ -36,18 +36,16 @@
 //! [`EntityMut::insert`]: crate::world::EntityMut::insert
 //! [`EntityMut::remove`]: crate::world::EntityMut::remove
 mod builder;
+mod entities;
 mod generation;
 mod map_entities;
 
-use crate::{
-    // error::WrongGeneration,
-    join::Join,
-    resources::{ReadUnique, ResRef, WriteUnique},
-};
 pub use builder::*;
+pub use entities::*;
 pub use generation::*;
-use hibitset::{AtomicBitSet, BitSet, BitSetOr};
 pub use map_entities::*;
+
+use hibitset::{AtomicBitSet, BitSet};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 #[cfg(feature = "serde")]
@@ -58,70 +56,6 @@ use crate::specs::join::ParJoin;
 
 /// An index is basically the id of an `Entity`.
 pub type Index = u32;
-
-/// A wrapper for a read `Entities` resource.
-/// Note that this is just `Read<Entities>`, so
-/// you can easily use it in your system:
-///
-/// ```
-/// # use specs::prelude::*;
-/// # struct Sys;
-/// # impl<'a> System<'a> for Sys {
-/// type SystemData = (Entities<'a> /* ... */,);
-/// # fn run(&mut self, _: Self::SystemData) {}
-/// # }
-/// ```
-///
-/// Please note that you should call `World::maintain`
-/// after creating / deleting entities with this resource.
-///
-/// When `.join`ing on `Entities`, you will need to do it like this:
-///
-/// ```
-/// use specs::prelude::*;
-///
-/// # struct Pos; impl Component for Pos { type Storage = VecStorage<Self>; }
-/// # let mut world = World::new(); world.register::<Pos>();
-/// # let entities = world.entities(); let positions = world.write_storage::<Pos>();
-/// for (e, pos) in (&entities, &positions).join() {
-///     // Do something
-/// #   let _ = e;
-/// #   let _ = pos;
-/// }
-/// ```
-pub type Entities<'a> = ReadUnique<'a, EntitiesRes>;
-
-/// A wrapper for a writable `Entities` resource.
-/// Note that this is just `Write<Entities>`, so
-/// you can easily use it in your system:
-///
-/// ```
-/// # use specs::prelude::*;
-/// # struct Sys;
-/// # impl<'a> System<'a> for Sys {
-/// type SystemData = (EntitiesMut<'a> /* ... */,);
-/// # fn run(&mut self, _: Self::SystemData) {}
-/// # }
-/// ```
-///
-/// Please note that you should call `World::maintain`
-/// after creating / deleting entities with this resource.
-///
-/// When `.join`ing on `Entities`, you will need to do it like this:
-///
-/// ```
-/// use specs::prelude::*;
-///
-/// # struct Pos; impl Component for Pos { type Storage = VecStorage<Self>; }
-/// # let mut world = World::new(); world.register::<Pos>();
-/// # let entities = world.entities(); let positions = world.write_storage::<Pos>();
-/// for (e, pos) in (&entities, &positions).join() {
-///     // Do something
-/// #   let _ = e;
-/// #   let _ = pos;
-/// }
-/// ```
-pub type EntitiesMut<'a> = WriteUnique<'a, EntitiesRes>;
 
 /// Internally used structure for `Entity` allocation.
 #[derive(Default, Debug)]
@@ -407,71 +341,6 @@ impl EntitiesRes {
         self.alloc.merge()
     }
 }
-
-// Join for ResRef<EntitiesRes>
-impl<'a> Join for &'a Entities<'a> {
-    type Mask = BitSetOr<&'a BitSet, &'a AtomicBitSet>;
-    type Item = Entity;
-    type Storage = Self;
-
-    unsafe fn open(self) -> (Self::Mask, Self, u32, u32) {
-        (
-            BitSetOr(&self.alloc.alive, &self.alloc.raised),
-            self,
-            self.last_system_tick,
-            self.world_tick,
-        )
-    }
-
-    unsafe fn get(
-        v: &mut &'a Entities<'a>,
-        idx: Index,
-        _last_system_tick: u32,
-        _world_tick: u32,
-    ) -> Option<Entity> {
-        let gen = v
-            .alloc
-            .generation(idx)
-            .map(|gen| if gen.is_alive() { gen } else { gen.raised() })
-            .unwrap_or_else(Generation::one);
-        Some(Entity(idx, gen))
-    }
-}
-
-#[cfg(feature = "parallel")]
-unsafe impl<'a> ParJoin for &'a EntitiesRes {}
-
-impl<'a> Join for &'a ResRef<'a, EntitiesRes> {
-    type Mask = BitSetOr<&'a BitSet, &'a AtomicBitSet>;
-    type Item = Entity;
-    type Storage = Self;
-
-    unsafe fn open(self) -> (Self::Mask, Self, u32, u32) {
-        (
-            BitSetOr(&self.alloc.alive, &self.alloc.raised),
-            self,
-            self.last_system_tick,
-            self.world_tick,
-        )
-    }
-
-    unsafe fn get(
-        v: &mut &'a ResRef<EntitiesRes>,
-        idx: Index,
-        _last_system_tick: u32,
-        _world_tick: u32,
-    ) -> Option<Entity> {
-        let gen = v
-            .alloc
-            .generation(idx)
-            .map(|gen| if gen.is_alive() { gen } else { gen.raised() })
-            .unwrap_or_else(Generation::one);
-        Some(Entity(idx, gen))
-    }
-}
-
-#[cfg(feature = "parallel")]
-unsafe impl<'a> ParJoin for &'a ResRef<'a, EntitiesRes> {}
 
 // /// An entity builder from `EntitiesRes`.  Allows building an entity with its
 // /// components if you have mutable access to the component storages.

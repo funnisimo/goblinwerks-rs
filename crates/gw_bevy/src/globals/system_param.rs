@@ -45,7 +45,7 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for ReadGlobal<'a, T> {
     ) -> Self::Item<'w, 's> {
         world
             .globals
-            .try_fetch::<T>(system_meta.last_change_tick, change_tick)
+            .try_fetch::<T>(system_meta.last_run_tick, change_tick)
             .map(|read| ReadGlobal::new(read))
             .unwrap_or_else(|| {
                 panic!(
@@ -100,7 +100,7 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for Option<ReadGlobal<'a,
 
         world
             .globals
-            .try_fetch::<T>(system_meta.last_change_tick, change_tick)
+            .try_fetch::<T>(system_meta.last_run_tick, change_tick)
             .map(|read| ReadGlobal::new(read))
     }
 }
@@ -165,7 +165,7 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for WriteGlobal<'a, T> {
 
         world
             .globals
-            .try_fetch_mut::<T>(system_meta.last_change_tick, change_tick)
+            .try_fetch_mut::<T>(system_meta.last_run_tick, change_tick)
             .map(|read| WriteGlobal::new(read))
             .unwrap_or_else(|| {
                 panic!(
@@ -208,7 +208,7 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for Option<WriteGlobal<'a
 
         world
             .globals
-            .try_fetch_mut::<T>(system_meta.last_change_tick, change_tick)
+            .try_fetch_mut::<T>(system_meta.last_run_tick, change_tick)
             .map(|read| WriteGlobal::new(read))
     }
 }
@@ -257,7 +257,7 @@ unsafe impl<'a, T: 'static> SystemParam for ReadNonSendGlobal<'a, T> {
     ) -> Self::Item<'w, 's> {
         world
             .globals
-            .try_fetch::<T>(system_meta.last_change_tick, change_tick)
+            .try_fetch::<T>(system_meta.last_run_tick, change_tick)
             .map(|read| ReadNonSendGlobal::new(read))
             .unwrap_or_else(|| {
                 panic!(
@@ -290,7 +290,7 @@ unsafe impl<T: 'static> SystemParam for Option<ReadNonSendGlobal<'_, T>> {
     ) -> Self::Item<'w, 's> {
         world
             .globals
-            .try_fetch::<T>(system_meta.last_change_tick, change_tick)
+            .try_fetch::<T>(system_meta.last_run_tick, change_tick)
             .map(|read| ReadNonSendGlobal::new(read))
     }
 }
@@ -338,7 +338,7 @@ unsafe impl<'a, T: 'static> SystemParam for WriteNonSendGlobal<'a, T> {
     ) -> Self::Item<'w, 's> {
         world
             .globals
-            .try_fetch_mut::<T>(system_meta.last_change_tick, change_tick)
+            .try_fetch_mut::<T>(system_meta.last_run_tick, change_tick)
             .map(|read| WriteNonSendGlobal::new(read))
             .unwrap_or_else(|| {
                 panic!(
@@ -368,7 +368,7 @@ unsafe impl<'a, T: 'static> SystemParam for Option<WriteNonSendGlobal<'a, T>> {
     ) -> Self::Item<'w, 's> {
         world
             .globals
-            .try_fetch_mut::<T>(system_meta.last_change_tick, change_tick)
+            .try_fetch_mut::<T>(system_meta.last_run_tick, change_tick)
             .map(|read| WriteNonSendGlobal::new(read))
     }
 }

@@ -1,11 +1,13 @@
 //! Event handling types.
 
 use crate as gw_bevy;
-use crate::resources::{ReadUnique, ResMut, WriteUnique};
+use crate::components::{CastFrom, MetaTable};
+use crate::resources::{ReadUnique, WriteUnique};
 use crate::system::{Local, SystemParam};
 use bevy_utils::tracing::trace;
 use std::ops::{Deref, DerefMut};
 use std::{fmt, hash::Hash, iter::Chain, marker::PhantomData, slice::Iter};
+
 /// A type that can be stored in an [`Events<E>`] resource
 /// You can conveniently access events using the [`EventReader`] and [`EventWriter`] system parameter.
 ///
@@ -556,10 +558,10 @@ impl<E: Event> Events<E> {
         );
     }
 
-    /// A system that calls [`Events::update`] once per frame.
-    pub fn update_system(mut events: ResMut<Self>) {
-        events.update();
-    }
+    // /// A system that calls [`Events::update`] once per frame.
+    // pub fn update_system(mut events: WriteUnique<Self>) {
+    //     events.update();
+    // }
 
     #[inline]
     fn reset_start_event_count(&mut self) {
@@ -663,6 +665,34 @@ impl<E: Event> std::iter::Extend<E> for Events<E> {
         }
 
         self.event_count = event_count;
+    }
+}
+
+pub trait AnyEvent {
+    fn maintain(&mut self, world_tick: u32);
+}
+
+impl<T> AnyEvent for Events<T>
+where
+    T: Event,
+{
+    fn maintain(&mut self, _world_tick: u32) {
+        self.update();
+    }
+}
+
+pub type AllEvents = MetaTable<dyn AnyEvent>;
+
+unsafe impl<T> CastFrom<T> for dyn AnyEvent
+where
+    T: AnyEvent + 'static,
+{
+    fn cast(t: &T) -> &Self {
+        t
+    }
+
+    fn cast_mut(t: &mut T) -> &mut Self {
+        t
     }
 }
 

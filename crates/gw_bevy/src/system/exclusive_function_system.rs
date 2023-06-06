@@ -94,7 +94,7 @@ where
     fn run(&mut self, input: Self::In, world: &mut World) -> Self::Out {
         println!("Running exclusive system");
         let saved_last_tick = world.last_maintain_tick;
-        world.last_maintain_tick = self.system_meta.last_change_tick;
+        world.last_maintain_tick = self.system_meta.last_run_tick;
 
         let params = F::Param::get_param(
             self.param_state.as_mut().expect(PARAM_MESSAGE),
@@ -103,7 +103,7 @@ where
         let out = self.func.run(world, input, params);
 
         let change_tick = world.current_tick.get_mut();
-        self.system_meta.last_change_tick = *change_tick;
+        self.system_meta.last_run_tick = *change_tick;
         *change_tick = change_tick.wrapping_add(1);
         world.last_maintain_tick = saved_last_tick;
 
@@ -116,12 +116,12 @@ where
     }
 
     fn get_last_change_tick(&self) -> u32 {
-        self.system_meta.last_change_tick
+        self.system_meta.last_run_tick
     }
 
     fn set_last_change_tick(&mut self, last_change_tick: u32) {
         // println!("exclusive set_last_change_tick - {}", last_change_tick);
-        self.system_meta.last_change_tick = last_change_tick;
+        self.system_meta.last_run_tick = last_change_tick;
     }
 
     #[inline]
@@ -134,7 +134,7 @@ where
     #[inline]
     fn initialize(&mut self, world: &mut World) {
         self.world_id = Some(world.id());
-        self.system_meta.last_change_tick = world.change_tick().wrapping_sub(MAX_CHANGE_AGE);
+        self.system_meta.last_run_tick = world.current_tick().wrapping_sub(MAX_CHANGE_AGE);
         self.param_state = Some(F::Param::init(world, &mut self.system_meta));
     }
 
@@ -143,7 +143,7 @@ where
     #[inline]
     fn check_change_tick(&mut self, change_tick: u32) {
         check_system_change_tick(
-            &mut self.system_meta.last_change_tick,
+            &mut self.system_meta.last_run_tick,
             change_tick,
             self.system_meta.name.as_ref(),
         );

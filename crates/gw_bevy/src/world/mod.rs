@@ -5,14 +5,13 @@ use crate::components::{ComponentSet, Components};
 use crate::entity::Builder;
 use crate::entity::EntityAllocator;
 use crate::entity::{EntitiesRes, Entity, EntityBuilder};
-use crate::event::{Event, Events, ManualEventReader};
+use crate::event::{AllEvents, Event, Events, ManualEventReader};
 use crate::globals::{GlobalMut, GlobalRef, Globals};
 use crate::resources::Resources;
 use crate::resources::{ResMut, ResRef};
 use crate::resources::{Resource, ResourceId};
 use crate::schedule::{Schedule, ScheduleLabel, Schedules};
 use crate::storage::{MaskedStorage, Storage};
-use crate::system::Commands;
 use atomize::Atom;
 
 #[cfg(feature = "trace")]
@@ -59,6 +58,7 @@ impl World {
         let mut resources = Resources::empty();
         resources.insert(EntitiesRes::default(), 0);
         resources.insert(Components::default(), 0);
+        resources.insert(AllEvents::default(), 0);
 
         World {
             id: id.into(),
@@ -359,44 +359,49 @@ impl World {
 
     /// Makes sure there is a value for the given resource.
     /// If not found, inserts a default value.
-    pub fn ensure_global<G: Resource + Send + Sync + FromWorld>(&mut self) {
+    pub fn ensure_global<G: Resource + Send + Sync + FromWorld>(&mut self) -> bool {
         if self.globals.contains::<G>() {
-            return;
+            return false;
         }
 
         let g = G::from_world(self);
-        self.globals.insert(g, self.change_tick());
+        self.globals.insert(g, self.current_tick());
+        true
     }
 
     /// Makes sure there is a value for the given resource.
     /// If not found, inserts a default value.
-    pub fn ensure_global_non_send<G: Resource + FromWorld>(&mut self) {
+    pub fn ensure_global_non_send<G: Resource + FromWorld>(&mut self) -> bool {
         if self.globals.contains::<G>() {
-            return;
+            return false;
         }
 
         let g = G::from_world(self);
-        self.globals.insert_non_send(g, self.change_tick());
+        self.globals.insert_non_send(g, self.current_tick());
+        true
     }
 
     /// Makes sure there is a value for the given global.
     /// If not found, inserts a default value.
-    pub fn ensure_global_with<G: Resource + Send + Sync, F: FnOnce() -> G>(&mut self, func: F) {
-        self.globals.ensure_with(func, self.change_tick());
+    pub fn ensure_global_with<G: Resource + Send + Sync, F: FnOnce() -> G>(
+        &mut self,
+        func: F,
+    ) -> bool {
+        self.globals.ensure_with(func, self.current_tick())
     }
 
     /// Inserts a global
     pub fn insert_global<G: Resource + Send + Sync>(&mut self, global: G) {
-        self.globals.insert(global, self.change_tick());
+        self.globals.insert(global, self.current_tick());
     }
 
     pub fn insert_global_non_send<G: Resource>(&mut self, global: G) {
-        self.globals.insert_non_send(global, self.change_tick());
+        self.globals.insert_non_send(global, self.current_tick());
     }
 
     /// Removes a global
     pub fn remove_global<G: Resource>(&mut self) -> Option<G> {
-        self.globals.remove::<G>(self.change_tick())
+        self.globals.remove::<G>(self.current_tick())
     }
 
     pub fn with_global<R, G: Resource, F: FnOnce(&G) -> R>(&self, f: F) -> R {
@@ -407,13 +412,13 @@ impl World {
     /// Fetch a global value
     pub fn read_global<G: Resource>(&self) -> GlobalRef<G> {
         self.globals
-            .fetch::<G>(self.last_maintain_tick, self.change_tick())
+            .fetch::<G>(self.last_maintain_tick, self.current_tick())
     }
 
     pub fn read_global_or_insert<G: Resource + Send + Sync + FromWorld>(&mut self) -> GlobalRef<G> {
         self.ensure_global::<G>();
         self.globals
-            .fetch::<G>(self.last_maintain_tick, self.change_tick())
+            .fetch::<G>(self.last_maintain_tick, self.current_tick())
     }
 
     pub fn read_global_or_insert_with<G: Resource + Send + Sync, F: FnOnce() -> G>(
@@ -422,7 +427,7 @@ impl World {
     ) -> GlobalRef<G> {
         self.ensure_global_with(f);
         self.globals
-            .fetch::<G>(self.last_maintain_tick, self.change_tick())
+            .fetch::<G>(self.last_maintain_tick, self.current_tick())
     }
 
     pub fn with_global_mut<R, G: Resource, F: FnOnce(&mut G) -> R>(&self, f: F) -> R {
@@ -433,7 +438,7 @@ impl World {
     /// Fetch a global value as mutable
     pub fn write_global<G: Resource>(&self) -> GlobalMut<G> {
         self.globals
-            .fetch_mut::<G>(self.last_maintain_tick, self.change_tick())
+            .fetch_mut::<G>(self.last_maintain_tick, self.current_tick())
     }
 
     /// Fetch a global value as mutable
@@ -442,7 +447,7 @@ impl World {
     ) -> GlobalMut<G> {
         self.ensure_global::<G>();
         self.globals
-            .fetch_mut::<G>(self.last_maintain_tick, self.change_tick())
+            .fetch_mut::<G>(self.last_maintain_tick, self.current_tick())
             .into()
     }
 
@@ -453,20 +458,20 @@ impl World {
     ) -> GlobalMut<G> {
         self.ensure_global_with(f);
         self.globals
-            .fetch_mut::<G>(self.last_maintain_tick, self.change_tick())
+            .fetch_mut::<G>(self.last_maintain_tick, self.current_tick())
     }
 
     /// Try to fetch a global value
     pub fn try_read_global<G: Resource>(&self) -> Option<GlobalRef<G>> {
         self.globals
-            .try_fetch::<G>(self.last_maintain_tick, self.change_tick())
+            .try_fetch::<G>(self.last_maintain_tick, self.current_tick())
             .map(|v| v.into())
     }
 
     /// Try to fetch a global value mutably
     pub fn try_write_global<G: Resource>(&self) -> Option<GlobalMut<G>> {
         self.globals
-            .try_fetch_mut::<G>(self.last_maintain_tick, self.change_tick())
+            .try_fetch_mut::<G>(self.last_maintain_tick, self.current_tick())
             .map(|v| v.into())
     }
 
@@ -500,7 +505,7 @@ impl World {
     where
         R: Resource + Send + Sync,
     {
-        self.resources.insert(r, self.change_tick());
+        self.resources.insert(r, self.current_tick());
     }
 
     /// Inserts a resource into this container. If the resource existed before,
@@ -529,7 +534,7 @@ impl World {
     where
         R: Resource,
     {
-        self.resources.insert_non_send(r, self.change_tick());
+        self.resources.insert_non_send(r, self.current_tick());
     }
 
     /// Removes a resource of type `R` from the `World` and returns its
@@ -545,7 +550,7 @@ impl World {
         R: Resource,
     {
         self.resources
-            .remove_by_id(ResourceId::new::<R>(), self.change_tick())
+            .remove_by_id(ResourceId::new::<R>(), self.current_tick())
     }
 
     /// Returns true if the specified resource type `R` exists in `self`.
@@ -571,28 +576,33 @@ impl World {
 
     /// Makes sure there is a value for the given resource.
     /// If not found, inserts a default value.
-    pub fn ensure_resource<R: Resource + Send + Sync + FromWorld>(&mut self) {
+    pub fn ensure_resource<R: Resource + Send + Sync + FromWorld>(&mut self) -> bool {
         if self.resources.contains::<R>() {
-            return;
+            return false;
         }
         let val = R::from_world(self);
-        self.resources.insert(val, self.change_tick());
+        self.resources.insert(val, self.current_tick());
+        true
     }
 
     /// Makes sure there is a value for the given resource.
     /// If not found, inserts a default value.
-    pub fn ensure_resource_non_send<R: Resource + FromWorld>(&mut self) {
+    pub fn ensure_resource_non_send<R: Resource + FromWorld>(&mut self) -> bool {
         if self.resources.contains::<R>() {
-            return;
+            return false;
         }
         let val = R::from_world(self);
-        self.resources.insert_non_send(val, self.change_tick());
+        self.resources.insert_non_send(val, self.current_tick());
+        true
     }
 
     /// Makes sure there is a value for the given resource.
     /// If not found, inserts a default value.
-    pub fn ensure_resource_with<R: Resource + Send + Sync, F: FnOnce() -> R>(&mut self, func: F) {
-        self.resources.ensure_with(func, self.change_tick());
+    pub fn ensure_resource_with<R: Resource + Send + Sync, F: FnOnce() -> R>(
+        &mut self,
+        func: F,
+    ) -> bool {
+        self.resources.ensure_with(func, self.current_tick())
     }
 
     pub fn with_resource<R: Resource, F: FnOnce(&R) -> T, T>(&self, f: F) -> T {
@@ -603,7 +613,7 @@ impl World {
     pub fn read_resource<'world, R: Resource>(&'world self) -> ResRef<'world, R> {
         match self
             .resources
-            .get::<R>(self.last_maintain_tick, self.change_tick())
+            .get::<R>(self.last_maintain_tick, self.current_tick())
         {
             None => {
                 let name = std::any::type_name::<R>();
@@ -618,7 +628,7 @@ impl World {
     pub fn read_resource_or_insert<R: Resource + Send + Sync + FromWorld>(&mut self) -> ResRef<R> {
         self.ensure_resource::<R>();
         self.resources
-            .get::<R>(self.last_maintain_tick, self.change_tick())
+            .get::<R>(self.last_maintain_tick, self.current_tick())
             .unwrap()
     }
 
@@ -628,14 +638,14 @@ impl World {
     ) -> ResRef<R> {
         self.ensure_resource_with(f);
         self.resources
-            .get::<R>(self.last_maintain_tick, self.change_tick())
+            .get::<R>(self.last_maintain_tick, self.current_tick())
             .unwrap()
             .into()
     }
 
     pub fn try_read_resource<R: Resource>(&self) -> Option<ResRef<R>> {
         self.resources
-            .get::<R>(self.last_maintain_tick, self.change_tick())
+            .get::<R>(self.last_maintain_tick, self.current_tick())
             .map(|v| v.into())
     }
 
@@ -647,7 +657,7 @@ impl World {
     pub fn write_resource<R: Resource>(&self) -> ResMut<R> {
         match self
             .resources
-            .get_mut::<R>(self.last_maintain_tick, self.change_tick())
+            .get_mut::<R>(self.last_maintain_tick, self.current_tick())
         {
             None => {
                 let name = std::any::type_name::<R>();
@@ -662,7 +672,7 @@ impl World {
     pub fn write_resource_or_insert<R: Resource + Send + Sync + FromWorld>(&mut self) -> ResMut<R> {
         self.ensure_resource::<R>();
         self.resources
-            .get_mut::<R>(self.last_maintain_tick, self.change_tick())
+            .get_mut::<R>(self.last_maintain_tick, self.current_tick())
             .unwrap()
             .into()
     }
@@ -673,13 +683,13 @@ impl World {
     ) -> ResMut<R> {
         self.ensure_resource_with(f);
         self.resources
-            .get_mut::<R>(self.last_maintain_tick, self.change_tick())
+            .get_mut::<R>(self.last_maintain_tick, self.current_tick())
             .unwrap()
     }
 
     pub fn try_write_resource<R: Resource>(&self) -> Option<ResMut<R>> {
         self.resources
-            .get_mut::<R>(self.last_maintain_tick, self.change_tick())
+            .get_mut::<R>(self.last_maintain_tick, self.current_tick())
     }
 
     // COMPONENTS
@@ -691,11 +701,11 @@ impl World {
     pub fn read_component<T: Component>(&self) -> ReadComp<T> {
         let entities = self
             .resources
-            .get::<EntitiesRes>(self.last_maintain_tick, self.change_tick())
+            .get::<EntitiesRes>(self.last_maintain_tick, self.current_tick())
             .unwrap();
         let data = match self
             .resources
-            .get::<MaskedStorage<T>>(self.last_maintain_tick, self.change_tick())
+            .get::<MaskedStorage<T>>(self.last_maintain_tick, self.current_tick())
         {
             None => {
                 let name = std::any::type_name::<T>();
@@ -705,7 +715,7 @@ impl World {
             }
             Some(data) => data,
         };
-        Storage::new(entities, data, self.last_maintain_tick, self.change_tick())
+        Storage::new(entities, data, self.last_maintain_tick, self.current_tick())
     }
 
     pub fn with_component<R, C: Component, F: FnOnce(ReadComp<C>) -> R>(&self, f: F) -> R {
@@ -716,11 +726,11 @@ impl World {
     pub fn write_component<T: Component>(&self) -> WriteComp<T> {
         let entities = self
             .resources
-            .get::<EntitiesRes>(self.last_maintain_tick, self.change_tick())
+            .get::<EntitiesRes>(self.last_maintain_tick, self.current_tick())
             .unwrap();
         let data = match self
             .resources
-            .get_mut::<MaskedStorage<T>>(self.last_maintain_tick, self.change_tick())
+            .get_mut::<MaskedStorage<T>>(self.last_maintain_tick, self.current_tick())
         {
             None => {
                 let name = std::any::type_name::<T>();
@@ -730,7 +740,7 @@ impl World {
             }
             Some(data) => data,
         };
-        Storage::new(entities, data, self.last_maintain_tick, self.change_tick())
+        Storage::new(entities, data, self.last_maintain_tick, self.current_tick())
     }
 
     pub fn with_component_mut<R, C: Component, F: FnOnce(WriteComp<C>) -> R>(&self, f: F) -> R {
@@ -760,18 +770,18 @@ impl World {
     {
         self.resources.get_or_insert_with(
             move || MaskedStorage::<T>::new(storage),
-            self.change_tick(),
-            self.change_tick(),
+            self.current_tick(),
+            self.current_tick(),
         );
         // self.resources
         //     .get_or_insert_with(MetaTable::<dyn AnyStorage>::default);
         self.resources
-            .get_mut::<Components>(self.last_maintain_tick, self.change_tick())
+            .get_mut::<Components>(self.last_maintain_tick, self.current_tick())
             .unwrap()
             .register(
                 &*self
                     .resources
-                    .get::<MaskedStorage<T>>(self.last_maintain_tick, self.change_tick())
+                    .get::<MaskedStorage<T>>(self.last_maintain_tick, self.current_tick())
                     .unwrap(),
             );
     }
@@ -784,25 +794,32 @@ impl World {
         }
     }
 
-    pub fn components(&self) -> ResRef<Components> {
+    pub(crate) fn components(&self) -> ResRef<Components> {
         self.read_resource::<Components>()
     }
 
-    pub fn components_mut(&self) -> ResMut<Components> {
+    pub(crate) fn components_mut(&self) -> ResMut<Components> {
         self.write_resource::<Components>()
     }
 
     // Events
 
-    pub fn register_event<T: Event>(&mut self) {
+    pub fn register_event<T: Event>(&mut self) -> bool {
+        if self.has_resource::<Events<T>>() {
+            return false;
+        }
+
+        let events = Events::<T>::default();
+        self.write_resource::<AllEvents>().register(&events);
+        self.insert_resource(events);
+
         #[cfg(feature = "trace")]
         tracing::event!(
             Level::TRACE,
             "register event : {component}",
             component = ResourceId::of::<T>().name()
         );
-
-        self.ensure_resource::<Events<T>>();
+        true
     }
 
     pub fn send_event<T: Event>(&self, event: T) {
@@ -829,25 +846,25 @@ impl World {
     //     self.write_resource::<RemovedComponentEvents>()
     // }
 
-    // Lazy Update
+    // // Lazy Update
 
-    pub fn commands(&self) -> ResRef<Commands> {
-        self.resources
-            .get::<Commands>(self.last_maintain_tick, self.change_tick())
-            .unwrap()
-    }
+    // pub fn commands(&self) -> ResRef<Commands> {
+    //     self.resources
+    //         .get::<Commands>(self.last_maintain_tick, self.change_tick())
+    //         .unwrap()
+    // }
 
     // ENTITIES
 
     pub fn entities(&self) -> ResRef<EntitiesRes> {
         self.resources
-            .get::<EntitiesRes>(self.last_maintain_tick, self.change_tick())
+            .get::<EntitiesRes>(self.last_maintain_tick, self.current_tick())
             .unwrap()
     }
 
     pub(crate) fn entities_mut(&self) -> ResMut<EntitiesRes> {
         self.resources
-            .get_mut::<EntitiesRes>(self.last_maintain_tick, self.change_tick())
+            .get_mut::<EntitiesRes>(self.last_maintain_tick, self.current_tick())
             .unwrap()
     }
 
@@ -901,7 +918,7 @@ impl World {
             let mut builder = dest.create_entity();
             let storages = self.read_resource::<Components>();
             for storage in storages.iter_mut(self) {
-                storage.try_move_component(entity, self.change_tick(), &mut builder);
+                storage.try_move_component(entity, self.current_tick(), &mut builder);
             }
             builder.id()
         };
@@ -909,22 +926,22 @@ impl World {
         new_entity
     }
 
-    pub fn change_tick(&self) -> u32 {
+    pub fn current_tick(&self) -> u32 {
         self.current_tick.load(Ordering::Relaxed)
     }
 
     // TODO - Remove This
-    pub fn increment_change_tick(&self) -> u32 {
+    pub(crate) fn increment_current_tick(&self) -> u32 {
         self.current_tick.fetch_add(1, Ordering::Relaxed)
     }
 
-    pub fn clear_trackers(&mut self) {
-        self.maintain();
-    }
+    // pub fn clear_trackers(&mut self) {
+    //     self.maintain();
+    // }
 
     pub fn maintain(&mut self) {
         // All maintain changes are in new tick so that they can be detected by change trackers
-        self.last_maintain_tick = self.increment_change_tick();
+        self.last_maintain_tick = self.increment_current_tick();
 
         let deleted = self.entities_mut().maintain();
         if !deleted.is_empty() {
@@ -934,12 +951,19 @@ impl World {
         {
             let meta = self.components_mut();
             for comp in meta.iter_mut(self) {
-                comp.maintain(self.change_tick());
+                comp.maintain(self.current_tick());
             }
         }
 
-        self.globals.maintain(self.change_tick());
-        self.resources.maintain(self.change_tick());
+        {
+            let meta = self.write_resource::<AllEvents>();
+            for ev in meta.iter_mut(self) {
+                ev.maintain(self.current_tick());
+            }
+        }
+
+        self.globals.maintain(self.current_tick());
+        self.resources.maintain(self.current_tick());
     }
 
     pub fn delete_components(&mut self, delete: &[Entity]) {
@@ -947,11 +971,11 @@ impl World {
         //     .get_or_insert_with(MetaTable::<dyn AnyStorage>::default);
         for storage in self
             .resources
-            .get_mut::<Components>(self.last_maintain_tick, self.change_tick())
+            .get_mut::<Components>(self.last_maintain_tick, self.current_tick())
             .unwrap()
             .iter_mut(self)
         {
-            storage.drop(delete, self.change_tick());
+            storage.drop(delete, self.current_tick());
         }
     }
 }

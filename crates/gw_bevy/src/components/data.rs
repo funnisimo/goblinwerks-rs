@@ -189,7 +189,7 @@ mod tests {
         let mut schedule = Schedule::new();
         schedule.add_system(system_a);
 
-        println!("world tick = {}", world.change_tick());
+        println!("world tick = {}", world.current_tick());
 
         let e = world.spawn(CompA(0));
 
@@ -207,7 +207,7 @@ mod tests {
             assert!(!comp.get(e).unwrap().is_changed());
         }
 
-        println!("world tick = {}", world.change_tick());
+        println!("world tick = {}", world.current_tick());
 
         schedule.run(&mut world);
 

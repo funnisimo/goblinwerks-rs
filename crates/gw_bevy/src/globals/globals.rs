@@ -32,8 +32,8 @@ impl Globals {
         &mut self,
         func: F,
         world_tick: u32,
-    ) {
-        self.resources.borrow_mut().ensure_with(func, world_tick);
+    ) -> bool {
+        self.resources.borrow_mut().ensure_with(func, world_tick)
     }
 
     /// Ensures that the resource is in the Globals or enters
@@ -42,10 +42,10 @@ impl Globals {
         &mut self,
         func: F,
         world_tick: u32,
-    ) {
+    ) -> bool {
         self.resources
             .borrow_mut()
-            .ensure_non_send_with(func, world_tick);
+            .ensure_non_send_with(func, world_tick)
     }
 
     /// Inserts a global

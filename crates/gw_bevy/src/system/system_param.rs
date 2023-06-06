@@ -1305,7 +1305,7 @@ unsafe impl SystemParam for SystemChangeTick {
         change_tick: u32,
     ) -> Self::Item<'w, 's> {
         SystemChangeTick {
-            last_change_tick: system_meta.last_change_tick,
+            last_change_tick: system_meta.last_run_tick,
             change_tick,
         }
     }

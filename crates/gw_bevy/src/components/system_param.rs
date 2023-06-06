@@ -178,7 +178,7 @@ unsafe impl<'a, T: Component> SystemParam for ReadComp<'a, T> {
         //     system_meta.last_change_tick, change_tick
         // );
 
-        ReadComp::new(entities, data, system_meta.last_change_tick, change_tick)
+        ReadComp::new(entities, data, system_meta.last_run_tick, change_tick)
 
         // Res {
         //     value: ptr.deref(),
@@ -321,7 +321,7 @@ unsafe impl<'a, T: Component> SystemParam for WriteComp<'a, T> {
         //     system_meta.last_change_tick, change_tick
         // );
 
-        WriteComp::new(entities, data, system_meta.last_change_tick, change_tick)
+        WriteComp::new(entities, data, system_meta.last_run_tick, change_tick)
 
         // Res {
         //     value: ptr.deref(),

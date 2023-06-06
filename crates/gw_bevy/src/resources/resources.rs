@@ -245,10 +245,12 @@ impl Resources {
 
     /// # Safety
     /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
-    pub fn ensure<T: Resource + Send + Sync + Default>(&mut self, world_tick: u32) {
+    pub fn ensure<T: Resource + Send + Sync + Default>(&mut self, world_tick: u32) -> bool {
         if !self.contains::<T>() {
             self.insert(T::default(), world_tick);
+            return true;
         }
+        false
     }
 
     /// # Safety
@@ -257,10 +259,12 @@ impl Resources {
         &mut self,
         f: F,
         world_tick: u32,
-    ) {
+    ) -> bool {
         if !self.contains::<T>() {
             self.insert(f(), world_tick);
+            return true;
         }
+        false
     }
 
     /// Inserts the instance of `T` into the store. If the type already exists, it will be silently
@@ -277,18 +281,26 @@ impl Resources {
 
     /// # Safety
     /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
-    pub fn ensure_non_send<T: Resource + Default>(&mut self, world_tick: u32) {
+    pub fn ensure_non_send<T: Resource + Default>(&mut self, world_tick: u32) -> bool {
         if !self.contains::<T>() {
             self.insert_non_send(T::default(), world_tick);
+            return true;
         }
+        false
     }
 
     /// # Safety
     /// Resources which are `!Send` must be retrieved or inserted only on the main thread.
-    pub fn ensure_non_send_with<T: Resource, F: FnOnce() -> T>(&mut self, f: F, world_tick: u32) {
+    pub fn ensure_non_send_with<T: Resource, F: FnOnce() -> T>(
+        &mut self,
+        f: F,
+        world_tick: u32,
+    ) -> bool {
         if !self.contains::<T>() {
             self.insert_non_send(f(), world_tick);
+            return true;
         }
+        false
     }
 
     /// Inserts the instance of `T` into the store. If the type already exists, it will be silently
