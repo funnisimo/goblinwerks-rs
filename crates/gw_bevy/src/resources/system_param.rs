@@ -1,10 +1,8 @@
-use super::{ResMut, ResRef};
+use super::{ResMut, ResRef, ResourceId};
 use crate::{
     access::AccessItem,
-    // component::ComponentId,
-    prelude::World,
-    resources::ResourceId,
     system::{ReadOnlySystemParam, Resource, SystemMeta, SystemParam},
+    world::World,
 };
 use std::ops::{Deref, DerefMut};
 use std::{fmt::Debug, marker::PhantomData};

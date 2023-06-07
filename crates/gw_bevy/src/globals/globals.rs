@@ -204,6 +204,15 @@ impl<'a, T> Clone for GlobalRef<'a, T> {
     }
 }
 
+impl<'a, T> Debug for GlobalRef<'a, T>
+where
+    T: Resource + Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.fetch.deref())
+    }
+}
+
 /// Allows to fetch a resource in a system mutably.
 ///
 /// If the resource isn't strictly required, you should use
@@ -276,6 +285,15 @@ where
 {
     fn deref_mut(&mut self) -> &mut T {
         self.fetch.deref_mut()
+    }
+}
+
+impl<'a, T> Debug for GlobalMut<'a, T>
+where
+    T: Resource + Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.fetch.deref())
     }
 }
 

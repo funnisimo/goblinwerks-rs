@@ -30,6 +30,7 @@ pub use bevy_ptr as ptr;
 
 /// Most commonly used re-exported types.
 pub mod prelude {
+
     #[doc(hidden)]
     #[allow(deprecated)]
     // pub use crate::query::ChangeTrackers;
@@ -52,8 +53,8 @@ pub mod prelude {
         schedule::{
             apply_state_transition, apply_system_buffers, common_conditions::*, Condition,
             IntoSystemConfig, IntoSystemConfigs, IntoSystemSet, IntoSystemSetConfig,
-            IntoSystemSetConfigs, NextState, OnEnter, OnExit, OnUpdate, Schedule, Schedules, State,
-            States, SystemSet,
+            IntoSystemSetConfigs, NextState, OnEnter, OnExit, OnUpdate, Schedule, ScheduleLabel,
+            Schedules, State, States, SystemSet,
         },
         storage::DenseVecStorage,
         system::{
@@ -67,12 +68,12 @@ pub mod prelude {
             Local,
             ParamSet,
             System,
-            SystemParamFunction,
+            SystemParam,
             // ParallelCommands
+            SystemParamFunction,
         },
         world::{FromWorld, World},
     };
-    pub use bevy_ecs_macros::{Component, ScheduleLabel};
 }
 
 pub use bevy_utils::all_tuples;

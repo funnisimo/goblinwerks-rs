@@ -2,6 +2,7 @@
 
 use crate as gw_bevy;
 use crate::components::{CastFrom, MetaTable};
+use crate::prelude::World;
 use crate::resources::{ReadUnique, WriteUnique};
 use crate::system::{Local, SystemParam};
 use bevy_utils::tracing::trace;
@@ -670,6 +671,7 @@ impl<E: Event> std::iter::Extend<E> for Events<E> {
 
 pub trait AnyEvent {
     fn maintain(&mut self, world_tick: u32);
+    fn register(&self, world: &mut World);
 }
 
 impl<T> AnyEvent for Events<T>
@@ -678,6 +680,10 @@ where
 {
     fn maintain(&mut self, _world_tick: u32) {
         self.update();
+    }
+
+    fn register(&self, world: &mut World) {
+        world.register_event::<T>();
     }
 }
 

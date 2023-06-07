@@ -1,4 +1,4 @@
-use gw_ecs::{schedule::Schedule, ReadRes, ResourceId, System, SystemData, World, WriteRes};
+use gw_ecs::{schedule::Schedule, ReadRes, System, SystemData, World, WriteRes};
 
 #[derive(Debug, Default)]
 struct ResA;

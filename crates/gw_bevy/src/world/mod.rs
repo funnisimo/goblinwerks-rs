@@ -10,6 +10,7 @@ use crate::resources::{ResMut, ResRef};
 use crate::resources::{Resource, ResourceId};
 use crate::schedule::{Schedule, ScheduleLabel, Schedules};
 use crate::storage::{MaskedStorage, Storage};
+use crate::system::{IntoSystem, System};
 use atomize::Atom;
 use std::sync::atomic::{AtomicU32, Ordering};
 
@@ -58,6 +59,9 @@ impl World {
         resources.insert(EntitiesRes::default(), 0);
         resources.insert(Components::default(), 0);
         resources.insert(AllEvents::default(), 0);
+
+        let mut globals = globals;
+        globals.ensure_with(|| Schedules::default(), 0);
 
         World {
             id: id.into(),
@@ -843,6 +847,14 @@ impl World {
         true
     }
 
+    pub fn register_events_from(&mut self, source: &World) {
+        let registry = source.read_resource::<AllEvents>();
+
+        for item in registry.iter(source) {
+            item.register(self);
+        }
+    }
+
     pub fn send_event<T: Event>(&self, event: T) {
         self.write_resource::<Events<T>>().send(event);
     }
@@ -1051,154 +1063,39 @@ impl World {
         self.write_global::<Schedules>()
             .insert(extracted_label, schedule);
     }
+
+    /// Runs the given system
+    pub fn exec<R, Marker, S: IntoSystem<(), R, Marker>>(&mut self, sys: S) -> R {
+        let mut system = IntoSystem::into_system(sys);
+        system.initialize(self);
+        let r = system.run((), self);
+        system.apply_buffers(self);
+        r
+    }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use atomize::a;
+#[cfg(test)]
+mod tests {
 
-//     use super::*;
-//     use crate::resources::{ReadUnique, WriteUnique};
+    use crate::prelude::*;
 
-//     #[derive(Default)]
-//     struct Res;
+    #[derive(Default, Debug)]
+    struct ResA(u32);
 
-//     #[test]
-//     fn fetch_aspects() {
-//         assert!(ReadUnique::<Res>::reads().contains(&ResourceId::new::<Res>()));
-//         assert!(ReadUnique::<Res>::writes().is_empty());
+    #[test]
+    fn basic_exec() {
+        let mut world = World::default();
 
-//         let mut world = World::empty(a!(DEFAULT));
-//         world.insert_resource(Res);
-//         <ReadRes<Res> as SystemData>::fetch(&world);
-//     }
+        world.insert_resource(ResA::default());
 
-//     #[test]
-//     fn fetch_mut_aspects() {
-//         assert!(WriteUnique::<Res>::reads().is_empty());
-//         assert!(WriteUnique::<Res>::writes().contains(&ResourceId::new::<Res>()));
+        assert_eq!(world.read_resource::<ResA>().0, 0);
 
-//         let mut world = World::empty("DEFAULT");
-//         world.insert_resource(Res);
-//         <WriteUnique<Res> as SystemData>::fetch(&world);
-//     }
+        let res = world.exec(|mut a: WriteUnique<ResA>| {
+            a.0 += 1;
+            a.0
+        });
 
-//     #[test]
-//     fn system_data() {
-//         let mut world = World::empty(a!(MAIN));
-
-//         world.insert_resource(5u32);
-//         let x = *world.fetch::<ReadRes<u32>>();
-//         assert_eq!(x, 5);
-//     }
-
-//     #[test]
-//     fn setup() {
-//         let mut world = World::empty(WorldId::from("TEST"));
-
-//         world.insert_resource(5u32);
-//         world.setup::<ReadRes<u32>>();
-//         let x = *world.fetch::<ReadRes<u32>>();
-//         assert_eq!(x, 5);
-
-//         world.remove_resource::<u32>();
-//         world.setup::<ReadRes<u32>>();
-//         let x = *world.fetch::<ReadRes<u32>>();
-//         assert_eq!(x, 0);
-//     }
-
-//     #[test]
-//     fn exec() {
-//         #![allow(clippy::float_cmp)]
-
-//         let mut world = World::empty("TEST");
-
-//         world.exec(|(float, boolean): (ReadRes<f32>, ReadRes<bool>)| {
-//             assert_eq!(*float, 0.0);
-//             assert!(!*boolean);
-//         });
-
-//         world.exec(
-//             |(mut float, mut boolean): (WriteRes<f32>, WriteRes<bool>)| {
-//                 *float = 4.3;
-//                 *boolean = true;
-//             },
-//         );
-
-//         world.exec(|(float, boolean): (ReadRes<f32>, ReadRes<bool>)| {
-//             assert_eq!(*float, 4.3);
-//             assert!(*boolean);
-//         });
-//     }
-
-//     #[test]
-//     #[should_panic]
-//     fn exec_panic() {
-//         let mut world = World::empty(WorldId::from(123));
-
-//         world.exec(|(_float, _boolean): (WriteRes<f32>, WriteRes<bool>)| {
-//             panic!();
-//         });
-//     }
-
-//     #[test]
-//     fn default_works() {
-//         struct Sys;
-
-//         impl<'a> System<'a> for Sys {
-//             type SystemData = WriteRes<'a, i32>;
-
-//             fn run(&mut self, mut data: Self::SystemData) {
-//                 assert_eq!(*data, 0);
-
-//                 *data = 33;
-//             }
-//         }
-
-//         let mut world = World::empty(123);
-//         assert!(world.try_read_resource::<i32>().is_none());
-
-//         let mut sys = Sys;
-//         RunNow::setup(&mut sys, &mut world);
-
-//         sys.run_now(&world);
-
-//         assert!(world.try_read_resource::<i32>().is_some());
-//         assert_eq!(*world.read_resource::<i32>(), 33);
-//     }
-
-//     struct EnterStore(u32);
-
-//     #[test]
-//     fn basic_event() {
-//         let mut world = World::empty(1);
-
-//         world.register_event::<EnterStore>();
-//         let mut reader = world.event_reader::<EnterStore>();
-
-//         world.send_event(EnterStore(1));
-
-//         {
-//             let events = world.read_events::<EnterStore>();
-//             assert_eq!(reader.iter(&events).count(), 1);
-//         }
-
-//         {
-//             let events = world.read_events::<EnterStore>();
-//             assert_eq!(reader.iter(&events).count(), 0);
-//         }
-
-//         world.maintain();
-
-//         world.send_event(EnterStore(1));
-//         world.send_event(EnterStore(2));
-//         world.send_event(EnterStore(3));
-
-//         world.maintain();
-
-//         {
-//             let events = world.read_events::<EnterStore>();
-//             assert_eq!(reader.iter(&events).count(), 3);
-//         }
-//     }
-// }
+        assert_eq!(res, 1);
+        assert_eq!(world.read_resource::<ResA>().0, 1);
+    }
+}

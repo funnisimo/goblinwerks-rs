@@ -262,6 +262,6 @@ impl Ecs {
 
 impl Default for Ecs {
     fn default() -> Self {
-        Ecs::new(World::empty("DEFAULT"))
+        Ecs::new(World::default())
     }
 }

@@ -1,7 +1,7 @@
 use crate as gw_bevy;
 use crate::entity::Entity;
 use crate::storage::UnprotectedStorage;
-use bevy_ecs_macros::Component;
+pub use bevy_ecs_macros::Component;
 use std::any::Any;
 use std::marker::PhantomData;
 

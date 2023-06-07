@@ -85,12 +85,12 @@ where
                 .get_internal(match self.tys.get(index) {
                     Some(&x) => ResourceId::from_type_id(x),
                     None => {
-                        println!("BBBBB");
+                        // println!("BBBBB");
                         return None;
                     }
                 })
                 .map(|res| {
-                    println!("AAAAA");
+                    // println!("AAAAA");
                     self.fat[index].create_ptr::<T>(Box::as_ref(&res.data.borrow())
                         as *const dyn Resource
                         as *const ())

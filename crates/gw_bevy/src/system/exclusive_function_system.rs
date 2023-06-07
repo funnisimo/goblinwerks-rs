@@ -92,7 +92,7 @@ where
     }
 
     fn run(&mut self, input: Self::In, world: &mut World) -> Self::Out {
-        println!("Running exclusive system");
+        // println!("Running exclusive system");
         let saved_last_tick = world.last_maintain_tick;
         world.last_maintain_tick = self.system_meta.last_run_tick;
 
