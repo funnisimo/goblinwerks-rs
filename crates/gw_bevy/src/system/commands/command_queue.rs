@@ -92,9 +92,6 @@ impl CommandQueue {
     /// This clears the queue.
     #[inline]
     pub fn apply(&mut self, world: &mut World) {
-        // flush the previously queued entities
-        world.maintain();
-
         // Pointer that will iterate over the entries of the buffer.
         let mut cursor = self.bytes.as_mut_ptr();
 
