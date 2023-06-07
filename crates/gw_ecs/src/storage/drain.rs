@@ -1,8 +1,6 @@
 use super::MaskedStorage;
-use crate::specs::{
-    join::Join,
-    world::{Component, Index},
-};
+use crate::components::Component;
+use crate::{entity::Index, join::Join};
 use hibitset::BitSet;
 
 /// A draining storage wrapper which has a `Join` implementation
@@ -10,6 +8,8 @@ use hibitset::BitSet;
 pub struct Drain<'a, T: Component> {
     /// The masked storage
     pub data: &'a mut MaskedStorage<T>,
+    pub last_system_tick: u32,
+    pub world_tick: u32,
 }
 
 impl<'a, T> Join for Drain<'a, T>
@@ -17,48 +17,55 @@ where
     T: Component,
 {
     type Mask = BitSet;
-    type Type = T;
-    type Value = &'a mut MaskedStorage<T>;
+    type Item = T; // TODO - CompRef<'i, T> << So that you can get the is_updated, is_inserted info
+    type Storage = &'a mut MaskedStorage<T>;
 
     // SAFETY: No invariants to meet and no unsafe code.
-    unsafe fn open(self) -> (Self::Mask, Self::Value) {
+    unsafe fn open(self) -> (Self::Mask, Self::Storage, u32, u32) {
         let mask = self.data.mask.clone();
 
-        (mask, self.data)
+        (mask, self.data, self.last_system_tick, self.world_tick)
     }
 
     // SAFETY: No invariants to meet and no unsafe code.
-    unsafe fn get(value: &mut Self::Value, id: Index) -> T {
-        value.remove(id).expect("Tried to access same index twice")
+    unsafe fn get(
+        value: &mut Self::Storage,
+        id: Index,
+        _last_system_tick: u32,
+        world_tick: u32,
+    ) -> Option<T> {
+        Some(
+            value
+                .remove(id, world_tick)
+                .expect("Tried to access same index twice"),
+        )
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::entity::Builder;
+    use crate::storage::DenseVecStorage;
+    use crate::world::World;
+    use crate::{components::Component, join::Join};
+
     #[test]
     fn basic_drain() {
-        use crate::specs::{
-            join::Join,
-            world::{Builder, Component},
-        };
-        use crate::storage::DenseVecStorage;
-        use crate::World;
-
-        #[derive(Debug, PartialEq)]
+        #[derive(Debug, PartialEq, Default)]
         struct Comp;
 
         impl Component for Comp {
             type Storage = DenseVecStorage<Self>;
         }
 
-        let mut world = World::empty(0);
+        let mut world = World::default();
         world.register::<Comp>();
 
-        world.create_entity().build();
-        let b = world.create_entity().with(Comp).build();
-        let c = world.create_entity().with(Comp).build();
-        world.create_entity().build();
-        let e = world.create_entity().with(Comp).build();
+        world.create_entity().id();
+        let b = world.create_entity().with(Comp).id();
+        let c = world.create_entity().with(Comp).id();
+        world.create_entity().id();
+        let e = world.create_entity().with(Comp).id();
 
         let mut comps = world.write_component::<Comp>();
         let entities = world.entities();

@@ -1,7 +1,7 @@
 use crate::codepage437;
 use crate::{loader::LoadHandler, panel::set_texture_params};
 use crate::{log, Glyph};
-use gw_ecs::Ecs;
+use gw_ecs::prelude::Ecs;
 use std::{collections::HashMap, sync::Arc};
 use uni_gl::{WebGLRenderingContext, WebGLTexture};
 

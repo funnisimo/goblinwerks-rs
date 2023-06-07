@@ -1,15 +1,8 @@
-use crate::{
-    ResourceId,
-    // change_detection::MAX_CHANGE_AGE,
-    // query::Access,
-    World,
-};
+use crate::{access::AccessTracker, change_detection::MAX_CHANGE_AGE, world::World};
+use bevy_utils::tracing::warn;
+use core::fmt::Debug;
 use std::any::TypeId;
 use std::borrow::Cow;
-use std::collections::HashSet;
-use std::fmt::Debug;
-
-pub const MAX_CHANGE_AGE: u32 = u32::MAX;
 
 /// An ECS system that can be added to a [`Schedule`](crate::schedule::Schedule)
 ///
@@ -32,10 +25,11 @@ pub trait System: Send + Sync + 'static {
     fn name(&self) -> Cow<'static, str>;
     /// Returns the [`TypeId`] of the underlying system type.
     fn type_id(&self) -> TypeId;
-
     /// Returns the system's component [`Access`].
-    fn reads(&self) -> &HashSet<ResourceId>;
-    fn writes(&self) -> &HashSet<ResourceId>;
+    fn component_access(&self) -> &AccessTracker;
+
+    // /// Returns the system's archetype component [`Access`].
+    // fn archetype_component_access(&self) -> &AccessTracker;
 
     /// Returns true if the system is [`Send`].
     fn is_send(&self) -> bool;
@@ -58,6 +52,7 @@ pub trait System: Send + Sync + 'static {
     /// Runs the system with the given input in the world.
     fn run(&mut self, input: Self::In, world: &mut World) -> Self::Out {
         // self.update_archetype_component_access(world);
+
         // SAFETY: world and resources are exclusively borrowed
         unsafe { self.run_unsafe(input, world) }
     }
@@ -65,13 +60,14 @@ pub trait System: Send + Sync + 'static {
     /// Initialize the system.
     fn initialize(&mut self, _world: &mut World);
 
+    // /// Update the system's component [`Access`].
+    // fn update_component_access(&mut self, world: &World);
+
     fn check_change_tick(&mut self, change_tick: u32);
-
-    // /// Returns the system's default [system sets](crate::schedule::SystemSet).
-    // fn default_system_sets(&self) -> Vec<Box<dyn crate::schedule::SystemSet>> {
-    //     Vec::new()
-    // }
-
+    /// Returns the system's default [system sets](crate::schedule::SystemSet).
+    fn default_system_sets(&self) -> Vec<Box<dyn crate::schedule::SystemSet>> {
+        Vec::new()
+    }
     /// Gets the system's last change tick
     fn get_last_change_tick(&self) -> u32;
     /// Sets the system's last change tick
@@ -104,8 +100,8 @@ pub(crate) fn check_system_change_tick(
     // This comparison assumes that `age` has not overflowed `u32::MAX` before, which will be true
     // so long as this check always runs before that can happen.
     if age > MAX_CHANGE_AGE {
-        println!(
-            "WARN - System '{}' has not run for {} ticks. \
+        warn!(
+            "System '{}' has not run for {} ticks. \
             Changes older than {} ticks will not be detected.",
             system_name,
             age,

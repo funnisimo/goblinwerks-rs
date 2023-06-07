@@ -73,12 +73,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23b62fc65de8e4e7f52534fb52b0f3ed04746ae267519eef2a83941e8085068b"
 
 [[package]]
-name = "arrayvec"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8da52d66c7071e2e3fa2a1e5c6d088fec47b593032b254f5e980de8ea54454d6"
-
-[[package]]
 name = "assert_approx_eq"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -175,22 +169,6 @@ dependencies = [
  "miniz_oxide",
  "object",
  "rustc-demangle",
-]
-
-[[package]]
-name = "base64"
-version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
-
-[[package]]
-name = "bevy_ecs_macros"
-version = "0.10.1"
-dependencies = [
- "bevy_macro_utils",
- "proc-macro2",
- "quote",
- "syn 1.0.107",
 ]
 
 [[package]]
@@ -1019,12 +997,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "gw_bevy"
+name = "gw_ecs"
 version = "0.1.0"
 dependencies = [
  "async-channel",
  "atomize",
- "bevy_ecs_macros",
  "bevy_ptr",
  "bevy_tasks",
  "bevy_utils",
@@ -1032,6 +1009,7 @@ dependencies = [
  "downcast-rs",
  "event-listener",
  "fixedbitset",
+ "gw_ecs_macros",
  "hibitset",
  "log",
  "rand",
@@ -1047,37 +1025,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "gw_ecs"
-version = "0.1.0"
+name = "gw_ecs_macros"
+version = "0.10.1"
 dependencies = [
- "arrayvec 0.7.2",
- "atomize",
- "bevy_utils",
- "crossbeam-queue",
- "gw_app",
- "gw_macro",
- "gw_util",
- "hibitset",
- "log",
- "rand",
- "rayon",
- "ron",
- "serde",
- "shrev",
- "smallvec",
- "tuple_utils",
- "tynm",
- "uuid",
-]
-
-[[package]]
-name = "gw_macro"
-version = "0.1.0"
-dependencies = [
- "gw_ecs",
+ "bevy_macro_utils",
  "proc-macro2",
  "quote",
- "syn 2.0.15",
+ "syn 1.0.107",
 ]
 
 [[package]]
@@ -1877,17 +1831,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f162c6dd7b008981e4d40210aca20b4bd0f9b60ca9271061b07f78537722f2e1"
 
 [[package]]
-name = "ron"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "300a51053b1cb55c80b7a9fde4120726ddf25ca241a1cbb926626f62fb136bff"
-dependencies = [
- "base64",
- "bitflags",
- "serde",
-]
-
-[[package]]
 name = "rustc-demangle"
 version = "0.1.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2047,12 +1990,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "shrev"
-version = "1.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5ea33232fdcf1bf691ca33450e5a94dde13e1a8cbb8caabc5e4f9d761e10b1a"
-
-[[package]]
 name = "slab"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2180,7 +2117,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "642680569bb895b16e4b9d181c60be1ed136fa0c9c7f11d004daf053ba89bf82"
 dependencies = [
  "arrayref",
- "arrayvec 0.5.2",
+ "arrayvec",
  "bytemuck",
  "cfg-if",
  "png",
@@ -2328,15 +2265,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cffaaf9392ef73cd30828797152476aaa2fa37a17856934fa63d4843f34290e9"
 
 [[package]]
-name = "tynm"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd59ecde1e694c0495c8b92bdd0f9a70e3b489cd8180fc6a18f6ea1c1026f3b2"
-dependencies = [
- "nom",
-]
-
-[[package]]
 name = "typenum"
 version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2386,7 +2314,6 @@ checksum = "5b55a3fef2a1e3b3a00ce878640918820d3c51081576ac657d23af9fc7928fdb"
 dependencies = [
  "getrandom",
  "serde",
- "wasm-bindgen",
 ]
 
 [[package]]

@@ -1,9 +1,7 @@
-use gw_ecs::specs::EntitiesRes;
-use gw_ecs::specs::Join;
+use gw_ecs::prelude::*;
 
-fn main() {
-    let mut entities = EntitiesRes::default();
-
+fn fun_with_entities(entities: Entities) {
+    println!("Create some entities");
     entities.create();
     let b = entities.create();
     entities.create();
@@ -14,23 +12,30 @@ fn main() {
     }
 
     println!("----");
+    println!("Delete 2 entities");
 
     let _ = entities.delete(b);
     let _ = entities.delete(d);
 
+    println!(" - everybody is still marked alive b/c delete is delayed");
     for (entity,) in (&entities,).join() {
         println!("entities = {:?} - {}", entity, entities.is_alive(entity));
     }
+}
+
+fn print_entities(entities: Entities) {
+    println!("Print entities in next system (deleted are gone)");
+    for (entity,) in (&entities,).join() {
+        println!("entities = {:?} - {}", entity, entities.is_alive(entity));
+    }
+}
+
+fn main() {
+    let mut world = World::default();
+
+    world.exec(fun_with_entities);
 
     println!("----");
 
-    let deleted = entities.maintain();
-
-    for del in deleted {
-        println!("deleted = {:?}", del);
-    }
-
-    for (entity,) in (&entities,).join() {
-        println!("entities = {:?} - {}", entity, entities.is_alive(entity));
-    }
+    world.exec(print_entities);
 }

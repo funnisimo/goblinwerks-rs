@@ -1,7 +1,7 @@
 use std::mem::MaybeUninit;
 
-use super::{DistinctStorage, SliceAccess, UnprotectedStorage};
-use crate::specs::world::Index;
+use super::{DistinctStorage, SliceAccess, StorageCell, UnprotectedStorage};
+use crate::entity::Index;
 use hibitset::BitSetLike;
 
 /// Dense vector storage. Has a redirection 2-way table
@@ -17,7 +17,7 @@ use hibitset::BitSetLike;
 /// a particular entity's position within this slice may change
 /// over time.
 pub struct DenseVecStorage<T> {
-    data: Vec<T>,
+    data: Vec<StorageCell<T>>,
     entity_id: Vec<Index>,
     data_id: Vec<MaybeUninit<Index>>,
 }
@@ -33,7 +33,7 @@ impl<T> Default for DenseVecStorage<T> {
 }
 
 impl<T> SliceAccess<T> for DenseVecStorage<T> {
-    type Element = T;
+    type Element = StorageCell<T>;
 
     /// Returns a slice of all the components in this storage.
     ///
@@ -55,12 +55,6 @@ impl<T> SliceAccess<T> for DenseVecStorage<T> {
 }
 
 impl<T> UnprotectedStorage<T> for DenseVecStorage<T> {
-    #[cfg(feature = "nightly")]
-    type AccessMut<'a>
-    where
-        T: 'a,
-    = &'a mut T;
-
     unsafe fn clean<B>(&mut self, _has: B)
     where
         B: BitSetLike,
@@ -68,17 +62,17 @@ impl<T> UnprotectedStorage<T> for DenseVecStorage<T> {
         // nothing to do
     }
 
-    unsafe fn get(&self, id: Index) -> &T {
+    unsafe fn get(&self, id: Index) -> &StorageCell<T> {
         let did = self.data_id.get_unchecked(id as usize).assume_init();
         self.data.get_unchecked(did as usize)
     }
 
-    unsafe fn get_mut(&mut self, id: Index) -> &mut T {
+    unsafe fn get_mut(&mut self, id: Index) -> &mut StorageCell<T> {
         let did = self.data_id.get_unchecked(id as usize).assume_init();
         self.data.get_unchecked_mut(did as usize)
     }
 
-    unsafe fn insert(&mut self, id: Index, v: T) {
+    unsafe fn insert(&mut self, id: Index, v: StorageCell<T>) {
         let id = id as usize;
         if self.data_id.len() <= id {
             let delta = id + 1 - self.data_id.len();
@@ -93,7 +87,7 @@ impl<T> UnprotectedStorage<T> for DenseVecStorage<T> {
         self.data.push(v);
     }
 
-    unsafe fn remove(&mut self, id: Index) -> T {
+    unsafe fn remove(&mut self, id: Index) -> StorageCell<T> {
         let did = self.data_id.get_unchecked(id as usize).assume_init();
         let last = *self.entity_id.last().unwrap();
         self.data_id

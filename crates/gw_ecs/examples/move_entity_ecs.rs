@@ -1,6 +1,4 @@
-use gw_ecs::Builder; // For create_entity
-use gw_ecs::Component;
-use gw_ecs::{Ecs, Entity}; // For Component derive
+use gw_ecs::prelude::*; // For Component derive
 
 // a component is any type that is 'static, sized, send and sync
 #[derive(Clone, Copy, Debug, PartialEq, Component)]
@@ -38,23 +36,20 @@ fn main() {
             .create_entity()
             .with(Position { x: 0.0, y: 0.0 })
             .with(Velocity { dx: 0.0, dy: 0.0 })
-            .build();
+            .id();
         world
             .create_entity()
             .with(Position { x: 1.0, y: 1.0 })
             .with(Velocity { dx: 0.0, dy: 0.0 })
-            .build();
+            .id();
         world
             .create_entity()
             .with(Position { x: 2.0, y: 2.0 })
             .with(Velocity { dx: 0.0, dy: 0.0 })
-            .build();
+            .id();
 
         // push a component tuple into the world to create an entity that we will move
-        let entity: Entity = world
-            .create_entity()
-            .with(Position { x: 3.0, y: 4.0 })
-            .build();
+        let entity: Entity = world.create_entity().with(Position { x: 3.0, y: 4.0 }).id();
         // or
         // .. see what happens if the entity has an unregistered component
         // let entity: Entity = world.create_entity().with(Position { x: 0.0, y: 0.0 }).with(Invisible).build();
@@ -82,14 +77,14 @@ fn main() {
                     y: i as f32,
                 })
                 .with(Velocity { dx: 0., dy: 0. })
-                .build();
+                .id();
             world2
                 .create_entity()
                 .with(Position {
                     x: i as f32 + 10.0,
                     y: i as f32 + 10.0,
                 })
-                .build();
+                .id();
         }
     }
 
@@ -100,7 +95,8 @@ fn main() {
 
     {
         println!("Moved entity({:?}) -> new entity({:?})", entity, new_entity);
-        let positions = ecs.read_component::<Position>();
+        let world = ecs.get_world("SECOND").unwrap();
+        let positions = world.read_component::<Position>();
         println!("- pos = {:?}", positions.get(new_entity).unwrap());
 
         let positions = ecs.get_world("MAIN").unwrap().read_component::<Position>();
@@ -117,7 +113,7 @@ fn main() {
 
     println!(":: MAINTAIN ::");
 
-    let positions = ecs.read_component::<Position>();
+    let positions = ecs.current_world().read_component::<Position>();
     println!("- pos = {:?}", positions.get(new_entity).unwrap());
 
     let positions = ecs.get_world("MAIN").unwrap().read_component::<Position>();

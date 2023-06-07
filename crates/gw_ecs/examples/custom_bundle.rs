@@ -1,52 +1,25 @@
-use std::collections::HashSet;
-
-use gw_ecs::{ReadRes, ResourceId, SystemData, World, WriteRes};
+use gw_ecs::prelude::*;
 
 #[derive(Debug, Default)]
-struct ResA;
+struct ResA(u32);
 
 #[derive(Debug, Default)]
-struct ResB;
+struct ResB(u32);
 
-struct ExampleBundle<'a> {
-    a: ReadRes<'a, ResA>,
-    b: WriteRes<'a, ResB>,
-}
-
-impl<'a> SystemData<'a> for ExampleBundle<'a> {
-    fn setup(res: &mut World) {
-        res.ensure_resource::<ResA>();
-        res.ensure_resource::<ResB>();
-    }
-
-    fn fetch(res: &'a World) -> Self {
-        ExampleBundle {
-            a: SystemData::fetch(res),
-            b: SystemData::fetch(res),
-        }
-    }
-
-    fn reads() -> HashSet<ResourceId> {
-        let mut reads = HashSet::new();
-        reads.insert(ResourceId::new::<ResA>());
-        reads
-    }
-
-    fn writes() -> HashSet<ResourceId> {
-        let mut writes = HashSet::new();
-        writes.insert(ResourceId::new::<ResB>());
-        writes
-    }
+#[derive(SystemParam)]
+struct ExampleBundle<'w> {
+    a: ReadUnique<'w, ResA>,
+    b: WriteUnique<'w, ResB>,
 }
 
 fn main() {
-    let mut res = World::empty(0);
-    res.insert_resource(ResA);
-    res.insert_resource(ResB);
+    let mut world = World::default();
+    world.insert_resource(ResA(12));
+    world.insert_resource(ResB(0));
 
-    let mut bundle = ExampleBundle::fetch(&res);
-    *bundle.b = ResB;
+    world.exec(|mut bundle: ExampleBundle| bundle.b.0 = bundle.a.0);
 
-    println!("{:?}", *bundle.a);
-    println!("{:?}", *bundle.b);
+    let res_a = world.read_resource::<ResA>();
+    let res_b = world.read_resource::<ResB>();
+    assert_eq!(res_a.0, res_b.0);
 }

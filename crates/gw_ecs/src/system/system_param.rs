@@ -1,13 +1,27 @@
+// pub use crate::change_detection::{NonSendMut, Res, ResMut};
+use crate::{
+    // query::{
+    //     Access,
+    //     FilteredAccess,
+    //     FilteredAccessSet,
+    //     //QueryState, ReadOnlyWorldQuery, WorldQuery, Query
+    // },
+    access::AccessTracker,
+    // archetype::{Archetype, Archetypes},
+    // bundle::Bundles,
+    // entity::Entities,
+    system::SystemMeta,
+    world::{FromWorld, World},
+};
+use bevy_utils::{all_tuples, synccell::SyncCell};
+use gw_ecs_macros::impl_param_set;
+pub use gw_ecs_macros::SystemParam;
 use std::{
     borrow::Cow,
     fmt::Debug,
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };
-
-use crate::{atomic_refcell::AtomicRef, world::FromWorld, ResourceId, World};
-
-use super::SystemMeta;
 
 /// A parameter that can be used in a [`System`](super::System).
 ///
@@ -32,15 +46,15 @@ use super::SystemMeta;
 /// # Example
 ///
 /// ```
-/// # use bevy_ecs::prelude::*;
+/// # use gw_ecs::prelude::*;
 /// # #[derive(Resource)]
 /// # struct SomeResource;
 /// use std::marker::PhantomData;
-/// use bevy_ecs::system::SystemParam;
+/// use gw_ecs::system::SystemParam;
 ///
 /// #[derive(SystemParam)]
 /// struct MyParam<'w, Marker: 'static> {
-///     foo: AtomicRef<'w, SomeResource>,
+///     foo: Res<'w, SomeResource>,
 ///     #[system_param(ignore)]
 ///     marker: PhantomData<Marker>,
 /// }
@@ -49,7 +63,7 @@ use super::SystemMeta;
 ///     // Access the resource through `param.foo`
 /// }
 ///
-/// # bevy_ecs::system::assert_is_system(my_system::<()>);
+/// # gw_ecs::system::assert_is_system(my_system::<()>);
 /// ```
 ///
 /// ## `PhantomData`
@@ -90,7 +104,7 @@ use super::SystemMeta;
 /// This will fail to compile since `RefCell` is `!Sync`.
 /// ```compile_fail
 /// # use std::cell::RefCell;
-/// # use bevy_ecs::system::Resource;
+/// # use gw_ecs::system::Resource;
 ///
 /// #[derive(Resource)]
 /// struct NotSync {
@@ -101,7 +115,7 @@ use super::SystemMeta;
 /// This will compile since the `RefCell` is wrapped with `SyncCell`.
 /// ```
 /// # use std::cell::RefCell;
-/// # use bevy_ecs::system::Resource;
+/// # use gw_ecs::system::Resource;
 /// use bevy_utils::synccell::SyncCell;
 ///
 /// #[derive(Resource)]
@@ -231,25 +245,26 @@ pub type SystemParamItem<'w, 's, P> = <P as SystemParam>::Item<'w, 's>;
 //     }
 // }
 
-// fn assert_component_access_compatibility(
-//     system_name: &str,
-//     query_type: &'static str,
-//     filter_type: &'static str,
-//     system_access: &FilteredAccessSet<ComponentId>,
-//     current: &FilteredAccess<ComponentId>,
-//     world: &World,
-// ) {
-//     let conflicts = system_access.get_conflicts_single(current);
-//     if conflicts.is_empty() {
-//         return;
-//     }
-//     let conflicting_components = conflicts
-//         .into_iter()
-//         .map(|component_id| world.components.get_info(component_id).unwrap().name())
-//         .collect::<Vec<&str>>();
-//     let accesses = conflicting_components.join(", ");
-//     panic!("error[B0001]: Query<{query_type}, {filter_type}> in system {system_name} accesses component(s) {accesses} in a way that conflicts with a previous system parameter. Consider using `Without<T>` to create disjoint Queries or merging conflicting Queries into a `ParamSet`.");
-// }
+#[allow(dead_code)]
+fn assert_component_access_compatibility(
+    system_name: &str,
+    query_type: &'static str,
+    filter_type: &'static str,
+    system_access: &AccessTracker,
+    current: &AccessTracker,
+    _world: &World,
+) {
+    let conflicts = system_access.get_conflicts(current);
+    if conflicts.is_empty() {
+        return;
+    }
+    // let conflicting_components = conflicts
+    //     .into_iter()
+    //     .map(|component_id| world.components.get_info(component_id).unwrap().name())
+    //     .collect::<Vec<&str>>();
+    // let accesses = conflicting_components.join(", ");
+    panic!("error[B0001]: Query<{query_type}, {filter_type}> in system {system_name} accesses component(s) {conflicts:?} in a way that conflicts with a previous system parameter. Consider using `Without<T>` to create disjoint Queries or merging conflicting Queries into a `ParamSet`.");
+}
 
 /// A collection of potentially conflicting [`SystemParam`]s allowed by disjoint access.
 ///
@@ -266,7 +281,7 @@ pub type SystemParamItem<'w, 's, P> = <P as SystemParam>::Item<'w, 's>;
 /// which is not allowed due to rust's mutability rules.
 ///
 /// ```should_panic
-/// # use bevy_ecs::prelude::*;
+/// # use gw_ecs::prelude::*;
 /// #
 /// # #[derive(Component)]
 /// # struct Health;
@@ -285,7 +300,7 @@ pub type SystemParamItem<'w, 's, P> = <P as SystemParam>::Item<'w, 's>;
 ///     // ...
 /// }
 /// #
-/// # let mut bad_system_system = bevy_ecs::system::IntoSystem::into_system(bad_system);
+/// # let mut bad_system_system = gw_ecs::system::IntoSystem::into_system(bad_system);
 /// # let mut world = World::new();
 /// # bad_system_system.initialize(&mut world);
 /// # bad_system_system.run((), &mut world);
@@ -295,7 +310,7 @@ pub type SystemParamItem<'w, 's, P> = <P as SystemParam>::Item<'w, 's>;
 /// which leverages the borrow checker to ensure that only one of the contained parameters are accessed at a given time.
 ///
 /// ```
-/// # use bevy_ecs::prelude::*;
+/// # use gw_ecs::prelude::*;
 /// #
 /// # #[derive(Component)]
 /// # struct Health;
@@ -324,13 +339,13 @@ pub type SystemParamItem<'w, 's, P> = <P as SystemParam>::Item<'w, 's>;
 ///         // Do even fancier stuff here...
 ///     }
 /// }
-/// # bevy_ecs::system::assert_is_system(fancy_system);
+/// # gw_ecs::system::assert_is_system(fancy_system);
 /// ```
 ///
 /// Of course, `ParamSet`s can be used with any kind of `SystemParam`, not just [queries](Query).
 ///
 /// ```
-/// # use bevy_ecs::prelude::*;
+/// # use gw_ecs::prelude::*;
 /// #
 /// # struct MyEvent;
 /// # impl MyEvent {
@@ -357,7 +372,7 @@ pub type SystemParamItem<'w, 's, P> = <P as SystemParam>::Item<'w, 's>;
 ///     // ...
 ///     # let _entities = entities;
 /// }
-/// # bevy_ecs::system::assert_is_system(event_system);
+/// # gw_ecs::system::assert_is_system(event_system);
 /// ```
 pub struct ParamSet<'w, 's, T: SystemParam> {
     param_states: &'s mut T::State,
@@ -366,8 +381,7 @@ pub struct ParamSet<'w, 's, T: SystemParam> {
     change_tick: u32,
 }
 
-// TODO - add to gw_macro!!!
-// impl_param_set!();
+impl_param_set!();
 
 /// A type that can be inserted into a [`World`] as a singleton.
 ///
@@ -380,13 +394,13 @@ pub struct ParamSet<'w, 's, T: SystemParam> {
 /// ```
 /// # let mut world = World::default();
 /// # let mut schedule = Schedule::new();
-/// # use bevy_ecs::prelude::*;
+/// # use gw_ecs::prelude::*;
 /// #[derive(Resource)]
 /// struct MyResource { value: u32 }
 ///
 /// world.insert_resource(MyResource { value: 42 });
 ///
-/// fn read_resource_system(resource: AtomicRef<MyResource>) {
+/// fn read_resource_system(resource: Res<MyResource>) {
 ///     assert_eq!(resource.value, 42);
 /// }
 ///
@@ -399,194 +413,191 @@ pub struct ParamSet<'w, 's, T: SystemParam> {
 /// # schedule.add_system(write_resource_system.after(read_resource_system));
 /// # schedule.run(&mut world);
 /// ```
-pub trait Resource: Send + Sync + 'static {}
+// pub trait Resource: Send + Sync + 'static {}
+pub use crate::resources::Resource;
 
-// SAFETY: Res only reads a single World resource
-unsafe impl<'a, T: Resource> ReadOnlySystemParam for AtomicRef<'a, T> {}
+// // SAFETY: Res only reads a single World resource
+// unsafe impl<'a, T: Resource> ReadOnlySystemParam for Res<'a, T> {}
 
-// SAFETY: Res ComponentId and ArchetypeComponentId access is applied to SystemMeta. If this Res
-// conflicts with any prior access, a panic will occur.
-unsafe impl<'a, T: Resource> SystemParam for AtomicRef<'a, T> {
-    type State = ResourceId;
-    type Item<'w, 's> = AtomicRef<'w, T>;
+// // SAFETY: Res ComponentId and ArchetypeComponentId access is applied to SystemMeta. If this Res
+// // conflicts with any prior access, a panic will occur.
+// unsafe impl<'a, T: Resource> SystemParam for Res<'a, T> {
+//     type State = ();
+//     type Item<'w, 's> = Res<'w, T>;
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        let component_id = world.initialize_resource::<T>();
-        let combined_access = system_meta.component_access_set.combined_access();
-        assert!(
-            !combined_access.has_write(component_id),
-            "error[B0002]: AtomicRef<{}> in system {} conflicts with a previous ResMut<{0}> access. Consider removing the duplicate access.",
-            std::any::type_name::<T>(),
-            system_meta.name,
-        );
-        system_meta
-            .component_access_set
-            .add_unfiltered_read(component_id);
+//     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+//         world.initialize_resource::<T>();
+//         let combined_access = &system_meta.component_access_set;
+//         let item = AccessItem::Unique(ResourceId::of::<T>());
+//         assert!(
+//             !combined_access.has_write(&item),
+//             "error[B0002]: Res<{}> in system {} conflicts with a previous ResMut<{0}> access. Consider removing the duplicate access.",
+//             std::any::type_name::<T>(),
+//             system_meta.name,
+//         );
+//         system_meta.component_access_set.add_read(item);
 
-        let archetype_component_id = world
-            .get_resource_archetype_component_id(component_id)
-            .unwrap();
-        system_meta
-            .archetype_component_access
-            .add_read(archetype_component_id);
+//         // let archetype_component_id = world
+//         //     .get_resource_archetype_component_id(component_id)
+//         //     .unwrap();
+//         // system_meta
+//         //     .archetype_component_access
+//         //     .add_read(archetype_component_id);
+//     }
 
-        component_id
-    }
+//     #[inline]
+//     unsafe fn get_param<'w, 's>(
+//         &mut component_id: &'s mut Self::State,
+//         system_meta: &SystemMeta,
+//         world: &'w World,
+//         change_tick: u32,
+//     ) -> Self::Item<'w, 's> {
+//         let (ptr, ticks) = world
+//             .as_unsafe_world_cell_migration_internal()
+//             .get_resource_with_ticks(component_id)
+//             .unwrap_or_else(|| {
+//                 panic!(
+//                     "Resource requested by {} does not exist: {}",
+//                     system_meta.name,
+//                     std::any::type_name::<T>()
+//                 )
+//             });
+//         Res {
+//             value: ptr.deref(),
+//             ticks: Ticks {
+//                 added: ticks.added.deref(),
+//                 changed: ticks.changed.deref(),
+//                 last_change_tick: system_meta.last_change_tick,
+//                 change_tick,
+//             },
+//         }
+//     }
+// }
 
-    #[inline]
-    unsafe fn get_param<'w, 's>(
-        state: &'s mut Self::State,
-        system_meta: &SystemMeta,
-        world: &'w World,
-        change_tick: u32,
-    ) -> Self::Item<'w, 's> {
-        let (ptr, ticks) = world
-            .as_unsafe_world_cell_migration_internal()
-            .get_resource_with_ticks(state)
-            .unwrap_or_else(|| {
-                panic!(
-                    "Resource requested by {} does not exist: {}",
-                    system_meta.name,
-                    std::any::type_name::<T>()
-                )
-            });
-        Res {
-            value: ptr.deref(),
-            ticks: Ticks {
-                added: ticks.added.deref(),
-                changed: ticks.changed.deref(),
-                last_change_tick: system_meta.last_change_tick,
-                change_tick,
-            },
-        }
-    }
-}
+// // SAFETY: Only reads a single World resource
+// unsafe impl<'a, T: Resource> ReadOnlySystemParam for Option<Res<'a, T>> {}
 
-// SAFETY: Only reads a single World resource
-unsafe impl<'a, T: Resource> ReadOnlySystemParam for Option<AtomicRef<'a, T>> {}
+// // SAFETY: this impl defers to `Res`, which initializes and validates the correct world access.
+// unsafe impl<'a, T: Resource> SystemParam for Option<Res<'a, T>> {
+//     type State = ();
+//     type Item<'w, 's> = Option<Res<'w, T>>;
 
-// SAFETY: this impl defers to `Res`, which initializes and validates the correct world access.
-unsafe impl<'a, T: Resource> SystemParam for Option<AtomicRef<'a, T>> {
-    type State = ResourceId;
-    type Item<'w, 's> = Option<AtomicRef<'w, T>>;
+//     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+//         Res::<T>::init_state(world, system_meta)
+//     }
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        Res::<T>::init_state(world, system_meta)
-    }
+//     #[inline]
+//     unsafe fn get_param<'w, 's>(
+//         &mut component_id: &'s mut Self::State,
+//         system_meta: &SystemMeta,
+//         world: &'w World,
+//         change_tick: u32,
+//     ) -> Self::Item<'w, 's> {
+//         world
+//             .as_unsafe_world_cell_migration_internal()
+//             .get_resource_with_ticks(component_id)
+//             .map(|(ptr, ticks)| Res {
+//                 value: ptr.deref(),
+//                 ticks: Ticks {
+//                     added: ticks.added.deref(),
+//                     changed: ticks.changed.deref(),
+//                     last_change_tick: system_meta.last_change_tick,
+//                     change_tick,
+//                 },
+//             })
+//     }
+// }
 
-    #[inline]
-    unsafe fn get_param<'w, 's>(
-        &mut component_id: &'s mut Self::State,
-        system_meta: &SystemMeta,
-        world: &'w World,
-        change_tick: u32,
-    ) -> Self::Item<'w, 's> {
-        world
-            .as_unsafe_world_cell_migration_internal()
-            .get_resource_with_ticks(component_id)
-            .map(|(ptr, ticks)| Res {
-                value: ptr.deref(),
-                ticks: Ticks {
-                    added: ticks.added.deref(),
-                    changed: ticks.changed.deref(),
-                    last_change_tick: system_meta.last_change_tick,
-                    change_tick,
-                },
-            })
-    }
-}
+// // SAFETY: Res ComponentId and ArchetypeComponentId access is applied to SystemMeta. If this Res
+// // conflicts with any prior access, a panic will occur.
+// unsafe impl<'a, T: Resource> SystemParam for ResMut<'a, T> {
+//     type State = ();
+//     type Item<'w, 's> = ResMut<'w, T>;
 
-// SAFETY: Res ComponentId and ArchetypeComponentId access is applied to SystemMeta. If this Res
-// conflicts with any prior access, a panic will occur.
-unsafe impl<'a, T: Resource> SystemParam for ResMut<'a, T> {
-    type State = ComponentId;
-    type Item<'w, 's> = ResMut<'w, T>;
+//     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+//         world.initialize_resource::<T>();
+//         let combined_access = &system_meta.component_access_set;
+//         let item = AccessItem::Unique(ResourceId::of::<T>());
+//         if combined_access.has_write(&item) {
+//             panic!(
+//                 "error[B0002]: ResMut<{}> in system {} conflicts with a previous ResMut<{0}> access. Consider removing the duplicate access.",
+//                 std::any::type_name::<T>(), system_meta.name);
+//         } else if combined_access.has_read(&item) {
+//             panic!(
+//                 "error[B0002]: ResMut<{}> in system {} conflicts with a previous Res<{0}> access. Consider removing the duplicate access.",
+//                 std::any::type_name::<T>(), system_meta.name);
+//         }
+//         system_meta.component_access_set.add_write(item);
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        let component_id = world.initialize_resource::<T>();
-        let combined_access = system_meta.component_access_set.combined_access();
-        if combined_access.has_write(component_id) {
-            panic!(
-                "error[B0002]: ResMut<{}> in system {} conflicts with a previous ResMut<{0}> access. Consider removing the duplicate access.",
-                std::any::type_name::<T>(), system_meta.name);
-        } else if combined_access.has_read(component_id) {
-            panic!(
-                "error[B0002]: ResMut<{}> in system {} conflicts with a previous AtomicRef<{0}> access. Consider removing the duplicate access.",
-                std::any::type_name::<T>(), system_meta.name);
-        }
-        system_meta
-            .component_access_set
-            .add_unfiltered_write(component_id);
+//         // let archetype_component_id = world
+//         //     .get_resource_archetype_component_id(component_id)
+//         //     .unwrap();
+//         // system_meta
+//         //     .archetype_component_access
+//         //     .add_write(archetype_component_id);
 
-        let archetype_component_id = world
-            .get_resource_archetype_component_id(component_id)
-            .unwrap();
-        system_meta
-            .archetype_component_access
-            .add_write(archetype_component_id);
+//         // component_id
+//     }
 
-        component_id
-    }
+//     #[inline]
+//     unsafe fn get_param<'w, 's>(
+//         &mut component_id: &'s mut Self::State,
+//         system_meta: &SystemMeta,
+//         world: &'w World,
+//         change_tick: u32,
+//     ) -> Self::Item<'w, 's> {
+//         let value = world
+//             .as_unsafe_world_cell_migration_internal()
+//             .get_resource_mut_by_id(component_id)
+//             .unwrap_or_else(|| {
+//                 panic!(
+//                     "Resource requested by {} does not exist: {}",
+//                     system_meta.name,
+//                     std::any::type_name::<T>()
+//                 )
+//             });
+//         ResMut {
+//             value: value.value.deref_mut::<T>(),
+//             ticks: TicksMut {
+//                 added: value.ticks.added,
+//                 changed: value.ticks.changed,
+//                 last_change_tick: system_meta.last_change_tick,
+//                 change_tick,
+//             },
+//         }
+//     }
+// }
 
-    #[inline]
-    unsafe fn get_param<'w, 's>(
-        &mut component_id: &'s mut Self::State,
-        system_meta: &SystemMeta,
-        world: &'w World,
-        change_tick: u32,
-    ) -> Self::Item<'w, 's> {
-        let value = world
-            .as_unsafe_world_cell_migration_internal()
-            .get_resource_mut_by_id(component_id)
-            .unwrap_or_else(|| {
-                panic!(
-                    "Resource requested by {} does not exist: {}",
-                    system_meta.name,
-                    std::any::type_name::<T>()
-                )
-            });
-        ResMut {
-            value: value.value.deref_mut::<T>(),
-            ticks: TicksMut {
-                added: value.ticks.added,
-                changed: value.ticks.changed,
-                last_change_tick: system_meta.last_change_tick,
-                change_tick,
-            },
-        }
-    }
-}
+// // SAFETY: this impl defers to `ResMut`, which initializes and validates the correct world access.
+// unsafe impl<'a, T: Resource> SystemParam for Option<ResMut<'a, T>> {
+//     type State = ();
+//     type Item<'w, 's> = Option<ResMut<'w, T>>;
 
-// SAFETY: this impl defers to `ResMut`, which initializes and validates the correct world access.
-unsafe impl<'a, T: Resource> SystemParam for Option<ResMut<'a, T>> {
-    type State = ComponentId;
-    type Item<'w, 's> = Option<ResMut<'w, T>>;
+//     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+//         ResMut::<T>::init_state(world, system_meta)
+//     }
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        ResMut::<T>::init_state(world, system_meta)
-    }
-
-    #[inline]
-    unsafe fn get_param<'w, 's>(
-        &mut component_id: &'s mut Self::State,
-        system_meta: &SystemMeta,
-        world: &'w World,
-        change_tick: u32,
-    ) -> Self::Item<'w, 's> {
-        world
-            .as_unsafe_world_cell_migration_internal()
-            .get_resource_mut_by_id(component_id)
-            .map(|value| ResMut {
-                value: value.value.deref_mut::<T>(),
-                ticks: TicksMut {
-                    added: value.ticks.added,
-                    changed: value.ticks.changed,
-                    last_change_tick: system_meta.last_change_tick,
-                    change_tick,
-                },
-            })
-    }
-}
+//     #[inline]
+//     unsafe fn get_param<'w, 's>(
+//         &mut component_id: &'s mut Self::State,
+//         system_meta: &SystemMeta,
+//         world: &'w World,
+//         change_tick: u32,
+//     ) -> Self::Item<'w, 's> {
+//         world
+//             .as_unsafe_world_cell_migration_internal()
+//             .get_resource_mut_by_id(component_id)
+//             .map(|value| ResMut {
+//                 value: value.value.deref_mut::<T>(),
+//                 ticks: TicksMut {
+//                     added: value.ticks.added,
+//                     changed: value.ticks.changed,
+//                     last_change_tick: system_meta.last_change_tick,
+//                     change_tick,
+//                 },
+//             })
+//     }
+// }
 
 /// SAFETY: only reads world
 unsafe impl<'w> ReadOnlySystemParam for &'w World {}
@@ -597,8 +608,8 @@ unsafe impl SystemParam for &'_ World {
     type Item<'w, 's> = &'w World;
 
     fn init_state(_world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        let mut access = Access::default();
-        access.read_all();
+        let mut access = AccessTracker::default();
+        access.set_reads_all();
         if !system_meta
             .archetype_component_access
             .is_compatible(&access)
@@ -607,17 +618,17 @@ unsafe impl SystemParam for &'_ World {
         }
         system_meta.archetype_component_access.extend(&access);
 
-        let mut filtered_access = FilteredAccess::default();
+        // let mut filtered_access = FilteredAccess::default();
 
-        filtered_access.read_all();
-        if !system_meta
-            .component_access_set
-            .get_conflicts_single(&filtered_access)
-            .is_empty()
-        {
-            panic!("&World conflicts with a previous mutable system parameter. Allowing this would break Rust's mutability rules");
-        }
-        system_meta.component_access_set.add(filtered_access);
+        // filtered_access.read_all();
+        // if !system_meta
+        //     .component_access_set
+        //     .get_conflicts_single(&filtered_access)
+        //     .is_empty()
+        // {
+        //     panic!("&World conflicts with a previous mutable system parameter. Allowing this would break Rust's mutability rules");
+        // }
+        // system_meta.component_access_set.add(filtered_access);
     }
 
     unsafe fn get_param<'w, 's>(
@@ -627,127 +638,6 @@ unsafe impl SystemParam for &'_ World {
         _change_tick: u32,
     ) -> Self::Item<'w, 's> {
         world
-    }
-}
-
-/// A system local [`SystemParam`].
-///
-/// A local may only be accessed by the system itself and is therefore not visible to other systems.
-/// If two or more systems specify the same local type each will have their own unique local.
-/// If multiple [`SystemParam`]s within the same system each specify the same local type
-/// each will get their own distinct data storage.
-///
-/// The supplied lifetime parameter is the [`SystemParam`]s `'s` lifetime.
-///
-/// # Examples
-///
-/// ```
-/// # use bevy_ecs::prelude::*;
-/// # let world = &mut World::default();
-/// fn write_to_local(mut local: Local<usize>) {
-///     *local = 42;
-/// }
-/// fn read_from_local(local: Local<usize>) -> usize {
-///     *local
-/// }
-/// let mut write_system = IntoSystem::into_system(write_to_local);
-/// let mut read_system = IntoSystem::into_system(read_from_local);
-/// write_system.initialize(world);
-/// read_system.initialize(world);
-///
-/// assert_eq!(read_system.run((), world), 0);
-/// write_system.run((), world);
-/// // Note how the read local is still 0 due to the locals not being shared.
-/// assert_eq!(read_system.run((), world), 0);
-/// ```
-///
-/// N.B. A [`Local`]s value cannot be read or written to outside of the containing system.
-/// To add configuration to a system, convert a capturing closure into the system instead:
-///
-/// ```
-/// # use bevy_ecs::prelude::*;
-/// # use bevy_ecs::system::assert_is_system;
-/// struct Config(u32);
-/// #[derive(Resource)]
-/// struct Myu32Wrapper(u32);
-/// fn reset_to_system(value: Config) -> impl FnMut(ResMut<Myu32Wrapper>) {
-///     move |mut val| val.0 = value.0
-/// }
-///
-/// // .add_system(reset_to_system(my_config))
-/// # assert_is_system(reset_to_system(Config(10)));
-/// ```
-pub struct Local<'s, T: FromWorld + Send + 'static>(pub(crate) &'s mut T);
-
-// SAFETY: Local only accesses internal state
-unsafe impl<'s, T: FromWorld + Send + 'static> ReadOnlySystemParam for Local<'s, T> {}
-
-impl<'s, T: FromWorld + Send + Sync + 'static> Debug for Local<'s, T>
-where
-    T: Debug,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("Local").field(&self.0).finish()
-    }
-}
-
-impl<'s, T: FromWorld + Send + Sync + 'static> Deref for Local<'s, T> {
-    type Target = T;
-
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        self.0
-    }
-}
-
-impl<'s, T: FromWorld + Send + Sync + 'static> DerefMut for Local<'s, T> {
-    #[inline]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.0
-    }
-}
-
-impl<'s, 'a, T: FromWorld + Send + 'static> IntoIterator for &'a Local<'s, T>
-where
-    &'a T: IntoIterator,
-{
-    type Item = <&'a T as IntoIterator>::Item;
-    type IntoIter = <&'a T as IntoIterator>::IntoIter;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
-
-impl<'s, 'a, T: FromWorld + Send + 'static> IntoIterator for &'a mut Local<'s, T>
-where
-    &'a mut T: IntoIterator,
-{
-    type Item = <&'a mut T as IntoIterator>::Item;
-    type IntoIter = <&'a mut T as IntoIterator>::IntoIter;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
-
-// SAFETY: only local state is accessed
-unsafe impl<'a, T: FromWorld + Send + 'static> SystemParam for Local<'a, T> {
-    type State = SyncCell<T>;
-    type Item<'w, 's> = Local<'s, T>;
-
-    fn init_state(world: &mut World, _system_meta: &mut SystemMeta) -> Self::State {
-        SyncCell::new(T::from_world(world))
-    }
-
-    #[inline]
-    unsafe fn get_param<'w, 's>(
-        state: &'s mut Self::State,
-        _system_meta: &SystemMeta,
-        _world: &'w World,
-        _change_tick: u32,
-    ) -> Self::Item<'w, 's> {
-        Local(state.get())
     }
 }
 
@@ -779,7 +669,7 @@ pub trait SystemBuffer: FromWorld + Send + 'static {
 /// or which otherwise take up a small portion of a system's run-time.
 ///
 /// ```
-/// # use bevy_ecs::prelude::*;
+/// # use gw_ecs::prelude::*;
 /// // Tracks whether or not there is a threat the player should be aware of.
 /// #[derive(Resource, Default)]
 /// pub struct Alarm(bool);
@@ -799,7 +689,7 @@ pub trait SystemBuffer: FromWorld + Send + 'static {
 ///
 /// # impl Criminal { pub fn is_threat(&self, _: &Settlement) -> bool { true } }
 ///
-/// use bevy_ecs::system::{Deferred, SystemBuffer, SystemMeta};
+/// use gw_ecs::system::{Deferred, SystemBuffer, SystemMeta};
 ///
 /// // Uses deferred mutations to allow signalling the alarm from multiple systems in parallel.
 /// #[derive(Resource, Default)]
@@ -927,327 +817,326 @@ unsafe impl<T: SystemBuffer> SystemParam for Deferred<'_, T> {
     }
 }
 
-/// Shared borrow of a non-[`Send`] resource.
-///
-/// Only `Send` resources may be accessed with the [`Res`] [`SystemParam`]. In case that the
-/// resource does not implement `Send`, this `SystemParam` wrapper can be used. This will instruct
-/// the scheduler to instead run the system on the main thread so that it doesn't send the resource
-/// over to another thread.
-///
-/// # Panics
-///
-/// Panics when used as a `SystemParameter` if the resource does not exist.
-///
-/// Use `Option<NonSend<T>>` instead if the resource might not always exist.
-pub struct NonSend<'w, T: 'static> {
-    pub(crate) value: &'w T,
-    ticks: ComponentTicks,
-    last_change_tick: u32,
-    change_tick: u32,
-}
+// /// Shared borrow of a non-[`Send`] resource.
+// ///
+// /// Only `Send` resources may be accessed with the [`Res`] [`SystemParam`]. In case that the
+// /// resource does not implement `Send`, this `SystemParam` wrapper can be used. This will instruct
+// /// the scheduler to instead run the system on the main thread so that it doesn't send the resource
+// /// over to another thread.
+// ///
+// /// # Panics
+// ///
+// /// Panics when used as a `SystemParameter` if the resource does not exist.
+// ///
+// /// Use `Option<NonSend<T>>` instead if the resource might not always exist.
+// pub struct NonSend<'w, T: 'static> {
+//     pub(crate) value: &'w T,
+//     ticks: ComponentTicks,
+//     last_change_tick: u32,
+//     change_tick: u32,
+// }
 
-// SAFETY: Only reads a single World non-send resource
-unsafe impl<'w, T> ReadOnlySystemParam for NonSend<'w, T> {}
+// // SAFETY: Only reads a single World non-send resource
+// unsafe impl<'w, T> ReadOnlySystemParam for NonSend<'w, T> {}
 
-impl<'w, T> Debug for NonSend<'w, T>
-where
-    T: Debug,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("NonSend").field(&self.value).finish()
-    }
-}
+// impl<'w, T> Debug for NonSend<'w, T>
+// where
+//     T: Debug,
+// {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         f.debug_tuple("NonSend").field(&self.value).finish()
+//     }
+// }
 
-impl<'w, T: 'static> NonSend<'w, T> {
-    /// Returns `true` if the resource was added after the system last ran.
-    pub fn is_added(&self) -> bool {
-        self.ticks.is_added(self.last_change_tick, self.change_tick)
-    }
+// impl<'w, T: 'static> NonSend<'w, T> {
+//     /// Returns `true` if the resource was added after the system last ran.
+//     pub fn is_added(&self) -> bool {
+//         self.ticks.is_added(self.last_change_tick, self.change_tick)
+//     }
 
-    /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
-    pub fn is_changed(&self) -> bool {
-        self.ticks
-            .is_changed(self.last_change_tick, self.change_tick)
-    }
-}
+//     /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
+//     pub fn is_changed(&self) -> bool {
+//         self.ticks
+//             .is_changed(self.last_change_tick, self.change_tick)
+//     }
+// }
 
-impl<'w, T> Deref for NonSend<'w, T> {
-    type Target = T;
+// impl<'w, T> Deref for NonSend<'w, T> {
+//     type Target = T;
 
-    fn deref(&self) -> &Self::Target {
-        self.value
-    }
-}
-impl<'a, T> From<NonSendMut<'a, T>> for NonSend<'a, T> {
-    fn from(nsm: NonSendMut<'a, T>) -> Self {
-        Self {
-            value: nsm.value,
-            ticks: ComponentTicks {
-                added: nsm.ticks.added.to_owned(),
-                changed: nsm.ticks.changed.to_owned(),
-            },
-            change_tick: nsm.ticks.change_tick,
-            last_change_tick: nsm.ticks.last_change_tick,
-        }
-    }
-}
+//     fn deref(&self) -> &Self::Target {
+//         self.value
+//     }
+// }
+// impl<'a, T> From<NonSendMut<'a, T>> for NonSend<'a, T> {
+//     fn from(nsm: NonSendMut<'a, T>) -> Self {
+//         Self {
+//             value: nsm.value,
+//             ticks: ComponentTicks {
+//                 added: nsm.ticks.added.to_owned(),
+//                 changed: nsm.ticks.changed.to_owned(),
+//             },
+//             change_tick: nsm.ticks.change_tick,
+//             last_change_tick: nsm.ticks.last_change_tick,
+//         }
+//     }
+// }
 
-// SAFETY: NonSendComponentId and ArchetypeComponentId access is applied to SystemMeta. If this
-// NonSend conflicts with any prior access, a panic will occur.
-unsafe impl<'a, T: 'static> SystemParam for NonSend<'a, T> {
-    type State = ComponentId;
-    type Item<'w, 's> = NonSend<'w, T>;
+// // SAFETY: NonSendComponentId and ArchetypeComponentId access is applied to SystemMeta. If this
+// // NonSend conflicts with any prior access, a panic will occur.
+// unsafe impl<'a, T: 'static> SystemParam for NonSend<'a, T> {
+//     type State = ();
+//     type Item<'w, 's> = NonSend<'w, T>;
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        system_meta.set_non_send();
+//     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+//         system_meta.set_non_send();
 
-        let component_id = world.initialize_non_send_resource::<T>();
-        let combined_access = system_meta.component_access_set.combined_access();
-        assert!(
-            !combined_access.has_write(component_id),
-            "error[B0002]: NonSend<{}> in system {} conflicts with a previous mutable resource access ({0}). Consider removing the duplicate access.",
-            std::any::type_name::<T>(),
-            system_meta.name,
-        );
-        system_meta
-            .component_access_set
-            .add_unfiltered_read(component_id);
+//         world.initialize_non_send_resource::<T>();
+//         let combined_access = &system_meta.component_access_set;
+//         let item = AccessItem::Unique(ResourceId::of::<T>());
+//         assert!(
+//             !combined_access.has_write(&item),
+//             "error[B0002]: NonSend<{}> in system {} conflicts with a previous mutable resource access ({0}). Consider removing the duplicate access.",
+//             std::any::type_name::<T>(),
+//             system_meta.name,
+//         );
+//         system_meta.component_access_set.add_read(item);
 
-        let archetype_component_id = world
-            .get_non_send_archetype_component_id(component_id)
-            .unwrap();
-        system_meta
-            .archetype_component_access
-            .add_read(archetype_component_id);
+//         // let archetype_component_id = world
+//         //     .get_non_send_archetype_component_id(component_id)
+//         //     .unwrap();
+//         // system_meta
+//         //     .archetype_component_access
+//         //     .add_read(archetype_component_id);
 
-        component_id
-    }
+//         // component_id
+//     }
 
-    #[inline]
-    unsafe fn get_param<'w, 's>(
-        &mut component_id: &'s mut Self::State,
-        system_meta: &SystemMeta,
-        world: &'w World,
-        change_tick: u32,
-    ) -> Self::Item<'w, 's> {
-        let (ptr, ticks) = world
-            .as_unsafe_world_cell_migration_internal()
-            .get_non_send_with_ticks(component_id)
-            .unwrap_or_else(|| {
-                panic!(
-                    "Non-send resource requested by {} does not exist: {}",
-                    system_meta.name,
-                    std::any::type_name::<T>()
-                )
-            });
+//     #[inline]
+//     unsafe fn get_param<'w, 's>(
+//         &mut component_id: &'s mut Self::State,
+//         system_meta: &SystemMeta,
+//         world: &'w World,
+//         change_tick: u32,
+//     ) -> Self::Item<'w, 's> {
+//         let (ptr, ticks) = world
+//             .as_unsafe_world_cell_migration_internal()
+//             .get_non_send_with_ticks(component_id)
+//             .unwrap_or_else(|| {
+//                 panic!(
+//                     "Non-send resource requested by {} does not exist: {}",
+//                     system_meta.name,
+//                     std::any::type_name::<T>()
+//                 )
+//             });
 
-        NonSend {
-            value: ptr.deref(),
-            ticks: ticks.read(),
-            last_change_tick: system_meta.last_change_tick,
-            change_tick,
-        }
-    }
-}
+//         NonSend {
+//             value: ptr.deref(),
+//             ticks: ticks.read(),
+//             last_change_tick: system_meta.last_change_tick,
+//             change_tick,
+//         }
+//     }
+// }
 
-// SAFETY: Only reads a single World non-send resource
-unsafe impl<T: 'static> ReadOnlySystemParam for Option<NonSend<'_, T>> {}
+// // SAFETY: Only reads a single World non-send resource
+// unsafe impl<T: 'static> ReadOnlySystemParam for Option<NonSend<'_, T>> {}
 
-// SAFETY: this impl defers to `NonSend`, which initializes and validates the correct world access.
-unsafe impl<T: 'static> SystemParam for Option<NonSend<'_, T>> {
-    type State = ComponentId;
-    type Item<'w, 's> = Option<NonSend<'w, T>>;
+// // SAFETY: this impl defers to `NonSend`, which initializes and validates the correct world access.
+// unsafe impl<T: 'static> SystemParam for Option<NonSend<'_, T>> {
+//     type State = ();
+//     type Item<'w, 's> = Option<NonSend<'w, T>>;
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        NonSend::<T>::init_state(world, system_meta)
-    }
+//     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+//         NonSend::<T>::init_state(world, system_meta)
+//     }
 
-    #[inline]
-    unsafe fn get_param<'w, 's>(
-        &mut component_id: &'s mut Self::State,
-        system_meta: &SystemMeta,
-        world: &'w World,
-        change_tick: u32,
-    ) -> Self::Item<'w, 's> {
-        world
-            .as_unsafe_world_cell_migration_internal()
-            .get_non_send_with_ticks(component_id)
-            .map(|(ptr, ticks)| NonSend {
-                value: ptr.deref(),
-                ticks: ticks.read(),
-                last_change_tick: system_meta.last_change_tick,
-                change_tick,
-            })
-    }
-}
+//     #[inline]
+//     unsafe fn get_param<'w, 's>(
+//         &mut component_id: &'s mut Self::State,
+//         system_meta: &SystemMeta,
+//         world: &'w World,
+//         change_tick: u32,
+//     ) -> Self::Item<'w, 's> {
+//         world
+//             .as_unsafe_world_cell_migration_internal()
+//             .get_non_send_with_ticks(component_id)
+//             .map(|(ptr, ticks)| NonSend {
+//                 value: ptr.deref(),
+//                 ticks: ticks.read(),
+//                 last_change_tick: system_meta.last_change_tick,
+//                 change_tick,
+//             })
+//     }
+// }
 
-// SAFETY: NonSendMut ComponentId and ArchetypeComponentId access is applied to SystemMeta. If this
-// NonSendMut conflicts with any prior access, a panic will occur.
-unsafe impl<'a, T: 'static> SystemParam for NonSendMut<'a, T> {
-    type State = ComponentId;
-    type Item<'w, 's> = NonSendMut<'w, T>;
+// // SAFETY: NonSendMut ComponentId and ArchetypeComponentId access is applied to SystemMeta. If this
+// // NonSendMut conflicts with any prior access, a panic will occur.
+// unsafe impl<'a, T: 'static> SystemParam for NonSendMut<'a, T> {
+//     type State = ();
+//     type Item<'w, 's> = NonSendMut<'w, T>;
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        system_meta.set_non_send();
+//     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+//         system_meta.set_non_send();
 
-        let component_id = world.initialize_non_send_resource::<T>();
-        let combined_access = system_meta.component_access_set.combined_access();
-        if combined_access.has_write(component_id) {
-            panic!(
-                "error[B0002]: NonSendMut<{}> in system {} conflicts with a previous mutable resource access ({0}). Consider removing the duplicate access.",
-                std::any::type_name::<T>(), system_meta.name);
-        } else if combined_access.has_read(component_id) {
-            panic!(
-                "error[B0002]: NonSendMut<{}> in system {} conflicts with a previous immutable resource access ({0}). Consider removing the duplicate access.",
-                std::any::type_name::<T>(), system_meta.name);
-        }
-        system_meta
-            .component_access_set
-            .add_unfiltered_write(component_id);
+//         world.initialize_non_send_resource::<T>();
+//         let combined_access = &system_meta.component_access_set;
+//         let item = AccessItem::Unique(ResourceId::of::<T>());
 
-        let archetype_component_id = world
-            .get_non_send_archetype_component_id(component_id)
-            .unwrap();
-        system_meta
-            .archetype_component_access
-            .add_write(archetype_component_id);
+//         if combined_access.has_write(&item) {
+//             panic!(
+//                 "error[B0002]: NonSendMut<{}> in system {} conflicts with a previous mutable resource access ({0}). Consider removing the duplicate access.",
+//                 std::any::type_name::<T>(), system_meta.name);
+//         } else if combined_access.has_read(&item) {
+//             panic!(
+//                 "error[B0002]: NonSendMut<{}> in system {} conflicts with a previous immutable resource access ({0}). Consider removing the duplicate access.",
+//                 std::any::type_name::<T>(), system_meta.name);
+//         }
+//         system_meta.component_access_set.add_write(item);
 
-        component_id
-    }
+//         // let archetype_component_id = world
+//         //     .get_non_send_archetype_component_id(component_id)
+//         //     .unwrap();
+//         // system_meta
+//         //     .archetype_component_access
+//         //     .add_write(archetype_component_id);
 
-    #[inline]
-    unsafe fn get_param<'w, 's>(
-        &mut component_id: &'s mut Self::State,
-        system_meta: &SystemMeta,
-        world: &'w World,
-        change_tick: u32,
-    ) -> Self::Item<'w, 's> {
-        let (ptr, ticks) = world
-            .as_unsafe_world_cell_migration_internal()
-            .get_non_send_with_ticks(component_id)
-            .unwrap_or_else(|| {
-                panic!(
-                    "Non-send resource requested by {} does not exist: {}",
-                    system_meta.name,
-                    std::any::type_name::<T>()
-                )
-            });
-        NonSendMut {
-            value: ptr.assert_unique().deref_mut(),
-            ticks: TicksMut::from_tick_cells(ticks, system_meta.last_change_tick, change_tick),
-        }
-    }
-}
+//         // component_id
+//     }
 
-// SAFETY: this impl defers to `NonSendMut`, which initializes and validates the correct world access.
-unsafe impl<'a, T: 'static> SystemParam for Option<NonSendMut<'a, T>> {
-    type State = ComponentId;
-    type Item<'w, 's> = Option<NonSendMut<'w, T>>;
+//     #[inline]
+//     unsafe fn get_param<'w, 's>(
+//         &mut component_id: &'s mut Self::State,
+//         system_meta: &SystemMeta,
+//         world: &'w World,
+//         change_tick: u32,
+//     ) -> Self::Item<'w, 's> {
+//         let (ptr, ticks) = world
+//             .as_unsafe_world_cell_migration_internal()
+//             .get_non_send_with_ticks(component_id)
+//             .unwrap_or_else(|| {
+//                 panic!(
+//                     "Non-send resource requested by {} does not exist: {}",
+//                     system_meta.name,
+//                     std::any::type_name::<T>()
+//                 )
+//             });
+//         NonSendMut {
+//             value: ptr.assert_unique().deref_mut(),
+//             ticks: TicksMut::from_tick_cells(ticks, system_meta.last_change_tick, change_tick),
+//         }
+//     }
+// }
 
-    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        NonSendMut::<T>::init_state(world, system_meta)
-    }
+// // SAFETY: this impl defers to `NonSendMut`, which initializes and validates the correct world access.
+// unsafe impl<'a, T: 'static> SystemParam for Option<NonSendMut<'a, T>> {
+//     type State = ();
+//     type Item<'w, 's> = Option<NonSendMut<'w, T>>;
 
-    #[inline]
-    unsafe fn get_param<'w, 's>(
-        &mut component_id: &'s mut Self::State,
-        system_meta: &SystemMeta,
-        world: &'w World,
-        change_tick: u32,
-    ) -> Self::Item<'w, 's> {
-        world
-            .as_unsafe_world_cell_migration_internal()
-            .get_non_send_with_ticks(component_id)
-            .map(|(ptr, ticks)| NonSendMut {
-                value: ptr.assert_unique().deref_mut(),
-                ticks: TicksMut::from_tick_cells(ticks, system_meta.last_change_tick, change_tick),
-            })
-    }
-}
+//     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+//         NonSendMut::<T>::init_state(world, system_meta)
+//     }
 
-// SAFETY: Only reads World archetypes
-unsafe impl<'a> ReadOnlySystemParam for &'a Archetypes {}
+//     #[inline]
+//     unsafe fn get_param<'w, 's>(
+//         &mut component_id: &'s mut Self::State,
+//         system_meta: &SystemMeta,
+//         world: &'w World,
+//         change_tick: u32,
+//     ) -> Self::Item<'w, 's> {
+//         world
+//             .as_unsafe_world_cell_migration_internal()
+//             .get_non_send_with_ticks(component_id)
+//             .map(|(ptr, ticks)| NonSendMut {
+//                 value: ptr.assert_unique().deref_mut(),
+//                 ticks: TicksMut::from_tick_cells(ticks, system_meta.last_change_tick, change_tick),
+//             })
+//     }
+// }
 
-// SAFETY: no component value access
-unsafe impl<'a> SystemParam for &'a Archetypes {
-    type State = ();
-    type Item<'w, 's> = &'w Archetypes;
+// // SAFETY: Only reads World archetypes
+// unsafe impl<'a> ReadOnlySystemParam for &'a Archetypes {}
 
-    fn init_state(_world: &mut World, _system_meta: &mut SystemMeta) -> Self::State {}
+// // SAFETY: no component value access
+// unsafe impl<'a> SystemParam for &'a Archetypes {
+//     type State = ();
+//     type Item<'w, 's> = &'w Archetypes;
 
-    #[inline]
-    unsafe fn get_param<'w, 's>(
-        _state: &'s mut Self::State,
-        _system_meta: &SystemMeta,
-        world: &'w World,
-        _change_tick: u32,
-    ) -> Self::Item<'w, 's> {
-        world.archetypes()
-    }
-}
+//     fn init_state(_world: &mut World, _system_meta: &mut SystemMeta) -> Self::State {}
 
-// SAFETY: Only reads World components
-unsafe impl<'a> ReadOnlySystemParam for &'a Components {}
+//     #[inline]
+//     unsafe fn get_param<'w, 's>(
+//         _state: &'s mut Self::State,
+//         _system_meta: &SystemMeta,
+//         world: &'w World,
+//         _change_tick: u32,
+//     ) -> Self::Item<'w, 's> {
+//         world.archetypes()
+//     }
+// }
 
-// SAFETY: no component value access
-unsafe impl<'a> SystemParam for &'a Components {
-    type State = ();
-    type Item<'w, 's> = &'w Components;
+// // SAFETY: Only reads World components
+// unsafe impl<'a> ReadOnlySystemParam for &'a Components {}
 
-    fn init_state(_world: &mut World, _system_meta: &mut SystemMeta) -> Self::State {}
+// // SAFETY: no component value access
+// unsafe impl<'a> SystemParam for &'a Components {
+//     type State = ();
+//     type Item<'w, 's> = &'w Components;
 
-    #[inline]
-    unsafe fn get_param<'w, 's>(
-        _state: &'s mut Self::State,
-        _system_meta: &SystemMeta,
-        world: &'w World,
-        _change_tick: u32,
-    ) -> Self::Item<'w, 's> {
-        world.components()
-    }
-}
+//     fn init_state(_world: &mut World, _system_meta: &mut SystemMeta) -> Self::State {}
 
-// SAFETY: Only reads World entities
-unsafe impl<'a> ReadOnlySystemParam for &'a Entities {}
+//     #[inline]
+//     unsafe fn get_param<'w, 's>(
+//         _state: &'s mut Self::State,
+//         _system_meta: &SystemMeta,
+//         world: &'w World,
+//         _change_tick: u32,
+//     ) -> Self::Item<'w, 's> {
+//         world.components()
+//     }
+// }
 
-// SAFETY: no component value access
-unsafe impl<'a> SystemParam for &'a Entities {
-    type State = ();
-    type Item<'w, 's> = &'w Entities;
+// // SAFETY: Only reads World entities
+// unsafe impl<'a> ReadOnlySystemParam for &'a Entities {}
 
-    fn init_state(_world: &mut World, _system_meta: &mut SystemMeta) -> Self::State {}
+// // SAFETY: no component value access
+// unsafe impl<'a> SystemParam for &'a Entities {
+//     type State = ();
+//     type Item<'w, 's> = ResRef<'w, Entities>;
 
-    #[inline]
-    unsafe fn get_param<'w, 's>(
-        _state: &'s mut Self::State,
-        _system_meta: &SystemMeta,
-        world: &'w World,
-        _change_tick: u32,
-    ) -> Self::Item<'w, 's> {
-        world.entities()
-    }
-}
+//     fn init_state(_world: &mut World, _system_meta: &mut SystemMeta) -> Self::State {}
 
-// SAFETY: Only reads World bundles
-unsafe impl<'a> ReadOnlySystemParam for &'a Bundles {}
+//     #[inline]
+//     unsafe fn get_param<'w, 's>(
+//         _state: &'s mut Self::State,
+//         _system_meta: &SystemMeta,
+//         world: &'w World,
+//         _change_tick: u32,
+//     ) -> Self::Item<'w, 's> {
+//         world.entities()
+//     }
+// }
 
-// SAFETY: no component value access
-unsafe impl<'a> SystemParam for &'a Bundles {
-    type State = ();
-    type Item<'w, 's> = &'w Bundles;
+// // SAFETY: Only reads World bundles
+// unsafe impl<'a> ReadOnlySystemParam for &'a Bundles {}
 
-    fn init_state(_world: &mut World, _system_meta: &mut SystemMeta) -> Self::State {}
+// // SAFETY: no component value access
+// unsafe impl<'a> SystemParam for &'a Bundles {
+//     type State = ();
+//     type Item<'w, 's> = &'w Bundles;
 
-    #[inline]
-    unsafe fn get_param<'w, 's>(
-        _state: &'s mut Self::State,
-        _system_meta: &SystemMeta,
-        world: &'w World,
-        _change_tick: u32,
-    ) -> Self::Item<'w, 's> {
-        world.bundles()
-    }
-}
+//     fn init_state(_world: &mut World, _system_meta: &mut SystemMeta) -> Self::State {}
+
+//     #[inline]
+//     unsafe fn get_param<'w, 's>(
+//         _state: &'s mut Self::State,
+//         _system_meta: &SystemMeta,
+//         world: &'w World,
+//         _change_tick: u32,
+//     ) -> Self::Item<'w, 's> {
+//         world.bundles()
+//     }
+// }
 
 /// A [`SystemParam`] that reads the previous and current change ticks of the system.
 ///
@@ -1295,7 +1184,7 @@ unsafe impl SystemParam for SystemChangeTick {
         change_tick: u32,
     ) -> Self::Item<'w, 's> {
         SystemChangeTick {
-            last_change_tick: system_meta.last_change_tick,
+            last_change_tick: system_meta.last_run_tick,
             change_tick,
         }
     }
@@ -1388,10 +1277,10 @@ macro_rules! impl_system_param_tuple {
                 (($($param::init_state(_world, _system_meta),)*))
             }
 
-            #[inline]
-            fn new_archetype(($($param,)*): &mut Self::State, _archetype: &Archetype, _system_meta: &mut SystemMeta) {
-                $($param::new_archetype($param, _archetype, _system_meta);)*
-            }
+            // #[inline]
+            // fn new_archetype(($($param,)*): &mut Self::State, _archetype: &Archetype, _system_meta: &mut SystemMeta) {
+            //     $($param::new_archetype($param, _archetype, _system_meta);)*
+            // }
 
             #[inline]
             fn apply(($($param,)*): &mut Self::State, _system_meta: &SystemMeta, _world: &mut World) {
@@ -1416,14 +1305,14 @@ macro_rules! impl_system_param_tuple {
 
 all_tuples!(impl_system_param_tuple, 0, 16, P);
 
-pub mod lifetimeless {
-    pub type SQuery<Q, F = ()> = super::Query<'static, 'static, Q, F>;
-    pub type Read<T> = &'static T;
-    pub type Write<T> = &'static mut T;
-    pub type SRes<T> = super::AtomicRef<'static, T>;
-    pub type SResMut<T> = super::ResMut<'static, T>;
-    pub type SCommands = crate::system::Commands<'static, 'static>;
-}
+// pub mod lifetimeless {
+//     // pub type SQuery<Q, F = ()> = super::Query<'static, 'static, Q, F>;
+//     pub type Read<T> = &'static T;
+//     pub type Write<T> = &'static mut T;
+//     pub type SRes<T> = super::Res<'static, T>;
+//     pub type SResMut<T> = super::ResMut<'static, T>;
+//     pub type SCommands = crate::system::Commands<'static, 'static>;
+// }
 
 /// A helper for using system parameters in generic contexts
 ///
@@ -1437,8 +1326,8 @@ pub mod lifetimeless {
 /// derive:
 ///
 /// ```
-/// # use bevy_ecs::prelude::*;
-/// use bevy_ecs::system::{SystemParam, StaticSystemParam};
+/// # use gw_ecs::prelude::*;
+/// use gw_ecs::system::{SystemParam, StaticSystemParam};
 /// #[derive(SystemParam)]
 /// struct GenericParam<'w,'s, T: SystemParam + 'static> {
 ///     field: StaticSystemParam<'w, 's, T>,
@@ -1446,7 +1335,7 @@ pub mod lifetimeless {
 /// fn do_thing_generically<T: SystemParam + 'static>(t: StaticSystemParam<T>) {}
 ///
 /// fn check_always_is_system<T: SystemParam + 'static>(){
-///     bevy_ecs::system::assert_is_system(do_thing_generically::<T>);
+///     gw_ecs::system::assert_is_system(do_thing_generically::<T>);
 /// }
 /// ```
 /// Note that in a real case you'd generally want
@@ -1461,8 +1350,8 @@ pub mod lifetimeless {
 ///
 /// The method which doesn't use this type will not compile:
 /// ```compile_fail
-/// # use bevy_ecs::prelude::*;
-/// # use bevy_ecs::system::{SystemParam, StaticSystemParam};
+/// # use gw_ecs::prelude::*;
+/// # use gw_ecs::system::{SystemParam, StaticSystemParam};
 ///
 /// fn do_thing_generically<T: SystemParam + 'static>(t: T) {}
 ///
@@ -1473,7 +1362,7 @@ pub mod lifetimeless {
 ///     phantom: core::marker::PhantomData<&'w &'s ()>
 /// }
 /// # fn check_always_is_system<T: SystemParam + 'static>(){
-/// #    bevy_ecs::system::assert_is_system(do_thing_generically::<T>);
+/// #    gw_ecs::system::assert_is_system(do_thing_generically::<T>);
 /// # }
 /// ```
 ///
@@ -1515,9 +1404,9 @@ unsafe impl<P: SystemParam + 'static> SystemParam for StaticSystemParam<'_, '_, 
         P::init_state(world, system_meta)
     }
 
-    fn new_archetype(state: &mut Self::State, archetype: &Archetype, system_meta: &mut SystemMeta) {
-        P::new_archetype(state, archetype, system_meta);
-    }
+    // fn new_archetype(state: &mut Self::State, archetype: &Archetype, system_meta: &mut SystemMeta) {
+    //     P::new_archetype(state, archetype, system_meta);
+    // }
 
     fn apply(state: &mut Self::State, system_meta: &SystemMeta, world: &mut World) {
         P::apply(state, system_meta, world);
@@ -1556,30 +1445,25 @@ unsafe impl<T: ?Sized> ReadOnlySystemParam for PhantomData<T> {}
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        self as bevy_ecs, // Necessary for the `SystemParam` Derive when used inside `bevy_ecs`.
-        query::{ReadOnlyWorldQuery, WorldQuery},
-        system::Query,
-    };
+    use crate::{self as gw_ecs, prelude::*};
     use std::marker::PhantomData;
 
-    // Compile test for https://github.com/bevyengine/bevy/pull/2838.
-    #[derive(SystemParam)]
-    pub struct SpecialQuery<
-        'w,
-        's,
-        Q: WorldQuery + Send + Sync + 'static,
-        F: ReadOnlyWorldQuery + Send + Sync + 'static = (),
-    > {
-        _query: Query<'w, 's, Q, F>,
-    }
+    // // Compile test for https://github.com/bevyengine/bevy/pull/2838.
+    // #[derive(SystemParam)]
+    // pub struct SpecialQuery<
+    //     'w,
+    //     's,
+    //     Q: WorldQuery + Send + Sync + 'static,
+    //     F: ReadOnlyWorldQuery + Send + Sync + 'static = (),
+    // > {
+    //     _query: Query<'w, 's, Q, F>,
+    // }
 
     // Compile tests for https://github.com/bevyengine/bevy/pull/6694.
 
     #[derive(SystemParam)]
-    pub struct SpecialRes<'w, T: Resource> {
-        _res: AtomicRef<'w, T>,
+    pub struct SpecialRes<'w, T: Resource + Send + Sync> {
+        _res: ReadUnique<'w, T>,
     }
 
     #[derive(SystemParam)]
@@ -1587,33 +1471,32 @@ mod tests {
         _local: Local<'s, T>,
     }
 
-    #[derive(Resource)]
     pub struct R<const I: usize>;
 
     // Compile test for https://github.com/bevyengine/bevy/pull/7001.
     #[derive(SystemParam)]
-    pub struct ConstGenericParam<'w, const I: usize>(AtomicRef<'w, R<I>>);
+    pub struct ConstGenericParam<'w, const I: usize>(ReadUnique<'w, R<I>>);
 
     // Compile test for https://github.com/bevyengine/bevy/pull/6867.
     #[derive(SystemParam)]
     pub struct LongParam<'w> {
-        _r0: AtomicRef<'w, R<0>>,
-        _r1: AtomicRef<'w, R<1>>,
-        _r2: AtomicRef<'w, R<2>>,
-        _r3: AtomicRef<'w, R<3>>,
-        _r4: AtomicRef<'w, R<4>>,
-        _r5: AtomicRef<'w, R<5>>,
-        _r6: AtomicRef<'w, R<6>>,
-        _r7: AtomicRef<'w, R<7>>,
-        _r8: AtomicRef<'w, R<8>>,
-        _r9: AtomicRef<'w, R<9>>,
-        _r10: AtomicRef<'w, R<10>>,
-        _r11: AtomicRef<'w, R<11>>,
-        _r12: AtomicRef<'w, R<12>>,
-        _r13: AtomicRef<'w, R<13>>,
-        _r14: AtomicRef<'w, R<14>>,
-        _r15: AtomicRef<'w, R<15>>,
-        _r16: AtomicRef<'w, R<16>>,
+        _r0: ReadUnique<'w, R<0>>,
+        _r1: ReadUnique<'w, R<1>>,
+        _r2: ReadUnique<'w, R<2>>,
+        _r3: ReadUnique<'w, R<3>>,
+        _r4: ReadUnique<'w, R<4>>,
+        _r5: ReadUnique<'w, R<5>>,
+        _r6: ReadUnique<'w, R<6>>,
+        _r7: ReadUnique<'w, R<7>>,
+        _r8: ReadUnique<'w, R<8>>,
+        _r9: ReadUnique<'w, R<9>>,
+        _r10: ReadUnique<'w, R<10>>,
+        _r11: ReadUnique<'w, R<11>>,
+        _r12: ReadUnique<'w, R<12>>,
+        _r13: ReadUnique<'w, R<13>>,
+        _r14: ReadUnique<'w, R<14>>,
+        _r15: ReadUnique<'w, R<15>>,
+        _r16: ReadUnique<'w, R<16>>,
     }
 
     #[allow(dead_code)]
@@ -1624,8 +1507,8 @@ mod tests {
     // Compile test for https://github.com/bevyengine/bevy/pull/6919.
     // Regression test for https://github.com/bevyengine/bevy/issues/7447.
     #[derive(SystemParam)]
-    struct IgnoredParam<'w, T: Resource, Marker: 'static> {
-        _foo: AtomicRef<'w, T>,
+    struct IgnoredParam<'w, T: Resource + Send + Sync, Marker: 'static> {
+        _foo: ReadUnique<'w, T>,
         #[system_param(ignore)]
         marker: PhantomData<&'w Marker>,
         marker2: PhantomData<&'w Marker>,
@@ -1637,30 +1520,29 @@ mod tests {
     pub struct UnitParam;
 
     #[derive(SystemParam)]
-    pub struct TupleParam<'w, 's, R: Resource, L: FromWorld + Send + 'static>(
-        AtomicRef<'w, R>,
+    pub struct TupleParam<'w, 's, R: Resource + Send + Sync, L: FromWorld + Send + 'static>(
+        ReadUnique<'w, R>,
         Local<'s, L>,
     );
 
-    #[derive(Resource)]
     struct PrivateResource;
 
     // Regression test for https://github.com/bevyengine/bevy/issues/4200.
     #[derive(SystemParam)]
-    pub struct EncapsulatedParam<'w>(AtomicRef<'w, PrivateResource>);
+    pub struct EncapsulatedParam<'w>(ReadUnique<'w, PrivateResource>);
 
-    // regression test for https://github.com/bevyengine/bevy/issues/7103.
-    #[derive(SystemParam)]
-    pub struct WhereParam<'w, 's, Q>
-    where
-        Q: 'static + WorldQuery,
-    {
-        _q: Query<'w, 's, Q, ()>,
-    }
+    // // regression test for https://github.com/bevyengine/bevy/issues/7103.
+    // #[derive(SystemParam)]
+    // pub struct WhereParam<'w, 's, Q>
+    // where
+    //     Q: 'static + WorldQuery,
+    // {
+    //     _q: Query<'w, 's, Q, ()>,
+    // }
 
-    // Regression test for https://github.com/bevyengine/bevy/issues/8192.
-    #[derive(SystemParam)]
-    pub struct InvariantParam<'w, 's> {
-        _set: ParamSet<'w, 's, (Query<'w, 's, ()>,)>,
-    }
+    // // Regression test for https://github.com/bevyengine/bevy/issues/8192.
+    // #[derive(SystemParam)]
+    // pub struct InvariantParam<'w, 's> {
+    //     _set: ParamSet<'w, 's, (Query<'w, 's, ()>,)>,
+    // }
 }

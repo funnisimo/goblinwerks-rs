@@ -1,10 +1,4 @@
-use gw_ecs::{
-    ecs::Ecs,
-    globals::ReadGlobal,
-    schedule::Schedule,
-    shred::{ReadRes, System},
-    World,
-};
+use gw_ecs::prelude::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
 struct UniqueA(u32);
@@ -15,22 +9,17 @@ struct GlobalA(u32);
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
 struct GlobalB(u32);
 
-struct GlobalSystem;
-
-impl<'a> System<'a> for GlobalSystem {
-    type SystemData = (
-        ReadGlobal<'a, GlobalA>,
-        ReadGlobal<'a, GlobalB>,
-        ReadRes<'a, UniqueA>,
+fn global_system(
+    global_a: ReadGlobal<GlobalA>,
+    global_b: ReadGlobal<GlobalB>,
+    unique_a: ReadUnique<UniqueA>,
+) {
+    println!(
+        "System = A:{:?}, B:{:?} + U:{:?}",
+        global_a.0, global_b.0, unique_a.0
     );
-
-    fn run(&mut self, (global_a, global_b, unique_a): Self::SystemData) {
-        println!(
-            "System = A:{:?}, B:{:?} + U:{:?}",
-            global_a.0, global_b.0, unique_a.0
-        );
-    }
 }
+
 fn main() {
     let mut ecs = Ecs::default();
 
@@ -39,23 +28,29 @@ fn main() {
 
     ecs.insert_global(GlobalA(32));
     ecs.insert_global(GlobalB(64));
-    ecs.insert_resource(UniqueA(1));
 
-    assert!(ecs.has_global::<GlobalA>());
-    assert_eq!(ecs.read_global::<GlobalA>().0, 32);
+    let world = ecs.current_world_mut();
+    world.insert_resource(UniqueA(1));
 
-    assert!(ecs.try_read_global::<GlobalA>().is_some());
+    assert!(world.has_global::<GlobalA>());
+    assert_eq!(world.read_global::<GlobalA>().0, 32);
 
-    let mut dispatcher = Schedule::new();
-    dispatcher.add_system("UPDATE", GlobalSystem);
+    assert!(world.try_read_global::<GlobalA>().is_some());
 
-    dispatcher.run(ecs.current_world_mut());
+    let mut schedule = Schedule::new();
+    schedule.add_system(global_system);
+
+    schedule.run(world);
 
     let mut world = World::empty("TACO");
     world.insert_resource(UniqueA(2));
 
-    ecs.insert_world(world);
+    ecs.insert_world(world); // Sets the globals
     ecs.set_current_world("TACO").unwrap();
 
-    dispatcher.run(ecs.current_world_mut());
+    schedule.run(ecs.current_world_mut());
+
+    let world = ecs.current_world();
+    assert!(world.has_global::<GlobalA>());
+    assert_eq!(world.read_global::<GlobalA>().0, 32);
 }

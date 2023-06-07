@@ -2,7 +2,7 @@ use crate::point::Point;
 
 use super::DataConvertError;
 use super::Value;
-use gw_ecs::Entity;
+use gw_ecs::prelude::Entity;
 use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

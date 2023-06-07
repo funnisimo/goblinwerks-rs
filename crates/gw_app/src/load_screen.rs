@@ -1,10 +1,8 @@
-use crate::ecs::SystemData;
 use crate::ecs::Time;
 use crate::loader::Loader;
 use crate::screen::BoxedScreen;
 use crate::{color::RGBA, draw, log};
 use crate::{Ecs, Panel, Screen, ScreenResult};
-use gw_ecs::ReadGlobal;
 
 pub struct LoadingScreen {
     con: Panel,

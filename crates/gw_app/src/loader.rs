@@ -2,7 +2,7 @@ use crate::app::File;
 use crate::font::{FontFileLoader, FromGlyphFn, ToGlyphFn};
 use crate::img::ImageFileLoader;
 use crate::log;
-use gw_ecs::Ecs;
+use gw_ecs::prelude::Ecs;
 use std::collections::VecDeque;
 
 #[derive(Debug)]

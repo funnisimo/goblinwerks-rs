@@ -1,8 +1,4 @@
-use gw_ecs::{
-    schedule::Schedule,
-    shred::{SetupDefault, SetupHandler},
-    ReadRes, System, World, WriteRes,
-};
+use gw_ecs::prelude::*;
 
 #[derive(Debug, Default)]
 struct ResA;
@@ -11,65 +7,47 @@ struct ResA;
 #[derive(Debug)]
 struct ResB;
 
-struct ResWithoutSensibleDefault {
-    magic_number_that_we_cant_compute: u32,
+struct ResWithoutDefault {
+    magic_value: u32,
 }
 
-impl SetupHandler<ResWithoutSensibleDefault> for ResWithoutSensibleDefault {
-    fn setup(world: &mut World) {
-        let res = ResWithoutSensibleDefault {
-            magic_number_that_we_cant_compute: 32,
-        };
-        world.insert_resource(res);
+impl FromWorld for ResWithoutDefault {
+    fn from_world(_world: &mut World) -> Self {
+        ResWithoutDefault { magic_value: 32 }
     }
 }
 
-struct PrintSystem;
+fn print_system(
+    a: ReadUnique<ResA>,
+    mut b: Option<WriteUnique<ResB>>,
+    c: ReadUnique<ResWithoutDefault>,
+) {
+    println!("[PRINT SYSTEM]");
+    println!("A = {:?}", &*a);
 
-impl<'a> System<'a> for PrintSystem {
-    // We can simply use `Option<Read>` or `Option<Write>` if a resource
-    // isn't strictly required or can't be created (by a `Default` implementation).
-    type SystemData = (
-        ReadRes<'a, ResA, SetupDefault>,
-        Option<WriteRes<'a, ResB, SetupDefault>>,
-        // WARNING: using `ReadExpect` might lead to a panic!
-        // If `ResWithoutSensibleDefault` does not exist, fetching will `panic!`.
-        ReadRes<'a, ResWithoutSensibleDefault, ResWithoutSensibleDefault>,
-    );
+    if let Some(ref mut x) = b {
+        println!("B = {:?}", &**x);
 
-    fn run(&mut self, data: Self::SystemData) {
-        let (a, mut b, expected) = data;
-
-        println!("{:?}", &*a);
-
-        if let Some(ref mut x) = b {
-            println!("{:?}", &**x);
-
-            **x = ResB;
-        }
-
-        println!(
-            "Yeah, we have our magic number: {}",
-            expected.magic_number_that_we_cant_compute
-        );
+        **x = ResB;
     }
+
+    println!("Yeah, we have our magic number: {}", c.magic_value);
 }
 
 fn main() {
-    let mut resources = World::empty("MAIN");
-    let mut dispatcher = Schedule::new().with("UPDATE", PrintSystem); // Adds a system "print" without dependencies
+    let mut world = World::default();
 
-    // Will automatically insert `ResB` (the only one that has a default provider).
-    dispatcher.setup(&mut resources);
-    resources.insert_resource(ResWithoutSensibleDefault {
-        magic_number_that_we_cant_compute: 42,
-    });
+    world.ensure_resource::<ResA>();
+    world.ensure_resource::<ResWithoutDefault>();
+
+    let mut schedule = Schedule::new();
+    schedule.add_system(print_system);
 
     // `ResB` is not in resources, but `PrintSystem` still works.
-    dispatcher.run(&mut resources);
+    schedule.run(&mut world);
 
-    resources.insert_resource(ResB);
+    world.insert_resource(ResB);
 
     // Now `ResB` can be printed, too.
-    dispatcher.run(&mut resources);
+    schedule.run(&mut world);
 }

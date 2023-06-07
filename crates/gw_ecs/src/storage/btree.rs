@@ -1,10 +1,10 @@
-use super::{DistinctStorage, UnprotectedStorage};
-use crate::specs::world::Index;
+use super::{DistinctStorage, StorageCell, UnprotectedStorage};
+use crate::entity::Index;
 use hibitset::BitSetLike;
 use std::collections::BTreeMap;
 
 /// BTreeMap-based storage.
-pub struct BTreeStorage<T>(BTreeMap<Index, T>);
+pub struct BTreeStorage<T>(BTreeMap<Index, StorageCell<T>>);
 
 impl<T> Default for BTreeStorage<T> {
     fn default() -> Self {
@@ -26,19 +26,19 @@ impl<T> UnprotectedStorage<T> for BTreeStorage<T> {
         // nothing to do
     }
 
-    unsafe fn get(&self, id: Index) -> &T {
+    unsafe fn get(&self, id: Index) -> &StorageCell<T> {
         &self.0[&id]
     }
 
-    unsafe fn get_mut(&mut self, id: Index) -> &mut T {
+    unsafe fn get_mut(&mut self, id: Index) -> &mut StorageCell<T> {
         self.0.get_mut(&id).unwrap()
     }
 
-    unsafe fn insert(&mut self, id: Index, v: T) {
+    unsafe fn insert(&mut self, id: Index, v: StorageCell<T>) {
         self.0.insert(id, v);
     }
 
-    unsafe fn remove(&mut self, id: Index) -> T {
+    unsafe fn remove(&mut self, id: Index) -> StorageCell<T> {
         self.0.remove(&id).unwrap()
     }
 }

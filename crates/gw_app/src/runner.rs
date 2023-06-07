@@ -7,10 +7,7 @@ use crate::loader::{load_files, Loader};
 use crate::messages::Messages;
 use crate::screen::BoxedScreen;
 use crate::{log, App, AppBuilder, AppConfig, AppEvent, Screen, ScreenResult, RGBA};
-use gw_ecs::shred::NoSetup;
-use gw_ecs::{ReadGlobal, SystemData, WriteGlobal};
 use uni_gl::BufferBit;
-// use std::sync::Arc;
 
 /// What is returned by the internal update and input functions
 enum RunnerEvent {
@@ -101,11 +98,10 @@ impl Runner {
         ));
 
         {
-            let (mut window_info, mut input, gl) = <(
-                WriteGlobal<WindowInfo>,
-                WriteGlobal<AppInput>,
-                ReadGlobal<uni_gl::WebGLRenderingContext, NoSetup>,
-            )>::fetch(ecs.current_world());
+            let world = ecs.current_world();
+            let mut window_info = world.write_global::<WindowInfo>();
+            let mut input = world.write_global::<AppInput>();
+            let gl = world.read_global::<uni_gl::WebGLRenderingContext>();
 
             let (x_offset, y_offset) =
                 if self.config().fullscreen && cfg!(not(target_arch = "wasm32")) {
@@ -533,10 +529,9 @@ impl Runner {
 /// This captures an in-game screenshot and saves it to the file
 fn capture_screen(ecs: &Ecs, filepath: &str) {
     if cfg!(not(target_arch = "wasm32")) {
-        let (gl, window_info) = <(
-            ReadGlobal<uni_gl::WebGLRenderingContext, NoSetup>,
-            ReadGlobal<WindowInfo>,
-        )>::fetch(ecs.current_world());
+        let world = ecs.current_world();
+        let window_info = world.read_global::<WindowInfo>();
+        let gl = world.read_global::<uni_gl::WebGLRenderingContext>();
 
         let (w, h) = window_info.real_size;
 

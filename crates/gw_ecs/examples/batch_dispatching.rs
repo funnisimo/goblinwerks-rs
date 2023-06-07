@@ -18,30 +18,26 @@
 //! This is done by defining `CustomBatchControllerSystem` which executes its
 //! inner `System`s three times.
 
-use gw_ecs::{
-    schedule::{run_stage_once, RunControl, Schedule},
-    System, World, WriteRes,
-};
+use gw_ecs::prelude::*;
 use std::{thread::sleep, time::Duration};
 
 fn main() {
-    let mut dispatcher = Schedule::new().with("PRE_UPDATE", SayHelloSystem);
+    let mut schedule = Schedule::new();
 
-    dispatcher
-        .new_stage_after("UPDATE", "MY_BATCH")
-        .control(CustomBatchControllerSystem)
-        .add_system(BuyTomatoSystem)
-        .add_system(BuyPotatoSystem);
+    schedule
+        .add_system(say_hello)
+        .add_system(buy_potato)
+        .add_system(custom_run_control);
 
-    let mut world = World::empty(1);
-
-    dispatcher.setup(&mut world);
+    let mut world = World::default();
+    world.ensure_resource::<TomatoStore>();
+    world.ensure_resource::<PotatoStore>();
 
     // Running phase
     for i in 0..10 {
         println!("Dispatching {} ", i);
 
-        dispatcher.run(&mut world);
+        schedule.run(&mut world);
         sleep(Duration::new(0, 100000000));
     }
 
@@ -52,60 +48,32 @@ fn main() {
 // Resources
 
 #[derive(Default)]
-pub struct PotatoStore(i32);
+pub struct PotatoStore(u32);
 
 #[derive(Default)]
-pub struct TomatoStore(f32);
+pub struct TomatoStore(u32);
 
 /// System that says "Hello!"
-
-pub struct SayHelloSystem;
-
-impl<'a> System<'a> for SayHelloSystem {
-    type SystemData = (WriteRes<'a, PotatoStore>, WriteRes<'a, TomatoStore>);
-
-    fn run(&mut self, _data: Self::SystemData) {
-        println!("Hello!")
-    }
+fn say_hello(pot: ReadUnique<PotatoStore>, tom: ReadUnique<TomatoStore>) {
+    println!("Hello! - potatos: {}, tomatoes: {}", pot.0, tom.0);
 }
 
 /// System that says "Buy Potato"
-
-pub struct BuyPotatoSystem;
-
-impl<'a> System<'a> for BuyPotatoSystem {
-    type SystemData = WriteRes<'a, PotatoStore>;
-
-    fn run(&mut self, _data: Self::SystemData) {
-        println!("Buy Potato")
-    }
+fn buy_potato(mut pot: WriteUnique<PotatoStore>) {
+    pot.0 += 1;
+    println!("Buy Potato - {}", pot.0);
 }
 
 /// System that says "Buy Tomato"
-
-pub struct BuyTomatoSystem;
-
-impl<'a> System<'a> for BuyTomatoSystem {
-    type SystemData = WriteRes<'a, TomatoStore>;
-
-    fn run(&mut self, _data: Self::SystemData) {
-        println!("Buy Tomato")
-    }
+fn buy_tomato(mut tom: WriteUnique<TomatoStore>) {
+    tom.0 += 1;
+    println!("Buy Tomato - {}", tom.0);
 }
 
 /// Batch controller that customizes how inner systems are executed
-pub struct CustomBatchControllerSystem;
-
-impl RunControl for CustomBatchControllerSystem {
-    fn run_stage(&mut self, stage: &mut gw_ecs::schedule::StageData, world: &mut World) {
-        {
-            // The scope is used to unload the resource before dispatching inner systems.
-            let _ts = world.read_resource::<TomatoStore>();
-        }
-
-        println!("Batch execution");
-        for _i in 0..3 {
-            run_stage_once(stage, world);
-        }
+fn custom_run_control(world: &mut World) {
+    println!("Batch buy tomato");
+    for _i in 0..3 {
+        world.exec(buy_tomato);
     }
 }

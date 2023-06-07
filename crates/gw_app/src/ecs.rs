@@ -5,7 +5,7 @@ use crate::messages::Messages;
 use crate::panel::PanelProgram;
 use crate::{font::Fonts, log, App, AppConfig, AppInput};
 // pub use atomic_refcell::{AtomicRef, AtomicRefMut, BorrowError, BorrowMutError};
-pub use gw_ecs::*;
+pub use gw_ecs::prelude::*;
 // use lazy_static::lazy_static;
 // use legion::serialize::Canon;
 // pub use legion::storage::Component;
@@ -128,10 +128,9 @@ pub fn init_ecs(ecs: &mut Ecs, app: &App, options: &AppConfig) {
 
     ecs.insert_global(PanelProgram::new(&gl));
 
-    ecs.insert_global(Fonts::new(&gl));
+    ecs.insert_global_non_send(Fonts::new(&gl));
     ecs.insert_global(Images::new());
-
-    ecs.insert_global(gl);
+    ecs.insert_global_non_send(gl);
 
     // App Input
     let input = if cfg!(target_arch = "wasm32") {
@@ -151,7 +150,7 @@ pub fn init_ecs(ecs: &mut Ecs, app: &App, options: &AppConfig) {
 
     ecs.insert_global(Time::default());
     ecs.insert_global(Messages::new());
-    ecs.insert_global(Loader::new());
+    ecs.insert_global_non_send(Loader::new());
 
     log("Configured ECS");
 }

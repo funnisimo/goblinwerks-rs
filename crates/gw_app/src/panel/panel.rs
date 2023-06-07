@@ -2,7 +2,7 @@ use super::Buffer;
 use super::PanelProgram;
 use crate::font::{Font, Fonts};
 use crate::log;
-use gw_ecs::Ecs;
+use gw_ecs::prelude::Ecs;
 use gw_util::extents::Extents;
 use gw_util::point::Point;
 use std::sync::Arc;

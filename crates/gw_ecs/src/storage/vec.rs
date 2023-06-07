@@ -1,8 +1,7 @@
-use std::mem::MaybeUninit;
-
-use super::{DistinctStorage, SliceAccess, UnprotectedStorage};
-use crate::specs::world::Index;
+use super::{DistinctStorage, SliceAccess, StorageCell, UnprotectedStorage};
+use crate::entity::Index;
 use hibitset::BitSetLike;
+use std::mem::MaybeUninit;
 
 /// Vector storage. Uses a simple `Vec`. Supposed to have maximum
 /// performance for the components mostly present in entities.
@@ -11,7 +10,7 @@ use hibitset::BitSetLike;
 /// entity IDs. These can be compared to other `VecStorage`s, to
 /// other `DefaultVecStorage`s, and to `Entity::id()`s for live
 /// entities.
-pub struct VecStorage<T>(Vec<MaybeUninit<T>>);
+pub struct VecStorage<T>(Vec<MaybeUninit<StorageCell<T>>>);
 
 impl<T> Default for VecStorage<T> {
     fn default() -> Self {
@@ -20,7 +19,7 @@ impl<T> Default for VecStorage<T> {
 }
 
 impl<T> SliceAccess<T> for VecStorage<T> {
-    type Element = MaybeUninit<T>;
+    type Element = MaybeUninit<StorageCell<T>>;
 
     #[inline]
     fn as_slice(&self) -> &[Self::Element] {
@@ -54,15 +53,17 @@ impl<T> UnprotectedStorage<T> for VecStorage<T> {
         self.0.set_len(0);
     }
 
-    unsafe fn get(&self, id: Index) -> &T {
-        &*self.0.get_unchecked(id as usize).as_ptr()
+    unsafe fn get(&self, id: Index) -> &StorageCell<T> {
+        // &*self.0.get_unchecked(id as usize).as_ptr()
+        self.0.get_unchecked(id as usize).assume_init_ref()
     }
 
-    unsafe fn get_mut(&mut self, id: Index) -> &mut T {
-        &mut *self.0.get_unchecked_mut(id as usize).as_mut_ptr()
+    unsafe fn get_mut(&mut self, id: Index) -> &mut StorageCell<T> {
+        // &mut *self.0.get_unchecked_mut(id as usize).as_mut_ptr()
+        self.0.get_unchecked_mut(id as usize).assume_init_mut()
     }
 
-    unsafe fn insert(&mut self, id: Index, v: T) {
+    unsafe fn insert(&mut self, id: Index, v: StorageCell<T>) {
         let id = id as usize;
         if self.0.len() <= id {
             let delta = id + 1 - self.0.len();
@@ -74,9 +75,11 @@ impl<T> UnprotectedStorage<T> for VecStorage<T> {
         *self.0.get_unchecked_mut(id as usize) = MaybeUninit::new(v);
     }
 
-    unsafe fn remove(&mut self, id: Index) -> T {
+    unsafe fn remove(&mut self, id: Index) -> StorageCell<T> {
         use std::ptr;
-        ptr::read(self.get(id))
+        let data = self.0.get_unchecked(id as usize).assume_init_ref();
+        ptr::read(data)
+        // ptr::read(self.get(id))
     }
 }
 

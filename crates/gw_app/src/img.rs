@@ -1,11 +1,8 @@
 #![warn(clippy::float_cmp)]
-use std::{collections::HashMap, sync::Arc};
-
-use gw_ecs::Ecs;
 
 use crate::{color::RGBA, loader::LoadHandler, log};
-// use std::cell::RefCell;
-// use std::rc::Rc;
+use gw_ecs::prelude::Ecs;
+use std::{collections::HashMap, sync::Arc};
 
 /// An easy way to load PNG images and blit them on the console
 pub struct Image {

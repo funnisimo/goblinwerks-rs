@@ -1,4 +1,4 @@
-use gw_ecs::{schedule::Schedule, ReadRes, ResourceId, System, SystemData, World, WriteRes};
+use gw_ecs::{globals::ReadNonSendGlobal, prelude::*};
 
 #[derive(Debug, Default)]
 struct ResA;
@@ -6,49 +6,47 @@ struct ResA;
 #[derive(Debug, Default)]
 struct ResB;
 
-#[derive(SystemData)]
-struct Data<'a> {
-    a: ReadRes<'a, ResA>,
-    b: WriteRes<'a, ResB>,
+#[derive(SystemParam)]
+struct Data<'w> {
+    a: ReadUnique<'w, ResA>,
+    b: WriteUnique<'w, ResB>,
+    c: ReadNonSendGlobal<'w, MyUnsafe>,
 }
 
-struct EmptySystem(*mut i8); // System is not thread-safe
+#[derive(Debug)]
+struct MyUnsafe(*const i8); // System is not thread-safe
 
-impl<'a> System<'a> for EmptySystem {
-    type SystemData = Data<'a>;
-
-    fn run(&mut self, bundle: Data<'a>) {
-        println!("thread local: {:?}", &*bundle.a);
-        println!("thread local: {:?}", &*bundle.b);
+impl Default for MyUnsafe {
+    fn default() -> Self {
+        MyUnsafe(std::ptr::null())
     }
 }
 
-struct PrintSystem;
+fn non_send_system(bundle: Data) {
+    println!(
+        "non_send_system - a: {:?}, b: {:?}, c:{:?}",
+        &*bundle.a, &*bundle.b, &*bundle.c
+    );
+}
 
-impl<'a> System<'a> for PrintSystem {
-    type SystemData = (ReadRes<'a, ResA>, WriteRes<'a, ResB>);
+fn print_system(a: ReadUnique<ResA>, mut b: WriteUnique<ResB>) {
+    println!("{:?}", &*a);
+    println!("{:?}", &*b);
 
-    fn run(&mut self, data: Self::SystemData) {
-        let (a, mut b) = data;
-
-        println!("{:?}", &*a);
-        println!("{:?}", &*b);
-
-        // We can mutate ResB here because it's `Write`.
-        *b = ResB;
-    }
+    // We can mutate ResB here because it's `Write`.
+    *b = ResB;
 }
 
 fn main() {
-    let mut x = 5;
+    let mut world = World::default();
+    world.insert_resource(ResA);
+    world.insert_resource(ResB);
+    world.ensure_global_non_send::<MyUnsafe>();
 
-    let mut resources = World::empty(123);
-    resources.insert_resource(ResA);
-    resources.insert_resource(ResB);
-    let mut dispatcher = Schedule::new()
-        .with("UPDATE", PrintSystem) // Adds a system "print" without dependencies
-        .with_local("UPDATE", EmptySystem(&mut x));
+    let mut schedule = Schedule::new(); // Scheduler is MultiThreaded by default
+    schedule.add_system(print_system);
+    schedule.add_system(non_send_system);
 
-    dispatcher.run(&mut resources);
-    dispatcher.run(&mut resources);
+    schedule.run(&mut world);
+    schedule.run(&mut world);
 }

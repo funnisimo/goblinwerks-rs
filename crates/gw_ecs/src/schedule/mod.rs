@@ -1,512 +1,866 @@
-use crate::shred::RunNow;
-use crate::{Ecs, ResourceId, World};
-use std::collections::HashSet;
-use std::fmt::Debug;
-
-pub type SystemExec<'b> = Box<dyn for<'a> RunNow<'a> + 'b>;
-pub type SystemExecSend<'b> = Box<dyn for<'a> RunNow<'a> + Send + 'b>;
-
-// TODO - Schedulable Item
-// struct ScheduleItem { system: SystemExec, run_if: ... }
-
-// TODO - Schedulable
-// pub trait IntoRunnable {
-//     type Output: for<'a> RunNow<'a>;
-
-//     fn into_runnable(self) -> Box<Self::Output>;
-// }
-
-// impl<S: for<'a> System<'a>> IntoRunnable for S {
-//     type Output = S;
-
-//     fn into_runnable(self) -> Box<Self::Output> {
-//         Box::new(self)
-//     }
-// }
-
-struct FnRunnable {
-    func: Box<dyn Fn(&World) -> () + 'static>,
-}
-
-impl FnRunnable {
-    fn new(f: impl Fn(&World) -> () + 'static) -> Self {
-        FnRunnable { func: Box::new(f) }
-    }
-}
-
-impl<'a> RunNow<'a> for FnRunnable {
-    fn run_now(&mut self, world: &World) {
-        (self.func)(world);
-    }
-}
-
-// impl<F> IntoRunnable for F
-// where
-//     F: Fn(&World) -> () + 'static,
-// {
-//     type Output = FnRunnable;
-
-//     fn into_runnable(self) -> Box<Self::Output> {
-//         Box::new(FnRunnable {
-//             func: Box::new(self),
-//         })
-//     }
-// }
-
-// impl<T> Scheduleable for T where T: for<'a> RunNow<'a> { ... }
-
-pub trait RunCondition {
-    fn setup(&mut self, world: &mut World) {
-        let _ = world;
-    }
-
-    fn should_run(&mut self, world: &mut World) -> bool;
-}
-
-impl<F> RunCondition for F
-where
-    F: Fn(&mut World) -> bool,
-{
-    fn should_run(&mut self, world: &mut World) -> bool {
-        (self)(world)
-    }
-}
-
-pub fn run_stage_always(_world: &mut World) -> bool {
-    true
-}
-
-pub trait RunControl {
-    fn run_stage(&mut self, stage: &mut StageData, world: &mut World);
-}
-
-impl<F> RunControl for F
-where
-    F: Fn(&mut StageData, &mut World) -> (),
-{
-    fn run_stage(&mut self, stage: &mut StageData, world: &mut World) {
-        self(stage, world);
-    }
-}
-
-pub fn run_stage_once(stage: &mut StageData, world: &mut World) {
-    if stage.maintain_before {
-        world.maintain();
-    }
-    if stage.run_if.should_run(world) {
-        for step in stage.steps.iter_mut() {
-            step.run_now(world);
-        }
-    }
-    if stage.maintain_after {
-        world.maintain();
-    }
-}
-
-#[derive(Default)]
-pub struct StageSet<'b> {
-    systems: Vec<SystemExecSend<'b>>,
-    reads: HashSet<ResourceId>,
-    writes: HashSet<ResourceId>,
-}
-
-impl<'b> StageSet<'b> {
-    pub fn new(system: SystemExecSend<'b>) -> Self {
-        let mut set = StageSet::default();
-        set.add_system(system);
-        set
-    }
-
-    pub fn conflicts(&self, system: &SystemExecSend<'b>) -> bool {
-        self.writes.is_disjoint(&system.reads()) && self.reads.is_disjoint(&system.writes())
-    }
-
-    pub fn add_system(&mut self, system: SystemExecSend<'b>) {
-        for read in system.reads().into_iter() {
-            self.reads.insert(read);
-        }
-        for write in system.writes().into_iter() {
-            self.writes.insert(write);
-        }
-        self.systems.push(system);
-    }
-
-    pub fn setup(&mut self, world: &mut World) {
-        for sys in self.systems.iter_mut() {
-            sys.setup(world)
-        }
-    }
-
-    pub fn run_now(&mut self, world: &World) {
-        for sys in self.systems.iter_mut() {
-            sys.run_now(world);
-        }
-    }
-}
-
-pub enum StageStep<'b> {
-    ThreadLocal(SystemExec<'b>),
-    Set(StageSet<'b>),
-    Maintain,
-}
-
-impl<'b> StageStep<'b> {
-    pub fn conflicts(&self, system: &SystemExecSend<'b>) -> bool {
-        match self {
-            StageStep::Set(set) => set.conflicts(system),
-            _ => true,
-        }
-    }
-
-    pub fn add_system(&mut self, system: SystemExecSend<'b>) {
-        match self {
-            StageStep::Set(set) => set.add_system(system),
-            _ => panic!("Cannot add system to this type of step"),
-        }
-    }
-
-    pub fn setup(&mut self, world: &mut World) {
-        match self {
-            StageStep::Maintain => {}
-            StageStep::ThreadLocal(sys) => sys.setup(world),
-            StageStep::Set(set) => {
-                set.setup(world);
-            }
-        }
-    }
-
-    pub fn run_now(&mut self, world: &mut World) {
-        match self {
-            StageStep::Maintain => world.maintain(),
-            StageStep::ThreadLocal(sys) => sys.run_now(world),
-            StageStep::Set(set) => {
-                set.run_now(world);
-            }
-        }
-    }
-}
-
-pub struct StageData<'b> {
-    pub id: String,
-    pub steps: Vec<StageStep<'b>>,
-    pub run_if: Box<dyn RunCondition>,
-    pub maintain_before: bool,
-    pub maintain_after: bool,
-}
-
-impl<'b> StageData<'b> {
-    pub fn new(id: &str) -> Self {
-        StageData {
-            id: id.to_string(),
-            steps: Vec::new(),
-            run_if: Box::new(run_stage_always),
-            maintain_before: false,
-            maintain_after: false,
-        }
-    }
-
-    // TODO - Group these into SystemSets that can be run in parallel
-    //      - Check the reads and writes to make sure there are no conflicts
-    pub fn add_system(&mut self, system: SystemExecSend<'b>) {
-        for step in self.steps.iter_mut() {
-            if !step.conflicts(&system) {
-                step.add_system(system);
-                return;
-            }
-        }
-        self.steps.push(StageStep::Set(StageSet::new(system)));
-    }
-
-    pub fn add_local_system(&mut self, system: SystemExec<'b>) {
-        self.steps.push(StageStep::ThreadLocal(system));
-    }
-}
-
-pub struct Stage<'b> {
-    control: Box<dyn RunControl>,
-    data: StageData<'b>,
-}
-
-impl<'b> Stage<'b> {
-    pub fn new(id: &str) -> Self {
-        Stage {
-            control: Box::new(run_stage_once),
-            data: StageData::new(id),
-        }
-    }
-
-    pub fn id(&self) -> &str {
-        self.data.id.as_str()
-    }
-
-    pub fn add_system<T: for<'a> RunNow<'a> + Send + 'b>(&mut self, system: T) -> &mut Self {
-        let system = Box::new(system);
-        self.data.add_system(system);
-        self
-    }
-
-    pub fn add_local_fn<F: Fn(&World) -> () + 'static>(&mut self, f: F) -> &mut Self {
-        let system = Box::new(FnRunnable::new(f));
-        self.data.add_local_system(system);
-        self
-    }
-
-    pub fn add_local_system<T: for<'a> RunNow<'a> + 'b>(&mut self, system: T) -> &mut Self {
-        let system = Box::new(system);
-        self.data.add_local_system(system);
-        self
-    }
-
-    // TODO - Support schedule.add_system_chain("UPDATE", (a,b));
-
-    pub fn run_if<C: RunCondition + 'static>(&mut self, c: C) -> &mut Self {
-        self.data.run_if = Box::new(c);
-        self
-    }
-
-    pub fn control<C: RunControl + 'static>(&mut self, c: C) -> &mut Self {
-        self.control = Box::new(c);
-        self
-    }
-
-    pub fn do_maintain_before(&mut self) -> &mut Self {
-        self.data.maintain_before = true;
-        self
-    }
-
-    pub fn do_maintain_after(&mut self) -> &mut Self {
-        self.data.maintain_after = true;
-        self
-    }
-
-    // RUN
-
-    pub fn setup(&mut self, world: &mut World) {
-        for step in self.data.steps.iter_mut() {
-            step.setup(world);
-        }
-    }
-
-    pub fn run(&mut self, world: &mut World) {
-        let Stage { control, data } = self;
-        control.run_stage(data, world);
-    }
-}
-
-impl<'b> Debug for Stage<'b> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Stage({}, len={})", self.data.id, self.data.steps.len())
-    }
-}
-
-#[derive(Debug)]
-pub struct Schedule<'b> {
-    stages: Vec<Stage<'b>>,
-}
-
-impl<'b> Schedule<'b> {
-    pub fn new() -> Self {
-        let mut schedule = Schedule::empty();
-        schedule.push_stage(Stage::new("PRE_START"));
-        schedule.push_stage(Stage::new("START"));
-        schedule.push_stage(Stage::new("POST_START"));
-        schedule.push_stage(Stage::new("PRE_INPUT"));
-        schedule.push_stage(Stage::new("INPUT"));
-        schedule.push_stage(Stage::new("POST_INPUT"));
-        schedule.push_stage(Stage::new("PRE_UPDATE"));
-        schedule.push_stage(Stage::new("UPDATE"));
-        schedule.push_stage(Stage::new("POST_UPDATE"));
-        schedule.push_stage(Stage::new("PRE_RENDER"));
-        schedule.push_stage(Stage::new("RENDER"));
-        schedule.push_stage(Stage::new("POST_RENDER"));
-        schedule.push_stage(Stage::new("PRE_FINISH"));
-        schedule.push_stage(Stage::new("FINISH"));
-        schedule.push_stage(Stage::new("POST_FINISH"));
-        schedule
-    }
-
-    pub fn empty() -> Self {
-        Schedule { stages: Vec::new() }
-    }
-
-    // STAGES
-
-    pub fn push_stage(&mut self, stage: Stage<'b>) {
-        self.stages.push(stage);
-    }
-
-    pub fn new_stage_before(&mut self, in_stage: &str, new_stage: &str) -> &mut Stage<'b> {
-        self.add_stage_before(in_stage, Stage::new(new_stage));
-        self.get_stage_mut(new_stage).unwrap()
-    }
-
-    pub fn add_stage_before(&mut self, in_stage: &str, new_stage: Stage<'b>) {
-        match self.stages.iter().position(|s| s.id() == in_stage) {
-            None => panic!("Failed to find schedule stage: {}", in_stage),
-            Some(idx) => self.stages.insert(idx, new_stage),
-        }
-    }
-
-    pub fn new_stage_after(&mut self, in_stage: &str, new_stage: &str) -> &mut Stage<'b> {
-        self.add_stage_after(in_stage, Stage::new(new_stage));
-        self.get_stage_mut(new_stage).unwrap()
-    }
-
-    pub fn add_stage_after(&mut self, in_stage: &str, new_stage: Stage<'b>) {
-        match self.stages.iter().position(|s| s.id() == in_stage) {
-            None => panic!("Failed to find schedule stage: {}", in_stage),
-            Some(idx) => {
-                if idx + 1 == self.stages.len() {
-                    self.stages.push(new_stage);
-                } else {
-                    self.stages.insert(idx + 1, new_stage);
-                }
-            }
-        }
-    }
-
-    pub fn get_stage(&self, id: &str) -> Option<&Stage> {
-        self.stages.iter().find(|s| s.id() == id)
-    }
-
-    pub fn get_stage_mut(&mut self, id: &str) -> Option<&mut Stage<'b>> {
-        self.stages.iter_mut().find(|s| s.id() == id)
-    }
-
-    // ///////////////////////////////////
-    // SYSTEMS
-
-    pub fn with<T: for<'a> RunNow<'a> + Send + 'b>(mut self, in_stage: &str, system: T) -> Self {
-        self.add_system(in_stage, system);
-        self
-    }
-
-    pub fn with_local<T: for<'a> RunNow<'a> + 'b>(mut self, in_stage: &str, system: T) -> Self {
-        self.add_local_system(in_stage, system);
-        self
-    }
-
-    pub fn add_system<T: for<'a> RunNow<'a> + Send + 'b>(&mut self, in_stage: &str, system: T) {
-        let system = Box::new(system);
-        match self.get_stage_mut(in_stage) {
-            None => panic!("Failed to find stage - {}", in_stage),
-            Some(stage) => stage.data.add_system(system),
-        }
-    }
-
-    // Making funcs that take world local is the only way to do the read/write safety correctly.
-    pub fn add_local_fn<F: Fn(&World) -> () + 'static>(&mut self, in_stage: &str, f: F) {
-        let system = Box::new(FnRunnable::new(f));
-        match self.get_stage_mut(in_stage) {
-            None => panic!("Failed to find stage - {}", in_stage),
-            Some(stage) => stage.data.add_local_system(system),
-        }
-    }
-
-    pub fn add_local_system<T: for<'a> RunNow<'a> + 'b>(&mut self, in_stage: &str, system: T) {
-        let system = Box::new(system);
-        match self.get_stage_mut(in_stage) {
-            None => panic!("Failed to find stage - {}", in_stage),
-            Some(stage) => stage.data.add_local_system(system),
-        }
-    }
-
-    // ///////////////////////////////////
-
-    pub fn setup(&mut self, world: &mut World) {
-        for stage in self.stages.iter_mut() {
-            stage.setup(world);
-        }
-    }
-
-    pub fn setup_current(&mut self, ecs: &mut Ecs) {
-        let world = ecs.current_world_mut();
-        self.setup(world);
-    }
-
-    pub fn run(&mut self, world: &mut World) {
-        for stage in self.stages.iter_mut() {
-            stage.run(world);
-        }
-    }
-
-    pub fn run_current(&mut self, ecs: &mut Ecs) {
-        let world = ecs.current_world_mut();
-        self.run(world);
-    }
-}
-
-impl<'b> Default for Schedule<'b> {
-    fn default() -> Self {
-        Schedule::new()
-    }
-}
+mod condition;
+mod config;
+mod executor;
+mod graph_utils;
+#[allow(clippy::module_inception)]
+mod schedule;
+mod set;
+mod state;
+
+pub use self::condition::*;
+pub use self::config::*;
+pub use self::executor::*;
+use self::graph_utils::*;
+pub use self::schedule::*;
+pub use self::set::*;
+pub use self::state::*;
+
+pub use self::graph_utils::NodeId;
 
 #[cfg(test)]
-mod test {
-    use std::sync::{atomic::AtomicUsize, Arc};
-
+mod tests {
     use super::*;
+    use crate as gw_ecs;
+    use std::sync::atomic::{AtomicU32, Ordering};
 
-    #[test]
-    fn create() {
-        let mut schedule = Schedule::default();
+    use crate::resources::{ReadUnique, WriteUnique};
+    pub use crate::resources::{ResMut, ResRef};
+    pub use crate::schedule::{IntoSystemConfig, IntoSystemSetConfig, Schedule, SystemSet};
+    pub use crate::{prelude::World, system::Resource};
 
-        assert!(schedule.get_stage("PRE_INPUT").is_some());
-        assert!(schedule.get_stage("RENDER").is_some());
-        assert!(schedule.get_stage_mut("POST_UPDATE").is_some());
-        assert!(schedule.get_stage_mut("START").is_some());
-
-        assert!(schedule.get_stage("NONE").is_none());
-        assert!(schedule.get_stage_mut("NONE").is_none());
+    #[derive(SystemSet, Clone, Debug, PartialEq, Eq, Hash)]
+    enum TestSet {
+        A,
+        B,
+        C,
+        D,
+        X,
     }
 
-    #[test]
-    fn empty() {
-        let mut schedule = Schedule::empty();
+    #[derive(Default)]
+    struct SystemOrder(Vec<u32>);
 
-        assert!(schedule.get_stage("PRE_INPUT").is_none());
-        assert!(schedule.get_stage("RENDER").is_none());
-        assert!(schedule.get_stage_mut("POST_UPDATE").is_none());
-        assert!(schedule.get_stage_mut("START").is_none());
+    #[derive(Default)]
+    struct RunConditionBool(pub bool);
 
-        assert!(schedule.get_stage("NONE").is_none());
-        assert!(schedule.get_stage_mut("NONE").is_none());
+    #[derive(Default)]
+    struct Counter(pub AtomicU32);
+
+    fn make_exclusive_system(tag: u32) -> impl FnMut(&mut World) {
+        move |world| world.write_resource::<SystemOrder>().0.push(tag)
     }
 
-    struct RunNow;
+    fn make_function_system(tag: u32) -> impl FnMut(WriteUnique<SystemOrder>) {
+        move |mut resource: WriteUnique<SystemOrder>| resource.0.push(tag)
+    }
 
-    #[test]
-    fn run_if() {
-        let mut world = World::empty(1);
-        let mut schedule = Schedule::default();
+    fn named_system(mut resource: WriteUnique<SystemOrder>) {
+        resource.0.push(u32::MAX);
+    }
 
-        let run_if_count = Arc::new(AtomicUsize::new(0));
-        let run_if_count_clone = Arc::clone(&run_if_count);
-        schedule
-            .new_stage_after("UPDATE", "MY_STAGE")
-            .run_if(move |w: &mut World| {
-                run_if_count_clone.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                w.has_resource::<RunNow>()
+    fn named_exclusive_system(world: &mut World) {
+        world.write_resource::<SystemOrder>().0.push(u32::MAX);
+    }
+
+    fn counting_system(counter: ReadUnique<Counter>) {
+        counter.0.fetch_add(1, Ordering::Relaxed);
+    }
+
+    mod system_execution {
+        use super::*;
+
+        #[test]
+        fn run_system() {
+            let mut world = World::default();
+            let mut schedule = Schedule::default();
+
+            world.ensure_resource::<SystemOrder>();
+
+            schedule.add_system(make_function_system(0));
+            schedule.run(&mut world);
+
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![0]);
+        }
+
+        #[test]
+        fn run_exclusive_system() {
+            let mut world = World::default();
+            let mut schedule = Schedule::default();
+
+            world.ensure_resource::<SystemOrder>();
+
+            schedule.add_system(make_exclusive_system(0));
+            schedule.run(&mut world);
+
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![0]);
+        }
+
+        #[test]
+        #[cfg(not(miri))]
+        fn parallel_execution() {
+            use bevy_tasks::{ComputeTaskPool, TaskPool};
+            use std::sync::{Arc, Barrier};
+
+            let mut world = World::default();
+            let mut schedule = Schedule::default();
+            let thread_count = ComputeTaskPool::init(TaskPool::default).thread_num();
+
+            let barrier = Arc::new(Barrier::new(thread_count));
+
+            for _ in 0..thread_count {
+                let inner = barrier.clone();
+                schedule.add_system(move || {
+                    inner.wait();
+                });
+            }
+
+            schedule.run(&mut world);
+        }
+    }
+
+    mod system_ordering {
+        use super::*;
+
+        #[test]
+        fn order_systems() {
+            let mut world = World::default();
+            let mut schedule = Schedule::default();
+
+            world.ensure_resource::<SystemOrder>();
+
+            schedule.add_system(named_system);
+            schedule.add_system(make_function_system(1).before(named_system));
+            schedule.add_system(
+                make_function_system(0)
+                    .after(named_system)
+                    .in_set(TestSet::A),
+            );
+            schedule.run(&mut world);
+
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![1, u32::MAX, 0]);
+
+            world.insert_resource(SystemOrder::default());
+
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![]);
+
+            // modify the schedule after it's been initialized and test ordering with sets
+            schedule.configure_set(TestSet::A.after(named_system));
+            schedule.add_system(
+                make_function_system(3)
+                    .before(TestSet::A)
+                    .after(named_system),
+            );
+            schedule.add_system(make_function_system(4).after(TestSet::A));
+            schedule.run(&mut world);
+
+            assert_eq!(
+                world.read_resource::<SystemOrder>().0,
+                vec![1, u32::MAX, 3, 0, 4]
+            );
+        }
+
+        #[test]
+        fn order_exclusive_systems() {
+            let mut world = World::default();
+            let mut schedule = Schedule::default();
+
+            world.ensure_resource::<SystemOrder>();
+
+            schedule.add_systems((
+                named_exclusive_system,
+                make_exclusive_system(1).before(named_exclusive_system),
+                make_exclusive_system(0).after(named_exclusive_system),
+            ));
+            schedule.run(&mut world);
+
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![1, u32::MAX, 0]);
+        }
+
+        #[test]
+        fn add_systems_correct_order() {
+            let mut world = World::default();
+            let mut schedule = Schedule::new();
+
+            world.ensure_resource::<SystemOrder>();
+
+            schedule.add_systems(
+                (
+                    make_function_system(0),
+                    make_function_system(1),
+                    make_exclusive_system(2),
+                    make_function_system(3),
+                )
+                    .chain(),
+            );
+
+            schedule.run(&mut world);
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![0, 1, 2, 3]);
+        }
+    }
+
+    mod conditions {
+        // use crate::change_detection::DetectChanges;
+
+        use super::*;
+
+        #[test]
+        fn system_with_condition() {
+            let mut world = World::default();
+            let mut schedule = Schedule::default();
+
+            world.ensure_resource::<RunConditionBool>();
+            world.ensure_resource::<SystemOrder>();
+
+            schedule.add_system(
+                make_function_system(0)
+                    .run_if(|condition: ReadUnique<RunConditionBool>| condition.0),
+            );
+
+            schedule.run(&mut world);
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![]);
+
+            world.write_resource::<RunConditionBool>().0 = true;
+            schedule.run(&mut world);
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![0]);
+        }
+
+        #[test]
+        fn systems_with_distributive_condition() {
+            let mut world = World::default();
+            let mut schedule = Schedule::default();
+
+            world.insert_resource(RunConditionBool(true));
+            world.ensure_resource::<SystemOrder>();
+
+            fn change_condition(mut condition: WriteUnique<RunConditionBool>) {
+                condition.0 = false;
+            }
+
+            schedule.add_systems(
+                (
+                    make_function_system(0),
+                    change_condition,
+                    make_function_system(1),
+                )
+                    .chain()
+                    .distributive_run_if(|condition: ReadUnique<RunConditionBool>| condition.0),
+            );
+
+            schedule.run(&mut world);
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![0]);
+        }
+
+        #[test]
+        fn run_exclusive_system_with_condition() {
+            let mut world = World::default();
+            let mut schedule = Schedule::default();
+
+            world.ensure_resource::<RunConditionBool>();
+            world.ensure_resource::<SystemOrder>();
+
+            schedule.add_system(
+                make_exclusive_system(0)
+                    .run_if(|condition: ReadUnique<RunConditionBool>| condition.0),
+            );
+
+            schedule.run(&mut world);
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![]);
+
+            world.write_resource::<RunConditionBool>().0 = true;
+            schedule.run(&mut world);
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![0]);
+        }
+
+        #[test]
+        fn multiple_conditions_on_system() {
+            let mut world = World::default();
+            let mut schedule = Schedule::default();
+
+            world.ensure_resource::<Counter>();
+
+            schedule.add_system(counting_system.run_if(|| false).run_if(|| false));
+            schedule.add_system(counting_system.run_if(|| true).run_if(|| false));
+            schedule.add_system(counting_system.run_if(|| false).run_if(|| true));
+            schedule.add_system(counting_system.run_if(|| true).run_if(|| true));
+
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
+        }
+
+        #[test]
+        fn multiple_conditions_on_system_sets() {
+            let mut world = World::default();
+            let mut schedule = Schedule::default();
+
+            world.ensure_resource::<Counter>();
+
+            schedule.configure_set(TestSet::A.run_if(|| false).run_if(|| false));
+            schedule.add_system(counting_system.in_set(TestSet::A));
+            schedule.configure_set(TestSet::B.run_if(|| true).run_if(|| false));
+            schedule.add_system(counting_system.in_set(TestSet::B));
+            schedule.configure_set(TestSet::C.run_if(|| false).run_if(|| true));
+            schedule.add_system(counting_system.in_set(TestSet::C));
+            schedule.configure_set(TestSet::D.run_if(|| true).run_if(|| true));
+            schedule.add_system(counting_system.in_set(TestSet::D));
+
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
+        }
+
+        #[test]
+        fn systems_nested_in_system_sets() {
+            let mut world = World::default();
+            let mut schedule = Schedule::default();
+
+            world.ensure_resource::<Counter>();
+
+            schedule.configure_set(TestSet::A.run_if(|| false));
+            schedule.add_system(counting_system.in_set(TestSet::A).run_if(|| false));
+            schedule.configure_set(TestSet::B.run_if(|| true));
+            schedule.add_system(counting_system.in_set(TestSet::B).run_if(|| false));
+            schedule.configure_set(TestSet::C.run_if(|| false));
+            schedule.add_system(counting_system.in_set(TestSet::C).run_if(|| true));
+            schedule.configure_set(TestSet::D.run_if(|| true));
+            schedule.add_system(counting_system.in_set(TestSet::D).run_if(|| true));
+
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
+        }
+
+        #[test]
+        fn system_conditions_and_change_detection() {
+            #[derive(Default)]
+            struct Bool2(pub bool);
+
+            let mut world = World::default();
+            world.ensure_resource::<Counter>();
+            world.ensure_resource::<RunConditionBool>();
+            world.ensure_resource::<Bool2>();
+            let mut schedule = Schedule::default();
+
+            schedule.add_system(
+                counting_system
+                    .run_if(|res1: ReadUnique<RunConditionBool>| res1.is_changed())
+                    .run_if(|res2: ReadUnique<Bool2>| res2.is_changed()),
+            );
+
+            // both resource were just added.
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
+
+            // nothing has changed
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
+
+            // RunConditionBool has changed, but counting_system did not run
+            world.try_write_resource::<RunConditionBool>().unwrap().0 = false;
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
+
+            // internal state for the bool2 run criteria was updated in the
+            // previous run, so system still does not run
+            world.try_write_resource::<Bool2>().unwrap().0 = false;
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
+
+            // internal state for bool2 was updated, so system still does not run
+            world.try_write_resource::<RunConditionBool>().unwrap().0 = false;
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
+
+            // now check that it works correctly changing Bool2 first and then RunConditionBool
+            world.try_write_resource::<Bool2>().unwrap().0 = false;
+            world.try_write_resource::<RunConditionBool>().unwrap().0 = false;
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                2
+            );
+        }
+
+        #[test]
+        fn system_set_conditions_and_change_detection() {
+            #[derive(Default)]
+            struct Bool2(pub bool);
+
+            let mut world = World::default();
+            world.ensure_resource::<Counter>();
+            world.ensure_resource::<RunConditionBool>();
+            world.ensure_resource::<Bool2>();
+            let mut schedule = Schedule::default();
+
+            schedule.configure_set(
+                TestSet::A
+                    .run_if(|res1: ReadUnique<RunConditionBool>| res1.is_changed())
+                    .run_if(|res2: ReadUnique<Bool2>| res2.is_changed()),
+            );
+
+            schedule.add_system(counting_system.in_set(TestSet::A));
+
+            // both resource were just added.
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
+
+            // nothing has changed
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
+
+            // RunConditionBool has changed, but counting_system did not run
+            world.try_write_resource::<RunConditionBool>().unwrap().0 = false;
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
+
+            // internal state for the bool2 run criteria was updated in the
+            // previous run, so system still does not run
+            world.try_write_resource::<Bool2>().unwrap().0 = false;
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
+
+            // internal state for bool2 was updated, so system still does not run
+            world.try_write_resource::<RunConditionBool>().unwrap().0 = false;
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
+
+            // the system only runs when both are changed on the same run
+            world.try_write_resource::<Bool2>().unwrap().0 = false;
+            world.try_write_resource::<RunConditionBool>().unwrap().0 = false;
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                2
+            );
+        }
+
+        #[test]
+        fn mixed_conditions_and_change_detection() {
+            #[derive(Default)]
+            struct Bool2(pub bool);
+
+            let mut world = World::default();
+            world.ensure_resource::<Counter>();
+            world.ensure_resource::<RunConditionBool>();
+            world.ensure_resource::<Bool2>();
+            let mut schedule = Schedule::default();
+
+            schedule.configure_set(
+                TestSet::A.run_if(|res1: ReadUnique<RunConditionBool>| res1.is_changed()),
+            );
+
+            schedule.add_system(
+                counting_system
+                    .run_if(|res2: ReadUnique<Bool2>| res2.is_changed())
+                    .in_set(TestSet::A),
+            );
+
+            // both resource were just added.
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
+
+            // nothing has changed
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
+
+            // RunConditionBool has changed, but counting_system did not run
+            world.try_write_resource::<RunConditionBool>().unwrap().0 = false;
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
+
+            // we now only change bool2 and the system also should not run
+            world.try_write_resource::<Bool2>().unwrap().0 = false;
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
+
+            // internal state for the bool2 run criteria was updated in the
+            // previous run, so system still does not run
+            world.try_write_resource::<RunConditionBool>().unwrap().0 = false;
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                1
+            );
+
+            // the system only runs when both are changed on the same run
+            world.try_write_resource::<Bool2>().unwrap().0 = false;
+            world.try_write_resource::<RunConditionBool>().unwrap().0 = false;
+            schedule.run(&mut world);
+            assert_eq!(
+                world.read_resource::<Counter>().0.load(Ordering::Relaxed),
+                2
+            );
+        }
+    }
+
+    mod schedule_build_errors {
+        use super::*;
+
+        #[test]
+        #[should_panic]
+        fn dependency_loop() {
+            let mut schedule = Schedule::new();
+            schedule.configure_set(TestSet::X.after(TestSet::X));
+        }
+
+        #[test]
+        fn dependency_cycle() {
+            let mut world = World::default();
+            let mut schedule = Schedule::new();
+
+            schedule.configure_set(TestSet::A.after(TestSet::B));
+            schedule.configure_set(TestSet::B.after(TestSet::A));
+
+            let result = schedule.initialize(&mut world);
+            assert!(matches!(result, Err(ScheduleBuildError::DependencyCycle)));
+
+            fn foo() {}
+            fn bar() {}
+
+            let mut world = World::default();
+            let mut schedule = Schedule::new();
+
+            schedule.add_systems((foo.after(bar), bar.after(foo)));
+            let result = schedule.initialize(&mut world);
+            assert!(matches!(result, Err(ScheduleBuildError::DependencyCycle)));
+        }
+
+        #[test]
+        #[should_panic]
+        fn hierarchy_loop() {
+            let mut schedule = Schedule::new();
+            schedule.configure_set(TestSet::X.in_set(TestSet::X));
+        }
+
+        #[test]
+        fn hierarchy_cycle() {
+            let mut world = World::default();
+            let mut schedule = Schedule::new();
+
+            schedule.configure_set(TestSet::A.in_set(TestSet::B));
+            schedule.configure_set(TestSet::B.in_set(TestSet::A));
+
+            let result = schedule.initialize(&mut world);
+            assert!(matches!(result, Err(ScheduleBuildError::HierarchyCycle)));
+        }
+
+        #[test]
+        fn system_type_set_ambiguity() {
+            // Define some systems.
+            fn foo() {}
+            fn bar() {}
+
+            let mut world = World::default();
+            let mut schedule = Schedule::new();
+
+            // Schedule `bar` to run after `foo`.
+            schedule.add_system(foo);
+            schedule.add_system(bar.after(foo));
+
+            // There's only one `foo`, so it's fine.
+            let result = schedule.initialize(&mut world);
+            assert!(result.is_ok());
+
+            // Schedule another `foo`.
+            schedule.add_system(foo);
+
+            // When there are multiple instances of `foo`, dependencies on
+            // `foo` are no longer allowed. Too much ambiguity.
+            let result = schedule.initialize(&mut world);
+            assert!(matches!(
+                result,
+                Err(ScheduleBuildError::SystemTypeSetAmbiguity(_))
+            ));
+
+            // same goes for `ambiguous_with`
+            let mut schedule = Schedule::new();
+            schedule.add_system(foo);
+            schedule.add_system(bar.ambiguous_with(foo));
+            let result = schedule.initialize(&mut world);
+            assert!(result.is_ok());
+            schedule.add_system(foo);
+            let result = schedule.initialize(&mut world);
+            assert!(matches!(
+                result,
+                Err(ScheduleBuildError::SystemTypeSetAmbiguity(_))
+            ));
+        }
+
+        #[test]
+        #[should_panic]
+        fn configure_system_type_set() {
+            fn foo() {}
+            let mut schedule = Schedule::new();
+            schedule.configure_set(foo.into_system_set());
+        }
+
+        #[test]
+        fn hierarchy_redundancy() {
+            let mut world = World::default();
+            let mut schedule = Schedule::new();
+
+            schedule.set_build_settings(ScheduleBuildSettings {
+                hierarchy_detection: LogLevel::Error,
+                ..Default::default()
             });
 
-        let sys_count = Arc::new(AtomicUsize::new(0));
-        let sys_count_clone = Arc::clone(&sys_count);
-        schedule.add_local_fn("MY_STAGE", move |_w: &World| {
-            sys_count_clone.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        });
+            // Add `A`.
+            schedule.configure_set(TestSet::A);
 
-        schedule.setup(&mut world);
-        schedule.run(&mut world);
+            // Add `B` as child of `A`.
+            schedule.configure_set(TestSet::B.in_set(TestSet::A));
 
-        assert_eq!(run_if_count.load(std::sync::atomic::Ordering::Relaxed), 1);
-        assert_eq!(sys_count.load(std::sync::atomic::Ordering::Relaxed), 0);
+            // Add `X` as child of both `A` and `B`.
+            schedule.configure_set(TestSet::X.in_set(TestSet::A).in_set(TestSet::B));
 
-        world.insert_resource(RunNow);
+            // `X` cannot be the `A`'s child and grandchild at the same time.
+            let result = schedule.initialize(&mut world);
+            assert!(matches!(
+                result,
+                Err(ScheduleBuildError::HierarchyRedundancy)
+            ));
+        }
 
-        schedule.run(&mut world);
+        #[test]
+        fn cross_dependency() {
+            let mut world = World::default();
+            let mut schedule = Schedule::new();
 
-        assert_eq!(run_if_count.load(std::sync::atomic::Ordering::Relaxed), 2);
-        assert_eq!(sys_count.load(std::sync::atomic::Ordering::Relaxed), 1);
+            // Add `B` and give it both kinds of relationships with `A`.
+            schedule.configure_set(TestSet::B.in_set(TestSet::A));
+            schedule.configure_set(TestSet::B.after(TestSet::A));
+            let result = schedule.initialize(&mut world);
+            assert!(matches!(
+                result,
+                Err(ScheduleBuildError::CrossDependency(_, _))
+            ));
+        }
+
+        #[test]
+        fn sets_have_order_but_intersect() {
+            let mut world = World::default();
+            let mut schedule = Schedule::new();
+
+            fn foo() {}
+
+            // Add `foo` to both `A` and `C`.
+            schedule.add_system(foo.in_set(TestSet::A).in_set(TestSet::C));
+
+            // Order `A -> B -> C`.
+            schedule.configure_sets((
+                TestSet::A,
+                TestSet::B.after(TestSet::A),
+                TestSet::C.after(TestSet::B),
+            ));
+
+            let result = schedule.initialize(&mut world);
+            // `foo` can't be in both `A` and `C` because they can't run at the same time.
+            assert!(matches!(
+                result,
+                Err(ScheduleBuildError::SetsHaveOrderButIntersect(_, _))
+            ));
+        }
+
+        #[test]
+        fn ambiguity() {
+            struct X;
+
+            fn res_ref(_x: ReadUnique<X>) {}
+            fn res_mut(_x: WriteUnique<X>) {}
+
+            let mut world = World::default();
+            let mut schedule = Schedule::new();
+
+            schedule.set_build_settings(ScheduleBuildSettings {
+                ambiguity_detection: LogLevel::Error,
+                ..Default::default()
+            });
+
+            schedule.add_systems((res_ref, res_mut));
+            let result = schedule.initialize(&mut world);
+            assert!(matches!(result, Err(ScheduleBuildError::Ambiguity)));
+        }
+    }
+
+    mod base_sets {
+        use super::*;
+
+        #[derive(SystemSet, Hash, Debug, Eq, PartialEq, Clone)]
+        #[system_set(base)]
+        enum Base {
+            A,
+            B,
+        }
+
+        #[derive(SystemSet, Hash, Debug, Eq, PartialEq, Clone)]
+        enum Normal {
+            X,
+            Y,
+        }
+
+        #[test]
+        #[should_panic]
+        fn disallow_adding_base_sets_to_sets() {
+            let mut schedule = Schedule::new();
+            schedule.configure_set(Base::A.in_set(Normal::X));
+        }
+
+        #[test]
+        #[should_panic]
+        fn disallow_adding_base_sets_to_base_sets() {
+            let mut schedule = Schedule::new();
+            schedule.configure_set(Base::A.in_base_set(Base::B));
+        }
+
+        #[test]
+        #[should_panic]
+        fn disallow_adding_set_to_multiple_base_sets() {
+            let mut schedule = Schedule::new();
+            schedule.configure_set(Normal::X.in_base_set(Base::A).in_base_set(Base::B));
+        }
+
+        #[test]
+        #[should_panic]
+        fn disallow_adding_sets_to_multiple_base_sets() {
+            let mut schedule = Schedule::new();
+            schedule.configure_sets(
+                (Normal::X, Normal::Y)
+                    .in_base_set(Base::A)
+                    .in_base_set(Base::B),
+            );
+        }
+
+        #[test]
+        #[should_panic]
+        fn disallow_adding_system_to_multiple_base_sets() {
+            let mut schedule = Schedule::new();
+            schedule.add_system(named_system.in_base_set(Base::A).in_base_set(Base::B));
+        }
+
+        #[test]
+        #[should_panic]
+        fn disallow_adding_systems_to_multiple_base_sets() {
+            let mut schedule = Schedule::new();
+            schedule.add_systems(
+                (make_function_system(0), make_function_system(1))
+                    .in_base_set(Base::A)
+                    .in_base_set(Base::B),
+            );
+        }
+
+        #[test]
+        fn disallow_multiple_base_sets() {
+            let mut world = World::default();
+
+            let mut schedule = Schedule::new();
+            schedule
+                .configure_set(Normal::X.in_base_set(Base::A))
+                .configure_set(Normal::Y.in_base_set(Base::B))
+                .add_system(named_system.in_set(Normal::X).in_set(Normal::Y));
+
+            let result = schedule.initialize(&mut world);
+            assert!(matches!(
+                result,
+                Err(ScheduleBuildError::SystemInMultipleBaseSets { .. })
+            ));
+
+            let mut schedule = Schedule::new();
+            schedule
+                .configure_set(Normal::X.in_base_set(Base::A))
+                .configure_set(Normal::Y.in_base_set(Base::B).in_set(Normal::X));
+
+            let result = schedule.initialize(&mut world);
+            assert!(matches!(
+                result,
+                Err(ScheduleBuildError::SetInMultipleBaseSets { .. })
+            ));
+        }
+
+        #[test]
+        fn allow_same_base_sets() {
+            let mut world = World::default();
+
+            let mut schedule = Schedule::new();
+            schedule
+                .configure_set(Normal::X.in_base_set(Base::A))
+                .configure_set(Normal::Y.in_base_set(Base::A))
+                .add_system(named_system.in_set(Normal::X).in_set(Normal::Y));
+
+            let result = schedule.initialize(&mut world);
+            assert!(matches!(result, Ok(())));
+
+            let mut schedule = Schedule::new();
+            schedule
+                .configure_set(Normal::X.in_base_set(Base::A))
+                .configure_set(Normal::Y.in_base_set(Base::A).in_set(Normal::X));
+
+            let result = schedule.initialize(&mut world);
+            assert!(matches!(result, Ok(())));
+        }
+
+        #[test]
+        fn default_base_set_ordering() {
+            let mut world = World::default();
+            let mut schedule = Schedule::default();
+
+            world.ensure_resource::<SystemOrder>();
+
+            schedule
+                .set_default_base_set(Base::A)
+                .configure_set(Base::A.before(Base::B))
+                .add_system(make_function_system(0).in_base_set(Base::B))
+                .add_system(make_function_system(1));
+            schedule.run(&mut world);
+
+            assert_eq!(world.read_resource::<SystemOrder>().0, vec![1, 0]);
+        }
     }
 }

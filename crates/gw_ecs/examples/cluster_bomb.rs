@@ -1,12 +1,6 @@
-use gw_ecs::schedule::Schedule;
+use gw_ecs::prelude::*;
+use gw_ecs::storage::{HashMapStorage, VecStorage};
 use rand::prelude::*;
-
-#[cfg(feature = "parallel")]
-use rayon::iter::ParallelIterator;
-
-use gw_ecs::specs::prelude::*;
-use gw_ecs::storage::HashMapStorage;
-use gw_ecs::World;
 
 const TAU: f32 = 2. * std::f32::consts::PI;
 
@@ -35,128 +29,82 @@ impl Component for Pos {
     type Storage = VecStorage<Self>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Component)]
 struct Vel(f32, f32);
-impl Component for Vel {
-    // This uses `DenseVecStorage`, because nearly all entities have a velocity.
-    type Storage = DenseVecStorage<Self>;
-}
 
-struct ClusterBombSystem;
-impl<'a> System<'a> for ClusterBombSystem {
-    type SystemData = (
-        Entities<'a>,
-        WriteComp<'a, ClusterBomb>,
-        ReadComp<'a, Pos>,
-        // Allows lazily adding and removing components to entities
-        // or executing arbitrary code with world access lazily via `execute`.
-        ReadRes<'a, Commands>,
-    );
+fn cluster_bomb_system(
+    entities: Entities,
+    mut bombs: WriteComp<ClusterBomb>,
+    positions: ReadComp<Pos>,
+    mut updater: Commands,
+) {
+    use rand::distributions::Uniform;
 
-    fn run(&mut self, (entities, mut bombs, positions, updater): Self::SystemData) {
-        use rand::distributions::Uniform;
-
-        let durability_range = Uniform::new(10, 20);
-        let update_position = |(entity, bomb, position): (Entity, &mut ClusterBomb, &Pos)| {
+    let durability_range = Uniform::new(10, 20);
+    let update_position =
+        |(entity, mut bomb, position): (Entity, CompMut<ClusterBomb>, CompRef<Pos>)| {
             let mut rng = rand::thread_rng();
 
             if bomb.fuse == 0 {
                 let _ = entities.delete(entity);
                 for _ in 0..9 {
                     let shrapnel = entities.create();
-                    updater.insert_component(
-                        shrapnel,
-                        Shrapnel {
-                            durability: durability_range.sample(&mut rng),
-                        },
-                    );
-                    updater.insert_component(shrapnel, position.clone());
+                    let mut update = updater.entity(shrapnel);
+                    update.insert(Shrapnel {
+                        durability: durability_range.sample(&mut rng),
+                    });
+                    update.insert(position.clone());
                     let angle: f32 = rng.gen::<f32>() * TAU;
-                    updater.insert_component(shrapnel, Vel(angle.sin(), angle.cos()));
+                    update.insert(Vel(angle.sin(), angle.cos()));
                 }
             } else {
                 bomb.fuse -= 1;
             }
         };
 
-        // Join components in potentially parallel way using rayon.
-        #[cfg(not(feature = "parallel"))]
-        {
-            (&entities, &mut bombs, &positions)
-                .join()
-                .for_each(update_position);
-        }
-        #[cfg(feature = "parallel")]
-        {
-            (&entities, &mut bombs, &positions)
-                .par_join()
-                .for_each(update_position);
-        }
-    }
-}
-
-struct PhysicsSystem;
-impl<'a> System<'a> for PhysicsSystem {
-    type SystemData = (WriteComp<'a, Pos>, ReadComp<'a, Vel>);
-
-    fn run(&mut self, (mut pos, vel): Self::SystemData) {
-        #[cfg(not(feature = "parallel"))]
-        (&mut pos, &vel).join().for_each(|(pos, vel)| {
-            pos.0 += vel.0;
-            pos.1 += vel.1;
-        });
-        #[cfg(feature = "parallel")]
-        (&mut pos, &vel).par_join().for_each(|(pos, vel)| {
-            pos.0 += vel.0;
-            pos.1 += vel.1;
-        });
-    }
-}
-
-struct ShrapnelSystem;
-impl<'a> System<'a> for ShrapnelSystem {
-    type SystemData = (Entities<'a>, WriteComp<'a, Shrapnel>);
-
-    fn run(&mut self, (entities, mut shrapnels): Self::SystemData) {
-        #[cfg(not(feature = "parallel"))]
-        (&entities, &mut shrapnels)
+    // Join components in potentially parallel way using rayon.
+    {
+        (&entities, &mut bombs, &positions)
             .join()
-            .for_each(|(entity, shrapnel)| {
-                if shrapnel.durability == 0 {
-                    let _ = entities.delete(entity);
-                } else {
-                    shrapnel.durability -= 1;
-                }
-            });
-
-        #[cfg(feature = "parallel")]
-        (&entities, &mut shrapnels)
-            .par_join()
-            .for_each(|(entity, shrapnel)| {
-                if shrapnel.durability == 0 {
-                    let _ = entities.delete(entity);
-                } else {
-                    shrapnel.durability -= 1;
-                }
-            });
+            .for_each(update_position);
     }
+}
+
+fn physics_system(mut pos: WriteComp<Pos>, vel: ReadComp<Vel>) {
+    (&mut pos, &vel).join().for_each(|(mut pos, vel)| {
+        pos.0 += vel.0;
+        pos.1 += vel.1;
+    });
+}
+
+fn shrapnel_system(entities: Entities, mut shrapnels: WriteComp<Shrapnel>) {
+    (&entities, &mut shrapnels)
+        .join()
+        .for_each(|(entity, mut shrapnel)| {
+            if shrapnel.durability == 0 {
+                let _ = entities.delete(entity);
+            } else {
+                shrapnel.durability -= 1;
+            }
+        });
 }
 
 fn main() {
     let mut world = World::empty(0);
+    world.register::<Shrapnel>();
+    world.register::<ClusterBomb>();
+    world.register::<Pos>();
+    world.register::<Vel>();
 
-    let mut dispatcher = Schedule::new()
-        .with("UPDATE", PhysicsSystem)
-        .with("UPDATE", ClusterBombSystem)
-        .with("UPDATE", ShrapnelSystem);
+    let mut dispatcher = Schedule::new();
 
-    dispatcher.setup(&mut world);
+    dispatcher.add_systems((physics_system, cluster_bomb_system, shrapnel_system).chain());
 
     world
         .create_entity()
         .with(Pos(0., 0.))
         .with(ClusterBomb { fuse: 3 })
-        .build();
+        .id();
 
     let mut step = 0;
     loop {
@@ -194,8 +142,6 @@ fn main() {
 
         dispatcher.run(&mut world);
 
-        // Maintain dynamically added and removed entities in dispatch.
-        // This is what actually executes changes done by `LazyUpdate`.
         world.maintain();
     }
 }

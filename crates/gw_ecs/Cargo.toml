@@ -1,59 +1,37 @@
 [package]
-name = "gw_ecs"
+name    = "gw_ecs"
 version = "0.1.0"
 edition = "2021"
-description = """
-Dispatches systems in parallel which need read access to some resources,
-and write access to others.
-"""
-readme = "README.md"
-documentation = "https://docs.rs/gw_ecs"
-repository = "https://github.com/funnisimo/goblinwerks-rs"
-keywords = ["parallel", "systems", "resources", "ecs"]
-categories = ["concurrency"]
-license = "MIT OR Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-arrayvec        = "0.7.2"
-rayon           = { version = "1.7.0", optional = true }
-gw_macro        = { path = "../gw_macro", optional = true }
-smallvec        = "1.10.0"
-tynm            = "0.1.7"
 atomize         = "0.1.3"
-crossbeam-queue = "0.3"
-hibitset        = { version = "0.6.3", default-features = false }
-log             = "0.4.17"
-shrev           = "1.1.3"
+gw_ecs_macros   = { path = "macros" }
+bevy_ptr        = "0.10"
+bevy_tasks      = "0.10"
+bevy_utils      = "0.10"
+async-channel   = "1.4"
+event-listener  = "2.5"
+thread_local    = "1.1.4"
+fixedbitset     = "0.4.2"
+rustc-hash      = "1.1"
+downcast-rs     = "1.2"
+serde           = { version = "1", features = ["derive"] }
+hibitset        = { version = "0.6.3" }
 tuple_utils     = "0.4.0"
-serde           = { version = "1.0.160", optional = true, features = ["serde_derive"] }
-uuid            = { version = "1.3.1", optional = true, features = ["v4", "serde"] }
-bevy_utils      = "0.10.1"
-
-[features]
-default               = ["parallel", "derive", "serde"]
-parallel              = ["rayon", "hibitset/parallel"]
-uuid_entity           = ["uuid", "serde"]
-stdweb                = ["uuid/js"]
-storage-event-control = []
-derive                = ["gw_macro"]
-nightly               = []
-serde                 = ["dep:serde"]
+log             = "0.4.17"
+crossbeam-queue = "0.3.8"
+tracing         = { version = "0.1.37", optional = true }
+rayon           = { version = "1.7.0", optional = true }
 
 [dev-dependencies]
-rand     = "0.8"
-gw_macro = { path = "../gw_macro" }
-gw_app   = { path = "../gw_app" }
-gw_util  = { path = "../gw_util" }
-ron      = "0.8"
+rand               = "0.8"
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
+tracing-log        = "0.1.3"
+tracing-error      = "0.2.0"
 
-[[example]]
-name              = "cluster_bomb"
-required-features = ["parallel"]
-
-[[example]]
-name              = "specs_async"
-required-features = ["parallel"]
-
-[[example]]
-name              = "shred_async"
-required-features = ["parallel"]
+[features]
+default  = ["trace", "parallel"]
+trace    = ["tracing"]
+parallel = ["rayon"]
