@@ -1,5 +1,7 @@
 //! Component storage types, implementations for component joins, etc.
 
+use super::MaskedStorage;
+use super::UnprotectedStorage;
 use super::{Added, Changed, Drain};
 use crate::components::{CompMut, CompRef, Component};
 use crate::entity::EntitiesRes;
@@ -70,6 +72,28 @@ unsafe impl<'a> DistinctStorage for AntiStorage<'a> {}
 #[cfg(feature = "parallel")]
 unsafe impl<'a> ParJoin for AntiStorage<'a> {}
 
+/// This is a marker trait which requires you to uphold the following guarantee:
+///
+/// > Multiple threads may call `get_mut()` with distinct indices without
+/// causing > undefined behavior.
+///
+/// This is for example valid for `Vec`:
+///
+/// ```rust
+/// vec![1, 2, 3];
+/// ```
+///
+/// We may modify both element 1 and 2 at the same time; indexing the vector
+/// mutably does not modify anything else than the respective elements.
+///
+/// As a counter example, we may have some kind of cached storage; it caches
+/// elements when they're retrieved, so pushes a new element to some
+/// cache-vector. This storage is not allowed to implement `DistinctStorage`.
+///
+/// Implementing this trait marks the storage safe for concurrent mutation (of
+/// distinct elements), thus allows `join_par()`.
+pub unsafe trait DistinctStorage {}
+
 /// A dynamic storage.
 pub trait AnyStorage {
     /// Drop components of given entities.
@@ -97,132 +121,10 @@ where
     }
 }
 
-impl<T> AnyStorage for MaskedStorage<T>
-where
-    T: Component,
-{
-    fn drop(&mut self, entities: &[Entity], world_tick: u32) {
-        for entity in entities {
-            MaskedStorage::drop(self, entity.id(), world_tick);
-        }
-    }
-
-    fn register(&self, world: &mut World) {
-        world.register::<T>();
-    }
-
-    fn maintain(&mut self, world_ticks: u32) {
-        self.check_change_ticks(world_ticks);
-    }
-
-    fn try_move_component(&mut self, entity: Entity, source_tick: u32, dest: &mut EntityBuilder) {
-        dest.maybe_insert::<T>(self.remove(entity.id(), source_tick));
-    }
-}
-
-/// This is a marker trait which requires you to uphold the following guarantee:
-///
-/// > Multiple threads may call `get_mut()` with distinct indices without
-/// causing > undefined behavior.
-///
-/// This is for example valid for `Vec`:
-///
-/// ```rust
-/// vec![1, 2, 3];
-/// ```
-///
-/// We may modify both element 1 and 2 at the same time; indexing the vector
-/// mutably does not modify anything else than the respective elements.
-///
-/// As a counter example, we may have some kind of cached storage; it caches
-/// elements when they're retrieved, so pushes a new element to some
-/// cache-vector. This storage is not allowed to implement `DistinctStorage`.
-///
-/// Implementing this trait marks the storage safe for concurrent mutation (of
-/// distinct elements), thus allows `join_par()`.
-pub unsafe trait DistinctStorage {}
-
 /// The status of an `insert()`ion into a storage.
 /// If the insertion was successful then the Ok value will
 /// contain the component that was replaced (if any).
 pub type InsertResult<T> = Result<Option<T>, Error>;
-
-/// The `UnprotectedStorage` together with the `BitSet` that knows
-/// about which elements are stored, and which are not.
-pub struct MaskedStorage<T: Component> {
-    pub(super) mask: BitSet,
-    pub(super) inner: T::Storage,
-}
-
-impl<T: Component> Default for MaskedStorage<T>
-where
-    T::Storage: Default,
-{
-    fn default() -> Self {
-        Self {
-            mask: Default::default(),
-            inner: Default::default(),
-        }
-    }
-}
-
-impl<T: Component> MaskedStorage<T> {
-    /// Creates a new `MaskedStorage`. This is called when you register
-    /// a new component type within the world.
-    pub fn new(inner: T::Storage) -> MaskedStorage<T> {
-        MaskedStorage {
-            mask: BitSet::new(),
-            inner,
-        }
-    }
-
-    pub(crate) fn open_mut(&mut self) -> (&BitSet, &mut T::Storage) {
-        (&self.mask, &mut self.inner)
-    }
-
-    /// Clear the contents of this storage.
-    pub fn clear(&mut self) {
-        // SAFETY: `self.mask` is the correct mask as specified.
-        unsafe {
-            self.inner.clean(&self.mask);
-        }
-        self.mask.clear();
-    }
-
-    /// Remove an element by a given index.
-    pub fn remove(&mut self, id: Index, _world_tick: u32) -> Option<T> {
-        if self.mask.remove(id) {
-            // SAFETY: We checked the mask (`remove` returned `true`)
-            Some(unsafe { self.inner.remove(id).data })
-        } else {
-            None
-        }
-    }
-
-    /// Drop an element by a given index.
-    pub fn drop(&mut self, id: Index, _world_tick: u32) {
-        if self.mask.remove(id) {
-            // SAFETY: We checked the mask (`remove` returned `true`)
-            unsafe {
-                self.inner.drop(id);
-            }
-        }
-    }
-
-    fn check_change_ticks(&mut self, world_tick: u32) {
-        let MaskedStorage { mask, inner } = self;
-        for id in mask.iter() {
-            let comp = unsafe { inner.get_mut(id) };
-            comp.ticks.check_ticks(world_tick);
-        }
-    }
-}
-
-impl<T: Component> Drop for MaskedStorage<T> {
-    fn drop(&mut self) {
-        self.clear();
-    }
-}
 
 /// A wrapper around the masked storage and the generations vector.
 /// Can be used for safe lookup of components, insertions and removes.
@@ -333,6 +235,16 @@ where
     pub fn changed(&mut self) -> Changed<&mut Self> {
         Changed::new(self)
     }
+
+    /// Creates a draining storage wrapper which can be `.join`ed
+    /// to get a draining iterator.
+    pub fn drain(&mut self) -> Drain<T> {
+        Drain {
+            data: &mut self.data,
+            last_system_tick: self.last_system_tick,
+            world_tick: self.world_tick,
+        }
+    }
 }
 
 impl<'e, T, D> Storage<'e, T, D>
@@ -439,28 +351,19 @@ where
     // pub(crate) fn clear(&mut self) {
     //     self.data.clear();
     // }
-
-    /// Creates a draining storage wrapper which can be `.join`ed
-    /// to get a draining iterator.
-    pub fn drain(&mut self) -> Drain<T> {
-        Drain {
-            data: &mut self.data,
-            last_system_tick: self.last_system_tick,
-            world_tick: self.world_tick,
-        }
-    }
 }
 
-impl<'a, T, D: Clone> Clone for Storage<'a, T, D> {
-    fn clone(&self) -> Self {
-        Storage::new(
-            ResRef::clone(&self.entities),
-            self.data.clone(),
-            self.last_system_tick,
-            self.world_tick,
-        )
-    }
-}
+// NOTE - Necessary?  Useful?
+// impl<'a, T, D: Clone> Clone for Storage<'a, T, D> {
+//     fn clone(&self) -> Self {
+//         Storage::new(
+//             ResRef::clone(&self.entities),
+//             self.data.clone(),
+//             self.last_system_tick,
+//             self.world_tick,
+//         )
+//     }
+// }
 
 // SAFETY: This is safe, since `T::Storage` is `DistinctStorage` and `Join::get`
 // only accesses the storage and nothing else.
@@ -580,133 +483,33 @@ where
 {
 }
 
-/// Tries to create a default value, returns an `Err` with the name of the
-/// storage and/or component if there's no default.
-pub trait TryDefault: Sized {
-    /// Tries to create the default.
-    fn try_default() -> Result<Self, String>;
+// /// Tries to create a default value, returns an `Err` with the name of the
+// /// storage and/or component if there's no default.
+// pub trait TryDefault: Sized {
+//     /// Tries to create the default.
+//     fn try_default() -> Result<Self, String>;
 
-    /// Calls `try_default` and panics on an error case.
-    fn unwrap_default() -> Self {
-        match Self::try_default() {
-            Ok(x) => x,
-            Err(e) => panic!("Failed to create a default value for storage ({:?})", e),
-        }
-    }
-}
+//     /// Calls `try_default` and panics on an error case.
+//     fn unwrap_default() -> Self {
+//         match Self::try_default() {
+//             Ok(x) => x,
+//             Err(e) => panic!("Failed to create a default value for storage ({:?})", e),
+//         }
+//     }
+// }
 
-impl<T> TryDefault for T
-where
-    T: Default,
-{
-    fn try_default() -> Result<Self, String> {
-        Ok(T::default())
-    }
-}
-
-/// Used by the framework to quickly join components.
-pub trait UnprotectedStorage<T>: Default {
-    // / The wrapper through with mutable access of a component is performed.
-    // #[cfg(feature = "nightly")]
-    // type AccessMut<'a>: DerefMut<Target = T>
-    // where
-    //     Self: 'a;
-
-    /// Clean the storage given a bitset with bits set for valid indices.
-    /// Allows us to safely drop the storage.
-    ///
-    /// # Safety
-    ///
-    /// May only be called with the mask which keeps track of the elements
-    /// existing in this storage.
-    unsafe fn clean<B>(&mut self, has: B)
-    where
-        B: BitSetLike;
-
-    /// Tries reading the data associated with an `Index`.
-    /// This is unsafe because the external set used
-    /// to protect this storage is absent.
-    ///
-    /// # Safety
-    ///
-    /// May only be called after a call to `insert` with `id` and
-    /// no following call to `remove` with `id`.
-    ///
-    /// A mask should keep track of those states, and an `id` being contained
-    /// in the tracking mask is sufficient to call this method.
-    unsafe fn get(&self, id: Index) -> &StorageCell<T>;
-
-    unsafe fn raw(&self, id: Index) -> &T {
-        &self.get(id).data
-    }
-
-    // / Tries mutating the data associated with an `Index`.
-    // / This is unsafe because the external set used
-    // / to protect this storage is absent.
-    // /
-    // / # Safety
-    // /
-    // / May only be called after a call to `insert` with `id` and
-    // / no following call to `remove` with `id`.
-    // /
-    // / A mask should keep track of those states, and an `id` being contained
-    // / in the tracking mask is sufficient to call this method.
-    // #[cfg(feature = "nightly")]
-    // unsafe fn get_mut(&mut self, id: Index) -> Self::AccessMut<'_>;
-
-    /// Tries mutating the data associated with an `Index`.
-    /// This is unsafe because the external set used
-    /// to protect this storage is absent.
-    ///
-    /// # Safety
-    ///
-    /// May only be called after a call to `insert` with `id` and
-    /// no following call to `remove` with `id`.
-    ///
-    /// A mask should keep track of those states, and an `id` being contained
-    /// in the tracking mask is sufficient to call this method.
-    unsafe fn get_mut(&mut self, id: Index) -> &mut StorageCell<T>;
-
-    unsafe fn raw_mut(&mut self, id: Index) -> &mut T {
-        &mut self.get_mut(id).data
-    }
-
-    /// Inserts new data for a given `Index`.
-    ///
-    /// # Safety
-    ///
-    /// May only be called if `insert` was not called with `id` before, or
-    /// was reverted by a call to `remove` with `id.
-    ///
-    /// A mask should keep track of those states, and an `id` missing from the
-    /// mask is sufficient to call `insert`.
-    unsafe fn insert(&mut self, id: Index, value: StorageCell<T>);
-
-    /// Removes the data associated with an `Index`.
-    ///
-    /// # Safety
-    ///
-    /// May only be called if an element with `id` was `insert`ed and not yet
-    /// removed / dropped.
-    unsafe fn remove(&mut self, id: Index) -> StorageCell<T>;
-
-    /// Drops the data associated with an `Index`.
-    /// This could be used when a more efficient implementation for it exists
-    /// than `remove` when the data is no longer needed.
-    /// Defaults to simply calling `remove`.
-    ///
-    /// # Safety
-    ///
-    /// May only be called if an element with `id` was `insert`ed and not yet
-    /// removed / dropped.
-    unsafe fn drop(&mut self, id: Index) {
-        self.remove(id);
-    }
-}
+// impl<T> TryDefault for T
+// where
+//     T: Default,
+// {
+//     fn try_default() -> Result<Self, String> {
+//         Ok(T::default())
+//     }
+// }
 
 pub struct StorageCell<T> {
-    data: T,
-    ticks: ComponentTicks,
+    pub(super) data: T,
+    pub(super) ticks: ComponentTicks,
 }
 
 impl<T> StorageCell<T> {

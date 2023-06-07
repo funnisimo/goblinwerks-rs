@@ -757,7 +757,13 @@ impl World {
     }
 
     pub fn remove_component<C: Component>(&mut self, entity: Entity) -> Option<C> {
-        self.write_component::<C>().remove(entity)
+        match self.write_component::<C>().remove(entity) {
+            None => None,
+            Some(old) => {
+                self.send_event(DeleteComp::<C>::new(entity));
+                Some(old)
+            }
+        }
     }
 
     // REGISTRY
