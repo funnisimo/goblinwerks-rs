@@ -51,9 +51,6 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "parallel")]
-use crate::specs::join::ParJoin;
-
 /// An index is basically the id of an `Entity`.
 pub type Index = u32;
 

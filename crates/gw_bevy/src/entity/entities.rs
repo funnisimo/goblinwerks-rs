@@ -4,7 +4,7 @@ use crate::{
     access::AccessItem,
     prelude::{Join, World},
     resources::{ ResRef, ResourceId},
-    system::{ReadOnlySystemParam, SystemMeta, SystemParam},
+    system::{ReadOnlySystemParam, SystemMeta, SystemParam}, join::ParJoin,
 };
 use hibitset::{AtomicBitSet, BitSet, BitSetOr};
 

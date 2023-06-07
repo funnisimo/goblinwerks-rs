@@ -562,9 +562,9 @@ macro_rules! define_open {
         // If the access of every individual `get` leads to disjoint memory access, calling
         // all of them after another does in no case lead to access of common memory.
         #[cfg(feature = "parallel")]
-        unsafe impl<$($from,)*> ParJoin for ($($from),*,)
-            where $($from: ParJoin),*,
-                  ($(<$from as Join>::Mask,)*): BitAnd,
+        unsafe impl<$head,$($from,)*> ParJoin for ($head,$($from),*,)
+            where $head: ParJoin, $($from: ParJoin),*,
+                  (<$head as Join>::Mask, $(<$from as Join>::Mask,)*): BitAnd,
         {}
 
     }

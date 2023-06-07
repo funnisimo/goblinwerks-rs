@@ -45,7 +45,7 @@ pub mod prelude {
         entity::{Builder, Entities, Entity},
         event::{Event, EventReader, EventWriter, Events},
         globals::{ReadGlobal, WriteGlobal},
-        join::{Join, JoinExt},
+        join::{Join, JoinExt, ParJoin},
         // query::{Added, AnyOf, Changed, Or, QueryState, With, Without},
         // removal_detection::RemovedComponents,
         resources::{ReadUnique, Resource, WriteUnique},
@@ -55,6 +55,7 @@ pub mod prelude {
             IntoSystemSetConfigs, NextState, OnEnter, OnExit, OnUpdate, Schedule, Schedules, State,
             States, SystemSet,
         },
+        storage::DenseVecStorage,
         system::{
             adapter as system_adapter,
             adapter::{dbg, error, ignore, info, unwrap, warn},

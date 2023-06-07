@@ -1,5 +1,5 @@
 //! Joining of components for iteration over entities with specific components.
-use super::Join;
+use super::{Join, ParJoin};
 use crate::entity::Index;
 use hibitset::{BitSetAll, BitSetLike};
 

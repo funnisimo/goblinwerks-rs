@@ -25,7 +25,7 @@ use std::{
 pub use self::deref_flagged::{DerefFlaggedStorage, FlaggedAccessMut};
 
 #[cfg(feature = "parallel")]
-use crate::specs::join::ParJoin;
+use crate::join::ParJoin;
 
 // #[cfg(feature = "nightly")]
 // pub type AccessMutReturn<'a, T> =
@@ -539,8 +539,7 @@ impl<T> StorageCell<T> {
 #[cfg(feature = "parallel")]
 mod tests_inline {
 
-    use crate::specs::{Builder, Component, Entities, ParJoin};
-    use crate::{DenseVecStorage, ReadComp, World};
+    use crate::prelude::*;
     use rayon::iter::ParallelIterator;
 
     struct Pos;
@@ -552,11 +551,17 @@ mod tests_inline {
     #[test]
     fn test_anti_par_join() {
         let mut world = World::empty(0);
-        world.create_entity().build();
-        world.exec(|(entities, pos): (Entities, ReadComp<Pos>)| {
+        world.create_entity().id();
+
+        fn my_system(entities: Entities, pos: ReadComp<Pos>) {
             (&entities, !&pos).par_join().for_each(|(ent, ())| {
                 println!("Processing entity: {:?}", ent);
             });
-        });
+        }
+
+        let mut schedule = Schedule::new();
+        schedule.add_system(my_system);
+
+        schedule.run(&mut world);
     }
 }

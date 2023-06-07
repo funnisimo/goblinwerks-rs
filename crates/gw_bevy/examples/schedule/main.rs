@@ -49,7 +49,7 @@ fn system_e(comp_a: ReadComp<CompA>, mut comp_b: WriteComp<CompB>) {
 fn main() {
     let collector = tracing_subscriber::fmt()
         // filter spans/events with level TRACE or higher.
-        .with_max_level(Level::TRACE)
+        .with_max_level(Level::INFO)
         .with_span_events(FmtSpan::ACTIVE)
         // build but do not install the subscriber.
         .finish();

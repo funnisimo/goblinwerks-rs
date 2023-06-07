@@ -1,5 +1,5 @@
 //! Joining of components for iteration over entities with specific components.
-use crate::join::Join;
+use crate::join::{Join, ParJoin};
 use crate::{change_detection::DetectChanges, entity::Index};
 
 /// A `Join`-able structure that yields values that are changed.
@@ -56,7 +56,12 @@ where
 // relies on `T as Join` for all storage access and safely wraps the inner
 // `Join` API, so it should also be able to implement `ParJoin`.
 #[cfg(feature = "parallel")]
-unsafe impl<T> ParJoin for Changed<T> where T: ParJoin {}
+unsafe impl<T> ParJoin for Changed<T>
+where
+    T: ParJoin,
+    <T as Join>::Item: DetectChanges,
+{
+}
 
 ///////////////////////////////////////
 
