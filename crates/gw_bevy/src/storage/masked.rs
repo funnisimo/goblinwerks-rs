@@ -2,27 +2,18 @@ use super::{AnyStorage, UnprotectedStorage};
 use crate::{
     components::Component,
     entity::{Entity, EntityBuilder, Index},
+    event::Events,
     world::World,
 };
 use hibitset::{BitSet, BitSetLike};
 
 /// The `UnprotectedStorage` together with the `BitSet` that knows
 /// about which elements are stored, and which are not.
+#[derive(Default)]
 pub struct MaskedStorage<T: Component> {
     pub(super) mask: BitSet,
     pub(super) inner: T::Storage,
-}
-
-impl<T: Component> Default for MaskedStorage<T>
-where
-    T::Storage: Default,
-{
-    fn default() -> Self {
-        Self {
-            mask: Default::default(),
-            inner: Default::default(),
-        }
-    }
+    pub(crate) removed: Events<Entity>,
 }
 
 impl<T: Component> MaskedStorage<T> {
@@ -32,6 +23,7 @@ impl<T: Component> MaskedStorage<T> {
         MaskedStorage {
             mask: BitSet::new(),
             inner,
+            removed: Default::default(),
         }
     }
 
@@ -40,6 +32,7 @@ impl<T: Component> MaskedStorage<T> {
     }
 
     /// Clear the contents of this storage.
+    /// Does not send any removed events
     pub fn clear(&mut self) {
         // SAFETY: `self.mask` is the correct mask as specified.
         unsafe {
@@ -59,21 +52,28 @@ impl<T: Component> MaskedStorage<T> {
     }
 
     /// Drop an element by a given index.
-    pub fn drop(&mut self, id: Index, _world_tick: u32) {
+    pub fn drop(&mut self, id: Index, _world_tick: u32) -> bool {
         if self.mask.remove(id) {
             // SAFETY: We checked the mask (`remove` returned `true`)
             unsafe {
                 self.inner.drop(id);
             }
+            return true;
         }
+        false
     }
 
-    fn check_change_ticks(&mut self, world_tick: u32) {
-        let MaskedStorage { mask, inner } = self;
+    fn update_ticks(&mut self, world_tick: u32) {
+        let MaskedStorage {
+            mask,
+            inner,
+            removed,
+        } = self;
         for id in mask.iter() {
             let comp = unsafe { inner.get_mut(id) };
             comp.ticks.check_ticks(world_tick);
         }
+        removed.update();
     }
 }
 
@@ -89,7 +89,9 @@ where
 {
     fn drop(&mut self, entities: &[Entity], world_tick: u32) {
         for entity in entities {
-            MaskedStorage::drop(self, entity.id(), world_tick);
+            if MaskedStorage::drop(self, entity.id(), world_tick) {
+                self.removed.send(*entity);
+            }
         }
     }
 
@@ -98,10 +100,13 @@ where
     }
 
     fn maintain(&mut self, world_ticks: u32) {
-        self.check_change_ticks(world_ticks);
+        self.update_ticks(world_ticks);
     }
 
     fn try_move_component(&mut self, entity: Entity, source_tick: u32, dest: &mut EntityBuilder) {
-        dest.maybe_insert::<T>(self.remove(entity.id(), source_tick));
+        if let Some(old) = self.remove(entity.id(), source_tick) {
+            dest.insert(old);
+            self.removed.send(entity);
+        }
     }
 }

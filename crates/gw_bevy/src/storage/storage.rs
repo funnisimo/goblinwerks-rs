@@ -311,7 +311,7 @@ where
     /// If a component already existed for the given `Entity`, then it will
     /// be overwritten with the new component. If it did overwrite, then the
     /// result will contain `Some(T)` where `T` is the previous component.
-    pub(crate) fn insert(&mut self, e: Entity, v: T) -> InsertResult<T> {
+    pub fn insert(&mut self, e: Entity, v: T) -> InsertResult<T> {
         if self.entities.is_alive(e) {
             let id = e.id();
             if self.data.mask.contains(id) {
@@ -339,9 +339,15 @@ where
     }
 
     /// Removes the data associated with an `Entity`.
-    pub(crate) fn remove(&mut self, e: Entity) -> Option<T> {
+    pub fn remove(&mut self, e: Entity) -> Option<T> {
         if self.entities.is_alive(e) {
-            self.data.remove(e.id(), self.world_tick)
+            match self.data.remove(e.id(), self.world_tick) {
+                None => None,
+                Some(old) => {
+                    self.data.removed.send(e);
+                    Some(old)
+                }
+            }
         } else {
             None
         }

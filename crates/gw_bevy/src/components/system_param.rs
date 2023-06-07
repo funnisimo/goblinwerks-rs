@@ -1,9 +1,11 @@
 use super::Component;
+use crate as gw_bevy;
 use crate::access::AccessItem;
-use crate::entity::EntitiesRes;
+use crate::entity::{EntitiesRes, Entity};
+use crate::event::{ManualEventIterator, ManualEventIteratorWithId, ManualEventReader};
 use crate::resources::{ResMut, ResRef, ResourceId};
 use crate::storage::{MaskedStorage, Storage};
-use crate::system::{SystemMeta, SystemParam};
+use crate::system::{Local, SystemMeta, SystemParam};
 use crate::world::World;
 
 /// A storage with read access.
@@ -332,5 +334,126 @@ unsafe impl<'a, T: Component> SystemParam for WriteComp<'a, T> {
         //         change_tick,
         //     },
         // }
+    }
+}
+
+/// Reads events of type `T` in order and tracks which events have already been read.
+#[derive(SystemParam)]
+pub struct Removed<'w, 's, C: Component> {
+    reader: Local<'s, ManualEventReader<Entity>>,
+    storage: ResRef<'w, MaskedStorage<C>>,
+}
+
+impl<'w, 's, C: Component> Removed<'w, 's, C> {
+    /// Iterates over the events this [`EventReader`] has not seen yet. This updates the
+    /// [`EventReader`]'s event counter, which means subsequent event reads will not include events
+    /// that happened before now.
+    pub fn iter(&mut self) -> ManualEventIterator<'_, Entity> {
+        self.reader.iter(&self.storage.removed)
+    }
+
+    /// Like [`iter`](Self::iter), except also returning the [`EventId`] of the events.
+    pub fn iter_with_id(&mut self) -> ManualEventIteratorWithId<'_, Entity> {
+        self.reader.iter_with_id(&self.storage.removed)
+    }
+
+    /// Determines the number of events available to be read from this [`EventReader`] without consuming any.
+    pub fn len(&self) -> usize {
+        self.reader.len(&self.storage.removed)
+    }
+
+    /// Returns `true` if there are no events available to read.
+    ///
+    /// # Example
+    ///
+    /// The following example shows a useful pattern where some behaviour is triggered if new events are available.
+    /// [`EventReader::clear()`] is used so the same events don't re-trigger the behaviour the next time the system runs.
+    ///
+    /// ```
+    /// # use gw_bevy::prelude::*;
+    /// struct CollisionEvent;
+    ///
+    /// fn play_collision_sound(mut events: EventReader<CollisionEvent>) {
+    ///     if !events.is_empty() {
+    ///         events.clear();
+    ///         // Play a sound
+    ///     }
+    /// }
+    /// # gw_bevy::system::assert_is_system(play_collision_sound);
+    /// ```
+    pub fn is_empty(&self) -> bool {
+        self.reader.is_empty(&self.storage.removed)
+    }
+
+    /// Consumes all available events.
+    ///
+    /// This means these events will not appear in calls to [`EventReader::iter()`] or
+    /// [`EventReader::iter_with_id()`] and [`EventReader::is_empty()`] will return `true`.
+    ///
+    /// For usage, see [`EventReader::is_empty()`].
+    pub fn clear(&mut self) {
+        self.reader.clear(&self.storage.removed);
+    }
+}
+
+impl<'a, 'w, 's, C: Component> IntoIterator for &'a mut Removed<'w, 's, C> {
+    type Item = &'a Entity;
+    type IntoIter = ManualEventIterator<'a, Entity>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate as gw_bevy;
+    use crate::prelude::*;
+
+    #[derive(Component, Default, Debug)]
+    struct CompA(u32);
+
+    struct Count(usize);
+
+    fn my_remove_all(entities: Entities, mut comp: WriteComp<CompA>) {
+        for entity in entities.join() {
+            comp.remove(entity);
+        }
+    }
+
+    fn my_count_removed(mut removed: Removed<CompA>, mut commands: Commands) {
+        let count = removed.iter().count();
+        commands.insert_resource(Count(count));
+    }
+
+    #[test]
+    fn removed_components() {
+        let mut world = World::default();
+        world.register::<CompA>();
+
+        let mut schedule = Schedule::new();
+        schedule.add_systems((my_remove_all, my_count_removed).chain());
+
+        for i in 0..5 {
+            world.spawn(CompA(i));
+        }
+
+        schedule.run(&mut world);
+        // Not necessary - Commands applied at end of schedule
+        // But, still works if you do because events hold for essentially 2 schedule runs
+        // world.maintain();
+
+        {
+            let count = world.read_resource::<Count>();
+            assert_eq!(count.0, 5);
+        }
+
+        // This time, we already deleted all the components and read all the events so nothing should happen
+        schedule.run(&mut world);
+        // Not necessary - Commands applied at end of schedule
+        // But, still works if you do because events hold for essentially 2 schedule runs
+        // world.maintain();
+
+        let count = world.read_resource::<Count>();
+        assert_eq!(count.0, 0);
     }
 }

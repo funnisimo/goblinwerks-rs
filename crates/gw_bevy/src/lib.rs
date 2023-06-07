@@ -40,7 +40,7 @@ pub mod prelude {
     pub use crate::{
         // bundle::Bundle,
         change_detection::{DetectChanges, DetectChangesMut},
-        components::{CompMut, CompRef, Component, ReadComp, WriteComp},
+        components::{CompMut, CompRef, Component, ReadComp, Removed, WriteComp},
         ecs::Ecs,
         entity::{Builder, Entities, Entity},
         event::{Event, EventReader, EventWriter, Events},

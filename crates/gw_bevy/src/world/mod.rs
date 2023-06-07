@@ -1,6 +1,4 @@
-use std::sync::atomic::{AtomicU32, Ordering};
-
-use crate::components::{Component, DeleteComp, ReadComp, WriteComp};
+use crate::components::{Component, ReadComp, WriteComp};
 use crate::components::{ComponentSet, Components};
 use crate::entity::EntityAllocator;
 use crate::entity::{Builder, Entities};
@@ -11,8 +9,9 @@ use crate::resources::Resources;
 use crate::resources::{ResMut, ResRef};
 use crate::resources::{Resource, ResourceId};
 use crate::schedule::{Schedule, ScheduleLabel, Schedules};
-use crate::storage::{InsertResult, MaskedStorage, Storage};
+use crate::storage::{MaskedStorage, Storage};
 use atomize::Atom;
+use std::sync::atomic::{AtomicU32, Ordering};
 
 #[cfg(feature = "trace")]
 use tracing;
@@ -748,27 +747,27 @@ impl World {
         f(comp)
     }
 
-    pub fn insert_component<C: Component>(
-        &mut self,
-        entity: Entity,
-        component: C,
-    ) -> InsertResult<C> {
-        self.write_component::<C>().insert(entity, component)
-    }
+    // pub fn insert_component<C: Component>(
+    //     &mut self,
+    //     entity: Entity,
+    //     component: C,
+    // ) -> InsertResult<C> {
+    //     self.write_component::<C>().insert(entity, component)
+    // }
 
-    pub fn remove_component<C: Component>(&mut self, entity: Entity) -> Option<C> {
-        match self.write_component::<C>().remove(entity) {
-            None => None,
-            Some(old) => {
-                self.send_event(DeleteComp::<C>::new(entity));
-                Some(old)
-            }
-        }
-    }
+    // pub fn remove_component<C: Component>(&mut self, entity: Entity) -> Option<C> {
+    //     match self.write_component::<C>().remove(entity) {
+    //         None => None,
+    //         Some(old) => {
+    //             self.send_event(DeleteComp::<C>::new(entity));
+    //             Some(old)
+    //         }
+    //     }
+    // }
 
     // REGISTRY
 
-    pub fn register<T: Component>(&mut self)
+    pub fn register<T: Component>(&mut self) -> bool
     where
         T::Storage: Default,
     {
@@ -779,10 +778,10 @@ impl World {
             component = ResourceId::of::<T>().name()
         );
 
-        self.register_with_storage::<T>(Default::default());
+        self.register_with_storage::<T>(Default::default())
     }
 
-    pub(crate) fn register_with_storage<T>(&mut self, storage: T::Storage)
+    pub(crate) fn register_with_storage<T>(&mut self, storage: T::Storage) -> bool
     where
         T: Component,
     {
@@ -802,8 +801,10 @@ impl World {
                         .unwrap(),
                 );
 
-            self.register_event::<DeleteComp<T>>();
+            // self.register_event::<DeleteComp<T>>();
+            return true;
         }
+        false
     }
 
     pub fn register_components_from(&mut self, source: &World) {

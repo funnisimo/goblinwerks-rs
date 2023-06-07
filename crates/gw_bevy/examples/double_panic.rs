@@ -17,5 +17,5 @@ fn main() {
     world.register::<B>();
     world.register::<TableStored>();
     let e = world.spawn((TableStored("abc"), A(123)));
-    assert!(world.remove_component::<B>(e).is_none());
+    assert!(world.write_component::<B>().remove(e).is_none());
 }

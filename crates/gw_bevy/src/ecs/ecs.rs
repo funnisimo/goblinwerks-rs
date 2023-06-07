@@ -1,5 +1,6 @@
 use crate::components::Component;
 use crate::entity::Entity;
+use crate::event::Event;
 use crate::globals::{GlobalMut, GlobalRef, Globals};
 use crate::resources::Resource;
 use crate::world::World;
@@ -247,7 +248,15 @@ impl Ecs {
     where
         T::Storage: Default,
     {
-        self.registry.push(Box::new(|w| w.register::<T>()));
+        self.registry.push(Box::new(|w| {
+            w.register::<T>();
+        }));
+    }
+
+    pub fn register_event<E: Event>(&mut self) {
+        self.registry.push(Box::new(|w| {
+            w.register_event::<E>();
+        }));
     }
 }
 
