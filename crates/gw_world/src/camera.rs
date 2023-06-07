@@ -1,6 +1,6 @@
 use crate::position::Position;
 use gw_app::log;
-use gw_ecs::{Entity, ReadComp, SystemData, World, WriteRes};
+use gw_ecs::prelude::{Entity, ReadComp, World, WriteUnique};
 use gw_util::point::Point;
 
 #[derive(Debug)]
@@ -97,7 +97,7 @@ impl Default for Camera {
 }
 
 pub fn update_camera_follows(world: &World) {
-    let (mut camera, position) = <(WriteRes<Camera>, ReadComp<Position>)>::fetch(world);
+    let (mut camera, position) = <(WriteUnique<Camera>, ReadComp<Position>)>::fetch(world);
 
     if let Some(ref entity) = camera.follows {
         if let Some(pos) = position.get(*entity) {

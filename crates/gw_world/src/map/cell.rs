@@ -1,14 +1,12 @@
-use std::sync::Arc;
-
-use gw_app::{ecs::World, log};
-use gw_ecs::ReadComp;
-
 use crate::{
     being::Being,
     // level::Level,
     sprite::Sprite,
     tile::{tile_is_none, Tile, TileFlags, TileMove, TileSet},
 };
+use gw_app::log;
+use gw_ecs::prelude::{ReadComp, World};
+use std::sync::Arc;
 
 use super::{CellFlags, Map};
 

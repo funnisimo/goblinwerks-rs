@@ -1,5 +1,5 @@
 use super::{Cell, Map};
-use gw_ecs::World;
+use gw_ecs::prelude::World;
 use gw_util::{
     grid::Grid,
     mask::get_area_mask,

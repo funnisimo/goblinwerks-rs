@@ -1,4 +1,4 @@
-use gw_ecs::{Ecs, World};
+use gw_ecs::prelude::{Ecs, World};
 use gw_util::rng::RandomNumberGenerator;
 
 pub mod action;

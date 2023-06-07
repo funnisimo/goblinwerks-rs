@@ -1,5 +1,4 @@
 use gw_app::*;
-use gw_app::ecs::{SystemData};
 
 mod entity;
 mod level;
@@ -9,8 +8,7 @@ mod player;
 
 use entity::Entity;
 use gw_app::fps::Fps;
-use gw_ecs::shred::NoSetup;
-use gw_ecs::{ReadGlobal, WriteGlobal};
+use gw_ecs::prelude::{ReadGlobal, WriteGlobal};
 use level::{Level, load_level};
 use player::Player;
 
@@ -60,10 +58,13 @@ impl DoryenDemo {
 
     fn render_entities(&mut self, ecs: &mut Ecs) {
 
-        let (entities, level, player) = <(ReadGlobal<Entities, NoSetup>, ReadGlobal<Level, NoSetup>, ReadGlobal<Player>)>::fetch(ecs.current_world());
+        let world = ecs.current_world();
+        let entities = world.read_global::<Entities>();
+        let level = world.read_global::<Level>();
+        let player = world.read_global::<Player>();
 
         let buffer = self.con.buffer_mut();
-        for entity in entities.0.iter() {
+        for entity in (&entities).join() {
             if level.is_in_fov(entity.pos) {
                 entity.render(buffer, &*level);
             }

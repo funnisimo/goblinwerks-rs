@@ -5,8 +5,7 @@ use super::BeingKindBuilder;
 use super::BeingKinds;
 use gw_app::loader::{LoadError, LoadHandler};
 use gw_app::log;
-use gw_ecs::Ecs;
-use gw_ecs::World;
+use gw_ecs::prelude::{Ecs, World};
 use gw_util::value::Value;
 
 /*

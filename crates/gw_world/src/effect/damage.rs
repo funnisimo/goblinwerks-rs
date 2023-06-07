@@ -1,6 +1,6 @@
 use super::{BoxedEffect, Effect, EffectResult};
 use crate::log::Logger;
-use gw_ecs::{Entity, World};
+use gw_ecs::prelude::{Entity, World};
 use gw_util::dice::Dice;
 use gw_util::point::Point;
 use gw_util::value::Value;

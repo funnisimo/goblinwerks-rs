@@ -6,7 +6,7 @@ use crate::{
     map::Map,
     position::Position,
 };
-use gw_ecs::{Entity, ReadComp, SystemData, World};
+use gw_ecs::prelude::{Entity, ReadComp, World};
 use gw_util::path::a_star_search;
 
 pub fn basic_monster_ai(world: &mut World, entity: Entity) -> TaskResult {

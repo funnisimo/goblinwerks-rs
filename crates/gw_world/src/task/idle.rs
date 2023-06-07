@@ -1,5 +1,5 @@
 use crate::being::Being;
-use gw_ecs::{Entity, World};
+use gw_ecs::prelude::{Entity, World};
 
 use super::TaskResult;
 

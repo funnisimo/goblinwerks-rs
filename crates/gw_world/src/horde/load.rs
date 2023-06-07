@@ -3,7 +3,7 @@ use super::{set_field, HordeBuilder};
 use crate::being::{self, BeingKinds};
 use gw_app::loader::{LoadError, LoadHandler};
 use gw_app::log;
-use gw_ecs::Ecs;
+use gw_ecs::prelude::Ecs;
 use gw_util::value::Value;
 use std::fs::read_to_string;
 

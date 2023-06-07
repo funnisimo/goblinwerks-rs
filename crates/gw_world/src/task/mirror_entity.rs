@@ -1,6 +1,6 @@
 use super::{execute_actor_action, get_hero_entity_point, TaskResult};
 use crate::{action::move_step::MoveStepAction, position::Position};
-use gw_ecs::{Component, DenseVecStorage, Entity, ReadComp, SystemData, World, WriteComp};
+use gw_ecs::prelude::{Component, Entity, ReadComp, World, WriteComp};
 use gw_util::point::Point;
 use serde::{Deserialize, Serialize};
 

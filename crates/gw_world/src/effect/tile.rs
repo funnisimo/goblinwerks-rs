@@ -1,6 +1,6 @@
 use super::{BoxedEffect, Effect, EffectResult};
 use crate::{map::Map, tile::Tiles};
-use gw_ecs::{Entity, World};
+use gw_ecs::prelude::{Entity, World};
 use gw_util::{point::Point, value::Value};
 
 #[derive(Debug, Clone)]

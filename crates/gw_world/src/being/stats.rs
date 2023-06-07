@@ -1,4 +1,4 @@
-use gw_ecs::{Component, DenseVecStorage};
+use gw_ecs::prelude::Component;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

@@ -1,5 +1,5 @@
 use gw_app::*;
-use gw_ecs::*;
+use gw_ecs::prelude::*;
 use gw_ui::css::*;
 use gw_ui::screens::{Choice, MultiChoice};
 use gw_ui::ui::*;
@@ -122,7 +122,7 @@ impl Screen for MainScreen {
     fn message(&mut self, app: &mut Ecs, id: &str, value: Option<Value>) -> ScreenResult {
         match id {
             "CREATE" => {
-                let (item_kinds,) = <(ReadGlobal<ItemKinds>,)>::fetch(app.current_world());
+                let item_kinds = app.read_global::<ItemKinds>();
 
                 let items: Vec<(String, Value)> = item_kinds
                     .iter()

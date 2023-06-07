@@ -1,6 +1,6 @@
 use super::TaskResult;
 use crate::action::{ActionResult, BoxedAction};
-use gw_ecs::{Entity, World};
+use gw_ecs::prelude::{Entity, World};
 
 #[derive(Default)]
 pub struct UserAction {

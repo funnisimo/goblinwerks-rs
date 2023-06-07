@@ -4,7 +4,7 @@ use super::{
     parse_tile, parse_treasure,
 };
 use crate::map::Map;
-use gw_ecs::{Entity, World};
+use gw_ecs::prelude::{Entity, World};
 use gw_util::point::Point;
 use gw_util::value::Value;
 use lazy_static::lazy_static;

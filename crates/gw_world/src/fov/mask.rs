@@ -3,7 +3,7 @@ use super::FovTarget;
 use crate::map::Map;
 use crate::position::Position;
 use gw_app::log;
-use gw_ecs::{Entity, World};
+use gw_ecs::prelude::{Entity, World};
 use gw_util::point::Point;
 use lazy_static::lazy_static;
 use std::fmt::Debug;
@@ -230,7 +230,7 @@ pub fn get_fov_mask(world: &World, entity: Entity, radius: u32) -> FOVMask {
 mod test {
     use super::*;
     use crate::tile::Tiles;
-    use gw_ecs::{Builder, World};
+    use gw_ecs::prelude::{Builder, World};
 
     #[test]
     fn simple() {

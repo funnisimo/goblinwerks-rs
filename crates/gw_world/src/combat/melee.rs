@@ -1,8 +1,8 @@
 use super::DamageInfo;
 use crate::effect::{parse_damage, BoxedEffect};
 use crate::log::Logger;
-use gw_ecs::{Component, DenseVecStorage};
-use gw_ecs::{Entity, World};
+use gw_ecs::prelude::Component;
+use gw_ecs::prelude::{Entity, World};
 use gw_util::value::Value;
 use serde::{Deserialize, Serialize};
 

@@ -1,5 +1,5 @@
 use crate::action::{Action, ActionResult};
-use gw_ecs::{Entity, World};
+use gw_ecs::prelude::{Entity, World};
 
 #[derive(Copy, Clone, Debug)]
 pub struct DeadAction {

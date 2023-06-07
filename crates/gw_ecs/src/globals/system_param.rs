@@ -376,11 +376,7 @@ unsafe impl<'a, T: 'static> SystemParam for Option<WriteNonSendGlobal<'a, T>> {
 #[cfg(test)]
 mod test {
 
-    use super::*;
-    use crate::{
-        prelude::*,
-        resources::{ReadUnique, WriteUnique},
-    };
+    use crate::prelude::*;
 
     #[derive(Default, Debug)]
     struct GlobalA(u32);

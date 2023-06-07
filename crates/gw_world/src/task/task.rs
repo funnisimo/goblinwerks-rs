@@ -2,7 +2,7 @@ use super::{basic_monster_ai, idle_ai, mirror_entity_ai, move_randomly_ai, user_
 use crate::{hero::Hero, position::Position};
 use gw_app::log;
 use gw_app::screen::BoxedScreen;
-use gw_ecs::{Component, DenseVecStorage, Entity, World};
+use gw_ecs::prelude::{Component, Entity, World};
 use gw_util::point::Point;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
@@ -390,7 +390,7 @@ fn execute_task(task: &str, world: &mut World, entity: Entity) -> TaskResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gw_ecs::{Builder, World};
+    use gw_ecs::prelude::{Builder, World};
 
     #[derive(Component)]
     struct Count(u32);

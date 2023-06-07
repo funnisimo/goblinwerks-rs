@@ -3,7 +3,7 @@ use crate::{
     action::move_step::MoveStepAction,
     being::{Being, MoveFlags},
 };
-use gw_ecs::{Entity, World};
+use gw_ecs::prelude::{Entity, World};
 use gw_util::{point::DIRS, rng::RandomNumberGenerator};
 
 pub fn move_randomly_ai(world: &mut World, entity: Entity) -> TaskResult {

@@ -2,7 +2,7 @@ use crate::{
     action::{ActionResult, BoxedAction},
     task::TaskResult,
 };
-use gw_ecs::{Entity, World};
+use gw_ecs::prelude::{Entity, World};
 
 // #[must_use]
 // fn get_next_action(entity: Entity, ecs: &mut World) -> BoxedAction {

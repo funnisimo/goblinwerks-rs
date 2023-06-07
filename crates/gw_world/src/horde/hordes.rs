@@ -1,5 +1,5 @@
 use gw_app::log;
-use gw_ecs::World;
+use gw_ecs::prelude::World;
 use gw_util::rng::RandomNumberGenerator;
 
 use crate::being::BeingKind;

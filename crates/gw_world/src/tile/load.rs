@@ -2,7 +2,7 @@ use super::TileBuilder;
 use super::Tiles;
 use gw_app::loader::{LoadError, LoadHandler};
 use gw_app::log;
-use gw_ecs::Ecs;
+use gw_ecs::prelude::Ecs;
 use gw_util::value::Value;
 use std::fs::read_to_string;
 

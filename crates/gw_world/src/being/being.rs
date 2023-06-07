@@ -2,7 +2,7 @@ use super::AIFlags;
 use super::BeingFlags;
 use super::BeingKindFlags;
 use super::MoveFlags;
-use gw_ecs::{Component, DenseVecStorage};
+use gw_ecs::prelude::Component;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Component)]

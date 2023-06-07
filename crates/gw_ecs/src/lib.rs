@@ -32,11 +32,8 @@ pub use bevy_ptr as ptr;
 pub mod prelude {
 
     #[doc(hidden)]
-    #[allow(deprecated)]
-    // pub use crate::query::ChangeTrackers;
-    #[doc(hidden)]
-    #[cfg(feature = "bevy_reflect")]
-    pub use crate::reflect::{ReflectComponent, ReflectResource};
+    pub use atomize::*;
+
     #[doc(hidden)]
     pub use crate::{
         // bundle::Bundle,

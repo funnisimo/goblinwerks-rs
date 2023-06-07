@@ -1,7 +1,7 @@
 use crate::log::Logger;
 
 use super::{BoxedEffect, Effect, EffectResult};
-use gw_ecs::{Entity, World};
+use gw_ecs::prelude::{Entity, World};
 use gw_util::point::Point;
 use gw_util::value::Value;
 

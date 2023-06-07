@@ -1,4 +1,4 @@
-use gw_ecs::{Component, DenseVecStorage};
+use gw_ecs::prelude::*;
 use gw_util::point::Point;
 use serde::{Deserialize, Serialize};
 use std::convert::From;

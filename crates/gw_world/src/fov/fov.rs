@@ -2,7 +2,7 @@ use super::{goblin::calculate_fov, FovTarget};
 use crate::{hero::Hero, map::Map, position::Position};
 use bitflags::bitflags;
 use gw_app::log;
-use gw_ecs::{ReadRes, SystemData, World, WriteRes};
+use gw_ecs::prelude::{ReadUnique, World, WriteUnique};
 use gw_util::fl;
 use std::fmt;
 
@@ -344,6 +344,6 @@ pub fn update_fov(world: &mut World) {
         }
     };
 
-    let (map, mut fov) = <(ReadRes<Map>, WriteRes<FOV>)>::fetch(world);
+    let (map, mut fov) = <(ReadUnique<Map>, WriteUnique<FOV>)>::fetch(world);
     calculate_fov(&*map, hero_point, fov.range, &mut *fov);
 }

@@ -1,7 +1,7 @@
 use super::{Horde, HordeRef};
 use crate::{being::spawn_being, horde::HordeFlags};
 use gw_app::log;
-use gw_ecs::{Component, DenseVecStorage, Entity, World};
+use gw_ecs::prelude::{Component, Entity, World};
 use gw_util::point::Point;
 use gw_util::value::{Key, Value};
 use std::cmp::{Eq, PartialEq};

@@ -3,8 +3,8 @@ use crate::log::Logger;
 use crate::task::Executor;
 use crate::{camera::Camera, hero::Hero, map::Map, position::Position};
 use gw_app::log;
-use gw_ecs::atomize::Atom;
-use gw_ecs::{Commands, Entity, World};
+use gw_ecs::prelude::Atom;
+use gw_ecs::prelude::{Commands, Entity, World};
 use gw_util::point::Point;
 use gw_util::value::Value;
 

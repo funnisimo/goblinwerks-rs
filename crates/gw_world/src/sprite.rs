@@ -3,7 +3,7 @@ use gw_app::color::ColorParseErr;
 use gw_app::log;
 use gw_app::Glyph;
 use gw_app::RGBA;
-use gw_ecs::{Component, DenseVecStorage};
+use gw_ecs::prelude::*;
 use gw_util::text::find_first_of;
 use gw_util::value::Value;
 use serde::{Deserialize, Serialize};

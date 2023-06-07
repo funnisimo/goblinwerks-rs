@@ -1,5 +1,5 @@
 use gw_app::screen::BoxedScreen;
-use gw_ecs::{Entity, World};
+use gw_ecs::prelude::{Entity, World};
 
 pub enum ActionResult {
     Done(u32),            // Action done, queue entity in u64 time

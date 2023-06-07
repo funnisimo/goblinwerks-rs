@@ -1,4 +1,4 @@
-use gw_ecs::Entity;
+use gw_ecs::prelude::Entity;
 
 pub struct Hero {
     pub entity: Entity,
