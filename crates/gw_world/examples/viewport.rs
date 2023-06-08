@@ -1,5 +1,5 @@
 use gw_app::*;
-use gw_ecs::prelude::{ResMut, ResRef};
+use gw_ecs::prelude::{Fetch, ResMut, ResRef};
 use gw_util::point::Point;
 use gw_world::camera::Camera;
 use gw_world::map::{dig_room_level, dump_map, Map};
@@ -29,9 +29,10 @@ impl Screen for MainScreen {
         dump_map(&map);
 
         ecs.insert_global(tiles);
-        ecs.insert_resource(map);
-        ecs.insert_resource(MapMemory::new(80, 50));
-        ecs.insert_resource(Camera::new(80, 50));
+        ecs.current_world_mut().insert_resource(map);
+        ecs.current_world_mut()
+            .insert_resource_non_send(MapMemory::new(80, 50));
+        ecs.current_world_mut().insert_resource(Camera::new(80, 50));
     }
 
     fn input(&mut self, ecs: &mut Ecs, ev: &AppEvent) -> ScreenResult {
@@ -39,33 +40,34 @@ impl Screen for MainScreen {
             return result;
         }
 
+        let world = ecs.current_world_mut();
         match ev {
             AppEvent::KeyDown(key_down) => match key_down.key_code {
                 VirtualKeyCode::Space => {
                     let new_map = {
-                        let tiles = ecs.read_global::<Tiles>();
+                        let tiles = world.read_global::<Tiles>();
                         dig_room_level(&tiles, 80, 50)
                     };
-                    ecs.insert_resource(new_map);
+                    world.insert_resource(new_map);
                 }
                 VirtualKeyCode::Escape => {
                     return ScreenResult::Quit;
                 }
                 VirtualKeyCode::Down => {
-                    let mut camera = ecs.write_resource::<Camera>();
+                    let mut camera = world.write_resource::<Camera>();
                     log("Camera down");
                     camera.move_center(0, 1);
                 }
                 VirtualKeyCode::Left => {
-                    let mut camera = ecs.write_resource::<Camera>();
+                    let mut camera = world.write_resource::<Camera>();
                     camera.move_center(-1, 0);
                 }
                 VirtualKeyCode::Up => {
-                    let mut camera = ecs.write_resource::<Camera>();
+                    let mut camera = world.write_resource::<Camera>();
                     camera.move_center(0, -1);
                 }
                 VirtualKeyCode::Right => {
-                    let mut camera = ecs.write_resource::<Camera>();
+                    let mut camera = world.write_resource::<Camera>();
                     camera.move_center(1, 0);
                 }
                 VirtualKeyCode::Equals => {
@@ -75,7 +77,7 @@ impl Screen for MainScreen {
                     log(format!("Viewport size={:?}", self.viewport.size()));
                 }
                 VirtualKeyCode::Minus => {
-                    let map_size = ecs.read_resource::<Map>().size();
+                    let map_size = world.read_resource::<Map>().size();
                     let size = self.viewport.size();
                     self.viewport
                         .resize((size.0 + 8).min(map_size.0), (size.1 + 5).min(map_size.1));

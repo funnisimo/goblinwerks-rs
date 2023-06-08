@@ -1,4 +1,4 @@
-use gw_ecs::{Builder, Component, DenseVecStorage, Ecs, Entity};
+use gw_ecs::prelude::{Builder, Component, Ecs, Entity};
 use serde::{Deserialize, Serialize};
 
 // a component is any type that is 'static, sized, send and sync
@@ -24,7 +24,7 @@ fn main() {
     ecs.register::<Position>();
     ecs.register::<Velocity>();
 
-    let mut source = ecs.create_world("SOURCE");
+    let source = ecs.create_world("SOURCE");
 
     // or extend via an IntoIterator of tuples to add many at once (this is faster)
     for i in 0..3 {
@@ -35,23 +35,23 @@ fn main() {
                 y: i as f32,
             })
             .with(Velocity::default())
-            .build();
+            .id();
     }
 
     // push a component tuple into the world to create an entity that we will move
     let entity: Entity = source
         .create_entity()
         .with(Position { x: 3.0, y: 4.0 })
-        .build();
+        .id();
     // or
     // .. see what happens if the entity has an unregistered component
-    // let entity: Entity = source.create_entity().with(Position { x: 0.0, y: 0.0 }).with(Invisible).build();
+    // let entity: Entity = source.create_entity().with(Position { x: 0.0, y: 0.0 }).with(Invisible).id();
 
     drop(source);
     println!("Original Entity = {:?}", entity);
 
     // CREATE + POPULATE DEST WORLD
-    let mut destination = ecs.create_world("DESTINATION");
+    let destination = ecs.create_world("DESTINATION");
 
     // or extend via an IntoIterator of tuples to add many at once (this is faster)
     for i in 10..13 {
@@ -62,7 +62,7 @@ fn main() {
                 y: i as f32,
             })
             .with(Velocity::default())
-            .build();
+            .id();
 
         destination
             .create_entity()
@@ -70,7 +70,7 @@ fn main() {
                 x: (i + 10) as f32,
                 y: (i + 10) as f32,
             })
-            .build();
+            .id();
     }
 
     drop(destination);
