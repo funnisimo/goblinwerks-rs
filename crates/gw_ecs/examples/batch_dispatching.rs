@@ -54,18 +54,18 @@ pub struct PotatoStore(u32);
 pub struct TomatoStore(u32);
 
 /// System that says "Hello!"
-fn say_hello(pot: ReadUnique<PotatoStore>, tom: ReadUnique<TomatoStore>) {
+fn say_hello(pot: ResRef<PotatoStore>, tom: ResRef<TomatoStore>) {
     println!("Hello! - potatos: {}, tomatoes: {}", pot.0, tom.0);
 }
 
 /// System that says "Buy Potato"
-fn buy_potato(mut pot: WriteUnique<PotatoStore>) {
+fn buy_potato(mut pot: ResMut<PotatoStore>) {
     pot.0 += 1;
     println!("Buy Potato - {}", pot.0);
 }
 
 /// System that says "Buy Tomato"
-fn buy_tomato(mut tom: WriteUnique<TomatoStore>) {
+fn buy_tomato(mut tom: ResMut<TomatoStore>) {
     tom.0 += 1;
     println!("Buy Tomato - {}", tom.0);
 }

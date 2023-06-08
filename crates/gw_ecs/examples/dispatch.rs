@@ -22,14 +22,14 @@ impl Default for NotSync {
     }
 }
 
-fn print_system(a: ReadUnique<UniqueA>, mut b: WriteUnique<UniqueB>) {
+fn print_system(a: ResRef<UniqueA>, mut b: ResMut<UniqueB>) {
     println!("PrintSystem = {:?} + {:?}", &*a, &*b);
 
     *b = UniqueB(32); // We can mutate UniqueB here
                       // because it's `Write`.
 }
 
-fn not_sync_system(not_sync: ReadNonSendUnique<NotSync>, mut b: WriteUnique<UniqueB>) {
+fn not_sync_system(not_sync: ReadNonSendUnique<NotSync>, mut b: ResMut<UniqueB>) {
     println!("NotSync = {:?} + {:?}", not_sync.ptr, b.0);
 
     *b = UniqueB(16); // We can mutate UniqueB here

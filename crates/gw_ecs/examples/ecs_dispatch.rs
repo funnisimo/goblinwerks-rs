@@ -1,7 +1,4 @@
-use gw_ecs::{
-    prelude::*,
-    resources::{ReadUnique, WriteUnique},
-};
+use gw_ecs::prelude::*;
 
 #[derive(Debug, Default)]
 struct UniqueA;
@@ -11,7 +8,7 @@ struct UniqueA;
 #[derive(Debug, Default)]
 struct UniqueB;
 
-fn print_system(a: ReadUnique<UniqueA>, mut b: WriteUnique<UniqueB>) {
+fn print_system(a: ResRef<UniqueA>, mut b: ResMut<UniqueB>) {
     println!("PrintSystem = {:?} + {:?}", &*a, &*b);
 
     *b = UniqueB; // We can mutate UniqueB here

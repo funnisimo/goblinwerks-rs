@@ -7,7 +7,7 @@ use gw_util::value::Value;
 ////////////////////////
 
 #[derive(Debug, Clone)]
-pub struct Message(String);
+pub struct Message(pub(super) String);
 
 impl Message {
     pub fn new(text: &str) -> Self {

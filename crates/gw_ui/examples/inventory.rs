@@ -510,7 +510,7 @@ fn stack_floor(world: &mut World, kind: &Arc<ItemKind>, count: u16) -> Option<En
 fn create_floor(world: &mut World, kind: &Arc<ItemKind>, count: u16) -> Entity {
     let mut item = Item::new(kind.clone());
     item.count = count;
-    let entity = world.create_entity().with(item).build();
+    let entity = world.create_entity().with(item).id();
     log(format!("Created floor entity - {:?}", entity));
     entity
 }
@@ -543,7 +543,7 @@ fn create_inventory(world: &mut World, kind: &Arc<ItemKind>, count: u16) -> Enti
         .create_entity()
         .with(item)
         .with(InInventory::new())
-        .build();
+        .id();
     log(format!("Created inventory entity - {:?}", entity));
     entity
 }

@@ -21,12 +21,8 @@ pub use self::graph_utils::NodeId;
 mod tests {
     use super::*;
     use crate as gw_ecs;
+    use crate::prelude::*;
     use std::sync::atomic::{AtomicU32, Ordering};
-
-    use crate::resources::{ReadUnique, WriteUnique};
-    pub use crate::resources::{ResMut, ResRef};
-    pub use crate::schedule::{IntoSystemConfig, IntoSystemSetConfig, Schedule, SystemSet};
-    pub use crate::{prelude::World, system::Resource};
 
     #[derive(SystemSet, Clone, Debug, PartialEq, Eq, Hash)]
     enum TestSet {
@@ -50,11 +46,11 @@ mod tests {
         move |world| world.write_resource::<SystemOrder>().0.push(tag)
     }
 
-    fn make_function_system(tag: u32) -> impl FnMut(WriteUnique<SystemOrder>) {
-        move |mut resource: WriteUnique<SystemOrder>| resource.0.push(tag)
+    fn make_function_system(tag: u32) -> impl FnMut(ResMut<SystemOrder>) {
+        move |mut resource: ResMut<SystemOrder>| resource.0.push(tag)
     }
 
-    fn named_system(mut resource: WriteUnique<SystemOrder>) {
+    fn named_system(mut resource: ResMut<SystemOrder>) {
         resource.0.push(u32::MAX);
     }
 
@@ -62,7 +58,7 @@ mod tests {
         world.write_resource::<SystemOrder>().0.push(u32::MAX);
     }
 
-    fn counting_system(counter: ReadUnique<Counter>) {
+    fn counting_system(counter: ResRef<Counter>) {
         counter.0.fetch_add(1, Ordering::Relaxed);
     }
 
@@ -212,8 +208,7 @@ mod tests {
             world.ensure_resource::<SystemOrder>();
 
             schedule.add_system(
-                make_function_system(0)
-                    .run_if(|condition: ReadUnique<RunConditionBool>| condition.0),
+                make_function_system(0).run_if(|condition: ResRef<RunConditionBool>| condition.0),
             );
 
             schedule.run(&mut world);
@@ -232,7 +227,7 @@ mod tests {
             world.insert_resource(RunConditionBool(true));
             world.ensure_resource::<SystemOrder>();
 
-            fn change_condition(mut condition: WriteUnique<RunConditionBool>) {
+            fn change_condition(mut condition: ResMut<RunConditionBool>) {
                 condition.0 = false;
             }
 
@@ -243,7 +238,7 @@ mod tests {
                     make_function_system(1),
                 )
                     .chain()
-                    .distributive_run_if(|condition: ReadUnique<RunConditionBool>| condition.0),
+                    .distributive_run_if(|condition: ResRef<RunConditionBool>| condition.0),
             );
 
             schedule.run(&mut world);
@@ -259,8 +254,7 @@ mod tests {
             world.ensure_resource::<SystemOrder>();
 
             schedule.add_system(
-                make_exclusive_system(0)
-                    .run_if(|condition: ReadUnique<RunConditionBool>| condition.0),
+                make_exclusive_system(0).run_if(|condition: ResRef<RunConditionBool>| condition.0),
             );
 
             schedule.run(&mut world);
@@ -349,8 +343,8 @@ mod tests {
 
             schedule.add_system(
                 counting_system
-                    .run_if(|res1: ReadUnique<RunConditionBool>| res1.is_changed())
-                    .run_if(|res2: ReadUnique<Bool2>| res2.is_changed()),
+                    .run_if(|res1: ResRef<RunConditionBool>| res1.is_changed())
+                    .run_if(|res2: ResRef<Bool2>| res2.is_changed()),
             );
 
             // both resource were just added.
@@ -415,8 +409,8 @@ mod tests {
 
             schedule.configure_set(
                 TestSet::A
-                    .run_if(|res1: ReadUnique<RunConditionBool>| res1.is_changed())
-                    .run_if(|res2: ReadUnique<Bool2>| res2.is_changed()),
+                    .run_if(|res1: ResRef<RunConditionBool>| res1.is_changed())
+                    .run_if(|res2: ResRef<Bool2>| res2.is_changed()),
             );
 
             schedule.add_system(counting_system.in_set(TestSet::A));
@@ -482,12 +476,12 @@ mod tests {
             let mut schedule = Schedule::default();
 
             schedule.configure_set(
-                TestSet::A.run_if(|res1: ReadUnique<RunConditionBool>| res1.is_changed()),
+                TestSet::A.run_if(|res1: ResRef<RunConditionBool>| res1.is_changed()),
             );
 
             schedule.add_system(
                 counting_system
-                    .run_if(|res2: ReadUnique<Bool2>| res2.is_changed())
+                    .run_if(|res2: ResRef<Bool2>| res2.is_changed())
                     .in_set(TestSet::A),
             );
 
@@ -713,8 +707,8 @@ mod tests {
         fn ambiguity() {
             struct X;
 
-            fn res_ref(_x: ReadUnique<X>) {}
-            fn res_mut(_x: WriteUnique<X>) {}
+            fn res_ref(_x: ResRef<X>) {}
+            fn res_mut(_x: ResMut<X>) {}
 
             let mut world = World::default();
             let mut schedule = Schedule::new();

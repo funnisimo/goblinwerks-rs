@@ -8,7 +8,7 @@ mod player;
 
 use entity::Entity;
 use gw_app::fps::Fps;
-use gw_ecs::prelude::{ReadGlobal, WriteGlobal};
+use gw_ecs::prelude::{GlobalRef, GlobalMut, Fetch};
 use level::{Level, load_level};
 use player::Player;
 
@@ -64,7 +64,7 @@ impl DoryenDemo {
         let player = world.read_global::<Player>();
 
         let buffer = self.con.buffer_mut();
-        for entity in (&entities).join() {
+        for entity in entities.0.iter() {
             if level.is_in_fov(entity.pos) {
                 entity.render(buffer, &*level);
             }
@@ -82,7 +82,7 @@ impl Screen for DoryenDemo {
             self.loaded = load_level(ecs, LEVEL_PREFIX);
         }
         if self.loaded {
-            let (input, mut player, mut level) = <(ReadGlobal<AppInput>, WriteGlobal<Player>, WriteGlobal<Level, NoSetup>)>::fetch(ecs.current_world());
+            let (input, mut player, mut level) = <(GlobalRef<AppInput>, GlobalMut<Player>, GlobalMut<Level>)>::fetch(ecs.current_world());
 
             let mut coef = 1.0 / std::f32::consts::SQRT_2;
             let mut mov = player.move_from_input(&*input);
@@ -107,7 +107,7 @@ impl Screen for DoryenDemo {
             self.clear_con();
 
             {
-                let (mut level, player) = <(WriteGlobal<Level, NoSetup>, ReadGlobal<Player>)>::fetch(ecs.current_world());
+                let (mut level, player) = <(GlobalMut<Level >, GlobalRef<Player>)>::fetch(ecs.current_world());
                 level.render(self.map_con.buffer_mut(), player.pos());
             }
 

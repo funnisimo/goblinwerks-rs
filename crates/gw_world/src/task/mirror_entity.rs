@@ -1,10 +1,10 @@
 use super::{execute_actor_action, get_hero_entity_point, TaskResult};
 use crate::{action::move_step::MoveStepAction, position::Position};
-use gw_ecs::prelude::{Component, Entity, ReadComp, World, WriteComp};
+use gw_ecs::prelude::{Component, Entity, Fetch, ReadComp, World, WriteComp};
 use gw_util::point::Point;
-use serde::{Deserialize, Serialize};
+// use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Component, Serialize, Deserialize)]
+#[derive(Clone, Debug, Component)] // Serialize, Deserialize
 struct MirrorEntity {
     last_xy: Point,
     entity: Entity,

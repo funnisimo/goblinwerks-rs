@@ -1,5 +1,5 @@
 use gw_app::*;
-use gw_ecs::{ReadRes, SystemData, WriteRes};
+use gw_ecs::prelude::{ResMut, ResRef};
 use gw_util::point::Point;
 use gw_world::camera::Camera;
 use gw_world::map::{dig_room_level, dump_map, Map};
@@ -107,7 +107,7 @@ impl Screen for MainScreen {
 
     fn render(&mut self, app: &mut Ecs) {
         {
-            let (mut map, camera) = <(WriteRes<Map>, ReadRes<Camera>)>::fetch(app.current_world());
+            let (mut map, camera) = <(ResMut<Map>, ResRef<Camera>)>::fetch(app.current_world());
             let offset = camera.offset();
             self.viewport
                 .draw_map(&mut map, None, &AlwaysVisible::new(), offset, false);

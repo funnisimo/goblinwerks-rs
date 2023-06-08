@@ -17,11 +17,7 @@ impl FromWorld for ResWithoutDefault {
     }
 }
 
-fn print_system(
-    a: ReadUnique<ResA>,
-    mut b: Option<WriteUnique<ResB>>,
-    c: ReadUnique<ResWithoutDefault>,
-) {
+fn print_system(a: ResRef<ResA>, mut b: Option<ResMut<ResB>>, c: ResRef<ResWithoutDefault>) {
     println!("[PRINT SYSTEM]");
     println!("A = {:?}", &*a);
 

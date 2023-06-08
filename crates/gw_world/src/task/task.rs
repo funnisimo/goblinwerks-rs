@@ -409,7 +409,7 @@ mod tests {
             .create_entity()
             .with(Task::new("TEST".to_string()))
             .with(Count(0))
-            .build();
+            .id();
 
         // fn inc_count(ecs: &mut World, entity: Entity) -> TaskResult {
         //     let mut level = get_current_level_mut(ecs);
@@ -449,12 +449,12 @@ mod tests {
             .create_entity()
             .with(Task::new("TEST".to_string()))
             .with(Count(0))
-            .build();
+            .id();
         let entity_b = world
             .create_entity()
             .with(Task::new("TEST".to_string()))
             .with(Count(0))
-            .build();
+            .id();
 
         // fn inc_count(ecs: &mut World, entity: Entity) -> TaskResult {
         //     let mut level = get_current_level_mut(ecs);
@@ -496,12 +496,12 @@ mod tests {
             .create_entity()
             .with(Task::new("TEST".to_string()))
             .with(Count(0))
-            .build();
+            .id();
         let entity_b = world
             .create_entity()
             .with(Task::new("TEST".to_string()))
             .with(Count(0))
-            .build();
+            .id();
 
         // fn inc_count(ecs: &mut World, entity: Entity) -> TaskResult {
         //     let mut level = get_current_level_mut(ecs);
@@ -543,12 +543,12 @@ mod tests {
             .create_entity()
             .with(Task::new("TEST".to_string()))
             .with(Count(0))
-            .build();
+            .id();
         let entity_b = world
             .create_entity()
             .with(Task::new("TEST".to_string()))
             .with(Count(0))
-            .build();
+            .id();
 
         // fn inc_count(ecs: &mut World, entity: Entity) -> TaskResult {
         //     let mut level = get_current_level_mut(ecs);

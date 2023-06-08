@@ -977,7 +977,7 @@ where
 mod tests {
     use super::Condition;
     // use crate as gw_ecs;
-    use crate::resources::WriteUnique;
+    use crate::resources::ResMut;
     use crate::schedule::common_conditions::not;
     use crate::schedule::IntoSystemConfig;
     use crate::system::Local;
@@ -986,7 +986,7 @@ mod tests {
     #[derive(Default)]
     struct Counter(usize);
 
-    fn increment_counter(mut counter: WriteUnique<Counter>) {
+    fn increment_counter(mut counter: ResMut<Counter>) {
         counter.0 += 1;
     }
 

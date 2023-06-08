@@ -18,6 +18,9 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use tracing;
 use tracing::Level;
 
+mod fetch;
+pub use fetch::*;
+
 // pub use crate::shred::Entry;
 
 pub type WorldId = Atom;
@@ -211,28 +214,16 @@ impl World {
     //     f(self.fetch())
     // }
 
-    // /// Fetches the resource with the specified type `T` or panics if it doesn't
-    // /// exist.
-    // ///
-    // /// # Panics
-    // ///
-    // /// Panics if the resource doesn't exist.
-    // /// Panics if the resource is being accessed mutably.
-    // pub fn fetch<T>(&self) -> Fetch<T>
-    // where
-    //     T: Resource,
-    // {
-    //     self.try_fetch().unwrap_or_else(|| {
-    //         if self.resources.is_empty() {
-    //             eprintln!(
-    //                 "Note: Could not find a resource (see the following panic);\
-    //                  the `World` is completely empty. Did you accidentally create a fresh `World`?"
-    //             )
-    //         }
-
-    //         fetch_panic!()
-    //     })
-    // }
+    /// Fetches the resource with the specified type `T` or panics if it doesn't
+    /// exist.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the resource doesn't exist.
+    /// Panics if the resource is being accessed mutably.
+    pub fn fetch<T: Fetch>(&self) -> <T as Fetch>::Item<'_> {
+        T::fetch(self)
+    }
 
     // /// Like `fetch`, but returns an `Option` instead of inserting a default
     // /// value in case the resource does not exist.
@@ -1090,7 +1081,7 @@ mod tests {
 
         assert_eq!(world.read_resource::<ResA>().0, 0);
 
-        let res = world.exec(|mut a: WriteUnique<ResA>| {
+        let res = world.exec(|mut a: ResMut<ResA>| {
             a.0 += 1;
             a.0
         });

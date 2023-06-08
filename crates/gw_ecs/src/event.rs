@@ -3,7 +3,7 @@
 use crate as gw_ecs;
 use crate::components::{CastFrom, MetaTable};
 use crate::prelude::World;
-use crate::resources::{ReadUnique, WriteUnique};
+use crate::resources::{ResMut, ResRef};
 use crate::system::{Local, SystemParam};
 use bevy_utils::tracing::trace;
 use std::ops::{Deref, DerefMut};
@@ -190,7 +190,7 @@ impl<E: Event> DerefMut for EventSequence<E> {
 #[derive(SystemParam, Debug)]
 pub struct EventReader<'w, 's, E: Event> {
     reader: Local<'s, ManualEventReader<E>>,
-    events: ReadUnique<'w, Events<E>>,
+    events: ResRef<'w, Events<E>>,
 }
 
 impl<'w, 's, E: Event> EventReader<'w, 's, E> {
@@ -297,7 +297,7 @@ impl<'a, 'w, 's, E: Event> IntoIterator for &'a mut EventReader<'w, 's, E> {
 /// Note that this is considered *non-idiomatic*, and should only be used when `EventWriter` will not work.
 #[derive(SystemParam)]
 pub struct EventWriter<'w, E: Event> {
-    events: WriteUnique<'w, Events<E>>,
+    events: ResMut<'w, Events<E>>,
 }
 
 impl<'w, E: Event> EventWriter<'w, E> {
@@ -560,7 +560,7 @@ impl<E: Event> Events<E> {
     }
 
     // /// A system that calls [`Events::update`] once per frame.
-    // pub fn update_system(mut events: WriteUnique<Self>) {
+    // pub fn update_system(mut events: ResMut<Self>) {
     //     events.update();
     // }
 

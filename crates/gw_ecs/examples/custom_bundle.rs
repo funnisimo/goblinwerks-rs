@@ -8,8 +8,8 @@ struct ResB(u32);
 
 #[derive(SystemParam)]
 struct ExampleBundle<'w> {
-    a: ReadUnique<'w, ResA>,
-    b: WriteUnique<'w, ResB>,
+    a: ResRef<'w, ResA>,
+    b: ResMut<'w, ResB>,
 }
 
 fn main() {

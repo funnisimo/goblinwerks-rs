@@ -22,7 +22,7 @@
 //! #
 //! fn update_score_system(
 //!     mut query: Query<(&Player, &mut Score)>,
-//!     mut round: WriteUnique<Round>,
+//!     mut round: ResMut<Round>,
 //! ) {
 //!     for (player, mut score) in &mut query {
 //!         if player.alive {
@@ -207,7 +207,7 @@ mod tests {
     // #[test]
     // fn query_system_gets() {
     //     fn query_system(
-    //         mut ran: WriteUnique<SystemRan>,
+    //         mut ran: ResMut<SystemRan>,
     //         entity_query: Query<Entity, With<A>>,
     //         b_query: Query<&B>,
     //         a_c_query: Query<(&A, &C)>,
@@ -266,7 +266,7 @@ mod tests {
     // fn or_param_set_system() {
     //     // Regression test for issue #762
     //     fn query_system(
-    //         mut ran: WriteUnique<SystemRan>,
+    //         mut ran: ResMut<SystemRan>,
     //         mut set: ParamSet<(
     //             Query<(), Or<(Changed<A>, Changed<B>)>>,
     //             Query<(), Or<(Added<A>, Added<B>)>>,
@@ -299,9 +299,9 @@ mod tests {
         struct Changed(usize);
 
         fn incr_e_on_flip(
-            value: ReadUnique<Flipper>,
-            mut changed: WriteUnique<Changed>,
-            mut added: WriteUnique<Added>,
+            value: ResRef<Flipper>,
+            mut changed: ResMut<Changed>,
+            mut added: ResMut<Added>,
         ) {
             if value.is_added() {
                 added.0 += 1;
@@ -471,27 +471,27 @@ mod tests {
     #[test]
     #[should_panic]
     fn conflicting_system_resources() {
-        fn sys(_: WriteUnique<BufferRes>, _: ReadUnique<BufferRes>) {}
+        fn sys(_: ResMut<BufferRes>, _: ResRef<BufferRes>) {}
         test_for_conflicting_resources(sys);
     }
 
     #[test]
     #[should_panic]
     fn conflicting_system_resources_reverse_order() {
-        fn sys(_: ReadUnique<BufferRes>, _: WriteUnique<BufferRes>) {}
+        fn sys(_: ResRef<BufferRes>, _: ResMut<BufferRes>) {}
         test_for_conflicting_resources(sys);
     }
 
     #[test]
     #[should_panic]
     fn conflicting_system_resources_multiple_mutable() {
-        fn sys(_: WriteUnique<BufferRes>, _: WriteUnique<BufferRes>) {}
+        fn sys(_: ResMut<BufferRes>, _: ResMut<BufferRes>) {}
         test_for_conflicting_resources(sys);
     }
 
     #[test]
     fn nonconflicting_system_resources() {
-        fn sys(_: Local<BufferRes>, _: WriteUnique<BufferRes>, _: Local<A>, _: WriteUnique<A>) {}
+        fn sys(_: Local<BufferRes>, _: ResMut<BufferRes>, _: Local<A>, _: ResMut<A>) {}
         test_for_conflicting_resources(sys);
     }
 
@@ -517,7 +517,7 @@ mod tests {
             }
         }
 
-        fn sys(local: Local<Foo>, mut system_ran: WriteUnique<SystemRan>) {
+        fn sys(local: Local<Foo>, mut system_ran: ResMut<SystemRan>) {
             assert_eq!(local.value, 2);
             *system_ran = SystemRan::Yes;
         }
@@ -540,7 +540,7 @@ mod tests {
         fn sys(
             op: Option<ReadNonSendUnique<NotSend1>>,
             mut _op2: Option<WriteNonSendUnique<NotSend2>>,
-            mut system_ran: WriteUnique<SystemRan>,
+            mut system_ran: ResMut<SystemRan>,
         ) {
             op.expect("NonSend should exist");
             *system_ran = SystemRan::Yes;
@@ -565,7 +565,7 @@ mod tests {
         fn sys(
             _op: ReadNonSendUnique<NotSend1>,
             mut _op2: WriteNonSendUnique<NotSend2>,
-            mut system_ran: WriteUnique<SystemRan>,
+            mut system_ran: ResMut<SystemRan>,
         ) {
             *system_ran = SystemRan::Yes;
         }
@@ -601,8 +601,8 @@ mod tests {
 
     //     fn validate_despawn(
     //         mut removed_i32: RemovedComponents<W<i32>>,
-    //         despawned: ReadUnique<Despawned>,
-    //         mut n_systems: WriteUnique<NSystems>,
+    //         despawned: ResRef<Despawned>,
+    //         mut n_systems: ResMut<NSystems>,
     //     ) {
     //         assert_eq!(
     //             removed_i32.iter().collect::<Vec<_>>(),
@@ -626,9 +626,9 @@ mod tests {
 
     //     fn validate_remove(
     //         mut removed_i32: RemovedComponents<W<i32>>,
-    //         despawned: ReadUnique<Despawned>,
-    //         removed: ReadUnique<Removed>,
-    //         mut n_systems: WriteUnique<NSystems>,
+    //         despawned: ResRef<Despawned>,
+    //         removed: ResRef<Removed>,
+    //         mut n_systems: ResMut<NSystems>,
     //     ) {
     //         // The despawned entity from the previous frame was
     //         // double buffered so we now have it in this system as well.
@@ -658,7 +658,7 @@ mod tests {
     //         entities: &Entities,
     //         bundles: &Bundles,
     //         query: Query<Entity, With<W<i32>>>,
-    //         mut system_ran: WriteUnique<SystemRan>,
+    //         mut system_ran: ResMut<SystemRan>,
     //     ) {
     //         assert_eq!(query.iter().count(), 1, "entity exists");
     //         for entity in &query {
@@ -693,9 +693,9 @@ mod tests {
 
     // #[test]
     // fn get_system_conflicts() {
-    //     fn sys_x(_: ReadUnique<A>, _: ReadUnique<B>, _: Query<(&C, &D)>) {}
+    //     fn sys_x(_: ResRef<A>, _: ResRef<B>, _: Query<(&C, &D)>) {}
 
-    //     fn sys_y(_: ReadUnique<A>, _: WriteUnique<B>, _: Query<(&C, &mut D)>) {}
+    //     fn sys_y(_: ResRef<A>, _: ResMut<B>, _: Query<(&C, &mut D)>) {}
 
     //     let mut world = World::default();
     //     let mut x = IntoSystem::into_system(sys_x);
@@ -740,12 +740,12 @@ mod tests {
     // #[allow(clippy::too_many_arguments)]
     // fn can_have_16_parameters() {
     //     fn sys_x(
-    //         _: ReadUnique<A>,
-    //         _: ReadUnique<B>,
-    //         _: ReadUnique<C>,
-    //         _: ReadUnique<D>,
-    //         _: ReadUnique<E>,
-    //         _: ReadUnique<F>,
+    //         _: ResRef<A>,
+    //         _: ResRef<B>,
+    //         _: ResRef<C>,
+    //         _: ResRef<D>,
+    //         _: ResRef<E>,
+    //         _: ResRef<F>,
     //         _: Query<&A>,
     //         _: Query<&B>,
     //         _: Query<&C>,
@@ -759,12 +759,12 @@ mod tests {
     //     }
     //     fn sys_y(
     //         _: (
-    //             ReadUnique<A>,
-    //             ReadUnique<B>,
-    //             ReadUnique<C>,
-    //             ReadUnique<D>,
-    //             ReadUnique<E>,
-    //             ReadUnique<F>,
+    //             ResRef<A>,
+    //             ResRef<B>,
+    //             ResRef<C>,
+    //             ResRef<D>,
+    //             ResRef<E>,
+    //             ResRef<F>,
     //             Query<&A>,
     //             Query<&B>,
     //             Query<&C>,
@@ -796,7 +796,7 @@ mod tests {
     //     world.insert_resource(A(42));
     //     world.spawn(B(7));
 
-    //     let mut system_state: SystemState<(ReadUnique<A>, Query<&B>, ParamSet<(Query<&C>, Query<&D>)>)> =
+    //     let mut system_state: SystemState<(ResRef<A>, Query<&B>, ParamSet<(Query<&C>, Query<&D>)>)> =
     //         SystemState::new(&mut world);
     //     let (a, query, _) = system_state.get(&world);
     //     assert_eq!(*a, A(42), "returned resource matches initial value");
@@ -819,7 +819,7 @@ mod tests {
     //     world.insert_resource(A(42));
     //     world.spawn(B(7));
 
-    //     let mut system_state: SystemState<(WriteUnique<A>, Query<&mut B>)> =
+    //     let mut system_state: SystemState<(ResMut<A>, Query<&mut B>)> =
     //         SystemState::new(&mut world);
 
     //     // The following line shouldn't compile because the parameters used are not ReadOnlySystemParam
@@ -910,7 +910,7 @@ mod tests {
     //     }
 
     //     struct State {
-    //         state: SystemState<ReadUnique<'static, A>>,
+    //         state: SystemState<ResRef<'static, A>>,
     //         state_q: SystemState<Query<'static, 'static, &'static A>>,
     //     }
 

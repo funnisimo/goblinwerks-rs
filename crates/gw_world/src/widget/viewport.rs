@@ -2,7 +2,6 @@ use crate::camera::Camera;
 use crate::fov::FOV;
 use crate::level::NeedsDraw;
 use crate::map::Cell;
-// use crate::map::Wrap;
 use crate::map::{CellFlags, Map};
 use crate::memory::MapMemory;
 use crate::position::Position;
@@ -12,10 +11,11 @@ use gw_app::color::{named, RGBA};
 use gw_app::messages::Messages;
 use gw_app::Panel;
 use gw_app::{log, AppEvent, ScreenResult};
-use gw_ecs::prelude::{Ecs, Join, ReadComp, ReadUnique, World, WriteUnique};
+use gw_ecs::prelude::{Ecs, Fetch, Join, ReadComp, ResMut, ResRef, World};
 use gw_util::point::Point;
 use gw_util::rect::Rect;
 use gw_util::value::Value;
+use std::ops::DerefMut;
 
 pub enum VisType {
     NONE,
@@ -32,11 +32,11 @@ pub trait VisSource {
 }
 
 pub struct FovVisibility<'a> {
-    fov: ReadUnique<'a, FOV>,
+    fov: ResRef<'a, FOV>,
 }
 
 impl<'a> FovVisibility<'a> {
-    pub fn new(fov: ReadUnique<'a, FOV>) -> Self {
+    pub fn new(fov: ResRef<'a, FOV>) -> Self {
         FovVisibility { fov }
     }
 }
@@ -122,7 +122,7 @@ impl Viewport {
             }
         };
 
-        let (map, camera) = <(ReadUnique<Map>, ReadUnique<Camera>)>::fetch(world);
+        let (map, camera) = <(ResRef<Map>, ResRef<Camera>)>::fetch(world);
         calc_cell(&*map, &*camera)
     }
 
@@ -171,7 +171,7 @@ impl Viewport {
             let mut map = world.write_resource::<Map>();
             let camera = world.read_resource::<Camera>();
             let needs_draw = world.read_resource::<NeedsDraw>();
-            let memory = world.try_read_resource::<MapMemory>();
+            let mut memory = world.try_write_resource::<MapMemory>();
             let fov = world.try_read_resource::<FOV>();
 
             let offset = {
@@ -244,7 +244,7 @@ impl Viewport {
     pub fn draw_map(
         &mut self,
         map: &mut Map,
-        mut memory: Option<WriteUnique<MapMemory>>,
+        mut memory: Option<ResMut<MapMemory>>,
         vis: &dyn VisSource,
         offset: (i32, i32),
         force_draw: bool,
@@ -314,7 +314,7 @@ impl ViewPortBuilder {
 fn draw_map(
     viewport: &mut Viewport,
     map: &mut Map,
-    mut memory: Option<WriteUnique<MapMemory>>,
+    mut memory: Option<ResMut<MapMemory>>,
     vis: &dyn VisSource,
     offset: (i32, i32),
     force_draw: bool,
@@ -479,8 +479,8 @@ fn draw_map(
 
 fn draw_actors(viewport: &mut Viewport, world: &mut World) {
     let (map, camera, position, sprite) = <(
-        ReadUnique<Map>,
-        ReadUnique<Camera>,
+        ResRef<Map>,
+        ResRef<Camera>,
         ReadComp<Position>,
         ReadComp<Sprite>,
     )>::fetch(world);
@@ -560,11 +560,8 @@ fn draw_actors(viewport: &mut Viewport, world: &mut World) {
 }
 
 fn clear_needs_draw(viewport: &mut Viewport, world: &mut World) {
-    let (mut map, mut camera, mut needs_draw) = <(
-        WriteUnique<Map>,
-        WriteUnique<Camera>,
-        WriteUnique<NeedsDraw>,
-    )>::fetch(world);
+    let (mut map, mut camera, mut needs_draw) =
+        <(ResMut<Map>, ResMut<Camera>, ResMut<NeedsDraw>)>::fetch(world);
 
     let size = viewport.con.size();
 

@@ -1,5 +1,5 @@
 use super::{Tile, TileFlags, TileKind, TileLayer, TileMove};
-use crate::effect::{parse_effect, BoxedEffect, Portal};
+use crate::effect::{parse_effect, BoxedEffect};
 use crate::sprite::parse_glyph;
 use crate::sprite::Sprite;
 use gw_app::color::get_color;
@@ -196,18 +196,20 @@ impl TileBuilder {
             "use" => return self.add_effects("use", value),
             "descend" => {
                 if value.is_string() {
-                    let map_id = value.to_string();
-                    let ev = Box::new(Portal::new(map_id, "START".to_string()));
-                    self.add_effect("descend", ev);
+                    // let map_id = value.to_string();
+                    // let ev = Box::new(Portal::new(map_id, "START".to_string()));
+                    // self.add_effect("descend", ev);
+                    println!("TODO - PORTALS");
                 } else {
                     return self.add_effects("descend", value);
                 }
             }
             "climb" => {
                 if value.is_string() {
-                    let map_id = value.to_string();
-                    let ev = Box::new(Portal::new(map_id, "START".to_string()));
-                    self.add_effect("climb", ev);
+                    // let map_id = value.to_string();
+                    // let ev = Box::new(Portal::new(map_id, "START".to_string()));
+                    // self.add_effect("climb", ev);
+                    println!("TODO - PORTALS");
                 } else {
                     return self.add_effects("climb", value);
                 }

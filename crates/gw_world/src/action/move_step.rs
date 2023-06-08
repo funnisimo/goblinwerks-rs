@@ -8,7 +8,7 @@ use crate::map::cell_flavor;
 use crate::map::Map;
 use crate::position::Position;
 use gw_app::log;
-use gw_ecs::prelude::{Entity, ReadComp, ReadUnique, World, WriteGlobal};
+use gw_ecs::prelude::{Entity, ReadComp, ResMut, ResRef, World};
 use gw_util::point::Point;
 
 #[derive(Copy, Clone, Debug)]
@@ -24,13 +24,13 @@ impl MoveStepAction {
     }
 
     fn validate(&mut self, world: &mut World) -> Option<ActionResult> {
-        let (map, hero, beings, positions, mut logger) = <(
-            ReadUnique<Map>,
-            ReadUnique<Hero>,
+        let (map, hero, beings, positions, mut logger) = world.fetch::<(
+            ResRef<Map>,
+            ResRef<Hero>,
             ReadComp<Being>,
             ReadComp<Position>,
-            WriteGlobal<Logger>,
-        )>::fetch(world);
+            ResMut<Logger>,
+        )>();
 
         let being = match beings.get(self.entity) {
             None => return Some(ActionResult::Dead(self.entity)),

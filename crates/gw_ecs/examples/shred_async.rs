@@ -8,8 +8,8 @@ struct ResB;
 
 #[derive(SystemParam)]
 struct Data<'w> {
-    a: ReadUnique<'w, ResA>,
-    b: WriteUnique<'w, ResB>,
+    a: ResRef<'w, ResA>,
+    b: ResMut<'w, ResB>,
     c: ReadNonSendGlobal<'w, MyUnsafe>,
 }
 
@@ -29,7 +29,7 @@ fn non_send_system(bundle: Data) {
     );
 }
 
-fn print_system(a: ReadUnique<ResA>, mut b: WriteUnique<ResB>) {
+fn print_system(a: ResRef<ResA>, mut b: ResMut<ResB>) {
     println!("{:?}", &*a);
     println!("{:?}", &*b);
 

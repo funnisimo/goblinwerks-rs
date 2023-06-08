@@ -1,6 +1,6 @@
 use super::Resource;
 use crate::atomic_refcell::{AtomicRef, AtomicRefMut};
-use crate::prelude::DetectChanges;
+use crate::prelude::{DetectChanges, DetectChangesMut};
 use crate::tick::ComponentTicks;
 
 /// Allows to fetch a resource in a system immutably.
@@ -123,6 +123,14 @@ where
             last_system_tick,
             world_tick,
         }
+    }
+
+    pub(crate) fn last_system_tick(&self) -> u32 {
+        self.last_system_tick
+    }
+
+    pub(crate) fn world_tick(&self) -> u32 {
+        self.world_tick
     }
 }
 

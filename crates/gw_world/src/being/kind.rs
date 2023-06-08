@@ -8,7 +8,7 @@ use crate::sprite::Sprite;
 use crate::task::Task;
 use crate::{combat::Melee, task::Executor};
 use gw_app::{ecs::Entity, log};
-use gw_ecs::prelude::{Builder, Commands, Entities, ReadUnique, World, WriteUnique};
+use gw_ecs::prelude::{Builder, Commands, Entities, ResMut, ResRef, World};
 use gw_util::point::Point;
 
 #[derive(Debug, Clone)]
@@ -38,51 +38,47 @@ impl BeingKind {
     }
 }
 
-pub fn spawn_being(kind: &Arc<BeingKind>, world: &World, point: Point) -> Entity {
-    let (mut map, lazy_update, entities, mut executor) = <(
-        WriteUnique<Map>,
-        ReadUnique<Commands>,
-        Entities,
-        WriteUnique<Executor>,
-    )>::fetch(world);
+// pub fn spawn_being(kind: &Arc<BeingKind>, world: &World, point: Point) -> Entity {
+//     let (mut map, mut lazy_update, entities, mut executor) =
+//         world.fetch::<(ResMut<Map>, Commands, Entities, ResMut<Executor>)>();
 
-    let index = map.get_index(point.x, point.y);
+//     let index = map.get_index(point.x, point.y);
 
-    if let Some(idx) = index {
-        let pos = Position::from(point).with_blocking(true);
+//     if let Some(idx) = index {
+//         let pos = Position::from(point).with_blocking(true);
 
-        println!("spawn being({}) - task={}", kind.id, kind.task);
+//         println!("spawn being({}) - task={}", kind.id, kind.task);
 
-        let mut builder = lazy_update
-            .create_entity(&entities)
-            .with(kind.being.clone())
-            .with(pos)
-            .with(kind.sprite.clone())
-            .with(Task::new(kind.task.clone()))
-            .with(kind.stats.clone());
+//         let mut builder = lazy_update
+//             .create_entity(&entities)
+//             .with(kind.being.clone())
+//             .with(pos)
+//             .with(kind.sprite.clone())
+//             .with(Task::new(kind.task.clone()))
+//             .with(kind.stats.clone());
 
-        if let Some(ref melee) = kind.melee {
-            builder = builder.with(melee.clone());
-            log(format!("SPAWN MELEE!!!"));
-        }
-        let entity = builder.build();
+//         if let Some(ref melee) = kind.melee {
+//             builder = builder.with(melee.clone());
+//             log(format!("SPAWN MELEE!!!"));
+//         }
+//         let entity = builder.build();
 
-        if kind.being.kind_flags.contains(BeingKindFlags::HERO) {
-            let mut hero = world.write_resource::<Hero>();
-            hero.entity = entity;
-        }
+//         if kind.being.kind_flags.contains(BeingKindFlags::HERO) {
+//             let mut hero = world.write_resource::<Hero>();
+//             hero.entity = entity;
+//         }
 
-        // make map aware of actor
-        map.add_being(idx, entity, true);
+//         // make map aware of actor
+//         map.add_being(idx, entity, true);
 
-        // Add to schedule
-        executor.insert(entity, kind.being.act_time as u64);
+//         // Add to schedule
+//         executor.insert(entity, kind.being.act_time as u64);
 
-        return entity;
-    }
+//         return entity;
+//     }
 
-    panic!(
-        "Trying to add actor to position that does not exist! kind={}, pos={},{}",
-        kind.id, point.x, point.y
-    );
-}
+//     panic!(
+//         "Trying to add actor to position that does not exist! kind={}, pos={},{}",
+//         kind.id, point.x, point.y
+//     );
+// }

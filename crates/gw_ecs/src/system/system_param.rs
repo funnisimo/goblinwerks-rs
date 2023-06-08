@@ -1463,7 +1463,7 @@ mod tests {
 
     #[derive(SystemParam)]
     pub struct SpecialRes<'w, T: Resource + Send + Sync> {
-        _res: ReadUnique<'w, T>,
+        _res: ResRef<'w, T>,
     }
 
     #[derive(SystemParam)]
@@ -1475,28 +1475,28 @@ mod tests {
 
     // Compile test for https://github.com/bevyengine/bevy/pull/7001.
     #[derive(SystemParam)]
-    pub struct ConstGenericParam<'w, const I: usize>(ReadUnique<'w, R<I>>);
+    pub struct ConstGenericParam<'w, const I: usize>(ResRef<'w, R<I>>);
 
     // Compile test for https://github.com/bevyengine/bevy/pull/6867.
     #[derive(SystemParam)]
     pub struct LongParam<'w> {
-        _r0: ReadUnique<'w, R<0>>,
-        _r1: ReadUnique<'w, R<1>>,
-        _r2: ReadUnique<'w, R<2>>,
-        _r3: ReadUnique<'w, R<3>>,
-        _r4: ReadUnique<'w, R<4>>,
-        _r5: ReadUnique<'w, R<5>>,
-        _r6: ReadUnique<'w, R<6>>,
-        _r7: ReadUnique<'w, R<7>>,
-        _r8: ReadUnique<'w, R<8>>,
-        _r9: ReadUnique<'w, R<9>>,
-        _r10: ReadUnique<'w, R<10>>,
-        _r11: ReadUnique<'w, R<11>>,
-        _r12: ReadUnique<'w, R<12>>,
-        _r13: ReadUnique<'w, R<13>>,
-        _r14: ReadUnique<'w, R<14>>,
-        _r15: ReadUnique<'w, R<15>>,
-        _r16: ReadUnique<'w, R<16>>,
+        _r0: ResRef<'w, R<0>>,
+        _r1: ResRef<'w, R<1>>,
+        _r2: ResRef<'w, R<2>>,
+        _r3: ResRef<'w, R<3>>,
+        _r4: ResRef<'w, R<4>>,
+        _r5: ResRef<'w, R<5>>,
+        _r6: ResRef<'w, R<6>>,
+        _r7: ResRef<'w, R<7>>,
+        _r8: ResRef<'w, R<8>>,
+        _r9: ResRef<'w, R<9>>,
+        _r10: ResRef<'w, R<10>>,
+        _r11: ResRef<'w, R<11>>,
+        _r12: ResRef<'w, R<12>>,
+        _r13: ResRef<'w, R<13>>,
+        _r14: ResRef<'w, R<14>>,
+        _r15: ResRef<'w, R<15>>,
+        _r16: ResRef<'w, R<16>>,
     }
 
     #[allow(dead_code)]
@@ -1508,7 +1508,7 @@ mod tests {
     // Regression test for https://github.com/bevyengine/bevy/issues/7447.
     #[derive(SystemParam)]
     struct IgnoredParam<'w, T: Resource + Send + Sync, Marker: 'static> {
-        _foo: ReadUnique<'w, T>,
+        _foo: ResRef<'w, T>,
         #[system_param(ignore)]
         marker: PhantomData<&'w Marker>,
         marker2: PhantomData<&'w Marker>,
@@ -1521,7 +1521,7 @@ mod tests {
 
     #[derive(SystemParam)]
     pub struct TupleParam<'w, 's, R: Resource + Send + Sync, L: FromWorld + Send + 'static>(
-        ReadUnique<'w, R>,
+        ResRef<'w, R>,
         Local<'s, L>,
     );
 
@@ -1529,7 +1529,7 @@ mod tests {
 
     // Regression test for https://github.com/bevyengine/bevy/issues/4200.
     #[derive(SystemParam)]
-    pub struct EncapsulatedParam<'w>(ReadUnique<'w, PrivateResource>);
+    pub struct EncapsulatedParam<'w>(ResRef<'w, PrivateResource>);
 
     // // regression test for https://github.com/bevyengine/bevy/issues/7103.
     // #[derive(SystemParam)]

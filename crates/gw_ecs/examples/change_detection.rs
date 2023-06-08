@@ -56,7 +56,7 @@ enum SimulationSystem {
 // This system randomly spawns a new entity in 60% of all frames
 // The entity will start with an age of 0 frames
 // If an entity gets spawned, we increase the counter in the EntityCounter resource
-fn spawn_entities(mut commands: Commands, mut entity_counter: WriteUnique<EntityCounter>) {
+fn spawn_entities(mut commands: Commands, mut entity_counter: ResMut<EntityCounter>) {
     if rand::thread_rng().gen_bool(0.6) {
         let entity_id = commands.spawn(Age::default()).id();
         println!("    spawning {entity_id:?}");
@@ -102,7 +102,7 @@ fn remove_old_entities(mut commands: Commands, entities: Entities, ages: ReadCom
 
 // This system will print the new counter value every time it was changed since
 // the last execution of the system.
-fn print_counter_when_changed(entity_counter: ReadUnique<EntityCounter>) {
+fn print_counter_when_changed(entity_counter: ResRef<EntityCounter>) {
     if entity_counter.is_changed() {
         println!(
             "    total number of entities spawned: {}",

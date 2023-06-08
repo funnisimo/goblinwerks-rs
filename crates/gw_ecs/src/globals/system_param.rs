@@ -1,4 +1,4 @@
-use super::{ReadGlobal, ReadNonSendGlobal, WriteGlobal, WriteNonSendGlobal};
+use super::{GlobalMut, GlobalRef, ReadNonSendGlobal, WriteNonSendGlobal};
 use crate::{
     access::AccessItem,
     // component::ComponentId,
@@ -9,9 +9,9 @@ use crate::{
 
 // SAFETY: Res ComponentId and ArchetypeComponentId access is applied to SystemMeta. If this Res
 // conflicts with any prior access, a panic will occur.
-unsafe impl<'a, T: Resource + Send + Sync> SystemParam for ReadGlobal<'a, T> {
+unsafe impl<'a, T: Resource + Send + Sync> SystemParam for GlobalRef<'a, T> {
     type State = ();
-    type Item<'w, 's> = ReadGlobal<'w, T>;
+    type Item<'w, 's> = GlobalRef<'w, T>;
 
     fn init_state(_world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
         // world.initialize_global::<T>();
@@ -20,7 +20,7 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for ReadGlobal<'a, T> {
         let item = AccessItem::Global(ResourceId::of::<T>());
         assert!(
             !combined_access.has_write(&item),
-            "error[B0002]: ReadUnique<{}> in system {} conflicts with a previous ResMut<{0}> access. Consider removing the duplicate access.",
+            "error[B0002]: ResRef<{}> in system {} conflicts with a previous ResMut<{0}> access. Consider removing the duplicate access.",
             std::any::type_name::<T>(),
             system_meta.name,
         );
@@ -46,7 +46,6 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for ReadGlobal<'a, T> {
         world
             .globals
             .try_fetch::<T>(system_meta.last_run_tick, change_tick)
-            .map(|read| ReadGlobal::new(read))
             .unwrap_or_else(|| {
                 panic!(
                     "Resource requested by {} does not exist: {}",
@@ -67,15 +66,15 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for ReadGlobal<'a, T> {
 }
 
 // SAFETY: Only reads a single World resource
-unsafe impl<'a, T: Resource + Send + Sync> ReadOnlySystemParam for Option<ReadGlobal<'a, T>> {}
+unsafe impl<'a, T: Resource + Send + Sync> ReadOnlySystemParam for Option<GlobalRef<'a, T>> {}
 
 // SAFETY: this impl defers to `Res`, which initializes and validates the correct world access.
-unsafe impl<'a, T: Resource + Send + Sync> SystemParam for Option<ReadGlobal<'a, T>> {
+unsafe impl<'a, T: Resource + Send + Sync> SystemParam for Option<GlobalRef<'a, T>> {
     type State = ();
-    type Item<'w, 's> = Option<ReadGlobal<'w, T>>;
+    type Item<'w, 's> = Option<GlobalRef<'w, T>>;
 
     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        ReadGlobal::<'a, T>::init_state(world, system_meta)
+        GlobalRef::<'a, T>::init_state(world, system_meta)
     }
 
     #[inline]
@@ -101,15 +100,14 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for Option<ReadGlobal<'a,
         world
             .globals
             .try_fetch::<T>(system_meta.last_run_tick, change_tick)
-            .map(|read| ReadGlobal::new(read))
     }
 }
 
 // SAFETY: Res ComponentId and ArchetypeComponentId access is applied to SystemMeta. If this Res
 // conflicts with any prior access, a panic will occur.
-unsafe impl<'a, T: Resource + Send + Sync> SystemParam for WriteGlobal<'a, T> {
+unsafe impl<'a, T: Resource + Send + Sync> SystemParam for GlobalMut<'a, T> {
     type State = ();
-    type Item<'w, 's> = WriteGlobal<'w, T>;
+    type Item<'w, 's> = GlobalMut<'w, T>;
 
     fn init_state(_world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
         // world.initialize_global::<T>();
@@ -119,11 +117,11 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for WriteGlobal<'a, T> {
         let item = AccessItem::Global(ResourceId::of::<T>());
         if combined_access.has_write(&item) {
             panic!(
-                "error[B0002]: WriteGlobal<{}> in system {} conflicts with a previous WriteGlobal<{0}> access. Consider removing the duplicate access.",
+                "error[B0002]: GlobalMut<{}> in system {} conflicts with a previous GlobalMut<{0}> access. Consider removing the duplicate access.",
                 std::any::type_name::<T>(), system_meta.name);
         } else if combined_access.has_read(&item) {
             panic!(
-                "error[B0002]: WriteGlobal<{}> in system {} conflicts with a previous ReadGlobal<{0}> access. Consider removing the duplicate access.",
+                "error[B0002]: GlobalMut<{}> in system {} conflicts with a previous GlobalRef<{0}> access. Consider removing the duplicate access.",
                 std::any::type_name::<T>(), system_meta.name);
         }
         system_meta.component_access_set.add_write(item);
@@ -166,7 +164,6 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for WriteGlobal<'a, T> {
         world
             .globals
             .try_fetch_mut::<T>(system_meta.last_run_tick, change_tick)
-            .map(|read| WriteGlobal::new(read))
             .unwrap_or_else(|| {
                 panic!(
                     "Resource requested by {} does not exist: {}",
@@ -178,12 +175,12 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for WriteGlobal<'a, T> {
 }
 
 // SAFETY: this impl defers to `ResMut`, which initializes and validates the correct world access.
-unsafe impl<'a, T: Resource + Send + Sync> SystemParam for Option<WriteGlobal<'a, T>> {
+unsafe impl<'a, T: Resource + Send + Sync> SystemParam for Option<GlobalMut<'a, T>> {
     type State = ();
-    type Item<'w, 's> = Option<WriteGlobal<'w, T>>;
+    type Item<'w, 's> = Option<GlobalMut<'w, T>>;
 
     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        WriteGlobal::<T>::init_state(world, system_meta)
+        GlobalMut::<T>::init_state(world, system_meta)
     }
 
     #[inline]
@@ -209,7 +206,6 @@ unsafe impl<'a, T: Resource + Send + Sync> SystemParam for Option<WriteGlobal<'a
         world
             .globals
             .try_fetch_mut::<T>(system_meta.last_run_tick, change_tick)
-            .map(|read| WriteGlobal::new(read))
     }
 }
 
@@ -391,7 +387,7 @@ mod test {
         world.ensure_global::<GlobalA>();
         world.ensure_global::<GlobalB>();
 
-        fn my_system(a: ReadGlobal<GlobalA>, mut b: WriteGlobal<GlobalB>) {
+        fn my_system(a: GlobalRef<GlobalA>, mut b: GlobalMut<GlobalB>) {
             println!("a = {}", a.0);
             let was = b.0;
             b.0 += 1;
@@ -411,7 +407,7 @@ mod test {
         world.ensure_global::<GlobalA>();
         // world.ensure_global::<GlobalB>();
 
-        fn my_system(a: Option<ReadGlobal<GlobalA>>, b: Option<WriteGlobal<GlobalB>>) {
+        fn my_system(a: Option<GlobalRef<GlobalA>>, b: Option<GlobalMut<GlobalB>>) {
             match a {
                 None => println!("No A"),
                 Some(a) => println!("a = {}", a.0),
@@ -441,7 +437,7 @@ mod test {
         // world.ensure_global::<GlobalA>();
         // world.ensure_global::<GlobalB>();
 
-        fn my_system(a: ReadGlobal<GlobalA>, b: Option<WriteGlobal<GlobalB>>) {
+        fn my_system(a: GlobalRef<GlobalA>, b: Option<GlobalMut<GlobalB>>) {
             println!("a = {}", a.0);
 
             match b {
@@ -468,7 +464,7 @@ mod test {
         // world.ensure_global::<GlobalA>();
         // world.ensure_global::<GlobalB>();
 
-        fn my_system(a: Option<ReadGlobal<GlobalA>>, mut b: WriteGlobal<GlobalB>) {
+        fn my_system(a: Option<GlobalRef<GlobalA>>, mut b: GlobalMut<GlobalB>) {
             match a {
                 None => println!("No A"),
                 Some(a) => println!("a = {}", a.0),
@@ -492,7 +488,7 @@ mod test {
         world.ensure_global::<GlobalA>();
         world.ensure_resource::<GlobalA>();
 
-        fn my_system(a: ReadGlobal<GlobalA>, b: ReadUnique<GlobalA>) {
+        fn my_system(a: GlobalRef<GlobalA>, b: ResRef<GlobalA>) {
             println!("a = {}", a.0);
             println!("b = {}", b.0);
         }
@@ -510,7 +506,7 @@ mod test {
         world.ensure_global::<GlobalA>();
         world.ensure_resource::<GlobalA>();
 
-        fn my_system(a: WriteGlobal<GlobalA>, b: WriteUnique<GlobalA>) {
+        fn my_system(a: GlobalMut<GlobalA>, b: ResMut<GlobalA>) {
             println!("a = {}", a.0);
             println!("b = {}", b.0);
         }
@@ -528,7 +524,7 @@ mod test {
         world.ensure_global::<GlobalA>();
         world.ensure_resource::<GlobalA>();
 
-        fn my_system(a: WriteGlobal<GlobalA>, b: ReadUnique<GlobalA>) {
+        fn my_system(a: GlobalMut<GlobalA>, b: ResRef<GlobalA>) {
             println!("a = {}", a.0);
             println!("b = {}", b.0);
         }
@@ -546,7 +542,7 @@ mod test {
         world.ensure_global::<GlobalA>();
         world.ensure_resource::<GlobalA>();
 
-        fn my_system(a: ReadGlobal<GlobalA>, b: WriteUnique<GlobalA>) {
+        fn my_system(a: GlobalRef<GlobalA>, b: ResMut<GlobalA>) {
             println!("a = {}", a.0);
             println!("b = {}", b.0);
         }
@@ -564,7 +560,7 @@ mod test {
 
         world.ensure_global::<GlobalA>();
 
-        fn my_system(a: WriteGlobal<GlobalA>, mut b: WriteGlobal<GlobalB>) {
+        fn my_system(a: GlobalMut<GlobalA>, mut b: GlobalMut<GlobalB>) {
             println!("a = {}", a.0);
             let was = b.0;
             b.0 += 1;
@@ -612,11 +608,11 @@ mod test {
 
     //     world.ensure_global::<NonSendA>();
 
-    //     fn my_write_system(a: WriteGlobal<NonSendA>) {
+    //     fn my_write_system(a: GlobalMut<NonSendA>) {
     //         println!("in write system - {:?}", a.0);
     //     }
 
-    //     fn my_read_system(a: ReadGlobal<NonSendA>) {
+    //     fn my_read_system(a: GlobalRef<NonSendA>) {
     //         println!("in read system - {:?}", a.0);
     //     }
 

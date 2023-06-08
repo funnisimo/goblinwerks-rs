@@ -24,7 +24,7 @@ fn system_a(mut commands: Commands) {
     commands.spawn_empty();
 }
 
-fn system_b(res_a: ReadUnique<ResA>, res_b: ReadUnique<ResB>) {
+fn system_b(res_a: ResRef<ResA>, res_b: ResRef<ResB>) {
     println!("{}, {}", res_a.0, res_b.0);
 }
 

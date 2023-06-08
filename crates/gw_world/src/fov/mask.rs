@@ -243,7 +243,7 @@ mod test {
 
         world.insert_resource(map);
 
-        let entity = world.create_entity().with(Position::new(10, 10)).build();
+        let entity = world.create_entity().with(Position::new(10, 10)).id();
 
         let mask = get_fov_mask(&world, entity, 7);
 
@@ -263,7 +263,7 @@ mod test {
 
         world.insert_resource(map);
 
-        let entity = world.create_entity().with(Position::new(3, 3)).build();
+        let entity = world.create_entity().with(Position::new(3, 3)).id();
 
         let mask = get_fov_mask(&world, entity, 7);
 
@@ -293,7 +293,7 @@ mod test {
         map.reset_tiles(idx, tiles.get("WALL").unwrap());
         world.insert_resource(map);
 
-        let entity = world.create_entity().with(Position::new(10, 10)).build();
+        let entity = world.create_entity().with(Position::new(10, 10)).id();
 
         let mask = get_fov_mask(&world, entity, 9);
 
@@ -325,7 +325,7 @@ mod test {
         map.reset_tiles(idx, tiles.get("WALL").unwrap());
         world.insert_resource(map);
 
-        let entity = world.create_entity().with(Position::new(10, 10)).build();
+        let entity = world.create_entity().with(Position::new(10, 10)).id();
 
         let mask = get_fov_mask(&world, entity, 9);
 

@@ -30,13 +30,13 @@ struct Counter {
     pub value: i32,
 }
 
-fn increase_counter(mut counter: WriteUnique<Counter>) {
+fn increase_counter(mut counter: ResMut<Counter>) {
     if rand::thread_rng().gen_bool(0.5) {
         counter.value += 1;
         println!("    Increased counter value");
     }
 }
 
-fn print_counter(counter: ReadUnique<Counter>) {
+fn print_counter(counter: ResRef<Counter>) {
     println!("    {:?}", counter.deref());
 }

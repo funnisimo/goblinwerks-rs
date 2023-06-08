@@ -162,7 +162,7 @@ where
 
 impl<'w, T> DetectChanges for GlobalRef<'w, T>
 where
-    T: Resource + Send + Sync,
+    T: Resource,
 {
     /// Returns `true` if the resource was added after the system last ran.
     fn is_added(&self) -> bool {
@@ -246,7 +246,7 @@ where
 
 impl<'w, T> DetectChanges for GlobalMut<'w, T>
 where
-    T: Resource + Send + Sync,
+    T: Resource,
 {
     /// Returns `true` if the resource was added after the system last ran.
     fn is_added(&self) -> bool {
@@ -300,85 +300,85 @@ where
 // pub(crate) struct GlobalRes<T>(PhantomData<T>);
 // pub(crate) struct GlobalSet;
 
-/// Allows to fetch a resource in a system immutably.
-///
-/// If the resource isn't strictly required, you should use `Option<Read<T>>`.
-///
-/// # Type parameters
-///
-/// * `T`: The type of the resource
-/// * `F`: The setup handler (default: `DefaultProvider`)
-pub struct ReadGlobal<'a, T: Resource + Send + Sync> {
-    fetch: GlobalRef<'a, T>,
-}
+// /// Allows to fetch a resource in a system immutably.
+// ///
+// /// If the resource isn't strictly required, you should use `Option<Read<T>>`.
+// ///
+// /// # Type parameters
+// ///
+// /// * `T`: The type of the resource
+// /// * `F`: The setup handler (default: `DefaultProvider`)
+// pub struct GlobalRef<'a, T: Resource + Send + Sync> {
+//     fetch: GlobalRef<'a, T>,
+// }
 
-impl<'a, T> ReadGlobal<'a, T>
-where
-    T: Resource + Send + Sync,
-{
-    pub(crate) fn new(fetch: GlobalRef<'a, T>) -> Self {
-        ReadGlobal { fetch }
-    }
-}
+// impl<'a, T> GlobalRef<'a, T>
+// where
+//     T: Resource + Send + Sync,
+// {
+//     pub(crate) fn new(fetch: GlobalRef<'a, T>) -> Self {
+//         GlobalRef { fetch }
+//     }
+// }
 
-impl<'w, T> DetectChanges for ReadGlobal<'w, T>
-where
-    T: Resource + Send + Sync,
-{
-    /// Returns `true` if the resource was added after the system last ran.
-    fn is_added(&self) -> bool {
-        self.fetch
-            .fetch
-            .ticks
-            .is_added(self.last_system_tick(), self.world_tick())
-    }
+// impl<'w, T> DetectChanges for GlobalRef<'w, T>
+// where
+//     T: Resource + Send + Sync,
+// {
+//     /// Returns `true` if the resource was added after the system last ran.
+//     fn is_added(&self) -> bool {
+//         self.fetch
+//             .fetch
+//             .ticks
+//             .is_added(self.last_system_tick(), self.world_tick())
+//     }
 
-    /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
-    fn is_changed(&self) -> bool {
-        self.fetch
-            .fetch
-            .ticks
-            .is_changed(self.last_system_tick(), self.world_tick())
-    }
+//     /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
+//     fn is_changed(&self) -> bool {
+//         self.fetch
+//             .fetch
+//             .ticks
+//             .is_changed(self.last_system_tick(), self.world_tick())
+//     }
 
-    #[inline]
-    fn last_changed(&self) -> u32 {
-        self.fetch.fetch.ticks.changed.tick
-    }
-}
+//     #[inline]
+//     fn last_changed(&self) -> u32 {
+//         self.fetch.fetch.ticks.changed.tick
+//     }
+// }
 
-impl<'w, T> Debug for ReadGlobal<'w, T>
-where
-    T: Debug + Resource + Send + Sync,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("ReadGlobal")
-            .field(self.fetch.deref())
-            .finish()
-    }
-}
+// impl<'w, T> Debug for GlobalRef<'w, T>
+// where
+//     T: Debug + Resource + Send + Sync,
+// {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         f.debug_tuple("GlobalRef")
+//             .field(self.fetch.deref())
+//             .finish()
+//     }
+// }
 
-impl<'a, T> Deref for ReadGlobal<'a, T>
-where
-    T: Resource + Send + Sync,
-{
-    type Target = GlobalRef<'a, T>;
+// impl<'a, T> Deref for GlobalRef<'a, T>
+// where
+//     T: Resource + Send + Sync,
+// {
+//     type Target = GlobalRef<'a, T>;
 
-    fn deref(&self) -> &Self::Target {
-        &self.fetch
-    }
-}
+//     fn deref(&self) -> &Self::Target {
+//         &self.fetch
+//     }
+// }
 
-// impl<'a, T, F> From<GlobalRef<'a, T>> for ReadGlobal<'a, T, F> {
+// impl<'a, T, F> From<GlobalRef<'a, T>> for GlobalRef<'a, T, F> {
 //     fn from(fetch: GlobalRef<'a, T>) -> Self {
-//         ReadGlobal {
+//         GlobalRef {
 //             fetch,
 //             phantom: PhantomData,
 //         }
 //     }
 // }
 
-// impl<'a, T, F> SystemData<'a> for ReadGlobal<'a, T, F>
+// impl<'a, T, F> SystemData<'a> for GlobalRef<'a, T, F>
 // where
 //     T: Resource,
 //     F: SetupHandler<T>,
@@ -388,7 +388,7 @@ where
 //     }
 
 //     fn fetch(world: &'a World) -> Self {
-//         ReadGlobal::<'a, T, F> {
+//         GlobalRef::<'a, T, F> {
 //             fetch: world.read_global::<T>(),
 //             phantom: PhantomData,
 //         }
@@ -406,104 +406,104 @@ where
 //     // }
 // }
 
-/// Allows to fetch a resource in a system mutably.
-///
-/// If the resource isn't strictly required, you should use `Option<Write<T>>`.
-///
-/// # Type parameters
-///
-/// * `T`: The type of the resource
-/// * `F`: The setup handler (default: `DefaultProvider`)
-pub struct WriteGlobal<'a, T: Resource + Send + Sync> {
-    fetch: GlobalMut<'a, T>,
-}
+// /// Allows to fetch a resource in a system mutably.
+// ///
+// /// If the resource isn't strictly required, you should use `Option<Write<T>>`.
+// ///
+// /// # Type parameters
+// ///
+// /// * `T`: The type of the resource
+// /// * `F`: The setup handler (default: `DefaultProvider`)
+// pub struct GlobalMut<'a, T: Resource + Send + Sync> {
+//     fetch: GlobalMut<'a, T>,
+// }
 
-impl<'a, T> WriteGlobal<'a, T>
-where
-    T: Resource + Send + Sync,
-{
-    pub(crate) fn new(fetch: GlobalMut<'a, T>) -> Self {
-        WriteGlobal { fetch }
-    }
+// impl<'a, T> GlobalMut<'a, T>
+// where
+//     T: Resource + Send + Sync,
+// {
+//     pub(crate) fn new(fetch: GlobalMut<'a, T>) -> Self {
+//         GlobalMut { fetch }
+//     }
 
-    #[inline]
-    pub fn last_system_tick(&self) -> u32 {
-        self.fetch.last_system_tick()
-    }
+//     #[inline]
+//     pub fn last_system_tick(&self) -> u32 {
+//         self.fetch.last_system_tick()
+//     }
 
-    #[inline]
-    pub fn world_tick(&self) -> u32 {
-        self.fetch.world_tick()
-    }
-}
+//     #[inline]
+//     pub fn world_tick(&self) -> u32 {
+//         self.fetch.world_tick()
+//     }
+// }
 
-impl<'w, T> DetectChanges for WriteGlobal<'w, T>
-where
-    T: Resource + Send + Sync,
-{
-    /// Returns `true` if the resource was added after the system last ran.
-    fn is_added(&self) -> bool {
-        self.fetch
-            .fetch
-            .ticks
-            .is_added(self.last_system_tick(), self.world_tick())
-    }
+// impl<'w, T> DetectChanges for GlobalMut<'w, T>
+// where
+//     T: Resource + Send + Sync,
+// {
+//     /// Returns `true` if the resource was added after the system last ran.
+//     fn is_added(&self) -> bool {
+//         self.fetch
+//             .fetch
+//             .ticks
+//             .is_added(self.last_system_tick(), self.world_tick())
+//     }
 
-    /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
-    fn is_changed(&self) -> bool {
-        self.fetch
-            .fetch
-            .ticks
-            .is_changed(self.last_system_tick(), self.world_tick())
-    }
+//     /// Returns `true` if the resource was added or mutably dereferenced after the system last ran.
+//     fn is_changed(&self) -> bool {
+//         self.fetch
+//             .fetch
+//             .ticks
+//             .is_changed(self.last_system_tick(), self.world_tick())
+//     }
 
-    #[inline]
-    fn last_changed(&self) -> u32 {
-        self.fetch.fetch.ticks.changed.tick
-    }
-}
+//     #[inline]
+//     fn last_changed(&self) -> u32 {
+//         self.fetch.fetch.ticks.changed.tick
+//     }
+// }
 
-impl<'w, T> Debug for WriteGlobal<'w, T>
-where
-    T: Debug + Resource + Send + Sync,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("WriteGlobal")
-            .field(self.fetch.deref())
-            .finish()
-    }
-}
+// impl<'w, T> Debug for GlobalMut<'w, T>
+// where
+//     T: Debug + Resource + Send + Sync,
+// {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         f.debug_tuple("GlobalMut")
+//             .field(self.fetch.deref())
+//             .finish()
+//     }
+// }
 
-impl<'a, T> Deref for WriteGlobal<'a, T>
-where
-    T: Resource + Send + Sync,
-{
-    type Target = GlobalMut<'a, T>;
+// impl<'a, T> Deref for GlobalMut<'a, T>
+// where
+//     T: Resource + Send + Sync,
+// {
+//     type Target = GlobalMut<'a, T>;
 
-    fn deref(&self) -> &Self::Target {
-        &self.fetch
-    }
-}
+//     fn deref(&self) -> &Self::Target {
+//         &self.fetch
+//     }
+// }
 
-impl<'a, T> DerefMut for WriteGlobal<'a, T>
-where
-    T: Resource + Send + Sync,
-{
-    fn deref_mut(&mut self) -> &mut GlobalMut<'a, T> {
-        &mut self.fetch
-    }
-}
+// impl<'a, T> DerefMut for GlobalMut<'a, T>
+// where
+//     T: Resource + Send + Sync,
+// {
+//     fn deref_mut(&mut self) -> &mut GlobalMut<'a, T> {
+//         &mut self.fetch
+//     }
+// }
 
-// impl<'a, T, F> From<GlobalMut<'a, T>> for WriteGlobal<'a, T, F> {
+// impl<'a, T, F> From<GlobalMut<'a, T>> for GlobalMut<'a, T, F> {
 //     fn from(fetch: GlobalMut<'a, T>) -> Self {
-//         WriteGlobal {
+//         GlobalMut {
 //             fetch,
 //             phantom: PhantomData,
 //         }
 //     }
 // }
 
-// impl<'a, T, F> SystemData<'a> for WriteGlobal<'a, T, F>
+// impl<'a, T, F> SystemData<'a> for GlobalMut<'a, T, F>
 // where
 //     T: Resource,
 //     F: SetupHandler<T>,
@@ -513,7 +513,7 @@ where
 //     }
 
 //     fn fetch(world: &'a World) -> Self {
-//         WriteGlobal::<'a, T, F> {
+//         GlobalMut::<'a, T, F> {
 //             fetch: world.write_global::<T>(),
 //             phantom: PhantomData,
 //         }
@@ -534,7 +534,7 @@ where
 
 // ------------------
 
-// impl<'a, T, F> SystemData<'a> for Option<ReadGlobal<'a, T, F>>
+// impl<'a, T, F> SystemData<'a> for Option<GlobalRef<'a, T, F>>
 // where
 //     T: Resource,
 // {
@@ -543,7 +543,7 @@ where
 //     fn fetch(world: &'a World) -> Self {
 //         match world.try_read_global::<T>() {
 //             None => None,
-//             Some(fetch) => Some(ReadGlobal::<'a, T, F> {
+//             Some(fetch) => Some(GlobalRef::<'a, T, F> {
 //                 fetch: fetch,
 //                 phantom: PhantomData,
 //             }),
@@ -562,7 +562,7 @@ where
 //     // }
 // }
 
-// impl<'a, T, F> SystemData<'a> for Option<WriteGlobal<'a, T, F>>
+// impl<'a, T, F> SystemData<'a> for Option<GlobalMut<'a, T, F>>
 // where
 //     T: Resource,
 // {
@@ -571,7 +571,7 @@ where
 //     fn fetch(world: &'a World) -> Self {
 //         match world.try_write_global::<T>() {
 //             None => None,
-//             Some(fetch) => Some(WriteGlobal::<'a, T, F> {
+//             Some(fetch) => Some(GlobalMut::<'a, T, F> {
 //                 fetch: fetch,
 //                 phantom: PhantomData,
 //             }),
@@ -737,7 +737,7 @@ where
     T: Debug + Resource,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("WriteGlobal")
+        f.debug_tuple("GlobalMut")
             .field(self.fetch.deref())
             .finish()
     }
@@ -756,11 +756,11 @@ where
 
 // /// Allows to fetch a resource in a system immutably.
 // /// **This will add a default value in a `System` setup if the resource does not exist.**
-// pub type ReadGlobalDefault<'a, T> = ReadGlobal<'a, T, SetupDefault>;
+// pub type GlobalRefDefault<'a, T> = GlobalRef<'a, T, SetupDefault>;
 
 // /// Allows to fetch a resource in a system mutably.
 // /// **This will add a default value in a `System` setup if the resource does not exist.**
-// pub type WriteGlobalDefault<'a, T> = WriteGlobal<'a, T, SetupDefault>;
+// pub type GlobalMutDefault<'a, T> = GlobalMut<'a, T, SetupDefault>;
 
 #[cfg(test)]
 mod tests {

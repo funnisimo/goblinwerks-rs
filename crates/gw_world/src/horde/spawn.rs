@@ -1,5 +1,5 @@
 use super::{Horde, HordeRef};
-use crate::{being::spawn_being, horde::HordeFlags};
+use crate::horde::HordeFlags;
 use gw_app::log;
 use gw_ecs::prelude::{Component, Entity, World};
 use gw_util::point::Point;
@@ -188,48 +188,48 @@ impl Deref for SpawnRef {
 // B) Otherwise, the map is automatically created from the tiles around the horde and the attacker (the hero)
 //
 
-pub fn spawn_horde(horde: &Arc<Horde>, world: &mut World, point: Point) -> Entity {
-    // 	if (horde.machine) {
-    // 		// Build the accompanying machine (e.g. a goblin encampment)
-    // 		RUT.Map.Blueprint.build(horde.machine, map, x, y);
-    // 	}
+// pub fn spawn_horde(horde: &Arc<Horde>, world: &mut World, point: Point) -> Entity {
+//     // 	if (horde.machine) {
+//     // 		// Build the accompanying machine (e.g. a goblin encampment)
+//     // 		RUT.Map.Blueprint.build(horde.machine, map, x, y);
+//     // 	}
 
-    let leader_entity = spawn_being(&horde.leader, world, point);
+//     let leader_entity = spawn_being(&horde.leader, world, point);
 
-    let _ = world
-        .write_component()
-        .insert(leader_entity, HordeRef::new(Arc::clone(horde)));
+//     let _ = world
+//         .write_component()
+//         .insert(leader_entity, HordeRef::new(Arc::clone(horde)));
 
-    if horde.flags.intersects(HordeFlags::SPAWN_AS_AVATAR) {
-        log(format!(
-            "Spawn Horde Avatar - {} @ {:?}",
-            horde.leader.id, point
-        ));
-        return leader_entity;
-    }
+//     if horde.flags.intersects(HordeFlags::SPAWN_AS_AVATAR) {
+//         log(format!(
+//             "Spawn Horde Avatar - {} @ {:?}",
+//             horde.leader.id, point
+//         ));
+//         return leader_entity;
+//     }
 
-    // if horde.flags.intersects(HordeFlags.HORDE_LEADER_CAPTIVE) {
+//     // if horde.flags.intersects(HordeFlags.HORDE_LEADER_CAPTIVE) {
 
-    // 	leader.state |= BeingState.BS_CAPTIVE;
-    // 	leader.state |= BeingState.BS_WANDERING;
-    // 	leader.stats.set('health', Math.round(leader.stats.max.health / 4) + 1);  // captives are injured
+//     // 	leader.state |= BeingState.BS_CAPTIVE;
+//     // 	leader.state |= BeingState.BS_WANDERING;
+//     // 	leader.stats.set('health', Math.round(leader.stats.max.health / 4) + 1);  // captives are injured
 
-    // 	// Draw the manacles unless the horde spawns in weird terrain (e.g. cages).
-    // 	if (!horde.spawnTile) {
-    // 		RUT.Map.Decorators.manacles(map, x, y);
-    // 	}
-    // } else if (horde.flags & HordeFlags.HORDE_ALLIED_WITH_PLAYER) {
-    // 	RUT.Monster.becomeAllyWith(leader);
-    // }
+//     // 	// Draw the manacles unless the horde spawns in weird terrain (e.g. cages).
+//     // 	if (!horde.spawnTile) {
+//     // 		RUT.Map.Decorators.manacles(map, x, y);
+//     // 	}
+//     // } else if (horde.flags & HordeFlags.HORDE_ALLIED_WITH_PLAYER) {
+//     // 	RUT.Monster.becomeAllyWith(leader);
+//     // }
 
-    // 	if (RUT.Monster.canSubmergeNow(leader)) {
-    // 		leader.state |= BeingState.BS_SUBMERGED;
-    // 	}
+//     // 	if (RUT.Monster.canSubmergeNow(leader)) {
+//     // 		leader.state |= BeingState.BS_SUBMERGED;
+//     // 	}
 
-    // 	spawn_minions(horde, leader_entity, point, false);
+//     // 	spawn_minions(horde, leader_entity, point, false);
 
-    panic!("Only support spawn as avatar right now");
-}
+//     panic!("Only support spawn as avatar right now");
+// }
 
 // pub fn populate_generic_spawn_map(map, spawnMap, originX, originY, maxDist, blockingTileFlags, blockingCellFlags)
 // {

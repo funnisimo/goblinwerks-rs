@@ -10,9 +10,9 @@ struct GlobalA(u32);
 struct GlobalB(u32);
 
 fn global_system(
-    global_a: ReadGlobal<GlobalA>,
-    global_b: ReadGlobal<GlobalB>,
-    unique_a: ReadUnique<UniqueA>,
+    global_a: GlobalRef<GlobalA>,
+    global_b: GlobalRef<GlobalB>,
+    unique_a: ResRef<UniqueA>,
 ) {
     println!(
         "System = A:{:?}, B:{:?} + U:{:?}",

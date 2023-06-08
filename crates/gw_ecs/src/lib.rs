@@ -42,9 +42,9 @@ pub mod prelude {
         ecs::Ecs,
         entity::{Builder, Entities, Entity},
         event::{Event, EventReader, EventWriter, Events},
-        globals::{ReadGlobal, ReadNonSendGlobal, WriteGlobal, WriteNonSendGlobal},
+        globals::{GlobalMut, GlobalRef, ReadNonSendGlobal, WriteNonSendGlobal},
         join::{Join, JoinExt, ParJoin},
-        resources::{ReadUnique, Resource, WriteUnique},
+        resources::{ResMut, ResRef, Resource},
         schedule::{
             apply_state_transition, apply_system_buffers, common_conditions::*, Condition,
             IntoSystemConfig, IntoSystemConfigs, IntoSystemSet, IntoSystemSetConfig,
@@ -67,7 +67,7 @@ pub mod prelude {
             // ParallelCommands
             SystemParamFunction,
         },
-        world::{FromWorld, World},
+        world::{Fetch, FromWorld, World},
     };
 }
 
